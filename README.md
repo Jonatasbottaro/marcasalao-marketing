@@ -3,17 +3,27 @@
 Central de divulgação do projeto Marca Salão (Meu Salão).
 
 ## Estrutura
-- `01-insta-stories/` - Cards 1080x1920 para Instagram/WhatsApp
+- `01-insta-stories/` - Cards 1080x1920 para Instagram/WhatsApp com guia CapCut
 - `02-reels-shorts/` - Vídeos verticais para Reels/Shorts/TikTok
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
 - `04-legendas/` - Legendas, roteiros e scripts de áudio
+
+## Ferramentas
+- CapCut (mobile/desktop)
+- Drift - https://cutwire.org/drift
+- FFmpeg
 
 ## Demo
 Login demo: demo.gestor@example.com / Demo@123456
 https://marcasalao.com.br/gestor
 
-## Como usar
-1. Adicione as artes nas pastas correspondentes
-2. Atualize o README com novas campanhas
-3. Use releases do GitHub para distribuição
+## Workflow
+Ver `WORKFLOW.md` para passo a passo completo.
 
+## Contribuição
+1. Adicione artes nas pastas correspondentes
+2. Atualize legendas em `04-legendas/`
+3. Commit + push
+
+## Releases
+Use GitHub Releases para distribuir pacotes de vídeo completos.
