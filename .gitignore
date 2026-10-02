@@ -1,0 +1,5 @@
+*.mp4
+*.mov
+*.wav
+*.aiff
+.DS_Store
