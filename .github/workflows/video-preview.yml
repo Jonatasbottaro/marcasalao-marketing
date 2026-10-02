@@ -1,0 +1,40 @@
+name: Gerar Preview dos Vídeos
+
+on:
+  push:
+    paths:
+      - '02-reels-shorts/*.mp4'
+      - '02-reels-shorts/*/*.mp4'
+  release:
+    types: [created]
+
+jobs:
+  generate-previews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
+      - name: Gerar thumbnails
+        run: |
+          mkdir -p previews
+          find 02-reels-shorts -name '*.mp4' -type f | while read f; do
+            base=$(basename "$f" .mp4)
+            dir=$(dirname "$f")
+            ffmpeg -i "$f" -vframes 1 -vf "scale=720:-2" "previews/${base}.jpg"
+          done
+
+      - name: Criar release assets
+        if: github.event_name == 'release'
+        run: |
+          echo "Previews gerados em previews/"
+          ls -lh previews/
+
+      - name: Upload previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-previews
+          path: previews/
