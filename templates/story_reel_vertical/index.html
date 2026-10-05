@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: transparent;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+
+      /* Top Badge */
+      .top-badge {
+        position: absolute;
+        top: 140px;
+        left: 60px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 28px;
+        background: rgba(18, 18, 24, 0.85);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        border-radius: 9999px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+      .badge-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #f59e0b;
+        box-shadow: 0 0 12px #f59e0b;
+      }
+      .badge-text {
+        color: #fef3c7;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      /* Hero Title Card */
+      .hero-card {
+        position: absolute;
+        top: 240px;
+        left: 60px;
+        right: 60px;
+        background: linear-gradient(135deg, rgba(20, 20, 28, 0.92) 0%, rgba(10, 10, 15, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 36px;
+        padding: 48px;
+        backdrop-filter: blur(24px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      .hero-title {
+        color: #ffffff;
+        font-size: 54px;
+        font-weight: 800;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+      }
+      .hero-title span.accent {
+        background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .hero-subtitle {
+        color: #94a3b8;
+        font-size: 28px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      /* Kinetic Caption / Highlight Card (Middle) */
+      .highlight-box {
+        position: absolute;
+        top: 980px;
+        left: 60px;
+        right: 60px;
+        padding: 36px 44px;
+        background: rgba(15, 23, 42, 0.9);
+        border-left: 8px solid #f59e0b;
+        border-radius: 24px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .highlight-metric {
+        font-size: 42px;
+        font-weight: 800;
+        color: #38bdf8;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .highlight-desc {
+        font-size: 30px;
+        font-weight: 600;
+        color: #e2e8f0;
+        line-height: 1.35;
+      }
+
+      /* Bottom CTA Pill */
+      .bottom-cta {
+        position: absolute;
+        bottom: 120px;
+        left: 60px;
+        right: 60px;
+        height: 120px;
+        background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        box-shadow: 0 15px 40px rgba(245, 158, 11, 0.4);
+      }
+      .cta-text {
+        color: #0f172a;
+        font-size: 36px;
+        font-weight: 900;
+        letter-spacing: -0.01em;
+      }
+      .cta-arrow {
+        width: 48px;
+        height: 48px;
+        background: #0f172a;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .cta-arrow svg {
+        fill: #f59e0b;
+        width: 24px;
+        height: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="8"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- Top Badge -->
+      <div id="topBadge" class="top-badge">
+        <div class="badge-dot"></div>
+        <span class="badge-text" id="badgeLabel">Meu Salão • Gestão Inteligente</span>
+      </div>
+
+      <!-- Hero Card -->
+      <div id="heroCard" class="hero-card">
+        <h1 class="hero-title" id="mainTitle">
+          Controle sua agenda <br>
+          <span class="accent">100% no automático</span>
+        </h1>
+        <p class="hero-subtitle" id="mainSubtitle">
+          Elimine faltas de clientes e aumente o faturamento do seu salão sem complicação.
+        </p>
+      </div>
+
+      <!-- Highlight Metric Card -->
+      <div id="metricCard" class="highlight-box">
+        <div class="highlight-metric" id="metricValue">⚡ +35% de Faturamento</div>
+        <div class="highlight-desc" id="metricDesc">Agendamento 24h pelo WhatsApp direto na sua agenda.</div>
+      </div>
+
+      <!-- Bottom CTA -->
+      <div id="bottomCta" class="bottom-cta">
+        <span class="cta-text" id="ctaLabel">Experimente Grátis no Link da Bio</span>
+        <div class="cta-arrow">
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Timeline master controlada pelo HyperFrames (0s a 8s)
+      const tl = gsap.timeline({ paused: true });
+
+      // Animação de Entrada
+      tl.fromTo("#topBadge", { opacity: 0, y: -40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }, 0.2);
+      tl.fromTo("#heroCard", { opacity: 0, y: 50, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "back.out(1.2)" }, 0.4);
+      tl.fromTo("#metricCard", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 1.2);
+      tl.fromTo("#bottomCta", { opacity: 0, y: 80, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.4)" }, 2.0);
+
+      // Micro animação de pulso no CTA
+      tl.to("#bottomCta", { scale: 1.04, duration: 0.4, yoyo: true, repeat: 3, ease: "sine.inOut" }, 3.5);
+
+      // Animação de Saída suave (fade out nos últimos 0.5s)
+      tl.to(["#topBadge", "#heroCard", "#metricCard", "#bottomCta"], { opacity: 0, y: -20, duration: 0.5, ease: "power2.in" }, 7.5);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

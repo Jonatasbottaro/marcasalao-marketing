@@ -1,9 +1,11 @@
 # Workflow de Marketing Marca Salão
 
 ## Ferramentas
-- **CapCut**: edição rápida, app mobile/desktop, templates
-- **Drift**: editor open source desktop, multi-track, sem watermark
-- **FFmpeg**: automação de lote via linha de comando
+- **Antigravity AI Agent**: Edição conversacional automatizada, raciocínio de cortes e renderização
+- **HyperFrames (HeyGen)**: Renderização gráfica determinística em HTML/CSS/GSAP para overlays e motion graphics
+- **video-use**: Pipeline de cortes cirúrgicos, fades de áudio de 30ms anti-pop e legendagem
+- **FFmpeg**: Automação e composição de vídeo, áudio e legendas
+- **CapCut / Drift**: Editores manuais de apoio (opcionais)
 
 ## Fluxo completo
 
