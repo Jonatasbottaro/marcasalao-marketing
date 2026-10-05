@@ -1,0 +1,9 @@
+{
+  "name": "reel_link_overlay",
+  "version": "1.0.0",
+  "resolution": "portrait",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 27
+}

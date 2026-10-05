@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: transparent;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+
+      /* Top Header Badge */
+      .top-badge-container {
+        position: absolute;
+        top: 80px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        z-index: 50;
+      }
+      .top-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 36px;
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(20px);
+        border: 2px solid rgba(245, 158, 11, 0.6);
+        border-radius: 9999px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+      }
+      .badge-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #f59e0b;
+        box-shadow: 0 0 15px #f59e0b;
+      }
+      .badge-text {
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      /* Callout Banner (Top-mid) */
+      .callout-card {
+        position: absolute;
+        top: 170px;
+        left: 50px;
+        right: 50px;
+        background: linear-gradient(135deg, rgba(20, 25, 35, 0.95) 0%, rgba(10, 15, 25, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 28px;
+        padding: 24px 36px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        z-index: 50;
+      }
+      .callout-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        flex-shrink: 0;
+      }
+      .callout-content {
+        flex: 1;
+      }
+      .callout-title {
+        color: #ffffff;
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+      .callout-title span.accent {
+        color: #fbbf24;
+      }
+
+      /* Bottom CTA Pill */
+      .bottom-cta {
+        position: absolute;
+        bottom: 80px;
+        left: 60px;
+        right: 60px;
+        height: 110px;
+        background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        box-shadow: 0 15px 45px rgba(245, 158, 11, 0.45);
+        z-index: 50;
+      }
+      .cta-text {
+        color: #0f172a;
+        font-size: 34px;
+        font-weight: 900;
+        letter-spacing: -0.01em;
+      }
+      .cta-icon {
+        font-size: 34px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="27"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- Top Badge -->
+      <div id="topBadge" class="top-badge-container">
+        <div class="top-badge">
+          <div class="badge-dot"></div>
+          <span class="badge-text" id="badgeLabel">Meu Salão • Agendamento Online</span>
+        </div>
+      </div>
+
+      <!-- Callout Banner -->
+      <div id="calloutCard" class="callout-card">
+        <div class="callout-icon">⚡</div>
+        <div class="callout-content">
+          <div class="callout-title" id="calloutTitle">Envie seu <span class="accent">link exclusivo</span> para a cliente</div>
+        </div>
+      </div>
+
+      <!-- Bottom CTA Card (Appears in Scene 4) -->
+      <div id="bottomCta" class="bottom-cta" style="opacity: 0;">
+        <span class="cta-text">Automatize sua agenda • Link na Bio</span>
+        <span class="cta-icon">📲</span>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // 0s - 3s: Intro
+      tl.fromTo("#topBadge", { opacity: 0, y: -40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.2);
+      tl.fromTo("#calloutCard", { opacity: 0, y: -30, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.2)" }, 0.5);
+
+      // 3s - 11s: Scene 2 Title Change
+      tl.to("#calloutTitle", { opacity: 0, duration: 0.3 }, 3.0);
+      tl.call(() => {
+        document.getElementById("calloutTitle").innerHTML = 'Seus horários e serviços <span class="accent">já carregados</span>';
+      }, null, 3.3);
+      tl.to("#calloutTitle", { opacity: 1, duration: 0.3 }, 3.4);
+
+      // 11s - 18s: Scene 3 Title Change (Compartilhar e QR Code)
+      tl.to("#calloutTitle", { opacity: 0, duration: 0.3 }, 11.0);
+      tl.call(() => {
+        document.getElementById("calloutTitle").innerHTML = 'Compartilhe em <span class="accent">1 clique</span> ou via QR Code';
+      }, null, 11.3);
+      tl.to("#calloutTitle", { opacity: 1, duration: 0.3 }, 11.4);
+
+      // 18s - 27s: Scene 4 Final WhatsApp & CTA
+      tl.to("#calloutTitle", { opacity: 0, duration: 0.3 }, 18.0);
+      tl.call(() => {
+        document.getElementById("calloutTitle").innerHTML = 'A cliente agenda e sua <span class="accent">agenda atualiza</span>!';
+      }, null, 18.3);
+      tl.to("#calloutTitle", { opacity: 1, duration: 0.3 }, 18.4);
+
+      // Revelar Bottom CTA a partir dos 19s
+      tl.fromTo("#bottomCta", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.4)" }, 19.0);
+      tl.to("#bottomCta", { scale: 1.04, duration: 0.4, yoyo: true, repeat: 5, ease: "sine.inOut" }, 21.0);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
