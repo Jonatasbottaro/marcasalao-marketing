@@ -41,9 +41,9 @@ def edit_reel():
     # Step 2: Cut the 4 segments and format them into 1080x1920 with blurred background
     segments = [
         ("0.0", "3.0", "scratch/seg1.mp4"),
-        ("24.0", "8.0", "scratch/seg2.mp4"),
-        ("38.0", "7.0", "scratch/seg3.mp4"),
-        ("74.0", "9.0", "scratch/seg4.mp4"),
+        ("34.0", "8.0", "scratch/seg2.mp4"),
+        ("68.0", "6.0", "scratch/seg3.mp4"),
+        ("75.0", "10.0", "scratch/seg4.mp4"),
     ]
 
     print("\n--- Step 2: Cutting & Styling Segments ---")
