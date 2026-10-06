@@ -30,7 +30,8 @@
 
 ---
 
-### Instruções para Gravação:
-1. Fale em tom dinâmico, confiante e amigável.
-2. Duração aproximada da fala: ~26 a 27 segundos.
-3. Ao finalizar a gravação no celular ou microfone, salve o áudio como `narracao_link.wav` ou `narracao_link.mp3` na pasta `videos_brutos/`.
+### Uso do texto em ferramenta externa:
+1. Este roteiro acompanha um vídeo de teste; não representa campanha final aprovada.
+2. Copie o texto para gerar a narração em outra ferramenta, fora do editor de vídeo.
+3. Referência de tom: dinâmico, confiante e amigável; duração alvo de 27 segundos, a validar na ferramenta externa.
+4. Nesta etapa, entregar somente o vídeo sem áudio, com legendas, o SRT e este texto separado. Não gerar nem inserir áudio e não preservar o áudio original.

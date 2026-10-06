@@ -1,5 +1,9 @@
 # HyperFrames Composition Project
 
+## Marca Salão: project-specific delivery policy
+
+Read the repository root `AGENTS.md` and `WORKFLOW.md` before production. Deliver captioned video without audio, a synchronized SRT, and a separate Portuguese narration script with scene timings for external audio generation. Do not preserve original audio or generate/add TTS, music, sound effects, or other audio. Generic audio workflows below are not applicable unless the user explicitly requests a policy change. Existing demo renders are tests, not approved final campaigns.
+
 ## Skills — USE THESE FIRST
 
 **Always invoke the relevant skill before writing or modifying compositions.** Skills encode framework-specific patterns (e.g., `window.__timelines` registration, `data-*` attribute semantics, shader-compatible CSS rules) that are NOT in generic web docs. Skipping them produces broken compositions.
@@ -102,6 +106,6 @@ Fix all errors before presenting the result. Warnings should be reviewed before 
    Scene timelines manually added to this root must not be paused. A paused
    child does not advance when the root is seeked. The runtime activates
    registered composition siblings, not arbitrary nested scene timelines.
-4. A video with sound keeps it on the `<video>` (`data-has-audio="true"`, no `muted`). Use a separate `<audio>` for music, voiceover, replacement audio, J/L cuts, or audio detached in Studio. Silent footage and b-roll: `muted`.
+4. Marca Salão exports are silent: all footage must be `muted`; do not add `<audio>` elements or enable source audio. Deliver narration text separately for external generation. Prefer an output with no audio stream (FFmpeg `-an`).
 5. Sub-compositions use `data-composition-src="compositions/file.html"` to reference other HTML files
 6. Only deterministic logic — no `Date.now()`, no `Math.random()`, no network fetches

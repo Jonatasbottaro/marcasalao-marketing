@@ -17,8 +17,11 @@ Central de divulgação do projeto Marca Salão (Meu Salão).
 Login demo: demo.gestor@example.com / Demo@123456
 https://marcasalao.com.br/gestor
 
+## Padrão de entrega
+Vídeos sem áudio, com legendas nas cenas, arquivo SRT e texto de narração separado para geração de áudio em ferramenta externa. Não preservar o áudio original nem gerar áudio no editor. Vídeos de teste não são campanhas finais aprovadas.
+
 ## Workflow
-Ver `WORKFLOW.md` para passo a passo completo.
+Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 
 ## Contribuição
 1. Adicione artes nas pastas correspondentes
