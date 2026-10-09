@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:05,000
+Conheça o Meu Salão, a plataforma que conecta o profissional ao cliente e simplifica o agendamento.
+
+2
+00:00:05,000 --> 00:00:12,000
+Faça login com seu e-mail e senha e acesse sua conta de profissional em poucos segundos.
+
+3
+00:00:12,000 --> 00:00:25,000
+Dentro do app, você encontra o seu link de agendamento exclusivo, com URL e QR Code prontos para serem compartilhados.
+
+4
+00:00:25,000 --> 00:00:32,000
+É só tocar em copiar, e o link fica pronto na área de transferência para enviar ao cliente.
+
+5
+00:00:32,000 --> 00:00:45,000
+Compartilhe o link no WhatsApp junto com uma mensagem curta e objetiva. O cliente vê os horários disponíveis e agenda em minutos.
+
+6
+00:00:45,000 --> 00:00:57,000
+Com o Meu Salão o agendamento fica simples, rápido e automatizado 24 horas por dia. Mais organização para o salão e mais facilidade para o cliente.
