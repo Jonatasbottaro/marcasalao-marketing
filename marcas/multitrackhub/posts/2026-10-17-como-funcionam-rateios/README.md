@@ -1,8 +1,8 @@
 # Como funcionam os rateios — Multitrack Hub
 
-Status: RASCUNHO — NÃO PUBLICADO E NÃO AGENDADO.
+Status: PUBLICADO no Facebook e Instagram em 17/10/2026, após autorização explícita do titular.
 
-Arte e legenda preparadas em 17/10/2026 para os canais Multitrack Hub — Facebook e Multitrack Hub — Instagram @multitrackhub no Postiz. Não publicar sem autorização explícita do titular.
+Arte e legenda preparadas em 17/10/2026 para os canais Multitrack Hub — Facebook e Multitrack Hub — Instagram @multitrackhub no Postiz. Preparado inicialmente como rascunho; publicação autorizada pelo titular em etapa posterior.
 
 ## Arquivos
 
@@ -15,4 +15,11 @@ Regras conferidas na página pública https://multitrackhub.com.br/como-funciona
 
 Arte criada com image_gen integrado, usando logo oficial como referência. Prompt: square educational post, near-black, turquoise seven-column M, white typography and subtle audio waveforms; exact heading Como funcionam os rateios?; subtitle Divida o custo. Viabilize uma nova produção.; numbered steps Sugestão e cotação, Formação do grupo, Fechamento e pagamento, Produção e entrega; bottom Entenda os detalhes na legenda. No URL, WhatsApp, prices, fixed participant counts or immediate delivery claims.
 
-Manter materiais exclusivos da Multitrack Hub. Não alterar Marca Salão nem anúncios. Nenhuma ação de publicação ou agendamento autorizada para este post.
+Manter materiais exclusivos da Multitrack Hub. Não alterar Marca Salão nem anúncios. Esta publicação foi autorizada expressamente; novas publicações ou anúncios exigem nova solicitação.
+
+## Publicações verificadas
+
+- Instagram @multitrackhub: https://www.instagram.com/multitrackhub/p/DenPZgijD2c/
+- Facebook Página Multitrack Hub: https://www.facebook.com/photo/?fbid=122093943795522295
+
+Postiz confirmou Published nos dois canais; arte, autoria e legenda conferidas diretamente nas redes. Não republicar automaticamente para evitar duplicatas. Marca Salão e anúncios não alterados.
