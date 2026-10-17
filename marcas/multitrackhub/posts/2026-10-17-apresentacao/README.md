@@ -1,14 +1,19 @@
 # Apresentação da Multitrack Hub
 
-Status: RASCUNHO — NÃO PUBLICADO E NÃO AGENDADO.
+Status: PUBLICADO no Facebook e Instagram em 17/10/2026, após autorização explícita do titular. Inicialmente preparado e salvo como rascunho; a publicação foi autorizada em etapa posterior.
 
-Preparado em 17/10/2026 para os canais Multitrack Hub — Facebook e Multitrack Hub — Instagram @multitrackhub no Postiz. O Postiz mantém uma entrada Draft para cada canal. A data exibida no calendário do rascunho não autoriza nem agenda a publicação.
+## Publicações verificadas
+
+- Instagram @multitrackhub: https://www.instagram.com/multitrackhub/p/DenN6vNlwHs/
+- Facebook Página Multitrack Hub: https://www.facebook.com/photo/?fbid=122093939367522295
+
+Postiz: Post now > Post all channels now, exclusivamente nos canais Multitrack Hub — Facebook e Multitrack Hub — Instagram @multitrackhub. Ambos passaram a Published. Confirmados diretamente nas redes: autoria Multitrack Hub/@multitrackhub, arte e legenda. Nenhuma alteração na Marca Salão ou nos anúncios. Não republicar automaticamente para evitar duplicatas.
 
 ## Arquivos
 
 - `multitrackhub-apresentacao.png`: arte original em preto, turquesa e branco, usando a identidade da Multitrack Hub. Texto: Sua música. Novas possibilidades.; MULTITRACKS; PLAYBACKS; RATEIOS; Conheça a Multitrack Hub.
-- `legenda.txt`: texto completo com explicação dos serviços, endereço do site e hashtags. Revisar antes de publicar.
+- `legenda.txt`: texto publicado com apresentação dos serviços, endereço do site e hashtags.
 
 Arte produzida com image_gen integrado usando a logo oficial como referência. Identidade e arquivos originais em ../../identidade-visual/. Não aplicar materiais da Multitrack Hub aos canais da Marca Salão.
 
-A presença dos arquivos neste repositório não autoriza publicação, agendamento, anúncios ou acesso a terceiros. Publicar somente mediante solicitação explícita do titular.
+A presença dos arquivos neste repositório não autoriza novas publicações, anúncios ou acesso a terceiros. Novas ações exigem solicitação do titular.
