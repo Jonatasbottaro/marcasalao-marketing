@@ -1,8 +1,8 @@
 # Como funciona o agendamento online — Marca Salão
 
-Status: RASCUNHO — NÃO PUBLICADO E NÃO AGENDADO.
+Status: PUBLICADO — Facebook Meu salão e Instagram @marcasalao em 18/10/2026.
 
-Preparado em 18/10/2026 para os canais Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. Publicação depende de autorização posterior do titular.
+Preparado em 18/10/2026 para os canais Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. Publicação imediata autorizada expressamente pelo titular e realizada pelo Postiz nos dois canais Marca Salão.
 
 ## Arquivos
 - marcasalao-como-funciona-agendamento.png: arte quadrada na identidade verde-petróleo, menta e branco, logo MS com tesoura, cinco etapas do agendamento.
@@ -18,3 +18,10 @@ Nenhum agendamento foi criado na verificação. Disponibilidade de serviços, pr
 Arte criada com image_gen integrado. Referência: primeiro post de apresentação aprovado, preservando marca, logo, paleta e cenário de salão. Prompt resumido: square educational social post, Marca Salão MS/scissors logo, petroleum teal, pale mint, white; heading Agendamento online / Veja como funciona; five numbered steps Informe seus dados, Escolha o serviço, Selecione o profissional, Escolha data e horário, Revise e confirme; physical calendar and mint clock, CTA Conheça o Marca Salão and marcasalao.com.br; no invented software screens, prices, statistics or other brands.
 
 Multitrack Hub e anúncios não foram alterados.
+
+## Publicação e validação
+
+- Facebook Meu salão: https://www.facebook.com/photo/?fbid=122109968547500502
+- Instagram @marcasalao: https://www.instagram.com/marcasalao/p/DepCZ73l6qd/
+- Postiz: ambos em Published com indicação de sucesso, horário 12:46 em 18/10/2026.
+- Arte e legenda verificadas diretamente nos dois perfis. Multitrack Hub e anúncios preservados.
