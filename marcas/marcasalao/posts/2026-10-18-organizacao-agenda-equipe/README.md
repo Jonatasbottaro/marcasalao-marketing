@@ -1,8 +1,8 @@
 # Organização da agenda e dos profissionais — Marca Salão
 
-Status: RASCUNHO — NÃO PUBLICADO E NÃO AGENDADO.
+Status: PUBLICADO — Facebook Meu salão e Instagram @marcasalao em 18/10/2026.
 
-Preparado em 18/10/2026 exclusivamente para Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. Qualquer publicação exige autorização posterior do titular.
+Preparado em 18/10/2026 exclusivamente para Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. A publicação imediata desta arte e legenda foi autorizada expressamente pelo titular e concluída nos dois canais Marca Salão.
 
 ## Arquivos
 - marcasalao-organizacao-agenda-equipe.png: arte quadrada, logo MS/tesoura, verde-petróleo, menta e branco; título Agenda organizada. Equipe alinhada.
@@ -21,3 +21,10 @@ Gerada com image_gen integrado, usando o primeiro post aprovado como referência
 Prompt: square marketing post, Marca Salão MS/scissors logo, petroleum teal, pale mint and white, elegant salon, physical weekly planner and mint clock; headline Agenda organizada. Equipe alinhada.; three features Visão por dia, semana e mês / Filtro por profissional / Acompanhamento dos atendimentos; CTA Conheça o Marca Salão and marcasalao.com.br. No fabricated software screen, personal names, prices, statistics, WhatsApp or other brands.
 
 Multitrack Hub e anúncios preservados.
+
+## Publicação e verificação
+
+- Facebook Meu salão: https://www.facebook.com/photo/?fbid=122109969855500502
+- Instagram @marcasalao: https://www.instagram.com/marcasalao/p/DepDNAFFhBW/
+- Envio imediato pelo Postiz em 18/10/2026, às 12:53; posts conferidos diretamente nas duas redes com a arte e legenda aprovadas.
+- Multitrack Hub e anúncios preservados.
