@@ -1,8 +1,8 @@
 # Gestão financeira — Marca Salão
 
-Status: RASCUNHO — NÃO PUBLICADO E NÃO AGENDADO.
+Status: PUBLICADO — Facebook Meu salão e Instagram @marcasalao em 18/10/2026.
 
-Preparado em 18/10/2026 exclusivamente para Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. Publicação exige autorização posterior do titular.
+Preparado em 18/10/2026 exclusivamente para Marca Salão — Facebook Meu salão e Marca Salão — Instagram @marcasalao no Postiz. A publicação imediata desta arte e legenda foi autorizada expressamente pelo titular e concluída nos dois canais Marca Salão.
 
 ## Arquivos
 - marcasalao-gestao-financeira.png: arte quadrada na identidade MS/tesoura, verde-petróleo, menta e branco.
@@ -23,3 +23,10 @@ Gerada com image_gen integrado usando o primeiro post aprovado como referência.
 Prompt resumido: square marketing post, Marca Salão MS/scissors logo, petroleum teal, pale mint, white; headline Mais clareza nas finanças do seu salão.; three features Receita por período / Ticket médio / Transações recentes; mint calculator and paper planner on marble salon counter; CTA Conheça o Marca Salão and marcasalao.com.br; no invented UI, numbers, growth charts or other brands.
 
 Multitrack Hub e anúncios preservados.
+
+## Publicação e validação
+
+- Facebook Meu salão: https://www.facebook.com/photo/?fbid=122109973515500502
+- Instagram @marcasalao: https://www.instagram.com/marcasalao/p/DepE2x1lpKN/
+- Envio imediato pelo Postiz em 18/10/2026 às 13:07. Arte e legenda conferidas diretamente nas duas redes.
+- Multitrack Hub e anúncios preservados.
