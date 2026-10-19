@@ -25,3 +25,6 @@ Multitrack Hub e anúncios não foram alterados.
 - Instagram @marcasalao: https://www.instagram.com/marcasalao/p/DepCZ73l6qd/
 - Postiz: ambos em Published com indicação de sucesso, horário 12:46 em 18/10/2026.
 - Arte e legenda verificadas diretamente nos dois perfis. Multitrack Hub e anúncios preservados.
+
+## Revisão de chamada — 19/10/2026
+Legendas editadas diretamente nas redes sem republicar. Facebook com link completo para https://marcasalao.com.br; Instagram com indicação de link na bio. Versões atuais de texto em legenda-facebook.txt e legenda-instagram.txt; legenda.txt preserva o original. Cadastro do link externo no perfil Instagram depende de conclusão pelo titular no aplicativo; ver docs/hermes/2026-10-19/CORRECAO-LINKS-MARCA-SALAO.md.

@@ -24,3 +24,13 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 - Entregar vídeo legendado + SRT + texto de narração separado, sem gerar áudio.
 
 Consulte `WORKFLOW.md` para o fluxo completo.
+
+## Chamadas para o site Marca Salão — padrão de 19/10/2026
+- Destino oficial: https://marcasalao.com.br.
+- Facebook: usar URL completa na legenda e indicação “Acesse pelo link da descrição”.
+- Instagram: orientar “Conheça o sistema — link na bio”; conferir link do perfil antes de prometer esse acesso. URL em imagem não é botão e link em legenda não deve ser presumido clicável.
+- Nas próximas artes de feed Marca Salão, usar chamada específica por rede: “Acesse o link da descrição” no Facebook; “Acesse o link na bio” no Instagram. Evitar aparência de botão clicável embutido em imagem estática.
+- Stories com adesivo de link são outro formato e requerem pedido/autorização para publicação; não inferir que um botão desenhado faça isso.
+- Não republicar para corrigir legenda; editar somente o post existente e validar. Não prometer que edição no Postiz sincroniza texto de post já publicado nas redes.
+- Preservar legenda.txt como versão original publicada; revisões por rede em legenda-facebook.txt e legenda-instagram.txt, com data/estado real no registro.
+- Este ajuste não altera anúncios ou os posts da Multitrack Hub.

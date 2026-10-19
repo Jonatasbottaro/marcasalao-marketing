@@ -24,3 +24,6 @@ Nenhum conteúdo da Multitrack Hub foi alterado. A publicação deste post foi a
 - Instagram @marcasalao: https://www.instagram.com/marcasalao/p/DepBGQGnLNn/
 - Envio imediato pelo Postiz nos dois canais Marca Salão; ambos constam em Published com indicação de sucesso.
 - Arte e legenda conferidas diretamente nos dois perfis. Nenhuma alteração na Multitrack Hub ou nos anúncios.
+
+## Revisão de chamada — 19/10/2026
+Legendas editadas diretamente nas redes sem republicar. Facebook com link completo para https://marcasalao.com.br; Instagram com indicação de link na bio. Versões atuais de texto em legenda-facebook.txt e legenda-instagram.txt; legenda.txt preserva o original. Cadastro do link externo no perfil Instagram depende de conclusão pelo titular no aplicativo; ver docs/hermes/2026-10-19/CORRECAO-LINKS-MARCA-SALAO.md.
