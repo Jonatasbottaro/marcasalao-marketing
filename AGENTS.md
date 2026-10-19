@@ -34,3 +34,11 @@ Consulte `WORKFLOW.md` para o fluxo completo.
 - Não republicar para corrigir legenda; editar somente o post existente e validar. Não prometer que edição no Postiz sincroniza texto de post já publicado nas redes.
 - Preservar legenda.txt como versão original publicada; revisões por rede em legenda-facebook.txt e legenda-instagram.txt, com data/estado real no registro.
 - Este ajuste não altera anúncios ou os posts da Multitrack Hub.
+
+## Chamadas para o site Multitrack Hub — 19/10/2026
+- Site oficial https://multitrackhub.com.br; para rateios https://multitrackhub.com.br/rateios.
+- Facebook: URL completa na legenda, com Acesse pelo link da descrição.
+- Instagram: Link na bio do @multitrackhub; tema rateios orienta abrir a seção Rateios pelo site. Conferir link externo real cadastrado; texto em biografia não basta.
+- Próximas artes: chamada específica por rede, sem simular botão clicável na imagem. Stories com adesivo são outro formato e precisam de autorização para publicar.
+- Preservar posts e legenda.txt originais; manter revisões em legenda-facebook.txt e legenda-instagram.txt. Edição nativa não comprova sincronização do histórico Postiz.
+- Não configurar WhatsApp/telefone comercial nem alterar Marca Salão ou anúncios.
