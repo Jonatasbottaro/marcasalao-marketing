@@ -31,3 +31,7 @@ Multitrack Hub e anúncios preservados.
 
 ## Revisão de chamada — 19/10/2026
 Legendas editadas diretamente nas redes sem republicar. Facebook com link completo para https://marcasalao.com.br; Instagram com indicação de link na bio. Versões atuais de texto em legenda-facebook.txt e legenda-instagram.txt; legenda.txt preserva o original. Cadastro do link externo no perfil Instagram depende de conclusão pelo titular no aplicativo; ver docs/hermes/2026-10-19/CORRECAO-LINKS-MARCA-SALAO.md.
+
+
+## Conclusão em 19/10/2026 — link externo validado
+O titular adicionou o link no aplicativo Instagram. Após recarregar @marcasalao, apareceu ligação externa real para https://marcasalao.com.br (separada do texto da biografia). Clique na ligação abriu o site oficial em nova aba; título e conteúdo Marca Salão conferidos. Pendências anteriores sobre cadastro/validação do link estão concluídas. Parâmetros de rastreamento da Meta não foram arquivados. As oito legendas revisadas estão aplicadas; imagens, posts existentes, Multitrack Hub e anúncios preservados.

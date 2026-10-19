@@ -197,3 +197,7 @@ Descoberta importante: www.marcasalao.com.br estava somente no texto da biografi
 Nas próximas artes, separar chamadas por rede e evitar aparência de botão clicável dentro de imagem estática. Regras em AGENTS.md e registro docs/hermes/2026-10-19/CORRECAO-LINKS-MARCA-SALAO.md.
 Não assumir sincronização automática das edições nativas com o histórico de posts já publicados no Postiz. Os arquivos legenda.txt são os originais; revisões por rede em legenda-facebook.txt e legenda-instagram.txt.
 Multitrack Hub, anúncios, permissões e serviços do servidor preservados. Nenhum Story ou post novo foi criado.
+
+
+## Conclusão em 19/10/2026 — link externo validado
+O titular adicionou o link no aplicativo Instagram. Após recarregar @marcasalao, apareceu ligação externa real para https://marcasalao.com.br (separada do texto da biografia). Clique na ligação abriu o site oficial em nova aba; título e conteúdo Marca Salão conferidos. Pendências anteriores sobre cadastro/validação do link estão concluídas. Parâmetros de rastreamento da Meta não foram arquivados. As oito legendas revisadas estão aplicadas; imagens, posts existentes, Multitrack Hub e anúncios preservados.
