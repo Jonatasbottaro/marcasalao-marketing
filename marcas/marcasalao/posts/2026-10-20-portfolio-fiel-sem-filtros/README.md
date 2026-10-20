@@ -1,7 +1,7 @@
 # Marca Salão — Portfólio fiel ao seu trabalho
 
 Data editorial: 20/10/2026, America/Sao_Paulo.
-Estado: RASCUNHO (DRAFT) no Facebook e Instagram. Não publicado nem agendado. A autorização de publicação dos posts anteriores não se aplica a este conteúdo.
+Estado atual: PUBLICADO (PUBLISHED) no Facebook e Instagram em 20/10/2026, após nova autorização humana explícita para estes dois IDs. Artes e legendas aprovadas preservadas. O histórico de preparação em rascunho permanece registrado abaixo; a autorização anterior não foi reutilizada.
 
 ## Tema e novidade
 
@@ -27,7 +27,7 @@ Antes da criação foram consultados integrationList, postsListTool (2020–2030
 
 Produção com Pillow já instalado. As duas artes foram abertas para revisão visual antes do upload: margens, acentuação, legibilidade, logo, ilustração e CTAs conferidos; sem cortes, colisões ou botão clicável simulado. Sem instalação de ferramentas. Formato estático, sem vídeo ou áudio.
 
-## Dois novos rascunhos — Postiz
+## Histórico de preparação dos dois rascunhos — Postiz
 
 Facebook:
 - Post: cmvgkvfi50008msbev4p39rha
@@ -47,7 +47,7 @@ Instagram:
 
 Uploads realizados pelo CLI oficial, uma vez por arte, ambos com status ready e exit code 0; IDs e paths confirmados por mediaListTool. Schemas atuais consultados. Uma única chamada MCP criou exatamente dois registros com type: draft, post_type: post e sem comentários. Não houve repetição de criação nem comandos de alteração de status.
 
-O campo obrigatório date/publishDate é 2026-10-20T12:00:00Z (09:00 em America/Sao_Paulo). É metadado do rascunho, não agendamento: estado real DRAFT, sem releaseURL/releaseId.
+Na preparação, o campo obrigatório date/publishDate era 2026-10-20T12:00:00Z (09:00 em America/Sao_Paulo). Era metadado do rascunho, não agendamento: o estado então confirmado era DRAFT, sem releaseURL/releaseId. A publicação posterior autorizada está registrada abaixo.
 
 ## Verificações de persistência
 
@@ -66,6 +66,32 @@ O campo obrigatório date/publishDate é 2026-10-20T12:00:00Z (09:00 em America/
 
 ## Pendências e escopo
 
-Aguardam revisão do titular e nova autorização específica antes de qualquer publicação ou agendamento. A conferência de anexos foi feita pela origem local já existente; não representa auditoria do acesso público externo ao preview. Nenhum dado privado ou foto de cliente foi usado.
+A revisão e a nova autorização específica do titular foram concluídas em 20/10/2026 para publicação imediata somente dos dois IDs desta pasta. A conferência de anexos foi feita pela origem local já existente; não representa auditoria do acesso público externo ao preview. Nenhum dado privado ou foto de cliente foi usado.
 
 Somente cinco arquivos públicos finais nesta pasta devem entrar no Git. Não incluir scripts, HTML, logs ou relatório integral. O commit e a confirmação remota ficam no relatório operacional local para evitar autorreferência. Sem alterações em arquivos antigos, outra marca, Servidor01, anúncios, serviços, instalações, permissões, credenciais ou configurações. Nenhum backup executado.
+
+## Publicação autorizada dos registros existentes — 20/10/2026
+
+O titular revisou artes e legendas e autorizou publicar exclusivamente os IDs abaixo. Antes de agir, os dois registros foram relidos e comparados aos arquivos aprovados: DRAFT, canais corretos, legendas correspondentes e anexos originais; as mídias servidas pela origem local corresponderam byte a byte aos PNGs finais.
+
+Cada cartão existente foi aberto no editor autenticado do Postiz. A ação “Publicar agora” foi acionada uma única vez por ID, sem editar arte, legenda ou canal. A interface retornou “Atualizado com sucesso”. Nenhum post novo ou substituto foi criado e nenhum registro foi excluído. A confirmação foi feita por leituras posteriores, não apenas pela mensagem da interface.
+
+Facebook:
+- ID original: cmvgkvfi50008msbev4p39rha
+- Canal: cmvbegwql0001msbhvdpjy0in
+- Estado final: PUBLISHED; error: null.
+- releaseId: 1458106947377490_122110690563500502
+- releaseURL: https://www.facebook.com/122109965385500502/posts/122110690563500502
+
+Instagram:
+- ID original: cmvgkvfj70009msbeq3hnzp92
+- Canal: cmvbeq3100003msbhihu2dm4z
+- Estado final: PUBLISHED; error: null.
+- releaseId: 18108791063086667
+- releaseURL: https://www.instagram.com/p/DetvyRDIFiZ/
+
+publishDate registrado nos dois: 2026-10-20T11:39:00.000Z, equivalente a 08:39 em America/Sao_Paulo. Esse campo é o horário de envio definido pelo editor, não uma medição independente do instante de conclusão na rede.
+
+Facebook foi relido como PUBLISHED antes de acionar Instagram. Instagram foi acompanhado por leitura de QUEUE até PUBLISHED. Leitura individual final de ambos confirmou IDs originais, canais, releaseURL/releaseId, ausência de erro, caminhos das imagens originais e legendas equivalentes aos arquivos aprovados, normalizando apenas HTML/espaços. Não houve repetição da ação de publicação.
+
+Somente este README foi alterado no repositório nesta etapa. Os quatro arquivos de arte e legenda permaneceram byte a byte iguais ao commit de preparação b9427485d329e678f6c1a86d845b1a135f07f3a2. Nenhuma ação nos posts anteriores, em outros rascunhos, anúncios ou na outra marca. Sem pendência operacional de publicação. A verificação documenta o resultado do Postiz; não inclui nova auditoria visual das páginas públicas nas redes ou do link da bio.
