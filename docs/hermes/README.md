@@ -10,6 +10,8 @@ Conexão validada nos dois bots locais do Servidor02 em 19/10/2026. Preparação
 
 A chave do Postiz alcança a organização compartilhada; a separação por marca é operacional. Credenciais permanecem nos arquivos privados do servidor.
 
+- [Upload de artes locais e arquivamento GitHub autônomos](2026-10-19/ARTES-E-GITHUB-AUTONOMOS.md)
+
 ## Contexto e histórico
 
 - [Guia completo de Meta, artes, Postiz e publicações](2026-10-18/GUIA-COMPLETO.md)

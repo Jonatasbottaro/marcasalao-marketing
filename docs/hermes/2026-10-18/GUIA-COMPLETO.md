@@ -224,3 +224,7 @@ A conexão por cabeçalho na origem local substituiu a tentativa OAuth que falha
 - [Prompt Multitrack Hub](../2026-10-19/PROMPT-BOT-MULTITRACK-HUB.md)
 
 Preparar/salvar continua significando rascunho. Publicação e agendamento dependem de autorização específica. Conexão validada não comprova autenticação no GitHub pelo Hermes; confirmar ferramentas do bot antes de prometer arquivamento remoto. Nenhuma chave ou configuração privada acompanha os prompts.
+
+
+## Atualização de 19/10/2026 — upload local e escrita GitHub pelos bots
+O teste inicial de rascunhos revelou upload local ausente no MCP e falta de autenticação Git nos perfis. O CLI oficial Postiz foi disponibilizado com ambiente privado e dois checkouts SSH autenticados foram preparados, um por marca. A chave existente do Servidor02 foi validada para o repositório de marketing; não foi criada chave nova nem alterado o Hermes do Servidor01. Os bots podem arquivar pelos próprios checkouts, sem depender do conector do Codex. Instruções e validação em [ARTES-E-GITHUB-AUTONOMOS.md](../2026-10-19/ARTES-E-GITHUB-AUTONOMOS.md). As afirmações históricas de falta de upload/escrita Git não representam o estado após esta correção. Publicação continua exigindo autorização específica.

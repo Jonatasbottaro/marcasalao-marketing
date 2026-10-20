@@ -94,3 +94,7 @@ Cada perfil contém `POSTIZ-OPERACAO.md` e uma orientação no `SOUL.md` com seu
 Para desfazer, restaurar somente a entrada Postiz anterior e a variável acrescentada de cada perfil, preservando mudanças posteriores; recarregar os serviços locais. Não restaurar toda a configuração por cima de alterações do usuário. A reversão não exige mudar Meta ou anúncios.
 
 Não publicar arquivos .env, chaves, cookies, tokens, configurações exportadas, snapshots privados ou a conversa bruta.
+
+
+## Complemento — upload local e GitHub autônomos
+O CLI oficial Postiz 2.0.25 foi instalado para envio direto de arquivos locais, com ambiente privado por perfil, e os dois bots receberam checkouts SSH separados com escrita no repositório de marketing. Isso resolve a dependência do navegador para upload e a falta de autenticação de escrita que apareceram no primeiro teste. Não depende do conector GitHub do Codex nem de novo OAuth. Ver [procedimento e limites](ARTES-E-GITHUB-AUTONOMOS.md). Preparação continua rascunho; nenhuma autorização genérica de publicação foi concedida.
