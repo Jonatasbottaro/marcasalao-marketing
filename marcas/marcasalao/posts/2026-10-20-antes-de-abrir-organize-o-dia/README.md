@@ -1,7 +1,7 @@
 # Marca Salão — Antes de abrir, organize o dia
 
 Data editorial: 20/10/2026, America/Sao_Paulo.
-Estado: **RASCUNHO / DRAFT** no Facebook e Instagram. Aguardando avaliação do titular. Nenhuma publicação ou programação autorizada/executada.
+Estado atual: **PUBLICADO / PUBLISHED** no Facebook e Instagram em 20/10/2026, após aprovação explícita do titular nesta conversa (arte e legendas apresentadas; autorização: “ótimo pode postar”). Os arquivos aprovados foram preservados. O histórico de preparação dos rascunhos permanece documentado abaixo.
 
 ## Proposta editorial
 
