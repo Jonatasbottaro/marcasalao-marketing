@@ -2,6 +2,25 @@
 
 Data editorial: 20/10/2026. Fuso: America/Sao_Paulo.
 
+## Estado atual: PUBLISHED — publicação revisada e autorizada
+
+O titular revisou as artes e legendas e concedeu nova autorização explícita para publicar agora exclusivamente os dois rascunhos desta pasta. A ação “Publicar agora” foi executada uma única vez por ID original, no editor autenticado dos próprios registros existentes. Nenhum post novo, substituto ou duplicata foi criado; nenhum registro foi excluído.
+
+Antes de agir, foram conferidos estado DRAFT, ID, canal, legenda contra o arquivo aprovado e arte anexada contra o SHA-256 local. As duas mídias retornaram HTTP 200 e hashes idênticos. Após a ação, os estados QUEUE foram acompanhados somente por leitura até PUBLISHED com error null e releaseId/releaseURL reais em ambos.
+
+- Facebook: post original `cmvgkv7nk0006msbe1qz9m5sv`; canal `cmvbss5fn0005msbhhbdy6ing`; estado **PUBLISHED**; releaseId `1359325343932935_122095285167522295`; publishDate registrado `2026-10-20T11:37:00.000Z` (08:37 America/Sao_Paulo).
+  - Link real: https://www.facebook.com/122093939439522295/posts/122095285167522295
+  - Arte preservada: https://postiz.swnsolucoes.com.br/uploads/2026/10/20/a4e101053444e56b7feba77840a3199508.png
+- Instagram: post original `cmvgkv7p20007msbehubemoh0`; canal `cmvbsudg50007msbh2j4734i4`; estado **PUBLISHED**; releaseId `18128428669882240`; publishDate registrado `2026-10-20T11:40:00.000Z` (08:40 America/Sao_Paulo).
+  - Link real: https://www.instagram.com/p/Detv466nFGN/
+  - Arte preservada: https://postiz.swnsolucoes.com.br/uploads/2026/10/20/1ddce2a5f12cae3f8b108f181d272c9d.png
+
+Consultas posteriores do Postiz confirmaram os IDs originais, canais, anexos, estados e links. As legendas persistidas correspondem aos arquivos aprovados, normalizando apenas HTML/espaços. Os quatro arquivos de artes/legendas mantêm byte a byte os hashes registrados abaixo. A marca permaneceu com dez registros; os outros oito foram comparados à linha-base e não mudaram em estado, conteúdo, data ou identificadores/URLs de publicação.
+
+Não há erro nem pendência de publicação no Postiz. A confirmação se baseia nos registros persistidos e links devolvidos pelo Postiz, sem auditoria nativa adicional das redes. Somente este README foi atualizado no repositório. Nenhum anúncio, outro rascunho, permissão, configuração, serviço, credencial, instalação, outra marca ou Servidor01 foi alterado. Nenhuma solicitação foi enviada ao formulário de contato. Sem novo backup.
+
+As seções seguintes preservam o histórico de criação em rascunho; não representam o estado atual.
+
 ## Tema novo e fontes
 
 Orientação sobre o canal oficial Ajuda e Contato: tipos de mensagem, dados a informar, resposta por e-mail e cuidado para não enviar senhas nem dados de cartão. Tema distinto dos oito registros anteriores consultados da própria marca: apresentação, funcionamento de rateios, preparação de ensaio e busca no catálogo (dois canais por tema). Não repete temas de Marca Salão.
@@ -14,7 +33,7 @@ Fontes consultadas diretamente nesta execução:
 
 Não foi enviada mensagem de teste pelo formulário. Não se promete prazo de resposta, atendimento imediato, disponibilidade de catálogo, preço, resultado ou direito de uso. Sem WhatsApp ou telefone comercial.
 
-## Estado real: somente DRAFT
+## Histórico inicial — estado na criação: somente DRAFT
 
 Uma chamada MCP criou exatamente dois registros novos com type: draft explícito, um por canal permitido e com um único item em postsAndComments, sem comentários. Schemas atuais de Facebook, Instagram e ferramenta de criação consultados antes da operação.
 
@@ -51,8 +70,10 @@ SHA-256:
 - `legenda-facebook.txt`: `c3b5af22c3b21d35a9d0c806e4e3fdba8486e43eff45f06a202fc1ca49c24a13`.
 - `legenda-instagram.txt`: `a1f10678c9dce7745477afbd8920f58448cb6b1553b8105c122bca0b98eabf90`.
 
-## Pendências e escopo
+## Pendências e escopo registrados na criação inicial
 
 Aguardam revisão humana. Não há autorização para publicar ou agendar este conteúdo. A validação limitou-se à interface pública do formulário; não foi testada a entrega de uma mensagem nem tempo de resposta. Link da bio baseado na validação documentada anterior; reconferir antes de eventual publicação.
+
+Atualização posterior: a revisão e a nova autorização humana foram concedidas, e ambos os IDs originais foram publicados conforme a seção de estado atual. As limitações da consulta editorial são mantidas como histórico, sem alteração do conteúdo aprovado.
 
 Arquivados somente duas artes finais, duas legendas e este README sanitizado na pasta exclusiva desta marca. Materiais finais também copiados para o diretório local de documentação solicitado. Sem logs, pedidos integrais, HTML, segredos ou configurações no repositório. Nenhuma alteração de registros anteriores, outra marca, anúncios, permissões, credenciais, configurações, serviços, instalações ou Servidor01. Sem novo backup.
