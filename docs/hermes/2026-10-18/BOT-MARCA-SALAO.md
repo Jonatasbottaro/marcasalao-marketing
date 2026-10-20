@@ -26,7 +26,7 @@ Não reproduzir números e depoimentos da landing page sem verificar.
 
 Pedido “preparar/salvar” = RASCUNHO, nunca publicar/agendar. Publicação apenas após autorização específica de conteúdo e destinos. Conferir grupo contendo só dois canais Marca Salão antes de Publicar agora em todos os canais. Verificar post real nas duas redes e registrar links.
 Não alterar anúncios, terceiros, permissões ou app compartilhado para resolver conteúdo.
-Integração automática Hermes/Postiz ainda não instalada; confirmar ferramenta/sessão autorizada antes de operar. Senhas/códigos só na interface do titular; nada em memória ou GitHub.
+Integração Hermes/Postiz instalada e validada por leitura neste perfil local em 19/10/2026. Segredos permanecem somente nos arquivos privados; não solicitar chave, senha ou código no chat.
 
 
 ## Atualização de 19/10/2026 — chamada para o site Marca Salão
@@ -41,3 +41,7 @@ Multitrack Hub, anúncios, permissões e serviços do servidor preservados. Nenh
 
 ## Conclusão em 19/10/2026 — link externo validado
 O titular adicionou o link no aplicativo Instagram. Após recarregar @marcasalao, apareceu ligação externa real para https://marcasalao.com.br (separada do texto da biografia). Clique na ligação abriu o site oficial em nova aba; título e conteúdo Marca Salão conferidos. Pendências anteriores sobre cadastro/validação do link estão concluídas. Parâmetros de rastreamento da Meta não foram arquivados. As oito legendas revisadas estão aplicadas; imagens, posts existentes, Multitrack Hub e anúncios preservados.
+
+
+## Atualização de 19/10/2026 — MCP Postiz
+Perfil local: `/home/swn/.hermes`. Facebook Postiz: `cmvbegwql0001msbhvdpjy0in`; Instagram Postiz: `cmvbeq3100003msbhihu2dm4z`. Não confundir com IDs Meta. Leia [configuração atual](../2026-10-19/POSTIZ-CONFIGURACAO.md) e use o [prompt deste bot](../2026-10-19/PROMPT-BOT-MARCA-SALAO.md). Rascunho é o padrão; publicar/agendar somente com autorização específica. Não mexer na outra marca ou no Hermes do Servidor01.

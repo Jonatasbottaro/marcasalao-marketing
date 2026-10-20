@@ -2,12 +2,12 @@
 Atualizado em 18/10/2026, fuso America/Sao_Paulo. Consolidado a partir da conversa, documentos operacionais e arquivos do repositório. É um registro do estado verificado durante o trabalho, não uma auditoria ao vivo de todas as permissões nesta data.
 
 ## 1. Como usar no Hermes
-Existem dois bots informados pelo titular: um da Multitrack Hub e outro do Marca Salão. Seus nomes técnicos, IDs, armazenamento de memória e ferramentas não foram inspecionados neste trabalho.
+Atualização operacional de 19/10/2026: os dois bots foram identificados e conectados ao Postiz no Servidor02: perfil padrão Marca Salão e perfil local `multitrackhub-marketing`. O Hermes do Servidor01 não foi alterado. Consulte [configuração validada](../2026-10-19/POSTIZ-CONFIGURACAO.md) e os prompts específicos dessa pasta.
 Entregar a cada bot este guia comum e SOMENTE seu contexto de marca:
 - BOT-MARCA-SALAO.md
 - BOT-MULTITRACK-HUB.md
 - PROMPT-PARA-COLAR-NO-HERMES.md coordena a importação.
-Nenhuma configuração dos bots foi modificada para produzir esta documentação. Não foi instalada integração de API entre Hermes e Postiz, nem emitida chave Postiz para Hermes. Ter o endereço do painel não significa que um bot esteja autenticado.
+Na entrega original de 18/10 a integração ainda não estava instalada. Esse estado foi superado em 19/10: o MCP `postiz` foi habilitado nos dois perfis locais com a chave existente autorizada pelo titular, guardada somente em configuração privada. Handshake e listagem autenticada de canais foram validados em ambos; nenhuma postagem foi criada para testar.
 O repositório de marketing é compartilhado por pastas; o Postiz também é compartilhado por canais. Isso organiza o trabalho, mas NÃO cria isolamento de permissões entre bots ou marcas.
 
 ## 2. Identidade administrativa e acessos
@@ -213,3 +213,14 @@ Marca Salão, anúncios, WhatsApp, telefone comercial e permissões preservados.
 
 ## Conclusão de 19/10/2026 — link externo Multitrack validado
 Titular adicionou o link externo pelo aplicativo. Perfil @multitrackhub recarregado mostra ligação clicável para https://multitrackhub.com.br/; clique abriu o site oficial em nova aba, com título MultiTrack Hub e conteúdo da marca conferidos. Pendências anteriores de link externo estão concluídas. URLs de rastreamento da Meta não foram arquivadas. As quatro legendas revisadas estão aplicadas; nenhuma nova publicação, alteração no Marca Salão, WhatsApp, telefone comercial ou anúncios realizada.
+
+
+## Atualização de 19/10/2026 — Hermes conectado ao Postiz
+
+A conexão por cabeçalho na origem local substituiu a tentativa OAuth que falhava. Os dois perfis do Servidor02 passaram no teste oficial do Hermes e na chamada autenticada de integrationList. Sete ferramentas de canais, mídia e posts foram habilitadas. A chave alcança a organização inteira; cada bot deve selecionar apenas os IDs da sua marca.
+
+- [Configuração atual e recuperação](../2026-10-19/POSTIZ-CONFIGURACAO.md)
+- [Prompt Marca Salão](../2026-10-19/PROMPT-BOT-MARCA-SALAO.md)
+- [Prompt Multitrack Hub](../2026-10-19/PROMPT-BOT-MULTITRACK-HUB.md)
+
+Preparar/salvar continua significando rascunho. Publicação e agendamento dependem de autorização específica. Conexão validada não comprova autenticação no GitHub pelo Hermes; confirmar ferramentas do bot antes de prometer arquivamento remoto. Nenhuma chave ou configuração privada acompanha os prompts.

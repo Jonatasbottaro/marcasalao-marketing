@@ -29,7 +29,7 @@ Revalidar /como-funciona e /rateios antes de novos posts; não inventar direitos
 
 Preparar/salvar = rascunho. Publicar somente por autorização específica. Conferir grupo dos dois canais Multitrack, usar Publicar agora, aguardar Instagram e verificar nas duas redes sem reenviar às cegas.
 Preservar anúncios, Marca Salão, acessos e app Projeto Salao compartilhado.
-Integração Hermes/Postiz ainda não instalada. Verificar ferramentas e autenticação antes de operar; nenhuma senha/código/token deve ser solicitado no chat ou salvo em GitHub.
+Integração Hermes/Postiz instalada e validada por leitura neste perfil local em 19/10/2026. Segredos permanecem somente nos arquivos privados; não solicitar chave, senha ou código no chat.
 
 
 ## Atualização de 19/10/2026 — links do site Multitrack Hub
@@ -42,3 +42,7 @@ Marca Salão, anúncios, WhatsApp, telefone comercial e permissões preservados.
 
 ## Conclusão de 19/10/2026 — link externo Multitrack validado
 Titular adicionou o link externo pelo aplicativo. Perfil @multitrackhub recarregado mostra ligação clicável para https://multitrackhub.com.br/; clique abriu o site oficial em nova aba, com título MultiTrack Hub e conteúdo da marca conferidos. Pendências anteriores de link externo estão concluídas. URLs de rastreamento da Meta não foram arquivadas. As quatro legendas revisadas estão aplicadas; nenhuma nova publicação, alteração no Marca Salão, WhatsApp, telefone comercial ou anúncios realizada.
+
+
+## Atualização de 19/10/2026 — MCP Postiz
+Perfil local: `/home/swn/.hermes/profiles/multitrackhub-marketing`. Facebook Postiz: `cmvbss5fn0005msbhhbdy6ing`; Instagram Postiz: `cmvbsudg50007msbh2j4734i4`. Não confundir com IDs Meta. Leia [configuração atual](../2026-10-19/POSTIZ-CONFIGURACAO.md) e use o [prompt deste bot](../2026-10-19/PROMPT-BOT-MULTITRACK-HUB.md). Rascunho é o padrão; publicar/agendar somente com autorização específica. Não mexer na outra marca ou no Hermes do Servidor01.

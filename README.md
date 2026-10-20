@@ -30,3 +30,7 @@ Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do pr
 
 ## Releases
 Use GitHub Releases para distribuir pacotes de vídeo completos.
+
+## Hermes e Postiz
+
+[Documentação do Hermes](docs/hermes/README.md): prompts separados para Marca Salão e Multitrack Hub, conexão validada no Servidor02 e preparação de rascunhos com publicação somente após autorização específica.
