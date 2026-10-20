@@ -1,7 +1,7 @@
 # Marca Salão — Atendimento começa com escuta
 
 Data editorial: 20/10/2026. Fuso: America/Sao_Paulo.
-Estado: dois novos RASCUNHOS (DRAFT), um por rede. Não publicado, não agendado.
+Estado atual: PUBLICADO (PUBLISHED) no Facebook e Instagram em 20/10/2026, após nova autorização humana explícita. IDs originais preservados; artes e legendas sem alterações. A preparação inicial abaixo foi realizada em rascunho.
 
 ## Tema e razão da escolha
 
@@ -27,7 +27,7 @@ Antes da criação, foram consultados integrationList, postsListTool (janela 202
 
 As duas artes foram abertas para revisão visual: texto em português legível, acentuação, margens, logo e CTAs conferidos. Produção com Pillow já instalado, sem instalar ferramentas. Conteúdo estático; SRT, vídeo e áudio não se aplicam.
 
-## Persistência Postiz
+## Histórico da preparação em rascunho — Postiz
 
 Schemas de Facebook, Instagram e da ferramenta de criação consultados. Uma única chamada MCP criou exatamente dois registros, ambos com type: draft, post_type: post e sem comentários. Não houve repetição da criação.
 
@@ -47,7 +47,7 @@ Instagram:
 
 Upload CLI retornou ready para ambas, seguido de confirmação por mediaListTool. postsListTool confirmou IDs, canais, textos e DRAFT. Leitura CLI confirmou releaseURL: null e releaseId: null nos dois. Os previews relidos na origem local contêm as respectivas imagens novas em elementos img. Os bytes das mídias servidas pela origem local foram comparados com os PNGs locais por SHA-256: correspondência exata. Legendas salvas comparadas programaticamente ao conteúdo persistido, ignorando apenas marcação HTML e espaços de apresentação.
 
-O campo obrigatório date/publishDate é 2026-10-20T12:00:00Z (09:00 em America/Sao_Paulo). É metadado obrigatório do rascunho, não agendamento: o estado persistido é DRAFT, sem releaseURL ou releaseId.
+Na preparação, o campo obrigatório date/publishDate era 2026-10-20T12:00:00Z (09:00 em America/Sao_Paulo). Era metadado do rascunho, não agendamento: naquele momento o estado persistido era DRAFT, sem releaseURL ou releaseId. Na publicação autorizada abaixo, somente o horário e o estado dos registros existentes foram atualizados.
 
 ## SHA-256
 
@@ -58,7 +58,33 @@ O campo obrigatório date/publishDate é 2026-10-20T12:00:00Z (09:00 em America/
 
 ## Limitações e pendências
 
-- Revisão/aprovação editorial pelo titular antes de qualquer publicação. Este fluxo não autoriza publicar nem agendar.
+- Aprovação editorial concluída pelo titular em nova autorização explícita de 20/10/2026, restrita à publicação imediata destes dois IDs. Não autoriza outros posts ou anúncios.
 - O acesso HTTP público automatizado ao preview retornou 403. A verificação de anexos foi concluída por leitura na origem local existente, sem alterar proteção, configuração ou credenciais.
 - Somente os materiais públicos finais desta pasta devem entrar no Git. Evidências locais e relatório operacional integral ficam fora do repositório. O hash do commit e a confirmação remota constam no relatório operacional, evitando autorreferência no README.
 - Sem alterações na Multitrack Hub, no Servidor01, em anúncios, serviços, instalações, permissões ou configurações. Nenhum backup executado para esta tarefa.
+
+## Publicação autorizada — 20/10/2026
+
+O titular revisou artes e legendas e autorizou publicar agora somente os dois rascunhos originais desta pasta. Antes da ação, integrationList e leitura dos dois registros confirmaram canais, DRAFT, legendas e anexos. As artes servidas pela origem local foram novamente comparadas aos arquivos por SHA-256.
+
+Foi utilizado o caminho para registros existentes: PUT /api/posts/<id>/date com action: update e republish: false, definindo o horário corrente sem sair de DRAFT; em seguida, CLI posts:status <id> --status schedule, uma vez por ID, para colocar o registro original na fila de execução imediata. O nome técnico schedule do CLI indica entrada na fila; o horário foi o corrente, não uma publicação futura. Nenhuma chamada de criação, exclusão ou substituição de post foi feita.
+
+Facebook:
+- Postiz original: cmvgjipzz0000msbehyin05fs
+- Canal: cmvbegwql0001msbhvdpjy0in
+- Estado final relido: PUBLISHED; error: null.
+- releaseId: 1458106947377490_122110674555500502
+- releaseURL: https://www.facebook.com/122109965385500502/posts/122110674555500502
+- publishDate: 2026-10-20T10:52:29.181Z (07:52:29 em America/Sao_Paulo; horário de envio à fila, não medição independente do instante de publicação na rede).
+
+Instagram:
+- Postiz original: cmvgjiq190001msbex4bcby0w
+- Canal: cmvbeq3100003msbhihu2dm4z
+- Estado final relido: PUBLISHED; error: null.
+- releaseId: 17950030221336735
+- releaseURL: https://www.instagram.com/p/DetqZWEIC3t/
+- publishDate: 2026-10-20T10:52:29.405Z (07:52:29 em America/Sao_Paulo; horário de envio à fila).
+
+Acompanhamento por leitura CLI passou de QUEUE para PUBLISHED nas duas redes, com releaseURL e releaseId retornados pelo Postiz. Nova leitura individual autenticada dos mesmos IDs confirmou estado, canal, anexo original e texto correspondente às legendas revisadas. Sem reenvio ou duplicação. As legendas foram comparadas normalizando apenas HTML/espaços; arquivos de artes e legendas permanecem byte a byte iguais aos da preparação.
+
+Somente este README foi alterado no repositório nesta etapa. Não foram alterados outros rascunhos, anúncios, a outra marca, serviços ou configurações. A verificação comprova o resultado informado pelo Postiz e seus identificadores de publicação; não inclui nova auditoria visual das páginas públicas nas redes nem do link da bio.
