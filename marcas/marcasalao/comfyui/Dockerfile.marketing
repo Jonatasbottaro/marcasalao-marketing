@@ -1,0 +1,8 @@
+FROM comfyui-servidor02:0.42.1-gemini-20261021
+USER root
+COPY custom_nodes/servidor02_gemini /opt/ComfyUI/custom_nodes/servidor02_gemini
+RUN chmod -R a+rX /opt/ComfyUI/custom_nodes/servidor02_gemini
+COPY --chmod=644 workflows/04-marcasalao-gemini.json workflows/05-marcasalao-imagem-local.json /data/user/default/workflows/
+RUN chown -R 1002:1002 /data/user/default/workflows
+USER 1002:1002
+RUN python -c "from pathlib import Path; import json; json.loads(Path('/data/user/default/workflows/04-marcasalao-gemini.json').read_text()); Path('/opt/ComfyUI/custom_nodes/servidor02_gemini/assets/marcasalao-logo.png').read_bytes()"

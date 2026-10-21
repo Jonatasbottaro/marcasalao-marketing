@@ -1,0 +1,39 @@
+{
+  "1": {
+    "class_type": "MarcaSalaoBrief",
+    "inputs": {
+      "campanha": "agenda-organizada",
+      "tema": "Gestão do salão",
+      "titulo": "Sua agenda, mais organizada",
+      "texto": "Conheça o agendamento e a gestão do Marca Salão.",
+      "legenda_facebook": "Organize a rotina do seu salão com o Marca Salão.",
+      "legenda_instagram": "Organize a rotina do seu salão com o Marca Salão.",
+      "direcao_visual": "Composição abstrata em verde-petróleo e menta, com formas orgânicas suaves e luz difusa.",
+      "link_bio_confirmado": false
+    }
+  },
+  "2": {
+    "class_type": "Servidor02GeminiImagem",
+    "inputs": {
+      "pedido": [
+        "1",
+        0
+      ],
+      "orientacoes": "Produza uma única imagem de apoio. Não escreva textos nem redesenhe logotipos."
+    }
+  },
+  "3": {
+    "class_type": "MarcaSalaoPackage",
+    "inputs": {
+      "brief": [
+        "1",
+        1
+      ],
+      "imagem": [
+        "2",
+        0
+      ],
+      "origem": "gemini"
+    }
+  }
+}
