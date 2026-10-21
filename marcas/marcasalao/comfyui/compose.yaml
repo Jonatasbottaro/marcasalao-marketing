@@ -1,0 +1,27 @@
+services:
+  comfyui:
+    image: comfyui-servidor02:0.42.1-marketing-v1-20261021
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8188:8188'
+    environment:
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-}'
+      GEMINI_TEXT_MODEL: '${GEMINI_TEXT_MODEL:-gemini-3.8-flash}'
+      GEMINI_IMAGE_MODEL: '${GEMINI_IMAGE_MODEL:-gemini-3.1-flash-image}'
+    volumes:
+      - comfyui-data:/data
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+volumes:
+  comfyui-data:
