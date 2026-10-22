@@ -1,0 +1,407 @@
+{
+  "last_node_id": 8,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarcaSalaoBriefIA",
+      "pos": [
+        20,
+        100
+      ],
+      "size": [
+        420,
+        660
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pedido_imagem",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "brief_validado",
+          "type": "MS_BRIEF",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MarcaSalaoBriefIA"
+      },
+      "widgets_values": [
+        "financeiro-arte-integral-v3",
+        "Gestão financeira",
+        "Mais clareza nas finanças do seu salão.",
+        "Receita por período | Ticket médio | Transações recentes",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Calculadora menta com visor desligado, agenda de papel sem inscrições e caneta com detalhe dourado no canto inferior direito da bancada. Preservar parede verde-petróleo, mármore, planta e espelho dourado da referência.",
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        540,
+        60
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-facebook-quadrado.png",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "LoadImage",
+      "pos": [
+        540,
+        420
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-facebook-vertical.png",
+        "image"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "pos": [
+        540,
+        780
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-facebook-stories.png",
+        "image"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        1030,
+        60
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-instagram-quadrado.png",
+        "image"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        1030,
+        420
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-instagram-vertical.png",
+        "image"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "LoadImage",
+      "pos": [
+        1030,
+        780
+      ],
+      "size": [
+        390,
+        300
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "arte-instagram-stories.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "MarcaSalaoPacoteIA",
+      "pos": [
+        1580,
+        130
+      ],
+      "size": [
+        520,
+        720
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brief",
+          "type": "MS_BRIEF",
+          "link": 1
+        },
+        {
+          "name": "facebook_quadrado",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "facebook_vertical",
+          "type": "IMAGE",
+          "link": 3
+        },
+        {
+          "name": "facebook_stories",
+          "type": "IMAGE",
+          "link": 4
+        },
+        {
+          "name": "instagram_quadrado",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "instagram_vertical",
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "instagram_stories",
+          "type": "IMAGE",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MarcaSalaoPacoteIA"
+      },
+      "widgets_values": [
+        "imagem_local"
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      1,
+      3,
+      0,
+      "MS_BRIEF"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      1,
+      "IMAGE"
+    ],
+    [
+      3,
+      4,
+      0,
+      3,
+      2,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      3,
+      3,
+      "IMAGE"
+    ],
+    [
+      5,
+      6,
+      0,
+      3,
+      4,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      3,
+      5,
+      "IMAGE"
+    ],
+    [
+      7,
+      8,
+      0,
+      3,
+      6,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.45,
+      "offset": [
+        30,
+        30
+      ]
+    },
+    "marca_salao_standard": "arte-integral-ia-v3"
+  },
+  "version": 0.4
+}

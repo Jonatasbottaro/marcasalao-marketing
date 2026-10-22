@@ -7,7 +7,7 @@ import urllib.error
 import urllib.request
 
 
-def generate(prompt: str, kind: str, system: str, reference=None):
+def generate(prompt: str, kind: str, system: str, reference=None, aspect_ratio=None, image_size=None):
     key = os.environ.get('GEMINI_API_KEY', '').strip()
     if not key:
         raise RuntimeError('Cadastre GEMINI_API_KEY nas variáveis privadas do Coolify e reinicie este recurso.')
@@ -21,6 +21,10 @@ def generate(prompt: str, kind: str, system: str, reference=None):
     config = {'maxOutputTokens': 4096}
     if kind == 'imagem':
         config['responseModalities'] = ['TEXT', 'IMAGE']
+    if aspect_ratio is not None or image_size is not None:
+        if kind != 'imagem' or aspect_ratio not in ('1:1','4:5','9:16') or image_size not in ('1K','2K'):
+            raise RuntimeError('Proporção/resolução de imagem inválida.')
+        config['imageConfig'] = {'aspectRatio':aspect_ratio,'imageSize':image_size}
     body = {'contents': [{'role': 'user', 'parts': [{'text': prompt}]}], 'generationConfig': config}
     if reference is not None:
         if kind != 'imagem' or not isinstance(reference, bytes) or not 0 < len(reference) <= 8 * 1024 * 1024:

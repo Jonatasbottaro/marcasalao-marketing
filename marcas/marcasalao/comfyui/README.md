@@ -1,13 +1,9 @@
-# Workflow Marca Salão para ComfyUI
+# Workflow Marca Salão — arte integral IA v3
 
-Fonte do workflow e exportador para Hermes; leia [HERMES-POSTIZ.md](HERMES-POSTIZ.md). Pacote não publica, não agenda nem cria rascunho no Postiz.
+Padrão atual: workflow06, brief/roteiro → seis artes completas Gemini 2K por rede/proporção → exportar PNGs sem redesenhar textos ou recortar → legenda por rede e manifesto → revisão. Workflow07 reutiliza seis artes prontas sem Gemini. Consulte HERMES-POSTIZ.md para comandos, custos/retomada e política Postiz.
 
-Dois workflows: geração Gemini ou imagem local. Uma imagem de apoio resulta em seis variantes (Facebook/Instagram em quadrado, vertical e Stories), duas legendas e manifesto com hashes.
+Workflows04/05 e --background são legado v2, preservados para retorno e comparação. Não usá-los nas novas criações integrais.
 
-Template em verde-petróleo/menta/branco, logo oficial preservada. Os valores hex são escolhas do template, não códigos oficiais da marca.
+Primeiro pacote pode consumir seis chamadas de imagem 2K. Saídas completas são armazenadas e reutilizadas; revisão por nó permite refazer só uma. Nenhum modelo local, credencial no código, upload Postiz ou publicação automática. O pacote continua com seis alternativas (quadrado/vertical/Stories por rede), duas legendas e hashes; seis alternativas não são seis posts.
 
-Testes: `python3 -m unittest discover -s tests -v` (Python + Pillow). O código dos nós depende também do ambiente ComfyUI já instalado; não há modelos locais.
-
-Implantação no Servidor02 depende de backup central confirmado, build incremental e atualização exclusiva do recurso ComfyUI. Confira o estado real da instalação na documentação operacional do servidor; presença dos arquivos no repositório não comprova implantação.
-
-Padrão vigente: **salão realista v2**, aprovado em 21/10/2026 a partir do post Facebook 122109973515500502. Cenário fotográfico com mármore, plantas e dourado, logo central, título branco/menta e até três benefícios. O nó `MarcaSalaoGeminiCenario` incorpora a referência; logo e textos são aplicados localmente. Legendas explicativas com emojis, chamada por rede, pergunta e hashtags. O exemplo financeiro é apenas uma prévia comparativa; não criar publicação repetida.
+Testes: python3 -m unittest discover -s tests -v (Python + Pillow). Presença dos arquivos não confirma implantação: conferir nós no serviço e documentação operacional do Servidor02.

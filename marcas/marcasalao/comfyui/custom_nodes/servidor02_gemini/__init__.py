@@ -121,3 +121,66 @@ class MarcaSalaoScene(GeminiImage):
 
 NODE_CLASS_MAPPINGS['MarcaSalaoGeminiCenario'] = MarcaSalaoScene
 NODE_DISPLAY_NAME_MAPPINGS['MarcaSalaoGeminiCenario'] = 'Marca Salão · Cenário Gemini com referência aprovada'
+
+
+class MarcaSalaoBriefIA(MarcaSalaoBrief):
+    def run(self, **kwargs):
+        from .brand import prepare_brief
+        from .artwork import full_prompt
+        brief = prepare_brief(**kwargs)
+        return full_prompt(brief, 'facebook', 'quadrado'), brief
+
+
+class MarcaSalaoArteIA(GeminiText):
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'brief': ('MS_BRIEF',),
+                             'rede': (['facebook','instagram'],),
+                             'formato': (['quadrado','vertical','stories'],),
+                             'revisao': ('INT', {'default':1,'min':1,'max':999})}}
+    RETURN_TYPES = ('IMAGE','STRING')
+    RETURN_NAMES = ('arte_completa','geracao_json')
+    CATEGORY = 'Marca Salão/Arte integral IA'
+    OUTPUT_NODE = False
+
+    def run(self, brief, rede, formato, revisao=1):
+        import json
+        import numpy as np
+        import torch
+        import folder_paths
+        from .artwork import generate_artwork
+        image, meta = generate_artwork(brief, rede, formato, folder_paths.get_output_directory(), revision=revisao)
+        pixels = np.array(image).astype(np.float32) / 255.0
+        return {'ui': {'text':[json.dumps(meta,ensure_ascii=False)]},
+                'result':(torch.from_numpy(pixels).unsqueeze(0),json.dumps(meta,ensure_ascii=False))}
+
+
+class MarcaSalaoPacoteIA(MarcaSalaoPackage):
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'brief':('MS_BRIEF',), 'origem':(['gemini','imagem_local'],), **{f'{n}_{f}':('IMAGE',) for n in ('facebook','instagram') for f in ('quadrado','vertical','stories')}}}
+    CATEGORY = 'Marca Salão/Arte integral IA'
+
+    def run(self, brief, origem='gemini', **images):
+        import json
+        import numpy as np
+        from PIL import Image
+        import folder_paths
+        from .brand import export_bundle
+        artworks = {}
+        for name, tensor in images.items():
+            if len(tensor.shape)!=4 or tensor.shape[0]!=1:
+                raise ValueError('Uma única arte completa por rede e formato.')
+            network, fmt = name.split('_',1)
+            pixels = np.rint(np.clip(tensor[0].cpu().numpy(),0,1)*255).astype(np.uint8)
+            artworks[network,fmt] = Image.fromarray(pixels)
+        manifest = export_bundle(brief,None,folder_paths.get_output_directory(),origem,artworks=artworks)
+        previews = [{'filename':item['file'],'subfolder':manifest['bundle'],'type':'output'} for item in manifest['images']]
+        text = json.dumps(manifest,ensure_ascii=False,indent=2)
+        return {'ui':{'images':previews,'text':[text]},'result':(text,)}
+
+
+NODE_CLASS_MAPPINGS.update({'MarcaSalaoBriefIA':MarcaSalaoBriefIA,'MarcaSalaoArteIA':MarcaSalaoArteIA,'MarcaSalaoPacoteIA':MarcaSalaoPacoteIA})
+NODE_DISPLAY_NAME_MAPPINGS.update({'MarcaSalaoBriefIA':'Marca Salão · 1 Brief e roteiro da arte completa',
+                                 'MarcaSalaoArteIA':'Marca Salão · 2 Gemini cria arte completa 2K',
+                                 'MarcaSalaoPacoteIA':'Marca Salão · 3 Exportar sem redesenhar'})

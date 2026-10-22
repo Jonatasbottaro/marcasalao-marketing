@@ -220,12 +220,19 @@ def render(brief, background, fmt, network):
     return image
 
 
-def export_bundle(brief, background, output_root, source):
+def export_bundle(brief, background, output_root, source, artworks=None):
     brief = prepare_brief(**{k: brief[k] for k in ('campanha', 'tema', 'titulo', 'texto', 'legenda_facebook', 'legenda_instagram', 'direcao_visual', 'link_bio_confirmado')})
     if source not in ('gemini', 'imagem_local'):
         raise ValueError('Origem de imagem inválida.')
     # Renderizar tudo antes de criar o pacote: entrada inválida não deixa pacote publicável.
-    rendered = [(network, fmt, render(brief, background, fmt, network)) for network in INTEGRATIONS for fmt in FORMATS]
+    if artworks is None:
+        rendered = [(network, fmt, render(brief, background, fmt, network)) for network in INTEGRATIONS for fmt in FORMATS]
+    else:
+        expected = {(network,fmt) for network in INTEGRATIONS for fmt in FORMATS}
+        if set(artworks) != expected:
+            raise ValueError('São necessárias seis artes integrais, uma por rede e formato.')
+        from .artwork import prepare_image
+        rendered = [(network,fmt,prepare_image(artworks[network,fmt],fmt)) for network,fmt in sorted(expected)]
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     bundle = f'marcasalao/{brief["campanha"]}/{stamp}-{uuid.uuid4().hex[:10]}'
     directory = Path(output_root) / bundle
@@ -233,7 +240,7 @@ def export_bundle(brief, background, output_root, source):
     manifest = {'schema_version': 1, 'brand': 'marcasalao', 'campaign': brief['campanha'],
                 'bundle': bundle, 'created_at': datetime.now(timezone.utc).isoformat(),
                 'status': 'prepared', 'review_required': True, 'publication_authorized': False,
-                'visual_standard': 'salao-realista-v2', 'reference_post': 'https://www.facebook.com/photo/?fbid=122109973515500502',
+                'visual_standard': 'arte-integral-ia-v3' if artworks is not None else 'salao-realista-v2', 'reference_post': 'https://www.facebook.com/photo/?fbid=122109973515500502',
                 'background_source': source, 'bio_link_confirmed': brief['link_bio_confirmado'],
                 'brief': {k: brief[k] for k in ('tema', 'titulo', 'texto', 'direcao_visual')},
                 'images': [], 'captions': {},

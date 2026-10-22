@@ -122,7 +122,9 @@ def main():
     group.add_argument('--brief', type=Path, help='Novo pedido: pode consumir uma geração Gemini.')
     group.add_argument('--resume', type=Path, help='Arquivo de estado existente; consulta sem reenviar geração.')
     parser.add_argument('--state', type=Path, help='Obrigatório em novo pedido; deve ser um arquivo novo.')
-    parser.add_argument('--background', type=Path, help='Imagem local opcional: dispensa totalmente o Gemini.')
+    local_group = parser.add_mutually_exclusive_group()
+    local_group.add_argument('--artworks', nargs=6, type=Path, metavar='PNG', help='Reutilizar seis artes completas: Facebook quadrado/vertical/stories, depois Instagram na mesma ordem. Sem Gemini.')
+    local_group.add_argument('--background', type=Path, help='LEGADO v2: compor fundo com textos locais. Não usar para arte completa IA.')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.resume:
@@ -143,18 +145,21 @@ def main():
         with args.state.open('x') as f:
             json.dump({'status': 'submitting', 'warning': 'Se interrompido, consultar fila/histórico antes de repetir.'}, f)
         local = bool(args.background)
-        template = '05-marcasalao-imagem-local.api.json' if local else '04-marcasalao-gemini.api.json'
+        template = '07-marcasalao-reutilizar-artes-ia.api.json' if args.artworks else '05-marcasalao-imagem-local.api.json' if local else '06-marcasalao-arte-integral-ia.api.json'
         prompt = json.loads((ROOT / 'workflows' / template).read_text())
         prompt['1']['inputs'] = brief
         if local:
             prompt['2']['inputs']['image'] = upload_background(args.background)
+        if args.artworks:
+            for ident,path in zip(('2','4','5','6','7','8'),args.artworks):
+                prompt[ident]['inputs']['image'] = upload_background(path)
         response = request('/prompt', json.dumps({'prompt': prompt}).encode(), {'Content-Type': 'application/json'})
         ident = response['prompt_id']
         args.state.write_text(json.dumps({'prompt_id': ident, 'status': 'queued'}, indent=2) + '\n')
     if not re.fullmatch(r'[a-f0-9-]{36}', ident):
         raise ValueError('prompt_id inválido.')
     print(json.dumps({'prompt_id': ident, 'status': 'consultando'}), flush=True)
-    for attempt in range(240):
+    for attempt in range(900):
         history = request('/history/' + ident)
         if ident in history:
             break
