@@ -1,6 +1,6 @@
 services:
   comfyui:
-    image: comfyui-servidor02:0.42.1-marketing-v1-20261021
+    image: comfyui-servidor02:0.42.1-marketing-v2-20261021
     pull_policy: never
     restart: unless-stopped
     ports:

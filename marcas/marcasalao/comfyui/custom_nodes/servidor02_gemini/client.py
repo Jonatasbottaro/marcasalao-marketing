@@ -7,7 +7,7 @@ import urllib.error
 import urllib.request
 
 
-def generate(prompt: str, kind: str, system: str):
+def generate(prompt: str, kind: str, system: str, reference=None):
     key = os.environ.get('GEMINI_API_KEY', '').strip()
     if not key:
         raise RuntimeError('Cadastre GEMINI_API_KEY nas variáveis privadas do Coolify e reinicie este recurso.')
@@ -22,6 +22,10 @@ def generate(prompt: str, kind: str, system: str):
     if kind == 'imagem':
         config['responseModalities'] = ['TEXT', 'IMAGE']
     body = {'contents': [{'role': 'user', 'parts': [{'text': prompt}]}], 'generationConfig': config}
+    if reference is not None:
+        if kind != 'imagem' or not isinstance(reference, bytes) or not 0 < len(reference) <= 8 * 1024 * 1024:
+            raise RuntimeError('Referência deve ser uma imagem PNG de até 8 MiB.')
+        body['contents'][0]['parts'].append({'inlineData': {'mimeType': 'image/png', 'data': base64.b64encode(reference).decode()}})
     if system.strip():
         body['systemInstruction'] = {'parts': [{'text': system}]}
     request = urllib.request.Request(

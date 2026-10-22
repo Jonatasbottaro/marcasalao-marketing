@@ -37,19 +37,19 @@
         "Node name for S&R": "MarcaSalaoBrief"
       },
       "widgets_values": [
-        "agenda-organizada",
-        "Gestão do salão",
-        "Sua agenda, mais organizada",
-        "Conheça o agendamento e a gestão do Marca Salão.",
-        "Organize a rotina do seu salão com o Marca Salão.",
-        "Organize a rotina do seu salão com o Marca Salão.",
-        "Composição abstrata em verde-petróleo e menta, com formas orgânicas suaves e luz difusa.",
-        false
+        "previa-padrao-financeiro-v2",
+        "Gestão financeira",
+        "Mais clareza nas finanças do seu salão.",
+        "Receita por período | Ticket médio | Transações recentes",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Calculadora menta com visor desligado, agenda de papel sem inscrições e caneta com detalhe dourado no canto inferior direito da bancada. Preservar parede verde-petróleo, mármore, planta e espelho dourado da referência.",
+        true
       ]
     },
     {
       "id": 2,
-      "type": "Servidor02GeminiImagem",
+      "type": "MarcaSalaoGeminiCenario",
       "pos": [
         540,
         80
@@ -86,7 +86,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "Servidor02GeminiImagem"
+        "Node name for S&R": "MarcaSalaoGeminiCenario"
       },
       "widgets_values": [
         "",
@@ -169,7 +169,8 @@
         30,
         30
       ]
-    }
+    },
+    "marca_salao_standard": "salao-realista-v2; referência Facebook 122109973515500502"
   },
   "version": 0.4
 }

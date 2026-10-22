@@ -28,6 +28,7 @@ class GeminiText:
 
 
 class GeminiImage(GeminiText):
+    REFERENCE = None
     RETURN_TYPES = ('IMAGE', 'STRING')
     RETURN_NAMES = ('imagem', 'texto')
     OUTPUT_NODE = False
@@ -36,7 +37,9 @@ class GeminiImage(GeminiText):
         import numpy as np
         import torch
         from PIL import Image, UnidentifiedImageError
-        text, data = generate(pedido, 'imagem', orientacoes)
+        from pathlib import Path
+        reference = (Path(__file__).parent / 'assets' / self.REFERENCE).read_bytes() if self.REFERENCE else None
+        text, data = generate(pedido, 'imagem', orientacoes, reference=reference)
         try:
             with Image.open(io.BytesIO(data)) as source:
                 image = source.convert('RGB')
@@ -57,10 +60,10 @@ class MarcaSalaoBrief:
             'campanha': ('STRING', {'default': 'agenda-organizada'}),
             'tema': ('STRING', {'default': 'Gestão do salão'}),
             'titulo': ('STRING', {'multiline': True, 'default': 'Sua agenda, mais organizada'}),
-            'texto': ('STRING', {'multiline': True, 'default': 'Conheça o agendamento e a gestão do Marca Salão.'}),
+            'texto': ('STRING', {'multiline': True, 'default': 'Agenda organizada | Atendimento com clareza | Gestão do salão'}),
             'legenda_facebook': ('STRING', {'multiline': True, 'default': 'Organize a rotina do seu salão com o Marca Salão.'}),
             'legenda_instagram': ('STRING', {'multiline': True, 'default': 'Organize a rotina do seu salão com o Marca Salão.'}),
-            'direcao_visual': ('STRING', {'multiline': True, 'default': 'Composição abstrata em verde-petróleo e menta, com formas orgânicas suaves e luz difusa.'}),
+            'direcao_visual': ('STRING', {'multiline': True, 'default': 'Cenário realista de salão, mármore branco, planta lateral, espelho dourado e agenda menta no canto inferior direito.'}),
             'link_bio_confirmado': ('BOOLEAN', {'default': False}),
         }}
 
@@ -109,3 +112,12 @@ class MarcaSalaoPackage:
 
 NODE_CLASS_MAPPINGS.update({'MarcaSalaoBrief': MarcaSalaoBrief, 'MarcaSalaoPackage': MarcaSalaoPackage})
 NODE_DISPLAY_NAME_MAPPINGS.update({'MarcaSalaoBrief': 'Marca Salão · Brief e texto', 'MarcaSalaoPackage': 'Marca Salão · Compor e exportar pacote'})
+
+
+class MarcaSalaoScene(GeminiImage):
+    REFERENCE = 'referencia-financeiro.png'
+    CATEGORY = 'Marca Salão'
+
+
+NODE_CLASS_MAPPINGS['MarcaSalaoGeminiCenario'] = MarcaSalaoScene
+NODE_DISPLAY_NAME_MAPPINGS['MarcaSalaoGeminiCenario'] = 'Marca Salão · Cenário Gemini com referência aprovada'

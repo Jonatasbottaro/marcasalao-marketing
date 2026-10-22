@@ -50,6 +50,17 @@ class GeminiTests(unittest.TestCase):
             text, image = client.generate('Fundo', 'imagem', '')
         self.assertEqual(image, b'png-fixture')
 
+    def test_reference_image_is_sent_as_inline_data_to_image_model(self):
+        response = {'candidates': [{'content': {'parts': [{'inlineData': {'mimeType': 'image/png', 'data': base64.b64encode(b'output').decode()}}]}}]}
+        captured = []
+        def send(request, timeout):
+            captured.append(json.loads(request.data))
+            return io.BytesIO(json.dumps(response).encode())
+        with patch.dict(os.environ, {'GEMINI_API_KEY': 'fixture'}), patch('urllib.request.urlopen', send):
+            _, image = client.generate('Cenário sem letras', 'imagem', '', reference=b'png-reference')
+        self.assertEqual(image, b'output')
+        self.assertEqual(captured[0]['contents'][0]['parts'][1], {'inlineData': {'mimeType': 'image/png', 'data': base64.b64encode(b'png-reference').decode()}})
+
     def test_quota_error_hides_provider_body(self):
         error = HTTPError('https://google.invalid', 429, 'fixture-private-value', {}, io.BytesIO(b'fixture-private-value'))
         with patch.dict(os.environ, {'GEMINI_API_KEY': 'fixture-private-value'}), patch('urllib.request.urlopen', side_effect=error) as send:

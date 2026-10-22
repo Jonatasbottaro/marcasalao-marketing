@@ -1,4 +1,4 @@
-FROM comfyui-servidor02:0.42.1-gemini-20261021
+FROM comfyui-servidor02:0.42.1-marketing-v1-20261021
 USER root
 COPY custom_nodes/servidor02_gemini /opt/ComfyUI/custom_nodes/servidor02_gemini
 RUN chmod -R a+rX /opt/ComfyUI/custom_nodes/servidor02_gemini

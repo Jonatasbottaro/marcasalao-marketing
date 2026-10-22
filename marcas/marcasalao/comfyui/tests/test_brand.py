@@ -72,6 +72,40 @@ class BrandTests(unittest.TestCase):
             self.assertEqual(set(manifest['postiz']['integrations']), {'facebook', 'instagram'})
             self.assertTrue((directory / 'README.md').is_file())
 
+    def test_benefits_keep_separate_lines_and_reject_more_than_three(self):
+        brief = brand.prepare_brief(**(self.fields | {'texto': 'Receita por período | Ticket médio | Transações recentes'}))
+        self.assertEqual(brief['beneficios'], ['Receita por período', 'Ticket médio', 'Transações recentes'])
+        with self.assertRaises(ValueError):
+            brand.prepare_brief(**(self.fields | {'texto': 'Um | Dois | Três | Quatro'}))
+
+    def test_cta_precedes_question_and_hashtags_without_duplicate_link(self):
+        body = 'Mais clareza. 💚\n\n💰 RECEITA\nConsulte atendimentos concluídos.\n\nVocê acompanha seus números?\n\n#MarcaSalão #GestãoDeSalão'
+        brief = brand.prepare_brief(**(self.fields | {'legenda_facebook': body, 'legenda_instagram': body}))
+        caption = brief['legendas']['facebook']
+        self.assertLess(caption.index('https://marcasalao.com.br'), caption.index('Você acompanha'))
+        self.assertTrue(caption.endswith('#MarcaSalão #GestãoDeSalão'))
+        self.assertEqual(caption.count('https://marcasalao.com.br'), 1)
+
+    def test_long_benefit_word_shrinks_instead_of_rejecting_valid_input(self):
+        brief = brand.prepare_brief(**(self.fields | {'texto': 'OrganizaçãoFinanceira'}))
+        self.assertEqual(brief['beneficios'], ['OrganizaçãoFinanceira'])
+
+    def test_single_newline_question_hashtags_and_existing_cta(self):
+        body = 'Mais clareza.\nVocê acompanha seus números?\n#MarcaSalão'
+        brief = brand.prepare_brief(**(self.fields | {'legenda_facebook': body}))
+        caption = brief['legendas']['facebook']
+        self.assertLess(caption.index('https://marcasalao.com.br'), caption.index('Você acompanha'))
+        body = 'Conheça o sistema: https://marcasalao.com.br\n\nVocê já conhece?\n\n#MarcaSalão'
+        brief = brand.prepare_brief(**(self.fields | {'legenda_facebook': body}))
+        self.assertEqual(brief['legendas']['facebook'].count('https://marcasalao.com.br'), 1)
+
+    def test_title_balances_three_lines_without_single_word_orphan(self):
+        face, wrapped, size = brand.title_layout('Mais clareza nas finanças do seu salão.')
+        self.assertEqual(' '.join(wrapped), 'Mais clareza nas finanças do seu salão.')
+        self.assertEqual(len(wrapped), 3)
+        self.assertTrue(all(len(line.split()) >= 2 for line in wrapped))
+        self.assertLess(max(face.getlength(line) for line in wrapped) - min(face.getlength(line) for line in wrapped), 200)
+
     def test_repeated_campaign_preserves_previous_bundle(self):
         brief = brand.prepare_brief(**self.fields)
         with tempfile.TemporaryDirectory() as temp:
