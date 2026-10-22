@@ -46,3 +46,7 @@ Consulte `WORKFLOW.md` para o fluxo completo.
 ## Arte quadrada compartilhada Marca Salão — 22/10/2026
 
 Por pedido posterior explícito do titular: gerar somente UMA arte quadrada e usar o mesmo arquivo nas duas redes, com legendas adaptadas para economizar API. Neste modo, usar CTA neutra “Conheça o Marca Salão” na imagem; substitui a chamada específica por rede dentro da arte. Manter URL completa na legenda Facebook e link da bio no Instagram somente confirmado. Outros formatos/segunda arte só mediante pedido. Workflow08 é padrão; workflow09/--square-art reutiliza uma arte sem Gemini. Não publicar/agendar nem criar rascunhos por um pedido de configurar/prévia.
+
+## Conteúdo novo pelo bot Marca Salão — autorização22/10/2026
+
+O titular autorizou o fluxo sob demanda até DRAFT: consultar temas publicados e reservados, escolher UM tema ainda não usado, gerar UMA arte quadrada no padrão aprovado e duas legendas, revisar, enviar uma mídia compartilhada e criar/conferir DOIS rascunhos Postiz. Leia /home/swn/.hermes/FLUXO-COMPLETO-MARCA-SALAO.md. Pedidos de conteúdo novo/processo completo acionam esse fluxo sem confirmação intermediária; pedidos apenas de ideias/prévia continuam limitados ao solicitado. Uma campanha e até uma chamada de imagem por pedido sem quantidade; não regenerar automaticamente em erro/qualidade ruim. Não criar recorrência, publicar/agendar, tocar outras marcas/conteúdos anteriores nem fazer push automático. Este pedido de configuração não gera nova campanha por si só.
