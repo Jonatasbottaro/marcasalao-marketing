@@ -14,14 +14,14 @@ FIELDS = ('campanha','tema','titulo','texto','legenda_facebook','legenda_instagr
 
 def full_prompt(fields, network, fmt):
     brief = prepare_brief(**{k: fields[k] for k in FIELDS})
-    if network not in INTEGRATIONS or fmt not in RATIOS:
+    if network not in (*INTEGRATIONS, 'compartilhado') or fmt not in RATIOS or (network == 'compartilhado' and fmt != 'quadrado'):
         raise ValueError('Rede ou formato inválido.')
     template = (ASSETS / 'padrao-arte-integral.txt').read_text()
     return template.format(proporcao=RATIOS[fmt], formato=fmt,
                            tema=brief['tema'], titulo=brief['titulo'],
                            beneficios=json.dumps(brief['beneficios'], ensure_ascii=False),
-                           direcao_visual=brief['direcao_visual'], cta=brief['cta'][network],
-                           endereco='marcasalao.com.br' if network=='facebook' else '@marcasalao')
+                           direcao_visual=brief['direcao_visual'], cta='Conheça o Marca Salão' if network == 'compartilhado' else brief['cta'][network],
+                           endereco='marcasalao.com.br' if network in ('facebook','compartilhado') else '@marcasalao')
 
 
 def prepare_image(image, fmt):

@@ -220,12 +220,17 @@ def render(brief, background, fmt, network):
     return image
 
 
-def export_bundle(brief, background, output_root, source, artworks=None):
+def export_bundle(brief, background, output_root, source, artworks=None, shared_image=None):
     brief = prepare_brief(**{k: brief[k] for k in ('campanha', 'tema', 'titulo', 'texto', 'legenda_facebook', 'legenda_instagram', 'direcao_visual', 'link_bio_confirmado')})
     if source not in ('gemini', 'imagem_local'):
         raise ValueError('Origem de imagem inválida.')
     # Renderizar tudo antes de criar o pacote: entrada inválida não deixa pacote publicável.
-    if artworks is None:
+    if shared_image is not None:
+        if artworks is not None:
+            raise ValueError('Use uma arte compartilhada ou as variantes, nunca ambas.')
+        from .artwork import prepare_image
+        rendered = [('compartilhado', 'quadrado', prepare_image(shared_image, 'quadrado'))]
+    elif artworks is None:
         rendered = [(network, fmt, render(brief, background, fmt, network)) for network in INTEGRATIONS for fmt in FORMATS]
     else:
         expected = {(network,fmt) for network in INTEGRATIONS for fmt in FORMATS}
@@ -240,21 +245,23 @@ def export_bundle(brief, background, output_root, source, artworks=None):
     manifest = {'schema_version': 1, 'brand': 'marcasalao', 'campaign': brief['campanha'],
                 'bundle': bundle, 'created_at': datetime.now(timezone.utc).isoformat(),
                 'status': 'prepared', 'review_required': True, 'publication_authorized': False,
-                'visual_standard': 'arte-integral-ia-v3' if artworks is not None else 'salao-realista-v2', 'reference_post': 'https://www.facebook.com/photo/?fbid=122109973515500502',
+                'visual_standard': 'quadrado-compartilhado-ia-v4' if shared_image is not None else 'arte-integral-ia-v3' if artworks is not None else 'salao-realista-v2', 'reference_post': 'https://www.facebook.com/photo/?fbid=122109973515500502',
                 'background_source': source, 'bio_link_confirmed': brief['link_bio_confirmado'],
                 'brief': {k: brief[k] for k in ('tema', 'titulo', 'texto', 'direcao_visual')},
                 'images': [], 'captions': {},
                 'postiz': {'mode': 'draft_only', 'integrations': INTEGRATIONS.copy(),
-                           'preferred_feed_format': 'vertical', 'media_uploaded': False,
+                           'preferred_feed_format': 'quadrado' if shared_image is not None else 'vertical', 'media_uploaded': False,
                            'drafts_created': False, 'story_requires_separate_request': True},
                 'sources': ['https://marcasalao.com.br', 'https://marcasalao.com.br/icons/icon-512x512.png']}
+    if shared_image is not None:
+        manifest['postiz']['media_by_network'] = {network: 'arte-compartilhada-quadrado.png' for network in INTEGRATIONS}
     for network, fmt, image in rendered:
-        name = f'arte-{network}-{fmt}.png'
+        name = 'arte-compartilhada-quadrado.png' if shared_image is not None else f'arte-{network}-{fmt}.png'
         path = directory / name
         image.save(path, format='PNG', optimize=True)
         manifest['images'].append({'network': network, 'format': fmt, 'file': name,
                                    'width': image.width, 'height': image.height,
-                                   'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'cta': brief['cta'][network]})
+                                   'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'cta': 'Conheça o Marca Salão' if network == 'compartilhado' else brief['cta'][network]})
     for network, caption in brief['legendas'].items():
         path = directory / f'legenda-{network}.txt'
         path.write_text(caption + '\n', encoding='utf-8')
@@ -262,8 +269,9 @@ def export_bundle(brief, background, output_root, source, artworks=None):
                                         'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
     (directory / 'README.md').write_text(
         '# Marca Salão — pacote preparado\n\nNão publicado, não agendado e sem rascunhos criados. '
-        'Revisão humana obrigatória de imagem, alegações, legendas e link da bio.\n\n'
-        'Escolha apenas UMA variante por rede para cada post; quadrado e vertical são alternativas. '
+        'Revisão humana obrigatória de imagem, alegações, legendas e link da bio.\n\n' +
+        ('Use a mesma arte quadrada nas duas redes, com a legenda correspondente. '
+         if shared_image is not None else 'Escolha apenas UMA variante por rede para cada post; quadrado e vertical são alternativas. ') +
         'Stories requer pedido específico; não criar adesivo de link nem simular botão clicável.\n\n'
         'Hermes: consulte manifest.json e o guia HERMES-POSTIZ.md do workflow. Faça upload da imagem '
         'selecionada e consulte os schemas atuais dos canais antes de criar rascunho. '

@@ -1,0 +1,41 @@
+{
+  "1": {
+    "class_type": "MarcaSalaoBriefQuadradoIA",
+    "inputs": {
+      "campanha": "financeiro-quadrado-compartilhado",
+      "tema": "Gestão financeira",
+      "titulo": "Mais clareza nas finanças do seu salão.",
+      "texto": "Receita por período | Ticket médio | Transações recentes",
+      "legenda_facebook": "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+      "legenda_instagram": "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+      "direcao_visual": "Calculadora menta com visor desligado, agenda de papel sem inscrições e caneta com detalhe dourado no canto inferior direito da bancada. Preservar parede verde-petróleo, mármore, planta e espelho dourado da referência.",
+      "link_bio_confirmado": true
+    }
+  },
+  "2": {
+    "class_type": "MarcaSalaoArteIA",
+    "inputs": {
+      "brief": [
+        "1",
+        1
+      ],
+      "rede": "compartilhado",
+      "formato": "quadrado",
+      "revisao": 1
+    }
+  },
+  "3": {
+    "class_type": "MarcaSalaoPacoteQuadradoIA",
+    "inputs": {
+      "brief": [
+        "1",
+        1
+      ],
+      "imagem": [
+        "2",
+        0
+      ],
+      "origem": "gemini"
+    }
+  }
+}

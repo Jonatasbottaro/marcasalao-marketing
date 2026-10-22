@@ -42,3 +42,7 @@ Consulte `WORKFLOW.md` para o fluxo completo.
 - Próximas artes: chamada específica por rede, sem simular botão clicável na imagem. Stories com adesivo são outro formato e precisam de autorização para publicar.
 - Preservar posts e legenda.txt originais; manter revisões em legenda-facebook.txt e legenda-instagram.txt. Edição nativa não comprova sincronização do histórico Postiz.
 - Não configurar WhatsApp/telefone comercial nem alterar Marca Salão ou anúncios.
+
+## Arte quadrada compartilhada Marca Salão — 22/10/2026
+
+Por pedido posterior explícito do titular: gerar somente UMA arte quadrada e usar o mesmo arquivo nas duas redes, com legendas adaptadas para economizar API. Neste modo, usar CTA neutra “Conheça o Marca Salão” na imagem; substitui a chamada específica por rede dentro da arte. Manter URL completa na legenda Facebook e link da bio no Instagram somente confirmado. Outros formatos/segunda arte só mediante pedido. Workflow08 é padrão; workflow09/--square-art reutiliza uma arte sem Gemini. Não publicar/agendar nem criar rascunhos por um pedido de configurar/prévia.

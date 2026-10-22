@@ -51,12 +51,18 @@ def download_bundle(manifest, output, fetch_image):
             or postiz.get('media_uploaded') is not False or postiz.get('drafts_created') is not False
             or postiz.get('integrations') != integrations):
         raise ValueError('Pacote não está no estado preparado/revisão ou tem canais inválidos.')
-    if not isinstance(manifest.get('images'), list) or len(manifest['images']) != 6 or set(manifest.get('captions', {})) != set(integrations):
-        raise ValueError('Pacote incompleto: são necessárias seis artes e duas legendas.')
+    shared = manifest.get('visual_standard') == 'quadrado-compartilhado-ia-v4'
+    if not isinstance(manifest.get('images'), list) or len(manifest['images']) != (1 if shared else 6) or set(manifest.get('captions', {})) != set(integrations):
+        raise ValueError('Pacote incompleto: confira imagens e duas legendas.')
+    if shared:
+        item = manifest['images'][0]
+        if (item.get('network') != 'compartilhado' or item.get('format') != 'quadrado'
+                or postiz.get('media_by_network') != {n: item.get('file') for n in integrations}):
+            raise ValueError('Arte compartilhada ou destinos inválidos.')
     seen = set()
     for item in manifest['images']:
         pair = item.get('network'), item.get('format')
-        if pair in seen or pair[0] not in integrations or pair[1] not in sizes or (item.get('width'), item.get('height')) != sizes[pair[1]]:
+        if pair in seen or pair[0] not in (('compartilhado',) if shared else integrations) or pair[1] not in sizes or (item.get('width'), item.get('height')) != sizes[pair[1]]:
             raise ValueError('Rede, formato ou dimensões inválidas no manifesto.')
         seen.add(pair)
     bundle = safe_relative(manifest['bundle'])
@@ -123,6 +129,7 @@ def main():
     group.add_argument('--resume', type=Path, help='Arquivo de estado existente; consulta sem reenviar geração.')
     parser.add_argument('--state', type=Path, help='Obrigatório em novo pedido; deve ser um arquivo novo.')
     local_group = parser.add_mutually_exclusive_group()
+    local_group.add_argument('--square-art', type=Path, help='Reutilizar uma arte quadrada completa nas duas redes; sem Gemini.')
     local_group.add_argument('--artworks', nargs=6, type=Path, metavar='PNG', help='Reutilizar seis artes completas: Facebook quadrado/vertical/stories, depois Instagram na mesma ordem. Sem Gemini.')
     local_group.add_argument('--background', type=Path, help='LEGADO v2: compor fundo com textos locais. Não usar para arte completa IA.')
     parser.add_argument('--output', type=Path, required=True)
@@ -145,11 +152,13 @@ def main():
         with args.state.open('x') as f:
             json.dump({'status': 'submitting', 'warning': 'Se interrompido, consultar fila/histórico antes de repetir.'}, f)
         local = bool(args.background)
-        template = '07-marcasalao-reutilizar-artes-ia.api.json' if args.artworks else '05-marcasalao-imagem-local.api.json' if local else '06-marcasalao-arte-integral-ia.api.json'
+        template = '07-marcasalao-reutilizar-artes-ia.api.json' if args.artworks else '05-marcasalao-imagem-local.api.json' if local else '09-marcasalao-reutilizar-quadrado.api.json' if args.square_art else '08-marcasalao-quadrado-compartilhado.api.json'
         prompt = json.loads((ROOT / 'workflows' / template).read_text())
         prompt['1']['inputs'] = brief
         if local:
             prompt['2']['inputs']['image'] = upload_background(args.background)
+        if args.square_art:
+            prompt['2']['inputs']['image'] = upload_background(args.square_art)
         if args.artworks:
             for ident,path in zip(('2','4','5','6','7','8'),args.artworks):
                 prompt[ident]['inputs']['image'] = upload_background(path)

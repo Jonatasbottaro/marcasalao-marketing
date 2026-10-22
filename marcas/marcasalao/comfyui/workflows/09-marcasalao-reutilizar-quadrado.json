@@ -1,0 +1,159 @@
+{
+  "last_node_id": 3,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MarcaSalaoBriefQuadradoIA",
+      "pos": [
+        20,
+        100
+      ],
+      "size": [
+        420,
+        660
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pedido_imagem",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "brief_validado",
+          "type": "MS_BRIEF",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MarcaSalaoBriefQuadradoIA"
+      },
+      "widgets_values": [
+        "financeiro-quadrado-compartilhado",
+        "Gestão financeira",
+        "Mais clareza nas finanças do seu salão.",
+        "Receita por período | Ticket médio | Transações recentes",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Mais clareza nas finanças do seu salão. 💚📊\n\nAtender bem também passa por acompanhar os números da rotina. No Marca Salão, o painel financeiro ajuda você a consultar:\n\n💰 RECEITA POR PERÍODO\nVeja o valor dos atendimentos concluídos hoje, nesta semana ou neste mês.\n\n🧮 TICKET MÉDIO\nAcompanhe o valor médio por atendimento concluído no período selecionado.\n\n📋 TRANSAÇÕES RECENTES\nConsulte os registros de pagamentos com informações de cliente, profissional, serviço e valor.\n\nEssas informações ajudam a entender o movimento do salão e planejar os próximos passos com mais clareza.\n\nMantenha os registros de atendimentos e pagamentos atualizados para que o painel reflita a rotina do negócio.\n\nVocê já acompanha os números do seu salão com frequência?\n\n#MarcaSalão #GestãoFinanceira #GestãoDeSalão #SalãoDeBeleza #EmpreendedorismoNaBeleza",
+        "Calculadora menta com visor desligado, agenda de papel sem inscrições e caneta com detalhe dourado no canto inferior direito da bancada. Preservar parede verde-petróleo, mármore, planta e espelho dourado da referência.",
+        true
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        520,
+        100
+      ],
+      "size": [
+        390,
+        420
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "SELECIONE-UMA-ARTE-QUADRADA.png",
+        "image"
+      ],
+      "title": "Reutilizar uma arte quadrada · sem API"
+    },
+    {
+      "id": 3,
+      "type": "MarcaSalaoPacoteQuadradoIA",
+      "pos": [
+        1020,
+        100
+      ],
+      "size": [
+        520,
+        720
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brief",
+          "type": "MS_BRIEF",
+          "link": 1
+        },
+        {
+          "name": "imagem",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MarcaSalaoPacoteQuadradoIA"
+      },
+      "widgets_values": [
+        "imagem_local"
+      ],
+      "title": "Uma imagem compartilhada + duas legendas · sem publicar"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      1,
+      3,
+      0,
+      "MS_BRIEF"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      1,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        20,
+        20
+      ]
+    },
+    "marca_salao_standard": "quadrado-compartilhado-ia-v4"
+  },
+  "version": 0.4
+}

@@ -135,7 +135,7 @@ class MarcaSalaoArteIA(GeminiText):
     @classmethod
     def INPUT_TYPES(cls):
         return {'required': {'brief': ('MS_BRIEF',),
-                             'rede': (['facebook','instagram'],),
+                             'rede': (['facebook','instagram','compartilhado'],),
                              'formato': (['quadrado','vertical','stories'],),
                              'revisao': ('INT', {'default':1,'min':1,'max':999})}}
     RETURN_TYPES = ('IMAGE','STRING')
@@ -184,3 +184,41 @@ NODE_CLASS_MAPPINGS.update({'MarcaSalaoBriefIA':MarcaSalaoBriefIA,'MarcaSalaoArt
 NODE_DISPLAY_NAME_MAPPINGS.update({'MarcaSalaoBriefIA':'Marca Salão · 1 Brief e roteiro da arte completa',
                                  'MarcaSalaoArteIA':'Marca Salão · 2 Gemini cria arte completa 2K',
                                  'MarcaSalaoPacoteIA':'Marca Salão · 3 Exportar sem redesenhar'})
+
+
+class MarcaSalaoBriefQuadradoIA(MarcaSalaoBriefIA):
+    def run(self, **kwargs):
+        from .brand import prepare_brief
+        from .artwork import full_prompt
+        brief = prepare_brief(**kwargs)
+        return full_prompt(brief, 'compartilhado', 'quadrado'), brief
+
+
+class MarcaSalaoPacoteQuadradoIA(MarcaSalaoPackage):
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {'required': {'brief': ('MS_BRIEF',), 'imagem': ('IMAGE',),
+                             'origem': (['gemini', 'imagem_local'],)}}
+
+    CATEGORY = 'Marca Salão/Arte integral IA'
+
+    def run(self, brief, imagem, origem='gemini'):
+        import json
+        import numpy as np
+        from PIL import Image
+        import folder_paths
+        from .brand import export_bundle
+        if len(imagem.shape) != 4 or imagem.shape[0] != 1:
+            raise ValueError('Use uma única arte quadrada compartilhada.')
+        pixels = np.rint(np.clip(imagem[0].cpu().numpy(), 0, 1) * 255).astype(np.uint8)
+        manifest = export_bundle(brief, None, folder_paths.get_output_directory(), origem,
+                                 shared_image=Image.fromarray(pixels))
+        text = json.dumps(manifest, ensure_ascii=False, indent=2)
+        previews = [{'filename': item['file'], 'subfolder': manifest['bundle'], 'type': 'output'} for item in manifest['images']]
+        return {'ui': {'images': previews, 'text': [text]}, 'result': (text,)}
+
+
+NODE_CLASS_MAPPINGS.update({'MarcaSalaoBriefQuadradoIA': MarcaSalaoBriefQuadradoIA,
+                           'MarcaSalaoPacoteQuadradoIA': MarcaSalaoPacoteQuadradoIA})
+NODE_DISPLAY_NAME_MAPPINGS.update({'MarcaSalaoBriefQuadradoIA': 'Marca Salão · Brief para uma arte compartilhada',
+                                  'MarcaSalaoPacoteQuadradoIA': 'Marca Salão · Uma imagem e duas legendas'})
