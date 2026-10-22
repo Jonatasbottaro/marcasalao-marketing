@@ -30,6 +30,9 @@ O arquivo state deve ser novo e é reservado antes de enviar o pedido. O padrão
 
 Para reutilizar seis artes completas, acrescentar --artworks seguido de seis PNGs nesta ordem: Facebook quadrado, vertical, Stories, Instagram quadrado, vertical, Stories. O workflow07 apenas escala/exporta. --background é opção explicitamente LEGADA v2 para fundos sem texto; não usar com as artes novas.
 
+
+O histórico ComfyUI pode desaparecer após reinício do serviço; pacotes e cache em disco permanecem. Se --resume não encontrar o prompt_id após reinício, usar o pacote já exportado ou workflow07 com os seis arquivos completos, conferindo hashes. Não reenviar pedidos pagos às cegas nem apagar estados incertos para liberar nova chamada.
+
 ## Brief e legendas
 
 exemplo-brief.json tem os campos atuais. Preencher campanha com slug; tema, titulo e texto com conteúdo verificável. texto contém até três benefícios separados por | ou quebra de linha. direcao_visual descreve objetos/cenário relacionados ao tema. Não copiar finanças/benefícios antigos para campanhas diferentes.
