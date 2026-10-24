@@ -47,3 +47,15 @@ Arquivar localmente em pasta nova marcas/marcasalao/posts/AAAA-MM-DD-tema/: arte
 No bot, enviar a arte como mídia usando o mecanismo suportado (arquivo local autorizado) e mostrar as duas legendas completas; se corpo comum, mostrá-lo integral e separar CTAs de Facebook/Instagram e encerramento. Se envio inline não estiver disponível, oferecer link de prévia real, sem inventar entrega. Entregar links dos dois rascunhos e informar “rascunhos, nada publicado ou agendado”. Não enviar mensagens a outros destinatários nem outros chats.
 
 Exemplo de pedido do titular: “Prepare o próximo conteúdo inédito do MarcaSalão e deixe os dois rascunhos no Postiz, sem publicar.”
+
+## Envio obrigatório com validação — correção23/10/2026
+
+Nova arte de campanha precisa do workflow08 e de pacote correspondente à saída real do ComfyUI. É proibido substituir por composição manual local. Se o ComfyUI não estiver disponível, parar e informar, sem fallback visual. Antes do upload, executar:
+
+    python3 /dados/aplicacoes/comfyui-servidor02/marcasalao_media_guard.py upload --package /caminho/pacote --prompt-id UUID_COMFYUI --state /caminho/upload-exclusivo.json
+
+Esse comando valida execução concluída, grafo08, manifesto, legendas, imagem1080×1080 e bytes da saída ComfyUI; faz um upload e registra a mídia validada. O CLI postiz upload direto do Marca Salão está bloqueado; não usar caminho interno do CLI ou HTTP alternativo para contornar o validador. O hook de ferramentas rejeita DRAFT com mídia não registrada e criação repetida para a mesma mídia/canal. Usar id/path devolvidos pelo validador nas ferramentas MCP. Se o hook bloquear, resolver a proveniência/duplicação; não contornar.
+
+Revisão de campanha existente deve ATUALIZAR os mesmos IDs, nunca chamar criação como se fosse campanha nova. Consultar estado, conteúdo e anexo antes de repetir. Para atualização autorizada, usar o procedimento REST de upsert existente (type=draft, republish=false, value[].id igual ao ID existente), preservando grupo/canal e validando contagem/IDs após cada atualização. Se o método não puder preservar IDs, parar. Remover duplicados somente se houver pedido explícito, após confirmar os dois registros preservados e fazer cópia privada do estado anterior.
+
+A imagem gerada deve ser comparada visualmente às referências aprovadas, além dos hashes. O guard valida proveniência, não substitui a avaliação visual. Não editar a imagem completa com ferramenta local. Nenhuma correção autoriza publicação/agendamento. A data editorial usa a data efetiva do pedido em America/Sao_Paulo; não inferir agendamento a partir de datas preenchidas num DRAFT.
