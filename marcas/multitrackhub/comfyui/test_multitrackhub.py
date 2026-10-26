@@ -9,8 +9,14 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from PIL import Image
-ROOT=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT/'custom_nodes'))
+ROOT=Path(__file__).resolve().parent
+# O pacote usa o cliente compartilhado, mantido na base Marca Salão do acervo.
+# Montar apenas o namespace de fontes evita depender da instalação do ComfyUI.
+import types
+package=types.ModuleType('servidor02_gemini')
+package.__path__=[str(ROOT/'custom_nodes'/'servidor02_gemini'),
+                 str(ROOT.parents[1]/'marcasalao'/'comfyui'/'custom_nodes'/'servidor02_gemini')]
+sys.modules['servidor02_gemini']=package
 sys.path.insert(0,str(ROOT))
 try:
  from servidor02_gemini.multitrackhub import brand

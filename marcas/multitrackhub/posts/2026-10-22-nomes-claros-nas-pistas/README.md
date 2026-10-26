@@ -38,6 +38,10 @@ Após criação: 18 registros Multitrack, 10 publicados anteriores e 8 rascunhos
 
 ## Arquivos
 
-brief.json; arte-compartilhada-quadrado.png; legenda-facebook.txt; legenda-instagram.txt; manifest.json; RESULTADO.json; postiz-verificacao.json.
+brief.json; arte-compartilhada-quadrado.png; legenda-facebook.txt; legenda-instagram.txt; manifest.json. Relatórios operacionais e respostas completas do Postiz são mantidos somente no acervo privado do servidor.
 
-O manifesto original é preservado como prepared antes do upload/rascunhos; RESULTADO.json registra o estado posterior real. Evidências brutas de leitura ficam apenas no cache privado do perfil, não são incluídas no checkout. Trabalho anterior não rastreado em marcas/multitrackhub/comfyui/ preservado. Nenhuma configuração, serviço, credencial ou automação alterado.
+O manifesto original é preservado como prepared antes do upload/rascunhos; a evidência operacional posterior fica no acervo privado. Evidências brutas de leitura ficam apenas no cache privado do perfil, não são incluídas no checkout. Trabalho anterior não rastreado em marcas/multitrackhub/comfyui/ preservado. Nenhuma configuração, serviço, credencial ou automação alterado.
+
+## Revisão de arquivamento — 25/10/2026
+
+Este documento registra o estado histórico da preparação, sem nova consulta ou alteração do Postiz nesta revisão. Os relatórios operacionais foram retirados da versão atual do repositório; as cópias originais permanecem privadas no servidor. Arte, legendas, brief e manifesto editorial foram preservados. Esta revisão não publica, agenda nem remove conteúdo nas redes.

@@ -1,7 +1,12 @@
 FROM comfyui-servidor02:0.42.1-marketing-v4-20261022
 USER root
 COPY custom_nodes/servidor02_gemini/multitrackhub /opt/ComfyUI/custom_nodes/servidor02_gemini/multitrackhub
-COPY custom_nodes/servidor02_gemini/__init__.py /opt/ComfyUI/custom_nodes/servidor02_gemini/__init__.py
+# Registrar os novos nós preservando o módulo principal da imagem-base.
+RUN printf '\n%s\n' \
+    'from .multitrackhub import NODE_CLASS_MAPPINGS as _mhh_classes, NODE_DISPLAY_NAME_MAPPINGS as _mhh_names' \
+    'NODE_CLASS_MAPPINGS.update(_mhh_classes)' \
+    'NODE_DISPLAY_NAME_MAPPINGS.update(_mhh_names)' \
+    >> /opt/ComfyUI/custom_nodes/servidor02_gemini/__init__.py
 RUN chmod -R a+rX /opt/ComfyUI/custom_nodes/servidor02_gemini && mkdir -p "/data/user/default/workflows/Multitrack Hub"
 COPY ["workflows/10-multitrackhub-criar-anuncio.json", "workflows/11-multitrackhub-reutilizar-arte.json", "/data/user/default/workflows/Multitrack Hub/"]
 RUN chown -R 1002:1002 "/data/user/default/workflows/Multitrack Hub"
