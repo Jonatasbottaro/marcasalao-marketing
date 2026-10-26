@@ -1,0 +1,11 @@
+Crie UMA ARTE PUBLICITÁRIA COMPLETA QUADRADA 1:1 da Multitrack Hub. A imagem anexada é referência de identidade e acabamento das artes já publicadas; use somente os textos ATUAIS deste pedido. Tema: {tema}. A arte deve sair pronta com logo, título, tópicos, CTA e domínio em português brasileiro exato.
+
+IDENTIDADE OFICIAL DO SITE: turquesa primário #00FFFF (hsl180 100% 50%), fundo quase preto #09090B (hsl240 10% 4%), painéis #121216 e texto branco #FAFAFA. Tipografia Inter/sans-serif geométrica, hierarquia forte. Preservar símbolo M formado por sete pistas de áudio turquesa, proporções e nome exato “Multitrack Hub” como na referência. Logo no topo central com margem segura; sem outras marcas.
+
+CENÁRIO/DESIGN: ambiente musical e tecnológico sofisticado, pistas de áudio e formas de onda turquesa discretas nas laterais, profundidade e luz suave sobre fundo preto, sem excesso de brilho. Espaço central limpo para leitura. Blocos/tópicos com ícones turquesa ligados ao tema; separadores finos e contornos escuros discretos, como o anúncio de rateios da marca. Não fabricar telas de aplicativo nem dados, números, selos, nomes de artistas ou estatísticas. Direção específica: {direcao_visual}
+
+TÍTULO EXATO: “{titulo}”. Branco, grande e sem serifa, duas ou três linhas equilibradas; destaque opcional turquesa em parte do título sem perder legibilidade. Nada cortado ou deformado.
+TÓPICOS EXATOS: {beneficios}. Até três itens, cada um com ícone musical/funcional simples e texto branco, espaçamento confortável. Não copiar os textos da referência para este tema.
+CTA EXATA: “Conheça a Multitrack Hub”. DOMÍNIO EXATO ABAIXO: “multitrackhub.com.br”. Sans-serif com alto contraste e margens seguras. Não simular botão clicável, seta de clique, adesivo de link ou chamada específica de Facebook/Instagram: a MESMA arte será usada nas duas redes e as chamadas distintas ficam nas legendas.
+
+SAÍDA: uma única arte final premium, preto/turquesa/branco, logo fiel, textos completos/acentuados, boa hierarquia, sem marca d'água ou texto extra, sem contatos/WhatsApp/telefone, sem promessas de preço, renda, direitos autorais, disponibilidade de músicas ou resultados. Não retornar apenas um fundo. Não acrescentar elementos de outra identidade visual nem alterar o monograma musical.

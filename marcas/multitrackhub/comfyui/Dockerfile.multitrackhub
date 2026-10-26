@@ -1,0 +1,9 @@
+FROM comfyui-servidor02:0.42.1-marketing-v4-20261022
+USER root
+COPY custom_nodes/servidor02_gemini/multitrackhub /opt/ComfyUI/custom_nodes/servidor02_gemini/multitrackhub
+COPY custom_nodes/servidor02_gemini/__init__.py /opt/ComfyUI/custom_nodes/servidor02_gemini/__init__.py
+RUN chmod -R a+rX /opt/ComfyUI/custom_nodes/servidor02_gemini && mkdir -p "/data/user/default/workflows/Multitrack Hub"
+COPY ["workflows/10-multitrackhub-criar-anuncio.json", "workflows/11-multitrackhub-reutilizar-arte.json", "/data/user/default/workflows/Multitrack Hub/"]
+RUN chown -R 1002:1002 "/data/user/default/workflows/Multitrack Hub"
+USER 1002:1002
+RUN python -c "from pathlib import Path; import json; json.loads(Path('/data/user/default/workflows/Multitrack Hub/10-multitrackhub-criar-anuncio.json').read_text())"

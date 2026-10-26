@@ -1,0 +1,36 @@
+{
+  "1": {
+    "class_type": "MultitrackHubBrief",
+    "inputs": {
+      "campanha": "exemplo-multitrackhub",
+      "tema": "Possibilidades musicais",
+      "titulo": "Sua música. Novas possibilidades.",
+      "texto": "Multitracks | Playbacks | Rateios",
+      "legenda_facebook": "Conheça a Multitrack Hub e consulte as informações no site.\n\nO que você quer preparar para o próximo ensaio?\n\n#MultitrackHub #Multitracks #Playbacks",
+      "legenda_instagram": "Conheça a Multitrack Hub e consulte as informações no site.\n\nO que você quer preparar para o próximo ensaio?\n\n#MultitrackHub #Multitracks #Playbacks",
+      "direcao_visual": "Pistas de áudio e formas de onda em turquesa sobre fundo quase preto. Layout musical moderno, sem telas fictícias, pessoas ou objetos de salão.",
+      "link_bio_confirmado": false,
+      "destino": "site"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "SELECIONE-ARTE-MULTITRACKHUB.png"
+    }
+  },
+  "3": {
+    "class_type": "MultitrackHubPacoteIA",
+    "inputs": {
+      "brief": [
+        "1",
+        1
+      ],
+      "imagem": [
+        "2",
+        0
+      ],
+      "origem": "imagem_local"
+    }
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "last_node_id": 3,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "MultitrackHubBrief",
+      "pos": [
+        20,
+        100
+      ],
+      "size": [
+        420,
+        660
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pedido_imagem",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "brief_multitrackhub",
+          "type": "MHH_BRIEF",
+          "links": [
+            1,
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MultitrackHubBrief"
+      },
+      "widgets_values": [
+        "exemplo-multitrackhub",
+        "Possibilidades musicais",
+        "Sua música. Novas possibilidades.",
+        "Multitracks | Playbacks | Rateios",
+        "Conheça a Multitrack Hub e consulte as informações no site.\n\nO que você quer preparar para o próximo ensaio?\n\n#MultitrackHub #Multitracks #Playbacks",
+        "Conheça a Multitrack Hub e consulte as informações no site.\n\nO que você quer preparar para o próximo ensaio?\n\n#MultitrackHub #Multitracks #Playbacks",
+        "Pistas de áudio e formas de onda em turquesa sobre fundo quase preto. Layout musical moderno, sem telas fictícias, pessoas ou objetos de salão.",
+        false,
+        "site"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MultitrackHubArteIA",
+      "pos": [
+        520,
+        100
+      ],
+      "size": [
+        390,
+        240
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brief",
+          "type": "MHH_BRIEF",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "arte_completa",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "geracao_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MultitrackHubArteIA"
+      },
+      "widgets_values": [
+        1
+      ],
+      "title": "Multitrack Hub · UMA arte quadrada 2K"
+    },
+    {
+      "id": 3,
+      "type": "MultitrackHubPacoteIA",
+      "pos": [
+        1020,
+        100
+      ],
+      "size": [
+        520,
+        720
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "brief",
+          "type": "MHH_BRIEF",
+          "link": 1
+        },
+        {
+          "name": "imagem",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "manifest_json",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MultitrackHubPacoteIA"
+      },
+      "widgets_values": [
+        "gemini"
+      ],
+      "title": "Multitrack Hub · uma imagem e duas legendas"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      1,
+      3,
+      0,
+      "MHH_BRIEF"
+    ],
+    [
+      2,
+      1,
+      1,
+      2,
+      0,
+      "MHH_BRIEF"
+    ],
+    [
+      3,
+      2,
+      0,
+      3,
+      1,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        20,
+        20
+      ]
+    },
+    "brand": "multitrackhub",
+    "standard": "multitrackhub-quadrado-ia-v1"
+  },
+  "version": 0.4
+}
