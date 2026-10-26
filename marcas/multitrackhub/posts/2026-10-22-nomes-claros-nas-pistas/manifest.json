@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "brand": "multitrackhub",
+  "visual_standard": "multitrackhub-quadrado-ia-v1",
+  "campaign": "2026-10-22-nomes-claros-nas-pistas",
+  "bundle": "multitrackhub/2026-10-22-nomes-claros-nas-pistas/20261022T211254Z-b2dff49c37",
+  "created_at": "2026-10-22T21:12:58.310972+00:00",
+  "status": "prepared",
+  "review_required": true,
+  "publication_authorized": false,
+  "background_source": "gemini",
+  "bio_link_confirmed": false,
+  "brief": {
+    "tema": "Organização manual: nomes claros nas pistas da DAW",
+    "titulo": "Dê nome a cada pista.",
+    "texto": "Identifique o instrumento | Diferencie as versões | Mantenha um padrão",
+    "direcao_visual": "Seguir fielmente as referências instaladas da Multitrack Hub: ciano #00FFFF, fundo quase preto #09090B, branco e tipografia limpa. Preservar o logo oficial M de sete pistas de áudio, sem redesenho criativo. Arte musical sofisticada com faixas de áudio abstratas bem separadas e formas de onda; organização visual clara, sem screenshot nem interface fictícia do produto. Título e três tópicos exatos, grandes e legíveis. CTA neutra Conheça a Multitrack Hub e domínio multitrackhub.com.br em texto, sem botão. Não sugerir renomeação automática pelo produto. Sem pessoas, sem telefones. Margens amplas, peça quadrada única compartilhada entre redes.",
+    "destino": "site"
+  },
+  "images": [
+    {
+      "network": "compartilhado",
+      "format": "quadrado",
+      "file": "arte-compartilhada-quadrado.png",
+      "width": 1080,
+      "height": 1080,
+      "sha256": "3ef09d14baebd505c4a4fa11515a5b02705636259fdf721bd15e32f8e3b243b7",
+      "cta": "Conheça a Multitrack Hub"
+    }
+  ],
+  "captions": {
+    "facebook": {
+      "file": "legenda-facebook.txt",
+      "text": "Abriu a sessão e encontrou várias pistas com nomes parecidos?\n\nUma dica de organização na sua DAW: use nomes que expliquem o que há em cada pista.\n\n• Identifique o instrumento: por exemplo, Baixo ou Piano.\n• Diferencie as partes e versões: Guitarra base e Guitarra solo são mais claros do que dois arquivos chamados Guitarra.\n• Mantenha o mesmo padrão de nomes ao longo da sessão e confira o conteúdo antes de renomear.\n\nSão sugestões para organização manual no seu programa de áudio, não uma função automática da Multitrack Hub nem garantia de resultado.\n\nConheça a Multitrack Hub: https://multitrackhub.com.br\nAcesse pelo link da descrição.\n\nComo você costuma nomear as pistas da sua sessão?\n\n#MultitrackHub #ProduçãoMusical #OrganizaçãoDeSessão",
+      "sha256": "cdfbd4abb093eab4de58883beec7fe406307be6bf8154954a61fa7464f1a19e6"
+    },
+    "instagram": {
+      "file": "legenda-instagram.txt",
+      "text": "Baixo, Piano, Guitarra base... Você reconhece suas pistas só pelo nome?\n\nNa sua DAW, experimente um padrão simples:\n\n1. Nome do instrumento.\n2. Parte ou versão, quando precisar diferenciar.\n3. O mesmo critério nas outras pistas.\n\nExemplo: Guitarra base e Guitarra solo, em vez de dois nomes iguais. Ouça e confira o conteúdo antes de renomear.\n\nÉ uma dica de organização manual no seu programa de áudio, não uma função automática da Multitrack Hub nem promessa de resultado.\n\nConheça a Multitrack Hub: @multitrackhub.\n\nQual padrão de nomes funciona para você?\n\n#MultitrackHub #ProduçãoMusical #OrganizaçãoDeSessão",
+      "sha256": "2e9226b1d82feb2da6aba60c8b5d8a93364ea29064f424bf81ae296838d0f836"
+    }
+  },
+  "postiz": {
+    "mode": "draft_only",
+    "integrations": {
+      "facebook": "cmvbss5fn0005msbhhbdy6ing",
+      "instagram": "cmvbsudg50007msbh2j4734i4"
+    },
+    "preferred_feed_format": "quadrado",
+    "media_by_network": {
+      "facebook": "arte-compartilhada-quadrado.png",
+      "instagram": "arte-compartilhada-quadrado.png"
+    },
+    "media_uploaded": false,
+    "drafts_created": false,
+    "story_requires_separate_request": true
+  },
+  "sources": [
+    "https://github.com/swnsolucoes/Multitrack/blob/main/artifacts/multitrack-hub/src/index.css",
+    "https://github.com/swnsolucoes/Multitrack/blob/main/docs/contexto/LOGO-MULTITRACKHUB.md"
+  ]
+}

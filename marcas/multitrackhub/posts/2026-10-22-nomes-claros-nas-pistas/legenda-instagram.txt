@@ -1,0 +1,17 @@
+Baixo, Piano, Guitarra base... Você reconhece suas pistas só pelo nome?
+
+Na sua DAW, experimente um padrão simples:
+
+1. Nome do instrumento.
+2. Parte ou versão, quando precisar diferenciar.
+3. O mesmo critério nas outras pistas.
+
+Exemplo: Guitarra base e Guitarra solo, em vez de dois nomes iguais. Ouça e confira o conteúdo antes de renomear.
+
+É uma dica de organização manual no seu programa de áudio, não uma função automática da Multitrack Hub nem promessa de resultado.
+
+Conheça a Multitrack Hub: @multitrackhub.
+
+Qual padrão de nomes funciona para você?
+
+#MultitrackHub #ProduçãoMusical #OrganizaçãoDeSessão
