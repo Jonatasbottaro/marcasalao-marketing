@@ -12,7 +12,7 @@ O titular aprovou a arte e as duas legendas apresentadas no Telegram com “Pode
 - Instagram cmvvgzjin0001ms95km2j3e91: PUBLISHED; releaseId=18127938994928824; error=null.
 - Link: https://www.instagram.com/p/DfIjd8Nm3u5/
 
-IDs originais, arte e legendas aprovadas preservados. Inventário antes/depois manteve os mesmos IDs, sem duplicatas; todos os outros registros permaneceram iguais. Não houve nova geração, upload ou agendamento. Documentação atualizada localmente, sem commit/push automático.
+IDs originais, arte e legendas aprovadas preservados. Inventário antes/depois manteve os mesmos IDs, sem duplicatas; todos os outros registros permaneceram iguais. Não houve nova geração, upload ou agendamento. A documentação foi inicialmente atualizada somente no checkout local. Após a autorização de arquivamento de 30/10/2026, os materiais finais foram enviados ao GitHub e verificados conforme a seção de arquivo abaixo.
 
 ## Histórico de preparação — rascunhos e prévias
 
@@ -46,4 +46,8 @@ Path: https://postiz.swnsolucoes.com.br/uploads/2026/10/30/178a0423770fce9a479be
 
 52 registros anteriores preservados integralmente; exatamente dois IDs novos, total organizacional 54. IDs/canais/estados conferidos, legendas integrais iguais aos arquivos (ignorando só newline final), mesmo anexo nas duas prévias, bytes da mídia servida iguais ao PNG local. Nenhum conteúdo ou canal Multitrack alterado.
 
-Arquivos: arte-compartilhada-quadrado.png, legenda-facebook.txt, legenda-instagram.txt, README.md. Brief, estados/cache e inventários ficam no diretório privado de trabalho, fora do arquivo público. Tudo arquivado localmente no checkout autorizado; sem commit/push automático. Publicação depende de autorização futura específica sobre esta arte e estas legendas.
+Arquivos: arte-compartilhada-quadrado.png, legenda-facebook.txt, legenda-instagram.txt, README.md. Brief, estados/cache e inventários ficam no diretório privado de trabalho, fora do arquivo público. A preparação ficou inicialmente apenas local; a publicação foi posteriormente autorizada e concluída, conforme o estado atual acima.
+
+### Arquivo no GitHub — 30/10/2026
+
+O titular aprovou manter as campanhas documentadas no repositório após aprovação da arte e legendas. Os quatro arquivos finais desta campanha foram enviados a `main` no commit `f23b9ca481a3d946411948949f979fbc77671853`, junto ao guia `docs/ARQUIVAMENTO-DE-CAMPANHAS.md`. O commit remoto foi confirmado por `git ls-remote`/fetch e os bytes dos quatro arquivos foram comparados com os blobs de `origin/main`, todos iguais aos locais. O hash da arte consta acima. Este registro documenta a sincronização já realizada; o commit desta atualização do README pode ser consultado no histórico Git da pasta. Nenhuma nova geração, publicação ou alteração de posts foi necessária para arquivar os materiais.
