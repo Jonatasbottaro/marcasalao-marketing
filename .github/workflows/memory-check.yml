@@ -1,0 +1,16 @@
+name: Validar estrutura de memória
+on:
+  push:
+    paths: ['memory/**', '.ai-memory.toml', '**/.ai-memory.toml', 'marcas/*/posts/**', 'tools/memory_sync.py', 'tools/tests/test_memory_sync.py', '.github/workflows/memory-check.yml']
+  pull_request:
+    paths: ['memory/**', '.ai-memory.toml', '**/.ai-memory.toml', 'marcas/*/posts/**', 'tools/memory_sync.py', 'tools/tests/test_memory_sync.py', '.github/workflows/memory-check.yml']
+jobs:
+  memory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -s tools/tests -p "test_memory_sync.py" -v
+      - run: python tools/memory_sync.py --scope all --plan
