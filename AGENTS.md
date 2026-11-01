@@ -1,5 +1,11 @@
 # Regras do projeto Marca Salão Marketing
 
+## Referências recentes de qualidade — 31/10/2026
+
+Para Marca Salão e Multitrack Hub, consultar primeiro o histórico e a fila reais no Postiz. Usar as DUAS CAMPANHAS distintas aprovadas e publicadas mais recentes de cada marca como referência principal de arte e texto; Facebook/Instagram da mesma campanha contam como uma referência. Conferir visualmente as artes e ler as legendas atuais. Atualizar essa seleção quando houver novas publicações aprovadas.
+
+Rascunhos antigos não são referência de qualidade nem fila automaticamente aprovada. Desconsiderá-los como modelo, preservando seus IDs e conteúdos; não excluir ou editar sem pedido específico. Preservar o histórico anterior para evitar repetição de temas e manter rastreabilidade. Na memória de cada marca, destacar as duas referências recentes e distinguir snapshots históricos do estado remoto atual. Esta regra não autoriza publicar, agendar ou gerar campanhas adicionais.
+
 ## Regra de produção: vídeo sem áudio
 
 - Gerar vídeos com legendas visíveis e sincronizadas às cenas.
