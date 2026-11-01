@@ -1,0 +1,17 @@
+# Modelo para uma instalação dedicada. Não sobrescrever configuração existente.
+# Sem llm_provider/llm_fallbacks: consolidação local sem chamadas a modelos.
+embedding_provider = "none"
+capture_assistant = false
+
+[maintenance]
+forget_sweep_interval_secs = 0
+
+[auto_improve]
+require_approval = true
+on_session_end = false
+
+[auto_improve.scheduler]
+enabled = false
+
+[dream]
+enabled = false

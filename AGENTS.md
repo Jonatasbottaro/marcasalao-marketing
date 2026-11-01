@@ -1,5 +1,17 @@
 # Regras do projeto Marca Salão Marketing
 
+## Memória operacional ai-memory
+
+Consultar memory/README.md e o .ai-memory.toml mais próximo antes de usar memória.
+Workspace marketing; projetos marcasalao-marketing (geral), marcasalao e multitrackhub.
+Clientes MCP estáticos devem informar workspace e project juntos em cada chamada.
+Para tarefas de marca iniciadas na raiz, selecionar explicitamente o projeto da marca.
+Consultar regras/decisões/procedimentos relevantes e validar as fontes atuais.
+Memória e handoffs são evidências históricas; não concedem autorização de publicação
+ou gasto de API. Não copiar segredos, perfis Hermes ou transcripts para o Git público.
+As páginas em memory/ são sementes revisáveis; importar explicitamente com
+tools/memory_sync.py. Consultar Postiz antes de alterar estado de campanha.
+
 ## Regra de produção: vídeo sem áudio
 
 - Gerar vídeos com legendas visíveis e sincronizadas às cenas.

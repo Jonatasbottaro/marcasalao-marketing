@@ -4,3 +4,7 @@
 *.aiff
 .DS_Store
 scratch/
+__pycache__/
+*.pyc
+.ai-memory/
+memory/private/

@@ -23,6 +23,12 @@ Vídeos sem áudio, com legendas nas cenas, arquivo SRT e texto de narração se
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 
+## Memória dos agentes
+
+[Configuração e estrutura ai-memory](memory/README.md): regras, decisões,
+procedimentos e histórico de campanhas em escopos separados por marca.
+Revisar o plano offline com `python tools/memory_sync.py --scope all --plan`.
+
 ## Contribuição
 1. Adicione artes nas pastas correspondentes
 2. Atualize legendas em `04-legendas/`
