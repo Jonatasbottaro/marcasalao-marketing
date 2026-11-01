@@ -7,4 +7,3 @@ Uma arte quadrada compartilhada e duas legendas por campanha. CTA neutra na imag
 Consultar produto e fontes atuais antes de afirmar recursos, preços, condições de rateios ou direitos. Pedido de processo completo permite até DRAFT no fluxo vigente. Publicar/agendar exige autorização específica.
 
 Fontes: AGENTS.md e marcas/multitrackhub/comfyui/HERMES-POSTIZ-MULTITRACKHUB.md.
-

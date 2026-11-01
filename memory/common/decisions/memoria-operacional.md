@@ -7,4 +7,3 @@ Workspace: marketing. Projetos: marcasalao-marketing para trabalho geral, marcas
 As páginas de campanha são snapshots do README oficial com referência ao commit. Não expiram automaticamente. Alterações remotas diferentes são reportadas como conflito para revisão; o importador inicial não as sobrescreve.
 
 Fonte: pedido de integração nesta conversa e memory/README.md.
-

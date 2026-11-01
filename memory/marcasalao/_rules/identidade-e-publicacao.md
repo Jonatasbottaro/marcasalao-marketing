@@ -7,4 +7,3 @@ Uma campanha sem quantidade significa uma arte quadrada compartilhada e duas leg
 Pedido de conteúdo novo/processo completo permite seguir até dois DRAFT conforme o fluxo vigente. Pedido de ideias/prévia limita-se a essa etapa. Publicar/agendar exige autorização específica. Não criar recorrência nem alterar outras campanhas/marcas.
 
 Fonte: AGENTS.md e marcas/marcasalao/comfyui/FLUXO-COMPLETO-MARCA-SALAO.md.
-

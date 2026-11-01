@@ -5,4 +5,3 @@ Decisão documentada em 22/10/2026: usar nós e exportador exclusivos da marca. 
 O perfil Hermes multitrackhub-marketing mantém contexto e credenciais próprios. A existência de uma organização Postiz compartilhada não autoriza operações entre marcas.
 
 Fonte: marcas/multitrackhub/comfyui/HERMES-POSTIZ-MULTITRACKHUB.md.
-

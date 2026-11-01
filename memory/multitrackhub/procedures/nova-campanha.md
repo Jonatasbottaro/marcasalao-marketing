@@ -7,4 +7,3 @@ Gerar uma arte quadrada compartilhada e escrever duas legendas. Reutilizar arte 
 Revisar visualmente logo, texto, fatos e contraste. Confirmar canais atuais com integrationList. No escopo solicitado, enviar uma mídia e conferir dois DRAFT com suas legendas. Consultar o guia de limpeza pós-publicação somente quando a campanha tiver sido efetivamente publicada e dentro da autorização correspondente.
 
 Fontes: marcas/multitrackhub/comfyui/HERMES-POSTIZ-MULTITRACKHUB.md e POSTIZ-LIMPEZA-POS-PUBLICACAO.md da mesma pasta.
-

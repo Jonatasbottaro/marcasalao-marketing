@@ -204,4 +204,3 @@ if __name__ == "__main__":
               + "). Conferir configuração/acesso; sem repetição automática.",
               file=sys.stderr)
         sys.exit(1)
-

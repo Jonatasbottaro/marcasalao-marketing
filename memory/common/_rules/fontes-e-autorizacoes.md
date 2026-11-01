@@ -7,4 +7,3 @@ O Git guarda os materiais oficiais aprovados. Antes de alterar publicações, co
 Nunca registrar tokens, senhas, cookies, dumps de sessões, credenciais ou dados de clientes na memória versionada. Memória operacional privada fica no diretório de dados do servidor ai-memory, fora deste repositório público.
 
 Fontes: AGENTS.md e docs/ARQUIVAMENTO-DE-CAMPANHAS.md.
-

@@ -5,4 +5,3 @@ Entregar vídeo com legendas visíveis, SRT sincronizado e texto de narração s
 Vídeos de demonstração/teste não são campanhas finais aprovadas. Mudar esta política exige pedido explícito do usuário.
 
 Fontes: AGENTS.md e WORKFLOW.md.
-

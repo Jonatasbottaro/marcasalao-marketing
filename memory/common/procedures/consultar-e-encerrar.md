@@ -8,4 +8,3 @@
 6. Ao retomar, listar handoffs e aceitar o ID correto uma única vez; uma sessão interrompida pode conter trabalho posterior ao resumo.
 
 Fontes: docs/ARQUIVAMENTO-DE-CAMPANHAS.md e protocolo de handoff do ai-memory.
-

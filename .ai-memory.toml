@@ -11,4 +11,3 @@ consume = false
 
 [capture]
 ignore_paths = [".env", ".env.*", "**/.env", "**/.env.*", "private/**", "scratch/**", ".agents/**", "memory/**"]
-
