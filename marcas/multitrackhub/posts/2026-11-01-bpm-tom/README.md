@@ -1,5 +1,27 @@
 # Multitrack Hub — BPM e tom: confira antes de escolher.
 
+## Estado atual — PUBLICADO
+
+Após aprovar a arte corrigida e as duas legendas completas, o titular autorizou a publicação específica: “Ok então pode postar”. Os dois IDs originais foram promovidos uma única vez, type=now e republish=false; arte e textos aprovados preservados.
+
+- facebook: `cmvyafgdi0004msa2i4cogxvz`, canal `cmvbss5fn0005msbhhbdy6ing`, PUBLISHED/error=null, releaseId=`1359325343932935_122105919273522295`, data Brasília `2026-11-01T18:50:00-03:00`.
+- Link: https://www.facebook.com/122093939439522295/posts/122105919273522295
+- instagram: `cmvyafk6i0005msa205qvht1s`, canal `cmvbsudg50007msbh2j4734i4`, PUBLISHED/error=null, releaseId=`17867602017680533`, data Brasília `2026-11-01T18:50:00-03:00`.
+- Link: https://www.instagram.com/p/DfNvREsDDpp/
+
+Inventário preservado em 65 registros: nenhum ID novo, os outros 63 registros integralmente iguais. Extra Facebook `cmvyaqwct0006msa23uq2ldmm` preservado em DRAFT, sem exclusão. Os próprios IDs de origem tornaram-se publicados; não restou rascunho de origem vinculado para limpeza. Nenhum DELETE executado.
+
+Arte SHA256 `324ee73285fffe9e0e8832500e8722cd6c501593a5b8fcd393455d7b9bca761d`; mídia `928fce4b-eb7b-4758-93bf-facf1ff19704`: https://postiz.swnsolucoes.com.br/uploads/2026/11/01/06109c8985c3fb6104395e38824f9bda33.png
+
+As duas referências publicadas de qualidade passam a ser esta campanha BPM e tom e Ensaie as transições. Ouça antes de decidir permanece no histórico, mas sai da seleção das duas mais recentes. Revalidar o Postiz antes da próxima campanha.
+
+Arte, duas legendas e README são o acervo público final. Estados, vínculos de operação, inventários e logs ficam no armazenamento privado do perfil. Este registro deve ser sincronizado no GitHub e conferido no remoto, conforme autorização permanente de arquivamento.
+
+## Histórico — aprovação e atualização dos rascunhos
+
+O registro abaixo documenta as etapas anteriores e não substitui o estado publicado acima.
+
+
 ## Estado atual — APROVADO, DOIS RASCUNHOS ORIGINAIS ATUALIZADOS
 
 O titular aprovou a nova arte e as duas legendas apresentadas integralmente com “Aprovado”, em resposta ao pedido específico de substituir os materiais dos dois rascunhos originais SEM PUBLICAR. Esta aprovação não autoriza publicação/agendamento. A autorização permanente de 30/10/2026 autoriza arquivar a campanha aprovada no GitHub.
