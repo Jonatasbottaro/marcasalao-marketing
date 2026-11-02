@@ -3,6 +3,7 @@
 Central de divulgação do projeto Marca Salão (Meu Salão).
 
 ## Estrutura
+- `00-briefings/` - Briefings de campanha: dor, impacto, evidência e limites de promessa antes de produzir
 - `01-insta-stories/` - Cards 1080x1920 para Instagram/WhatsApp com guia CapCut
 - `02-reels-shorts/` - Vídeos verticais para Reels/Shorts/TikTok
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
