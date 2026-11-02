@@ -26,7 +26,7 @@
 
 ## 🔗 Links úteis
 - Portal: https://marcasalao.com.br
-- Demo login: demo.gestor@example.com / Demo@123456
+- Demonstração: https://marcasalao.com.br/gestor (credenciais não ficam neste repositório; solicite acesso ao responsável pelo projeto)
 
 ## 📋 Checklist
 - [ ] Áudio gravado
