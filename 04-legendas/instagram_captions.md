@@ -2,7 +2,7 @@
 
 ## Cartões verticais prontos para publicação
 
-Cada cartão corresponde a uma captura do painel demo (demo.gestor@example.com / Demo@123456).
+Cada cartão corresponde a uma captura do painel de demonstração (https://marcasalao.com.br/gestor).
 
 ### 01_dashboard.png
 **Legenda**

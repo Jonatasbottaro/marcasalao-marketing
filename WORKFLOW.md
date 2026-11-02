@@ -33,7 +33,7 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 ## Fluxo completo
 
 ### 1. Captura
-- Login demo: demo.gestor@example.com / Demo@123456
+- Painel de demonstração: https://marcasalao.com.br/gestor. As credenciais não ficam neste repositório; solicite acesso ao responsável pelo projeto.
 - Navegue nas seções e capture telas via browser
 
 ### 2. Artes

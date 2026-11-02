@@ -14,8 +14,12 @@ Central de divulgação do projeto Marca Salão (Meu Salão).
 - FFmpeg
 
 ## Demo
-Login demo: demo.gestor@example.com / Demo@123456
+
+Acesse a demonstração:
 https://marcasalao.com.br/gestor
+
+As credenciais de demonstração não são mantidas neste repositório.
+Solicite um acesso de demonstração ao responsável pelo projeto.
 
 ## Padrão de entrega
 Vídeos sem áudio, com legendas nas cenas, arquivo SRT e texto de narração separado para geração de áudio em ferramenta externa. Não preservar o áudio original nem gerar áudio no editor. Vídeos de teste não são campanhas finais aprovadas.
