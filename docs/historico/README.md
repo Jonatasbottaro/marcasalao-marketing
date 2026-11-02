@@ -7,3 +7,5 @@ Registros históricos para consulta e continuidade. Os materiais de demonstraç�
 - [Continuidade do merge do PR #2 — 2026-11-02](2026-11-02-continuidade-merge-pr-2.md)
 
 - [Continuidade do merge do PR #3 — 2026-11-02](2026-11-02-continuidade-merge-pr-3.md)
+
+- [Continuidade do merge do PR #4 — 2026-11-02](2026-11-02-continuidade-merge-pr-4.md)
