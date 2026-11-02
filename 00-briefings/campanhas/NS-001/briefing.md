@@ -70,7 +70,7 @@ Não inventar: ticket médio, quantidade de faltas, prejuízo mensal, percentual
 
 Sustentado por evidência consultada, com o alcance real de cada evidência:
 
-- Elementos visíveis na tela, por [`../../../01-insta-stories/05_agenda.png`](../../../01-insta-stories/05_agenda.png) (captura de 02/10/2026, ambiente "Studio Bella – Demonstração"): cabeçalho "AGENDA DO SALÃO"; subtítulo "Acompanhe os atendimentos por período, profissional e status."; controles de navegação de data (anterior, rótulo da data, próximo, "Hoje"); seletor de visão com três rótulos "Dia", "Semana", "Mês"; campo "Buscar cliente"; selects "Todos os profissionais" e "Todos status"; grade de horário com marcador "08:00"; controle "Exportar CSV"; item de menu "Agendamentos" selecionado.
+- Elementos visíveis na tela, por [`../../../01-insta-stories/05_agenda.png`](../../../01-insta-stories/05_agenda.png) (arquivo registrado no Git em 02/10/2026 pelo commit `a6e7f79` "Substitui imagens por capturas reais do site marcasalao.com.br com conta demo"; a própria tela exibe a data "Sexta, 02 De Out 2026" e o ambiente "Studio Bella – Demonstração"): cabeçalho "AGENDA DO SALÃO"; subtítulo "Acompanhe os atendimentos por período, profissional e status."; controles de navegação de data (anterior, rótulo da data, próximo, "Hoje"); seletor de visão com três rótulos "Dia", "Semana", "Mês"; campo "Buscar cliente"; selects "Todos os profissionais" e "Todos status"; grade de horário com marcador "08:00"; controle "Exportar CSV"; item de menu "Agendamentos" selecionado.
 - Existência dos recursos, por leitura de código registrada em 18/10/2026: visões dia, semana e mês; filtro por profissional e status; busca de cliente; detalhes do atendimento com cliente, serviço, profissional e horário. O próprio registro afirma: "A leitura de código confirma a existência dos recursos; não foi realizado teste funcional completo do painel."
 - Fluxo público de agendamento, por verificação documentada em [`../../../marcas/marcasalao/posts/2026-10-18-como-funciona-agendamento/README.md`](../../../marcas/marcasalao/posts/2026-10-18-como-funciona-agendamento/README.md): a sequência identificação → serviço → profissional → data/horário → resumo antes da confirmação foi confirmada no código `src/app/(public)/booking/_components/BookingWizard.tsx` e na entrada pública `https://marcasalao.com.br/booking/demo-studio-bella`. Isso comprova o fluxo do cliente, **não** o comportamento da agenda do gestor.
 
@@ -101,7 +101,7 @@ Testar antes de qualquer produção; nenhum destes foi confirmado:
 - Valores possíveis do filtro de status e o que cada um significa.
 - Prevenção de conflito de horário no mesmo profissional.
 - Comportamento em celular.
-- Estado atual da tela: a captura é de 02/10/2026 e precisa ser revalidada antes de ser usada.
+- Estado atual da tela: a captura mais recente registrada no repositório é de 02/10/2026; revalidar antes de usar.
 
 - Evidência da verificação: capture de tela nova, datada, com rota e ambiente identificados; teste funcional registrado com responsável e data.
 - Captura ou demonstração necessária: captura atual da agenda; gravação de tela somente após validar o fluxo escolhido.
@@ -136,7 +136,7 @@ Proposta inicial, ainda não tratada como roteiro aprovado. O roteiro final ser�
 
 ## 10. Materiais necessários
 
-- Captura atual da agenda, revalidada na data da produção (a existente é de 02/10/2026).
+- Captura atual da agenda, revalidada na data da produção (a registrada no Git em 02/10/2026 é a única disponível).
 - Validação da resolução e da legibilidade da captura no formato final do canal.
 - Gravação de tela somente após validar o fluxo que será demonstrado.
 - Elementos oficiais de marca existentes no repositório: identidade verde-petróleo, menta e branco, logo MS/tesoura, conforme as artes aprovadas em [`../../../marcas/marcasalao/posts/`](../../../marcas/marcasalao/posts/).
@@ -226,7 +226,7 @@ Nenhuma meta numérica foi criada. Nenhuma métrica realizada foi preenchida: n�
 - [ ] Nenhum dado pessoal aparece nas capturas.
 - [ ] A mensagem não apresenta organização da agenda como prevenção automática de faltas.
 
-Itens marcados referem-se ao texto deste briefing. Itens sobre funcionalidade, captura e métricas permanecem abertos porque a validação ainda não foi feita e a única captura disponível é de 02/10/2026.
+Itens marcados referem-se ao texto deste briefing. Itens sobre funcionalidade, captura e métricas permanecem abertos porque a validação ainda não foi feita e a única captura disponível no repositório é a registrada em 02/10/2026.
 
 ## 16. Aprovação
 
