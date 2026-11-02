@@ -297,3 +297,22 @@ Cinco hooks seguem para leitura editorial. **Candidatos a revisão, não a aprov
 Nenhum hook pode evoluir para roteiro, legenda, vídeo ou publicação afirmando: redução automática de faltas, prevenção de no-show, confirmação automática, mensagens automáticas, lembretes automáticos, preenchimento automático da agenda, agenda sempre cheia, aumento garantido de ocupação ou de faturamento, controle financeiro, resultado comercial comprovado ou integração não verificada.
 
 Desempenho destes hooks é desconhecido: nenhum foi publicado nem medido.
+
+---
+
+## Seleção editorial para o roteiro 001
+
+- **Hook selecionado:** NS-001-H01
+- **Texto:** "Você sabe quais horários ainda estão disponíveis no seu salão?"
+- **Categoria:** pergunta
+- **Motivo da seleção:** é a formulação registrada como permitida pelo briefing NS-001 (seções 4 e 9), tem frase curta e natural, aponta para uma ação que pode ser demonstrada na tela da agenda e tem continuidade direta para um roteiro curto. Os outros quatro candidatos também seguem válidos para revisão; esta escolha é de rota de escrita, não de ranking.
+- **Relação com a dor do briefing:** corresponde à dor principal declarada na seção 4 — falta de clareza sobre a ocupação da agenda e sobre a existência de horários vazios.
+- **Continuação possível:** abrir a agenda do dia e percorrer a grade, mostrando os atendimentos registrados — restrito ao que uma tela validada realmente exibe.
+- **Evidência funcional necessária:** validar que a agenda exibe os horários disponíveis de forma legível, item que está em "Pendente de validação" na seção 7 do briefing. Sem essa validação, o hook não pode virar peça gravada.
+- **Principal risco de interpretação:** ser lido como se o sistema sinalizasse ou avisasse sozinho os espaços vagos da agenda.
+- **Status da seleção:** selecionado para roteiro em rascunho
+- **Aprovação para produção:** não
+- **Data da seleção:** 2026-11-02
+- **Responsável pela seleção:** pendente de definição, se não estiver documentado
+
+O hook NS-001-H01 permanece com `Status: rascunho` na lista acima. Selecionar para roteiro não aprova para publicação: o briefing continua em validação e a biblioteca continua sem autorização de produção.

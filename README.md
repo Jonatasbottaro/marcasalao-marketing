@@ -8,6 +8,7 @@ Central de divulgação do projeto Marca Salão (Meu Salão).
 - `02-reels-shorts/` - Vídeos verticais para Reels/Shorts/TikTok
 - `02-hooks/` - Hooks em rascunho por campanha, derivados dos briefings
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
+- `03-roteiros/` - Roteiros por campanha: cenas, textos de tela e narração em rascunho
 - `04-legendas/` - Legendas, roteiros e scripts de áudio
 
 ## Ferramentas
