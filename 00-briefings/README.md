@@ -46,7 +46,7 @@ Marque explicitamente em cada campo se a informação é **confirmada**, **hipó
 ## Como criar um briefing
 
 1. Copie [`TEMPLATE-BRIEFING.md`](TEMPLATE-BRIEFING.md).
-2. Salve em `00-briefings/<codigo>-<tema>.md`, uma campanha por arquivo. Ao nascer a pasta da campanha, o briefing a acompanha como origem.
+2. Salve em `00-briefings/campanhas/<CODIGO>/briefing.md`, uma pasta por campanha. Ao nascer a pasta de produção, o briefing acompanha a campanha como origem.
 3. Atribua um código único (veja a convenção abaixo) e não reutilize códigos de campanhas anteriores.
 4. Preencha todos os campos obrigatórios; escreva "não se aplica" quando for o caso, nunca deixe em branco sem explicação.
 5. Registre hipóteses e pendências criticamente, identificando quem valida e quando.
