@@ -4,3 +4,6 @@
 *.aiff
 .DS_Store
 scratch/
+
+# Configuracao MCP privada deste computador
+/.codex/config.toml

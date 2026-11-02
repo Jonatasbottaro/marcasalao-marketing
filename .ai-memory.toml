@@ -1,0 +1,21 @@
+workspace = "marketing"
+project = "marcasalao"
+server = "central-marketing-marcasalao"
+
+[profile]
+contribute = false
+consume = false
+
+[briefing]
+inject_on_session_start = true
+max_chars = 4000
+
+[recall]
+default_global = false
+
+[capture]
+ignore_paths = [".env", ".env.*", "**/.env", "**/.env.*", "private/**", "scratch/**", ".agents/**", "memory/**"]
+
+# Keep automatic handoff claiming disabled; resume explicitly when requested.
+[handoff]
+deliver_on_session_start = false
