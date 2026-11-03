@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao",
+  "name": "Marca Salão",
+  "locale": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "brandTheme": "marca-salao",
+  "assetRoot": "projects/marca-salao/assets",
+  "contentPolicies": {
+    "requireApprovedBriefing": true,
+    "requireApprovedScript": true,
+    "prohibitPersonalData": true,
+    "requireFunctionalEvidence": true
+  },
+  "outputProfiles": [
+    "vertical-social"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-project",
+  "name": "Fixture Project",
+  "locale": "en-US",
+  "timezone": "UTC",
+  "brandTheme": "fixture-neutral",
+  "assetRoot": "projects/fixture-project/assets",
+  "contentPolicies": {
+    "requireApprovedBriefing": false,
+    "requireApprovedScript": true,
+    "prohibitPersonalData": true,
+    "requireFunctionalEvidence": false
+  },
+  "outputProfiles": [
+    "square-social"
+  ]
+}
