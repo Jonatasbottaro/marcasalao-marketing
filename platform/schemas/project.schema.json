@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProjectManifest",
+  "description": "Manifesto declarativo de um projeto consumidor da Content Factory. O nucleo nao conhece nenhum projeto especifico: marca, tema, idioma, assets e politicas sao dados deste manifesto. Campos desconhecidos sao proibidos (additionalProperties=false). A implementacao de referencia das regras esta em platform/src/validate-project.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "locale",
+    "timezone",
+    "brandTheme",
+    "assetRoot",
+    "contentPolicies",
+    "outputProfiles"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador do projeto em kebab-case."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nome de exibicao do projeto; opaco para o nucleo."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Idioma do projeto, opaco para o nucleo."
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Fuso horario do projeto, opaco para o nucleo."
+    },
+    "brandTheme": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificacao opaca do tema visual no projeto consumidor; o nucleo nao interpreta."
+    },
+    "assetRoot": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^/" },
+          { "pattern": "^\\\\" },
+          { "pattern": "^[A-Za-z]:[\\\\/]" },
+          { "pattern": "(^|[\\\\/])\\.\\.([\\\\/]|$)" }
+        ]
+      },
+      "description": "Caminho relativo seguro para a raiz de assets; sem caminho absoluto, sem traversal e sem apontar para arquivos sensiveis (.env, chaves, credenciais). A existencia fisica NAO e verificada nesta fatia."
+    },
+    "contentPolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireApprovedBriefing",
+        "requireApprovedScript",
+        "prohibitPersonalData",
+        "requireFunctionalEvidence"
+      ],
+      "properties": {
+        "requireApprovedBriefing": { "type": "boolean" },
+        "requireApprovedScript": { "type": "boolean" },
+        "prohibitPersonalData": { "type": "boolean" },
+        "requireFunctionalEvidence": { "type": "boolean" }
+      }
+    },
+    "outputProfiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "description": "Pelo menos um identificador de profile em kebab-case, sem duplicacoes."
+    }
+  }
+}

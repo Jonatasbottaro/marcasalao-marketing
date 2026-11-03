@@ -1,0 +1,15 @@
+{
+  "name": "marcasalao-marketing-platform",
+  "private": true,
+  "description": "Primeira fatia do nucleo modular da Content Factory: manifesto de projeto, validacao e relatorio. Zero dependencias de runtime; execucao via Node >= 23.6 (type stripping nativo).",
+  "type": "module",
+  "scripts": {
+    "content:validate-project": "node src/validate-project-cli.ts",
+    "test": "node --test tests/project-validation.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}
