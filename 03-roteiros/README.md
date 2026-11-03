@@ -50,7 +50,7 @@ Nenhum roteiro pode afirmar, sugerir visualmente ou deixar implícita, sem valid
 - preenchimento automático de horários vagos;
 - redução de no-show ou de faltas causada por automação.
 
-A formulação tecnicamente precisa é: existe implementação técnica de notificações e de lembrete de 24 horas no sistema; implantação, configuração dos canais e entrega real não foram validados. Portanto, o roteiro não declara que a capacidade existe nem que ela funciona — registra o estado real e mantém a demonstração bloqueada. A regra de demonstração está na seção 8.
+A formulação tecnicamente precisa é: existe implementação técnica de notificações e de lembrete de 24 horas no sistema; implantação, configuração dos canais e entrega real não foram validados. Portanto, o roteiro pode registrar a existência da implementação técnica quando sustentada por evidência, mas não pode afirmar que a capacidade está implantada, configurada, operacional ou entregando mensagens. A demonstração e o uso promocional permanecem bloqueados. A regra de demonstração está na seção 8.
 
 Regras completas em [`../00-briefings/README.md`](../00-briefings/README.md) e [`../AGENTS.md`](../AGENTS.md).
 
