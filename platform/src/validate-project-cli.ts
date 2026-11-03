@@ -2,7 +2,7 @@
  * CLI de validacao de manifesto de projeto.
  *
  * Uso:
- *   node src/validate-project-cli.ts --project <caminho> [--json]
+ *   node dist/src/validate-project-cli.js --project <caminho> [--json]
  *
  * Exit codes:
  *   0 — manifesto valido;
@@ -15,8 +15,8 @@
 
 import { readFileSync } from 'node:fs'
 
-import { validateProjectManifest } from './validate-project.ts'
-import type { ProjectValidationReport, ValidationIssue } from './validation-report.ts'
+import { validateProjectManifest } from './validate-project.js'
+import type { ProjectValidationReport, ValidationIssue } from './validation-report.js'
 
 const EXIT_VALID = 0
 const EXIT_INVALID = 1
@@ -72,7 +72,7 @@ function main(argv: string[]): number {
     const options = parseArgs(argv)
 
     if (options.projectPath === null) {
-        console.error('Uso: node src/validate-project-cli.ts --project <caminho> [--json]')
+        console.error('Uso: node dist/src/validate-project-cli.js --project <caminho> [--json]')
         return EXIT_USAGE
     }
 

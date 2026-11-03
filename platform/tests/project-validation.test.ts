@@ -1,17 +1,36 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
-import { validateProjectManifest } from '../src/validate-project.ts'
-import type { ProjectValidationReport, ValidationIssue } from '../src/validation-report.ts'
+import { validateProjectManifest } from '../src/validate-project.js'
+import type { ProjectValidationReport, ValidationIssue } from '../src/validation-report.js'
 
-const moduleRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+/**
+ * Os testes sempre executam sobre JavaScript compilado (dist/tests). O root do
+ * modulo e localizado subindo ate o package.json, o que funciona tanto com os
+ * testes compilados (dist/tests -> ../..) quanto na arvore-fonte (tests -> ..).
+ */
+const testDir = path.dirname(fileURLToPath(import.meta.url))
+
+function findModuleRoot(startDir: string): string {
+    let current = path.resolve(startDir)
+    for (;;) {
+        if (existsSync(path.join(current, 'package.json'))) return current
+        const parent = path.dirname(current)
+        if (parent === current) {
+            throw new Error(`package.json do modulo nao encontrado a partir de ${startDir}`)
+        }
+        current = parent
+    }
+}
+
+const moduleRoot = findModuleRoot(testDir)
 const examplesDir = path.join(moduleRoot, 'examples', 'projects')
-const cliPath = path.join(moduleRoot, 'src', 'validate-project-cli.ts')
+const cliPath = path.join(moduleRoot, 'dist', 'src', 'validate-project-cli.js')
 const coreScanDirectories = [
     path.join(moduleRoot, 'src'),
     path.join(moduleRoot, 'schemas'),
