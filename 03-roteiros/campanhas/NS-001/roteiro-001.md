@@ -71,7 +71,7 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - **Visões da agenda:** o mesmo registro visto por dia, semana e mês.
 - **Filtros e busca:** recortar a listagem por profissional, por status e pelo nome do cliente.
 - **Detalhes:** abrir um agendamento fictício e ver horário, cliente, profissional, serviço, preço e status.
-- **Ação de status:** alterar o status de um agendamento fictício na própria tela.
+- **Ação de status:** confirmar manualmente um agendamento fictício na própria tela.
 - **CTA:** conhecer a agenda do Marca Salão.
 
 ## 6. Roteiro por cenas
@@ -93,11 +93,11 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Objetivo: mostrar a rotina em que a informação do dia não está reunida em um só lugar, e o esforço operacional disso.
 - Duração estimada: pendente de edição
 - Visual: anotações, conversa e planilha em telas separadas, sem marca de produto.
-- Texto na tela: "Caderno, conversa, planilha: cada uma mostra um pedaço do dia."
-- Narração: "Em muito salão, a agenda do dia não está toda no mesmo lugar. Uma parte fica no caderno, outra na conversa, outra na planilha. Juntar isso toma tempo no meio do atendimento."
+- Texto na tela: "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia."
+- Narração: "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento."
 - Evidência utilizada: dor e impacto operacional qualitativos das seções 4 e 5 do briefing 0.2.
 - Validação necessária: nenhuma, pois a cena não mostra o produto; o registro em múltiplos lugares é situação do salão, não comportamento do sistema.
-- Risco: afirmar prejuízo, perda de clientes, desorganização do estabelecimento ou que isso acontece em todos os salões. "Em muito salão" continua hipótese e precisa ser tratada como tal na revisão.
+- Risco: a situação é **condicional** — o texto começa com "quando" e só vale para o salão em que ela de fato ocorre. Não há pesquisa que sustente apresentá-la como realidade de todos os salões ou da maior parte deles, e o roteiro não pode ser lido dessa forma. A cena também não pode servir para classificar o estabelecimento como desorganizado, nem afirmar prejuízo, perda de clientes ou redução de faturamento.
 - Status da cena: rascunho
 
 ### Cena 3 — Visões dia, semana e mês
@@ -138,14 +138,14 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 
 ### Cena 6 — Ação de status comprovada
 
-- Objetivo: mostrar uma única ação que existe na agenda do gestor: alterar o status de um agendamento.
+- Objetivo: mostrar uma única ação comprovada da agenda do gestor: confirmar manualmente um agendamento fictício.
 - Duração estimada: pendente de edição
-- Visual: na tela da agenda, um agendamento fictício recebe a ação de "confirmar"; depois, se couber na duração, "concluir". Sem sobreposição de números e sem mostrar qualquer mensagem enviada.
-- Texto na tela: "Registrar o que aconteceu no atendimento: confirmado."
-- Narração: "E o status acompanha o que a gestão registrou: o atendimento pode ser marcado como confirmado."
-- Evidência utilizada: ações de status (confirmação, conclusão, registro de no-show e cancelamento) e pagamento local confirmados no código da agenda; o cancelamento também é coberto por teste automatizado (seções 4 e 8 da validação funcional).
-- Validação necessária: efetivação da ação em navegador autenticado, com emuladores e dados fictícios. Usar uma ou poucas ações para não sobrecarregar a demonstração.
-- Risco: fazer aparecer mensagens enviadas ao cliente, integração de canal, lembrete, edição ou remarcação; sugerir que a ação avisa alguém. Nenhuma dessas é demonstrável aqui.
+- Visual: um agendamento fictício recebe a ação Confirmar. Não mostrar conclusão, cancelamento, no-show, mensagens ou qualquer segunda transição.
+- Texto na tela: "Atualizar o status do atendimento."
+- Narração: "Quando a gestão confirma o atendimento, o status fica registrado na agenda."
+- Evidência utilizada: ação de confirmação de status confirmada no código da agenda, entre as ações de status (confirmação, conclusão, registro de no-show e cancelamento) e o pagamento local; o cancelamento também é coberto por teste automatizado (seções 4 e 8 da validação funcional). Apenas a confirmação entra na demonstração.
+- Validação necessária: efetivação da ação em navegador autenticado, em ambiente local com emuladores e dados fictícios, antes de gravar. Sem essa execução autenticada a cena não é demonstrável.
+- Risco: a cena não pode sugerir confirmação automática, mensagem enviada ao cliente, notificação, reminder, segunda transição de status, edição ou remarcação. Confirmar aqui é ato manual da gestão registrado na tela, não um contato com o cliente.
 - Status da cena: rascunho — pendente de execução autenticada
 
 ### Cena 7 — Chamada para ação
@@ -166,7 +166,7 @@ Bloco contínuo para revisão; a narração é entregue como texto separado, sem
 
 > Você consegue visualizar os agendamentos do seu salão com clareza?
 >
-> Em muito salão, a agenda do dia não está toda no mesmo lugar. Uma parte fica no caderno, outra na conversa, outra na planilha. Juntar isso toma tempo no meio do atendimento.
+> Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento.
 >
 > Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês.
 >
@@ -174,7 +174,7 @@ Bloco contínuo para revisão; a narração é entregue como texto separado, sem
 >
 > Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status.
 >
-> E o status acompanha o que a gestão registrou: o atendimento pode ser marcado como confirmado.
+> Quando a gestão confirma o atendimento, o status fica registrado na agenda.
 >
 > Conheça a agenda do Marca Salão.
 
@@ -185,11 +185,11 @@ Nenhuma linha deste bloco menciona lembrete, scheduler, notificação ou provedo
 Ordem das cenas:
 
 1. "Você consegue visualizar os agendamentos do seu salão com clareza?"
-2. "Caderno, conversa, planilha: cada uma mostra um pedaço do dia."
+2. "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia."
 3. "O mesmo registro, visto por dia, semana ou mês."
 4. "Filtrar por profissional, por status, ou buscar pelo nome."
 5. "Abrir um atendimento e ver os dados dele."
-6. "Registrar o que aconteceu no atendimento: confirmado."
+6. "Atualizar o status do atendimento."
 7. "Conheça a agenda do Marca Salão."
 
 Regras aplicadas: frases curtas, legíveis em tela vertical 1080x1920, sem estatística, sem valor financeiro, sem referência a horários disponíveis e sem afirmação maior do que a evidência disponível.
