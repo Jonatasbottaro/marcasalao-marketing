@@ -25,16 +25,40 @@ Um hook é descartado quando comete qualquer um destes erros:
 - **Exagerar uma dor sem evidência**, sobretudo em versão financeira.
 - **Usar falsa urgência** ("só hoje", "últimas vagas", "antes que seja tarde").
 - **Afirmar números sem fonte**, inclusive percentuais, médias e valores.
-- **Sugerir que o sistema envia mensagens automáticas** — o Marca Salão não possui mensagens, lembretes, confirmações automáticas nem envio automático de WhatsApp, SMS ou e-mail.
-- **Sugerir que o sistema elimina no-show** ou preenche automaticamente horários vagos. Não existe automação validada para reduzir faltas.
+- **Sugerir que o sistema envia mensagens, lembretes ou confirmações automáticas** ao cliente, ou envia WhatsApp, SMS, e-mail ou push por conta própria. Existe implementação técnica dessas capacidades; implantação, configuração dos canais e entrega real não foram validados — ver seção 4.
+- **Sugerir que o sistema elimina no-show** ou preenche automaticamente horários vagos. Não há validação operacional registrada que sustente um resultado atribuído a mensagens ou notificações.
 
 Essas restrições vêm do contrato editorial de [`../00-briefings/README.md`](../00-briefings/README.md) e de [`../AGENTS.md`](../AGENTS.md).
 
-## 4. Vínculo obrigatório com um briefing
+## 4. Hooks sobre notificações, lembretes e contato
+
+A existência de código, de testes ou de documentação técnica **não** autoriza um hook promocional.
+
+Enquanto implantação, configuração dos canais e entrega real não forem validados, hooks não podem afirmar ou sugerir:
+
+- "o sistema avisa o cliente";
+- "o sistema lembra o cliente";
+- "o sistema confirma automaticamente";
+- "envie WhatsApp automaticamente";
+- "reduza faltas com lembretes";
+- "acabe com o no-show";
+- qualquer resultado atribuído a mensagens ou notificações.
+
+Hooks sobre essa capacidade somente poderão ser criados depois de um briefing específico aprovado, contendo validação operacional e autorização comercial — os registros exigidos estão em [`../00-briefings/README.md`](../00-briefings/README.md), seção "Notificações e automações de contato".
+
+O texto permitido em documentação técnica é:
+
+> "Existe implementação técnica; implantação e entrega real permanecem pendentes de validação."
+
+Esse texto **não** deve ser usado como hook promocional: ele descreve estado de engenharia, não benefício para o dono do salão. Desempenho e operação não devem ser presumidos — não escrever "o lembrete funciona", "os clientes recebem o aviso" nem "as faltas caem" sem verificação registrada com responsável e data.
+
+Também não escrever, em hook ou em nota de hook, que o sistema "não possui" notificações ou lembretes: formulação absoluta nesse sentido é imprecisa tecnicamente e continua proibida como mensagem atual.
+
+## 5. Vínculo obrigatório com um briefing
 
 Nenhum hook é escrito sem um briefing correspondente. Cada documento desta pasta declara, no bloco de controle, qual briefing o origina. Sem briefing, não há como saber se a dor é real, se a funcionalidade citada existe e se a promessa é defensável.
 
-## 5. Convenção de pasta
+## 6. Convenção de pasta
 
 ```
 02-hooks/campanhas/<CODIGO>/hooks.md
@@ -44,7 +68,7 @@ Uma campanha, um arquivo de hooks. O código é o mesmo do briefing em `00-brief
 
 > **Nota sobre numeração.** Esta pasta reutiliza o prefixo `02-` já ocupado por `02-reels-shorts/`, e a sequência futura da Content Factory (`03-roteiros/`) colide com `03-youtube-pdf/`. A colisão é apenas de nome de pasta e não afeta o fluxo editorial. Renomear ou reorganizar pastas existentes está fora de escopo e depende de decisão específica do titular.
 
-## 6. Estados de um hook
+## 7. Estados de um hook
 
 | Estado | Significado |
 | --- | --- |
@@ -56,7 +80,7 @@ Uma campanha, um arquivo de hooks. O código é o mesmo do briefing em `00-brief
 
 Registrar o estado real. Nenhum hook vira "aprovado" por ter sido bem escrito ou por parecer promissor.
 
-## 7. Critério de "pronto para roteiro"
+## 8. Critério de "pronto para roteiro"
 
 Um hook só avança quando **todos** os itens abaixo são verdadeiros:
 
@@ -69,7 +93,7 @@ Um hook só avança quando **todos** os itens abaixo são verdadeiros:
 - [ ] está marcado como `aprovado`;
 - [ ] o briefing correspondente está aprovado — ou existe autorização registrada para avançar como experimento controlado.
 
-## 8. Categorias iniciais
+## 9. Categorias iniciais
 
 | Categoria | Movimento |
 | --- | --- |
@@ -79,11 +103,11 @@ Um hook só avança quando **todos** os itens abaixo são verdadeiros:
 | `contraste` | Compara dois modos de fazer a mesma tarefa, sem desvalorizar quem usa um deles. |
 | `curiosidade` | Abre uma lacuna de informação que a peça preenche, sem enganar. |
 
-## 9. Sobre desempenho
+## 10. Sobre desempenho
 
 Enquanto um hook não foi publicado **e medido**, qualquer afirmação sobre seu desempenho é hipótese. Não escrever "este hook converte mais", "funciona melhor no Reels" ou "tem maior retenção" sem dado real coletado na plataforma. A regra é a mesma do briefing: resultado esperado, nunca resultado garantido.
 
-## 10. Nomenclatura
+## 11. Nomenclatura
 
 ```
 <CODIGO-DA-CAMPANHA>-H<NUMERO>

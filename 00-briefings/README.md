@@ -34,14 +34,54 @@ Marque explicitamente em cada campo se a informação é **confirmada**, **hipó
 1. **A funcionalidade precisa ser demonstrável no sistema atual.** Antes de produzir, verificar no painel de demonstração que o recurso existe, onde está e qual comportamento ele executa. Se não for possível verificar, o briefing fica "em validação" e a funcionalidade não entra na peça.
 2. **Uma captura de tela comprova somente o que está visível nela.** Ela não comprova integrações, automações, sincronizações, nem resultados de negócio. Descreva a tela como ela é, sem extrapolar.
 3. **É proibido divulgar funcionalidades não implementadas ou não validadas**, ainda que pareçam plausíveis ou solicitadas por clientes.
-4. **O Marca Salão não possui sistema de mensagens, lembretes ou confirmações automáticas.** É proibido atribuir ao sistema, em qualquer material:
+4. **Notificações, lembretes e confirmações automáticas não podem ser prometidos nem demonstrados.** Existe implementação técnica dessas capacidades no sistema; implantação, configuração dos canais e entrega real não foram validados. Por isso é proibido atribuir a uma campanha, sem validação operacional específica e registrada:
    - mensagens, lembretes ou confirmações automáticas;
-   - envio automático de WhatsApp, SMS ou e-mail;
-   - notificações automáticas não implementadas e validadas;
-   - redução garantida de faltas ou no-show;
+   - envio automático de WhatsApp, SMS, e-mail ou push;
+   - redução de faltas ou de no-show causada por essas capacidades;
    - qualquer capacidade não comprovada no produto atual.
+   Também é proibido afirmar, num briefing, que os canais estão desativados. A regra completa está em "Notificações e automações de contato", abaixo.
 5. **Não publicar nem afirmar que uma campanha existe em produção** a partir do briefing. O documento registra intenção e estado editorial; publicação e agendamento continuam dependendo de autorização específica ([`../AGENTS.md`](../AGENTS.md)).
 6. **Sem credenciais.** Não incluir senhas, tokens, chaves, cookies ou dados pessoais de clientes em briefing algum. O acesso à demonstração não fica neste repositório; solicite ao responsável pelo projeto.
+
+## Notificações e automações de contato
+
+O Salao02 contém implementação técnica de notificações e lembrete de 24 horas. Entretanto, implantação, configuração dos canais e entrega real não foram validadas para uso como promessa comercial. Nenhuma campanha pode prometer, demonstrar ou insinuar essas capacidades sem validação operacional específica e registrada.
+
+A distinção abaixo é obrigatória em qualquer briefing que toque nesse tema: implementação, teste automatizado, implantação, configuração, execução, entrega real e autorização comercial são coisas diferentes. Implementação não prova implantação; implantação não prova entrega; teste unitário não prova operação. Este documento também não afirma que os canais estão ativos nem que estão desativados: afirma apenas que não há validação registrada.
+
+Consequentemente, um briefing não pode:
+
+- prometer mensagens automáticas;
+- prometer lembretes automáticos;
+- prometer confirmações automáticas;
+- afirmar envio por WhatsApp, SMS, e-mail ou push;
+- atribuir redução de faltas a essas capacidades;
+- tratar testes unitários como prova de operação real;
+- tratar implementação como prova de implantação;
+- tratar implantação como prova de entrega.
+
+Para utilizar qualquer capacidade de contato em campanha futura, o briefing deverá registrar:
+
+- comportamento exato;
+- ambiente validado;
+- scheduler ou gatilho validado;
+- provedor utilizado;
+- canal validado;
+- template validado;
+- entrega real observada;
+- data da verificação;
+- responsável;
+- limitações;
+- evidência;
+- autorização comercial específica.
+
+Na ausência dessas evidências, registrar:
+
+> "Implementação técnica localizada; implantação e entrega real pendentes; promessa comercial não autorizada."
+
+Continua valendo a regra geral: é proibido divulgar funcionalidades não implementadas ou não validadas. Registrar no briefing a implementação existente **não** libera promessa comercial nem demonstração — libera apenas que o documento descreva o estado real.
+
+Referência de evidência usada pela campanha NS-001: [`campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md`](campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md), seção 7.
 
 ## Como criar um briefing
 
