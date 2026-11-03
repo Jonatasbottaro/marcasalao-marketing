@@ -80,7 +80,7 @@ npm ci                    # instala as devDependencies (typescript, @types/node)
 npm run clean             # apaga dist/ (script Node portátil)
 npm run build             # compila src/ e tests/ para dist/ (tsc, NodeNext)
 npm run typecheck         # tsc --noEmit
-npm test                  # build + node --test dist/tests (JavaScript compilado)
+npm test                  # build + node --test dist/tests/*.test.js (JavaScript compilado)
 
 # CLI compilada (exit 0 válido · 1 manifesto inválido · 2 uso/JSON malformado)
 npm run content:validate-project -- --project examples/projects/marca-salao.project.json --json

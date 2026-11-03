@@ -79,7 +79,8 @@ test('package.json declara build compilado, engines Node >= 22 e zero dependenci
 
     assert.match(pkg.engines?.node ?? '', />=22/)
     assert.match(pkg.scripts?.build ?? '', /\btsc\b/)
-    assert.ok((pkg.scripts?.test ?? '').includes('node --test dist/tests'))
+    assert.ok((pkg.scripts?.test ?? '').includes('node --test'))
+    assert.ok((pkg.scripts?.test ?? '').includes('dist/tests'))
     assert.ok((pkg.scripts?.['content:validate-project'] ?? '').includes('node dist/src/validate-project-cli.js'))
     assert.equal(pkg.dependencies, undefined, 'nenhuma dependencia de runtime e permitida')
     assert.deepEqual(Object.keys(pkg.devDependencies ?? {}).sort(), ['@types/node', 'typescript'])
