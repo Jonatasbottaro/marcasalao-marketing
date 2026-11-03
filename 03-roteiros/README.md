@@ -43,11 +43,61 @@ Uma captura de tela sustenta a existência de rótulos, botões e elementos vis�
 
 ## 7. Limitação de produto
 
-**O Marca Salão não possui mensagens, lembretes ou confirmações automáticas**, não envia WhatsApp, SMS ou e-mail de forma automática, não preenche automaticamente horários vagos e não tem automação validada para reduzir no-show. O roteiro não pode afirmar, sugerir visualmente ou deixar implícita nenhuma dessas capacidades.
+Nenhum roteiro pode afirmar, sugerir visualmente ou deixar implícita, sem validação operacional específica e registrada, nenhuma destas capacidades:
+
+- mensagens, lembretes ou confirmações automáticas;
+- envio automático de WhatsApp, SMS, e-mail ou push;
+- preenchimento automático de horários vagos;
+- redução de no-show ou de faltas causada por automação.
+
+A formulação tecnicamente precisa é: existe implementação técnica de notificações e de lembrete de 24 horas no sistema; implantação, configuração dos canais e entrega real não foram validados. Portanto, o roteiro não declara que a capacidade existe nem que ela funciona — registra o estado real e mantém a demonstração bloqueada. A regra de demonstração está na seção 8.
 
 Regras completas em [`../00-briefings/README.md`](../00-briefings/README.md) e [`../AGENTS.md`](../AGENTS.md).
 
-## 8. Estados permitidos
+## 8. Demonstração de notificações e lembretes
+
+Nenhum roteiro pode mostrar, narrar ou sugerir notificações, mensagens, lembretes ou confirmações automáticas apenas porque existe implementação técnica no repositório.
+
+Antes de autorizar uma cena sobre contato automático, devem estar registrados:
+
+- ambiente de execução;
+- gatilho;
+- scheduler;
+- provedor;
+- canal;
+- destinatário fictício;
+- template utilizado;
+- entrega observada;
+- resultado da tentativa;
+- falhas observadas;
+- proteção de dados;
+- data;
+- responsável;
+- autorização comercial.
+
+Até essa validação, o roteiro deve classificar a capacidade como:
+
+| Item | Classificação no roteiro |
+| --- | --- |
+| Implementação técnica | confirmada, quando sustentada por evidência |
+| Implantação | pendente |
+| Configuração dos canais | pendente |
+| Entrega real | pendente |
+| Uso promocional | não autorizado |
+| Demonstração | não autorizada |
+
+O roteiro não pode transformar:
+
+- teste unitário em demonstração;
+- mock em entrega;
+- scheduler definido em scheduler ativo;
+- canal opcional em canal disponível;
+- tentativa de envio em mensagem entregue;
+- implementação em promessa comercial.
+
+A distinção entre implementação, teste automatizado, implantação, configuração, execução, entrega real e autorização comercial é obrigatória em toda cena, texto de tela e linha de narração. Não afirmar que os canais estão ativos e não afirmar que estão desativados: sem verificação registrada, nenhum dos dois estados é dizível.
+
+## 9. Estados permitidos
 
 | Estado | Significado |
 | --- | --- |
@@ -61,7 +111,7 @@ Regras completas em [`../00-briefings/README.md`](../00-briefings/README.md) e [
 
 Registrar o estado real. Um roteiro bem escrito não sobe de estado sozinho.
 
-## 9. Critério de "pronto para produção"
+## 10. Critério de "pronto para produção"
 
 Um roteiro só avança para gravação quando **todos** os itens abaixo são verdadeiros:
 
@@ -79,7 +129,7 @@ Um roteiro só avança para gravação quando **todos** os itens abaixo são ver
 
 Enquanto a validação funcional da agenda não existir, nenhum roteiro desta pasta passa de `rascunho`.
 
-## 10. Convenção
+## 11. Convenção
 
 ```
 03-roteiros/campanhas/<CODIGO>/roteiro-<NUMERO>.md
@@ -89,6 +139,6 @@ O código é o mesmo do briefing e da biblioteca de hooks; o número é sequenci
 
 > **Nota sobre numeração.** Esta pasta reutiliza o prefixo `03-` já ocupado por `03-youtube-pdf/`. A coincidência é apenas de nome de pasta e não altera o fluxo editorial. Renomear ou reorganizar pastas existentes está fora de escopo e depende de decisão do titular.
 
-## 11. Roteiro em rascunho não é conteúdo aprovado
+## 12. Roteiro em rascunho não é conteúdo aprovado
 
 Rascunho na pasta `03-roteiros/` continua sendo intenção editorial. Ele não autoriza gravar, editar, criar legenda, publicar, agendar nem registrar métricas. Produção segue as regras de [`../WORKFLOW.md`](../WORKFLOW.md) (vídeo sem áudio, legendas visíveis sincronizadas, `.srt` correspondente, narração em texto separado) e a autorização específica de publicação prevista em [`../AGENTS.md`](../AGENTS.md).
