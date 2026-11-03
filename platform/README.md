@@ -70,16 +70,27 @@ Determinístico: sem timestamp, sem caminhos absolutos da máquina, sem IDs alea
 
 ## Como executar
 
-Requisito: Node ≥ 23.6 (type stripping nativo; testado no Node 24.x). Zero dependências
-de runtime.
+Requisito: **Node >= 22** (runtime mínimo, declarado em `engines`: `>=22 <25`). O
+TypeScript é **compilado para JavaScript antes da execução** (`tsc` → `dist/`); nenhuma
+execução direta de `.ts` é necessária. Zero dependências de runtime.
 
 ```bash
 # a partir de platform/
+npm ci                    # instala as devDependencies (typescript, @types/node)
+npm run clean             # apaga dist/ (script Node portátil)
+npm run build             # compila src/ e tests/ para dist/ (tsc, NodeNext)
+npm run typecheck         # tsc --noEmit
+npm test                  # build + node --test dist/tests (JavaScript compilado)
+
+# CLI compilada (exit 0 válido · 1 manifesto inválido · 2 uso/JSON malformado)
 npm run content:validate-project -- --project examples/projects/marca-salao.project.json --json
 npm run content:validate-project -- --project examples/projects/fixture-project.project.json
-npm test
-npm run typecheck
 ```
+
+`dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
+(`platform/.gitignore`). Os exemplos JSON continuam sendo lidos da árvore-fonte
+(`platform/examples/projects/`); o caminho informado em `--project` é resolvido em
+relação ao diretório atual de execução.
 
 Exit codes da CLI: `0` válido · `1` manifesto inválido (relatório emitido) · `2` erro de
 uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trace).
@@ -102,15 +113,18 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 
 ## Stack e dependências
 
-- TypeScript com sintaxe erasable (sem enums/namespaces), executado pelo Node
-  diretamente (type stripping nativo) — **zero dependências de runtime**;
+- TypeScript com sintaxe erasable (sem enums/namespaces), **compilado com `tsc` antes
+  da execução** (ESM/NodeNext, target ES2022, saída em `dist/`) — **zero dependências
+  de runtime**;
 - Validações explícitas escritas à mão (superfície pequena e enumerada); o arquivo
   `schemas/project.schema.json` (JSON Schema draft-07) é a descrição normativa do
-  contrato e espelha o validador, que é testado por 32 casos;
-- `node:test` nativo para os testes;
-- DevDependencies apenas para o gate de tipos, fixadas: `typescript@5.9.3` (Apache-2.0)
-  e `@types/node@24.19.2` (MIT). Nenhum pacote de vídeo, parser YAML ou JSON Schema
-  runtime foi adicionado.
+  contrato e espelha o validador, que é testado por 32 casos (além dos testes de
+  portabilidade do build);
+- `node:test` nativo para os testes, executados sobre o JavaScript compilado em
+  `dist/tests`;
+- DevDependencies apenas para o gate de tipos e o build, fixadas: `typescript@5.9.3`
+  (Apache-2.0) e `@types/node@24.19.2` (MIT). Nenhum pacote de vídeo, parser YAML ou
+  JSON Schema runtime foi adicionado; nenhuma dependência foi adicionada nesta fatia.
 
 ## Limites atuais (expressos)
 

@@ -12,14 +12,14 @@ import {
     KEBAB_CASE_PATTERN,
     PROJECT_SCHEMA_VERSION,
     type ProjectManifest,
-} from './project-contract.ts'
+} from './project-contract.js'
 import {
     VALID_SUMMARY,
     invalidSummary,
     issue,
     type ProjectValidationReport,
     type ValidationIssue,
-} from './validation-report.ts'
+} from './validation-report.js'
 
 /** Campos de topo conhecidos, em ordem fixa de verificacao. */
 const KNOWN_TOP_LEVEL_FIELDS = [
