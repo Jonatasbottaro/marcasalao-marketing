@@ -5,11 +5,12 @@
 - Validação funcional: [../../../00-briefings/campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md)
 - Status do briefing: em validação
 - Status desta biblioteca: rascunho
-- Versão: 0.2
+- Versão: 0.3
+- Data da revisão: 2026-11-05
 - Aprovação: pendente
 - Uso em produção: não autorizado
 
-> **Estes hooks são rascunhos editoriais. A validação técnica da agenda existe e está registrada (leitura de código e testes selecionados do commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee`), mas a execução autenticada em ambiente local com emuladores ainda não foi feita. Nenhum hook deste documento está aprovado para publicação ou produção.**
+> **Estes hooks são rascunhos editoriais. A validação técnica da agenda existe e está registrada (leitura de código e testes selecionados do commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee`) e a execução autenticada em ambiente local com emuladores foi concluída em 2026-11-05 ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)). Nenhum hook deste documento está aprovado para publicação ou produção.**
 
 Contexto de produto que vale para todos os hooks abaixo, revisado pela validação técnica:
 
@@ -297,7 +298,7 @@ Contexto de produto que vale para todos os hooks abaixo, revisado pela validaç�
 
 **Revisão pela validação técnica (v0.2)**
 
-- **Resultado da validação técnica:** os campos que sustentam a leitura do hook — horário, cliente, profissional, serviço, preço no modal e status — estão entre as capacidades confirmadas no código da agenda do gestor (validação, seção 4). O hook não depende de disponibilidade.
+- **Resultado da validação técnica:** os campos que sustentam a leitura do hook — horário, cliente, profissional, serviço, preço no modal e status — estão entre as capacidades confirmadas no código da agenda do gestor (validação, seção 4). O hook não depende de disponibilidade. Modal, filtros e visões foram confirmados também por execução autenticada em 2026-11-05 ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)); o hook permanece rascunho e resta aprovação editorial.
 - **Classificação editorial:** mantém-se elegível; nenhum dos três rótulos de descarte se aplica.
 - **Texto original:** "Quais informações, na agenda, ajudam a acompanhar os atendimentos sem reconstruir o dia de memória?" (mantido, não apagado).
 - **Texto revisado proposto:** "Você consegue visualizar os agendamentos do seu salão com clareza?"
@@ -313,19 +314,19 @@ Contexto de produto que vale para todos os hooks abaixo, revisado pela validaç�
 | --- | --- | --- | --- | --- |
 | NS-001-H01 | pergunta | disponibilidade não é capacidade da agenda do gestor | descartado para o roteiro 001 | rascunho |
 | NS-001-H02 | pergunta | disponibilidade pertence ao fluxo público | requer reenquadramento para o fluxo público | rascunho |
-| NS-001-H03 | pergunta | visões dia/semana/mês confirmadas no código; centralização sem execução autenticada | rascunho — sem descarte por evidência | rascunho |
-| NS-001-H04 | dor | listagem dos atendimentos do dia confirmada no código; celular pendente | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H03 | pergunta | visões Dia, Semana e Mês e leitura da agenda confirmadas por execução autenticada local; a hipótese de uso em múltiplas fontes continua sem pesquisa | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H04 | dor | agenda do dia e legibilidade confirmadas em Chromium com viewport móvel emulado 390 × 844; aparelho físico não testado | rascunho — sem descarte por evidência | rascunho |
 | NS-001-H05 | dor | visão do dia confirmada no código; importação de dados externos inexistente | rascunho — sem descarte por evidência | rascunho |
 | NS-001-H06 | dor | lacunas livres não são exibidas na agenda do gestor | não suportado pela agenda do gestor | rascunho |
 | NS-001-H07 | diagnóstico | "tem horário livre" é superfície pública | requer reenquadramento para o fluxo público | rascunho |
-| NS-001-H08 | diagnóstico | leitura por papéis existe no código; comportamento compartilhado sem execução autenticada | rascunho — sem descarte por evidência | rascunho |
-| NS-001-H09 | diagnóstico | legibilidade em tela confirmada no código; em celular pendente | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H08 | diagnóstico | agenda aberta pelo gestor confirmada por execução autenticada; comportamento compartilhado entre papéis continua sem teste concorrente | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H09 | diagnóstico | legibilidade confirmada em viewport móvel emulado; aparelho físico não testado | rascunho — sem descarte por evidência | rascunho |
 | NS-001-H10 | contraste | registro único e visão do dia confirmados no código | rascunho — sem descarte por evidência | rascunho |
 | NS-001-H11 | contraste | "procurar horário disponível" não é tarefa da agenda do gestor | não suportado pela agenda do gestor | rascunho |
 | NS-001-H12 | contraste | checagem de lacuna e de conflito não comprovadas na tela do gestor | não suportado pela agenda do gestor | rascunho |
-| NS-001-H13 | curiosidade | elementos da tela inventariados no código; filtros e visões pendentes de execução | rascunho — sem descarte por evidência | rascunho |
-| NS-001-H14 | curiosidade | elementos da tela inventariados no código; legibilidade real pendente | rascunho — sem descarte por evidência | rascunho |
-| NS-001-H15 | curiosidade | campos de horário, cliente, profissional, serviço, preço e status confirmados no código | rascunho — selecionado para o roteiro 001 | rascunho |
+| NS-001-H13 | curiosidade | visões, filtros, busca e modal confirmados por execução autenticada local | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H14 | curiosidade | legibilidade confirmada em Chromium desktop e viewport móvel emulado; revisão visual editorial ainda pendente | rascunho — sem descarte por evidência | rascunho |
+| NS-001-H15 | curiosidade | campos de horário, cliente, profissional, serviço, preço e status confirmados no código; modal, filtros e visões confirmados por execução autenticada em 2026-11-05 | rascunho — selecionado para o roteiro 001; resta aprovação editorial | rascunho |
 
 Nenhum hook desta tabela é vencedor ou aprovado. A classificação registra somente o que a evidência técnica permite ou não permite afirmar; desempenho dos hooks segue desconhecido.
 
@@ -358,7 +359,7 @@ Cinco hooks haviam seguido para leitura editorial na versão 0.1. A validação 
 
 - **Por que é claro:** contrasta dois processos em uma frase curta, sem julgar pessoas.
 - **Conexão com o briefing:** dialoga com a solução proposta de concentrar e visualizar os agendamentos.
-- **Validação que falta:** execução autenticada da visão do dia no navegador — a existência está confirmada no código, o comportamento executado não.
+- **Validação que falta:** nenhuma de execução — a visão do dia foi confirmada em navegador autenticado em 2026-11-05; resta a revisão editorial.
 - **Interpretação a evitar:** ler como "certo versus errado" ou "profissional versus amador".
 - **Situação após a evidência técnica:** segue candidato; não selecionado nesta versão.
 
@@ -366,7 +367,7 @@ Cinco hooks haviam seguido para leitura editorial na versão 0.1. A validação 
 
 - **Por que é claro:** pergunta sobre a leitura do dia e termina apontando para a demonstração, alinhado ao CTA do briefing.
 - **Conexão com o briefing:** corresponde à dor da versão 0.2 — visualizar e acompanhar os agendamentos com clareza.
-- **Validação que falta:** execução autenticada da tela; os campos citados já estão entre as capacidades confirmadas no código.
+- **Validação que falta:** nenhuma de execução — a execução autenticada da tela foi concluída em 2026-11-05; os campos citados já estavam entre as capacidades confirmadas no código. Resta a revisão editorial do texto.
 - **Interpretação a evitar:** prometer mais clareza como resultado garantido.
 - **Situação após a evidência técnica:** **selecionado para o roteiro 001**, com texto revisado; status rascunho, sem aprovação.
 
@@ -393,13 +394,13 @@ Desempenho destes hooks é desconhecido: nenhum foi publicado nem medido.
 - **Texto revisado:** "Você consegue visualizar os agendamentos do seu salão com clareza?"
 - **Categoria:** curiosidade (categoria registrada do hook); o texto revisado tem forma de pergunta direta.
 - **Motivo da seleção:** é o hook existente cujo sentido exige o menor ajuste para a campanha revisada — fala de acompanhar os atendimentos pela agenda, sem depender de disponibilidade, slots livres ou automação. Encerra apontando para a demonstração, alinhado ao CTA "Conheça a agenda do Marca Salão." A revisão foi feita por evidência técnica, não por ranking: nenhum hook foi publicado ou medido.
-- **Evidência técnica:** [VALIDACAO-FUNCIONAL-AGENDA.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md), seções 4, 5 e 9 — leitura de código e testes selecionados do repositório `Jonatasbottaro/Salao02`, branch `codex/release-evidence`, commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee`. As capacidades de visualização usadas pelo hook (dia, semana, mês, filtros, busca, detalhes com horário, cliente, profissional, serviço, preço e status) estão entre as confirmadas no código.
+- **Evidência técnica:** [VALIDACAO-FUNCIONAL-AGENDA.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md), seções 4, 5 e 9 — leitura de código e testes selecionados do repositório `Jonatasbottaro/Salao02`, branch `codex/release-evidence`, commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee`. As capacidades de visualização usadas pelo hook (dia, semana, mês, filtros, busca, detalhes com horário, cliente, profissional, serviço, preço e status) estão entre as confirmadas no código. A execução autenticada de 2026-11-05 confirmou em navegador o modal, os filtros, as visões, a busca e a ação de status ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)).
 - **Relação com o briefing:** corresponde à dor da versão 0.2 ("dificuldade de visualizar e acompanhar os agendamentos do salão com clareza"), à pergunta principal da seção 4 e à mensagem principal da seção 8.
 - **Principal risco:** prometer "mais clareza" como resultado garantido do uso do sistema, ou ser lido como se a agenda reunisse informações que nunca foram registradas nela.
-- **Validação ainda necessária:** execução autenticada da tela em ambiente local com emuladores e dados fictícios — renderização, filtros, busca, modal e ações de status ainda não foram observados em navegador; captura atualizada; comportamento em celular.
+- **Validação ainda necessária:** Execução funcional concluída em 2026-11-05; resta revisão e aprovação editorial pelo titular.
 - **Status da seleção:** selecionado para roteiro em rascunho
 - **Aprovação para produção:** não
-- **Data da revisão:** 2026-11-02
+- **Data da revisão:** 2026-11-05
 - **Responsável:** pendente de definição
 
 **Seleção anterior — histórico, não usar como mensagem atual.** Em 2026-11-02 (versão 0.1 desta biblioteca) o hook selecionado foi NS-001-H01, com o texto "Você sabe quais horários ainda estão disponíveis no seu salão?". A seleção foi **revisada por evidência técnica**: a validação classificou a exibição de horários disponíveis como capacidade não suportada pela agenda do gestor, pertencente ao fluxo público do cliente. O ID, o texto original, o motivo da escolha anterior e a data permanecem registrados na entrada NS-001-H01 e na tabela de triagem.
