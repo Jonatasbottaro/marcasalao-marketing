@@ -8,15 +8,16 @@
 - Status do briefing: em validação
 - Status do hook: rascunho
 - Status do roteiro: rascunho
-- Versão: 0.2
+- Versão: 0.3
 - Aprovação: pendente
 - Autorizado para gravação: não
 - Autorizado para publicação: não
 - Data de criação: 2026-11-02
-- Data da revisão: 2026-11-02
+- Data da revisão: 2026-11-05
 - Responsável: pendente de definição, se não documentado
+- Validação por execução autenticada: [../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)
 
-> **Este roteiro permanece como rascunho editorial. A gravação e a publicação não estão autorizadas. As cenas demonstrativas ainda dependem da execução autenticada em um ambiente local com emuladores e dados fictícios.**
+> **Este roteiro permanece como rascunho editorial. A gravação e a publicação não estão autorizadas. As cenas demonstrativas tiveram a execução autenticada concluída em 2026-11-05 (emuladores + Chromium, dados fictícios); o que falta agora é a aprovação editorial do titular.**
 
 ---
 
@@ -45,7 +46,7 @@ Este roteiro não promete: redução de faltas, prevenção de no-show, aumento 
 - **Razão editorial da escolha:** é o hook existente cujo sentido exige o menor ajuste frente à evidência técnica — trata de acompanhar os atendimentos pela agenda, sem depender de disponibilidade, automação ou resultado financeiro. A seleção não declara desempenho: nenhum hook foi publicado ou medido.
 - **Risco de interpretação:** ser lido como promessa de que a tela reúne informações que nunca foram registradas nela, ou como garantia de clareza.
 - **Evidência utilizada:** capacidades de visualização confirmadas no código — rota `/gestor/agenda`, visões dia/semana/mês, filtros por profissional e status, busca por nome do cliente, modal de detalhes com horário, cliente, profissional, serviço, preço e status ([`VALIDACAO-FUNCIONAL-AGENDA.md`](../../../00-briefings/campanhas/NS-001/VALIDACAO-FUNCIONAL-AGENDA.md), seção 4).
-- **Validação ainda necessária:** execução autenticada da tela em ambiente local com emuladores e dados fictícios. Nada deste roteiro pode ser gravado antes disso.
+- **Validação ainda necessária:** execução autenticada da tela em ambiente local com emuladores e dados fictícios concluída em 2026-11-05 ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)). Nada deste roteiro pode ser gravado antes da aprovação editorial do titular.
 
 **Seleção anterior — histórico.** A versão 0.1 deste roteiro usava o hook NS-001-H01, com a pergunta sobre horários ainda disponíveis, como texto da Cena 1. A evidência técnica classificou a disponibilidade como capacidade não suportada pela agenda do gestor, então aquela formulação foi **descartada** deste documento e permanece registrada apenas em [`../../../02-hooks/campanhas/NS-001/hooks.md`](../../../02-hooks/campanhas/NS-001/hooks.md), como texto original e histórico. Não usar como mensagem atual, texto de tela ou narração.
 
@@ -55,7 +56,7 @@ Este roteiro não promete: redução de faltas, prevenção de no-show, aumento 
 - Proporção: 9:16, sustentada pela documentação existente do repositório (`01-insta-stories/README.md` trata os assets como 1080x1920; `WORKFLOW.md` manda salvar PNG 1080x1920 e exportar 1080x1920 a 30fps).
 - Canais possíveis: Instagram Reels e Stories, YouTube Shorts, TikTok.
 - Duração final: pendente de leitura e edição; nenhuma duração é afirmada aqui.
-- Demonstração: condicionada à execução autenticada em ambiente local com emuladores e dados fictícios.
+- Demonstração: execução autenticada em ambiente local com emuladores e dados fictícios concluída em 2026-11-05; gravação condicionada à aprovação editorial.
 - Produção: vídeo sem áudio, com legendas visíveis sincronizadas, `.srt` correspondente e narração entregue como texto separado, conforme [`../../../WORKFLOW.md`](../../../WORKFLOW.md).
 
 Nada neste roteiro está agendado, gravado ou publicado.
@@ -84,9 +85,9 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Texto na tela: "Você consegue visualizar os agendamentos do seu salão com clareza?"
 - Narração: "Você consegue visualizar os agendamentos do seu salão com clareza?"
 - Evidência utilizada: [../../../02-hooks/campanhas/NS-001/hooks.md](../../../02-hooks/campanhas/NS-001/hooks.md), hook NS-001-H15 (texto revisado); pergunta principal da seção 4 do briefing 0.2.
-- Validação necessária: nenhuma para a pergunta em si; as cenas demonstrativas (3 a 6) dependem da execução autenticada.
+- Validação necessária: nenhuma para a pergunta em si; as cenas demonstrativas (3 a 6) tiveram a execução autenticada concluída em 2026-11-05.
 - Risco: ser lido como garantia de que a tela revela algo que não foi registrado nela, ou como crítica à forma como o salão trabalha hoje.
-- Status da cena: rascunho
+- Status da cena: rascunho editorial
 
 ### Cena 2 — Situação de informação espalhada
 
@@ -98,7 +99,7 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Evidência utilizada: dor e impacto operacional qualitativos das seções 4 e 5 do briefing 0.2.
 - Validação necessária: nenhuma, pois a cena não mostra o produto; o registro em múltiplos lugares é situação do salão, não comportamento do sistema.
 - Risco: a situação é **condicional** — o texto começa com "quando" e só vale para o salão em que ela de fato ocorre. Não há pesquisa que sustente apresentá-la como realidade de todos os salões ou da maior parte deles, e o roteiro não pode ser lido dessa forma. A cena também não pode servir para classificar o estabelecimento como desorganizado, nem afirmar prejuízo, perda de clientes ou redução de faturamento.
-- Status da cena: rascunho
+- Status da cena: rascunho editorial
 
 ### Cena 3 — Visões dia, semana e mês
 
@@ -108,9 +109,9 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Texto na tela: "O mesmo registro, visto por dia, semana ou mês."
 - Narração: "Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês."
 - Evidência utilizada: página da agenda do gestor, `AgendaViewSwitcher.tsx` e `CalendarGrid.tsx` no commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee`, registrados na seção 8 da validação funcional; controles também visíveis em [../../../01-insta-stories/05_agenda.png](../../../01-insta-stories/05_agenda.png).
-- Validação necessária: comportamento confirmado no código e em teste automatizado selecionado (alternância entre semana e mês); execução autenticada no navegador ainda pendente, inclusive o estado atual da tela e a legibilidade em celular.
+- Validação necessária: comportamento confirmado no código e em teste automatizado selecionado (alternância entre semana e mês); visões Dia, Semana e Mês e navegação por data observadas em navegador autenticado em 2026-11-05, inclusive estado atual da tela e legibilidade em viewport móvel emulado (verificação em aparelho físico real permanece fora do escopo).
 - Risco: apresentar a troca de visão como se já estivesse testada em uso real, ou sugerir que a agenda mostra o que não foi registrado nela.
-- Status da cena: rascunho — pendente de execução autenticada
+- Status da cena: tecnicamente validada; pendente de aprovação editorial e produção
 
 ### Cena 4 — Filtros e busca
 
@@ -120,9 +121,9 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Texto na tela: "Filtrar por profissional, por status, ou buscar pelo nome."
 - Narração: "Dá para filtrar por profissional, por status, ou buscar o nome de um cliente."
 - Evidência utilizada: filtros por profissional e status e busca por cliente confirmados no código da agenda do gestor (seções 4 e 8 da validação funcional).
-- Validação necessária: ação real dos filtros e da busca no navegador, pendente de execução autenticada; o significado operacional de cada valor do filtro de status ainda precisa ser conferido em tela. Não mostrar filtro inexistente nem busca por serviço ou por período que não esteja implementado.
+- Validação necessária: os valores de status observados foram Pendente, Confirmado, Concluído, Cancelado e No-show; filtro por profissional, filtro por status e busca por cliente foram executados em navegador autenticado na execução de 2026-11-05. Nenhuma busca por serviço ou por período foi prometida ou demonstrada. Não mostrar filtro inexistente nem busca por serviço ou por período que não esteja implementado.
 - Risco: insinuar que a tela aponta disponibilidade, sugere horários ou encontra sozinha o que a pessoa procura; a consulta é feita pela pessoa.
-- Status da cena: rascunho — pendente de execução autenticada
+- Status da cena: tecnicamente validada; pendente de aprovação editorial e produção
 
 ### Cena 5 — Detalhes de um agendamento fictício
 
@@ -132,9 +133,9 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Texto na tela: "Abrir um atendimento e ver os dados dele."
 - Narração: "Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status."
 - Evidência utilizada: `BookingDetailModal.tsx` e os campos horário, cliente, profissional, serviço, preço e status registrados como confirmados no código (seções 4 e 8 da validação funcional).
-- Validação necessária: abrir o modal em navegador autenticado, com dados fictícios, e conferir quais campos realmente aparecem preenchidos. Esta cena **não depende mais de slots disponíveis** — a disponibilidade não é capacidade dessa tela, e nenhum horário livre pode ser mostrado ou sugerido aqui.
+- Validação necessária: modal aberto em navegador autenticado com dados fictícios na execução de 2026-11-05; os campos horário, cliente, profissional, serviço, preço, status e status de pagamento apareceram preenchidos. Esta cena **não depende mais de slots disponíveis** — a disponibilidade não é capacidade dessa tela, e nenhum horário livre pode ser mostrado ou sugerido aqui.
 - Risco: mostrar duração como campo próprio da interface, ou fazer aparecer botões de edição, remarcação ou exclusão que a tela não oferece; exibir nome, telefone ou e-mail reais.
-- Status da cena: rascunho — pendente de execução autenticada
+- Status da cena: tecnicamente validada; pendente de aprovação editorial e produção
 
 ### Cena 6 — Ação de status comprovada
 
@@ -144,9 +145,9 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Texto na tela: "Atualizar o status do atendimento."
 - Narração: "Quando a gestão confirma o atendimento, o status fica registrado na agenda."
 - Evidência utilizada: ação de confirmação de status confirmada no código da agenda, entre as ações de status (confirmação, conclusão, registro de no-show e cancelamento) e o pagamento local; o cancelamento também é coberto por teste automatizado (seções 4 e 8 da validação funcional). Apenas a confirmação entra na demonstração.
-- Validação necessária: efetivação da ação em navegador autenticado, em ambiente local com emuladores e dados fictícios, antes de gravar. Sem essa execução autenticada a cena não é demonstrável.
+- Validação necessária: ação Confirmar executada manualmente em navegador autenticado, em ambiente local com emuladores e dados fictícios, na execução de 2026-11-05 (Pendente → Confirmado, com persistência após recarga). Nenhuma mensagem foi enviada, nenhuma notificação externa foi exercitada e nenhuma confirmação automática ocorreu. A cena é demonstrável após a aprovação editorial.
 - Risco: a cena não pode sugerir confirmação automática, mensagem enviada ao cliente, notificação, reminder, segunda transição de status, edição ou remarcação. Confirmar aqui é ato manual da gestão registrado na tela, não um contato com o cliente.
-- Status da cena: rascunho — pendente de execução autenticada
+- Status da cena: tecnicamente validada; pendente de aprovação editorial e produção
 
 ### Cena 7 — Chamada para ação
 
@@ -158,7 +159,7 @@ Hook → Situação → Visões da agenda → Filtros e busca → Detalhes → A
 - Evidência utilizada: CTA principal e destino documentados na seção 12 do briefing — [`https://marcasalao.com.br`](https://marcasalao.com.br).
 - Validação necessária: confirmar por canal — no Instagram, orientar "link na bio" somente se o link externo do perfil estiver conferido na data da publicação; no Facebook, usar a URL completa na legenda. Não prometer acesso ao painel de demonstração, que exige credenciais não armazenadas neste repositório. Rastreamento: pendente, sem mecanismo definido.
 - Risco: insinuar que clicar na imagem abre o site; prometer acesso direto ao painel; sugerir automação de mensagens, preenchimento da agenda, prevenção de faltas, agenda sempre cheia ou resultado financeiro.
-- Status da cena: rascunho
+- Status da cena: rascunho editorial
 
 ## 7. Texto corrido de narração
 
@@ -198,7 +199,7 @@ Regras aplicadas: frases curtas, legíveis em tela vertical 1080x1920, sem estat
 
 ### Confirmado no código
 
-Sustentado pela leitura do commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee` (branch `codex/release-evidence`). Nada desta lista foi aberto em navegador:
+Sustentado pela leitura do commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee` (branch `codex/release-evidence`). Na auditoria técnica inicial, essas capacidades foram confirmadas por leitura de código; a execução autenticada posterior está registrada em [`VALIDACAO-EXECUCAO-2026-11-05.md`](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md):
 
 - visões dia, semana e mês;
 - agendamentos ocupados;
@@ -234,9 +235,9 @@ Comportamentos isolados executados durante a validação, com mocks ou em jsdom.
 
 Sobre o último item, registrar a formulação técnica vigente: O Salao02 contém implementação técnica de notificações e lembrete de 24 horas, mas implantação, configuração dos canais e entrega real não foram validadas para esta campanha. A NS-001 não está autorizada a prometer ou demonstrar essas capacidades. **Não apresentar testes de reminder como autorização promocional**, e não citar reminder, scheduler ou provedores em texto de tela ou narração.
 
-### Pendente de execução autenticada
+### Execução autenticada — concluída em 2026-11-05
 
-Nenhum item abaixo foi observado em tela; todos precisam de execução local com emuladores e dados fictícios antes de qualquer gravação:
+Os itens abaixo foram observados em tela na execução autenticada de 2026-11-05 ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)), em Chromium com emuladores e dados fictícios:
 
 - renderização real da agenda;
 - login e autorização;
@@ -245,11 +246,11 @@ Nenhum item abaixo foi observado em tela; todos precisam de execução local com
 - busca no navegador;
 - abertura do modal;
 - ações de status;
-- integração real com Firestore;
-- comportamento móvel;
 - captura atualizada;
 - uso de dados fictícios;
-- experiência completa no Chromium.
+- experiência no Chromium, inclusive viewport mobile 390×844.
+
+Permanecem fora do escopo desta validação, por definição: integração com Firestore de produção (a validação é local com emuladores) e teste em aparelho físico real (a verificação mobile foi por emulação de viewport).
 
 ### Proibido demonstrar ou afirmar na NS-001
 
@@ -271,8 +272,8 @@ Nada dessa lista pode aparecer de forma implícita: nenhuma cena, texto de tela 
 
 ## 10. Materiais necessários
 
-- Execução autenticada da agenda em ambiente local com emuladores e dados fictícios, registrada com responsável e data.
-- Captura atual da agenda, obtida nessa execução; a única registrada no repositório é de 02/10/2026 e não prova o estado atual da tela.
+- Execução autenticada da agenda em ambiente local com emuladores e dados fictícios: concluída em 2026-11-05, registrada com responsável e data em [VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md).
+- Captura atual da agenda obtida nessa execução, em [capturas/2026-11-05/](../../../00-briefings/campanhas/NS-001/capturas/2026-11-05/); a captura de 02/10/2026 permanece apenas como histórico.
 - Validação de resolução e legibilidade da captura no formato vertical.
 - Gravação de tela somente após validar o fluxo escolhido. O acesso ao ambiente de execução é obtido junto ao responsável pelo projeto — credenciais não ficam neste repositório, e a antiga conta demo não pode ser usada.
 - Elementos oficiais de marca existentes em [`../../../marcas/marcasalao/posts/`](../../../marcas/marcasalao/posts/): identidade verde-petróleo, menta e branco, logo MS/tesoura.
@@ -296,47 +297,51 @@ Nada dessa lista pode aparecer de forma implícita: nenhuma cena, texto de tela 
 
 ## 12. Pendências
 
-- Executar o E2E local com emuladores (runbook `docs/runbooks/local-full-user-journey-e2e.md` do repositório `Jonatasbottaro/Salao02`) e registrar responsável e data.
-- Confirmar em navegador as visões dia, semana e mês, os filtros, a busca, o modal e a ação de status demonstrada.
-- Validar comportamento em celular e legibilidade em tela vertical.
-- Refazer a captura da agenda a partir do ambiente validado.
+Resolvidas em 2026-11-05 pela execução autenticada ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)): E2E local com emuladores executado e registrado com responsável e data; visões dia, semana e mês, filtros, busca, modal e ação de status confirmados em navegador; legibilidade em viewport mobile validada; captura da agenda refeita a partir do ambiente validado; ausência de dados pessoais conferida nas capturas de evidência.
+
+Continuam abertas:
+
 - Confirmar o texto revisado do hook editorialmente, junto da revisão dos candidatos em `../../../02-hooks/campanhas/NS-001/hooks.md`.
 - Confirmar o CTA e o destino por canal, inclusive o link externo do perfil antes de prometer "link na bio".
 - Definir o responsável pela campanha e pela aprovação.
 - Revisar os textos de tela e a narração.
-- Validar a ausência de dados pessoais em cada quadro.
+- Validar a ausência de dados pessoais em cada quadro da gravação final (as capturas de evidência já foram conferidas; a gravação ainda não existe).
 - Estimar a duração depois da leitura cronometrada.
 - Aprovar o briefing antes de qualquer produção.
+- Confirmar qual nome e identidade visual são oficiais para uso público antes da produção final (a interface capturada exibe "Meu Salão"; a campanha usa "Marca Salão"); não alterar o produto nem editar capturas sem autorização.
 
 ## 13. Checklist editorial
 
 - [ ] O briefing está aprovado.
 - [ ] O hook está aprovado.
-- [ ] A funcionalidade demonstrada foi validada por execução autenticada.
-- [ ] A captura está atualizada.
-- [ ] A demonstração corresponde ao produto atual.
-- [ ] O comportamento móvel foi validado.
-- [ ] Nenhum dado pessoal aparece.
-- [ ] O roteiro não promete mensagens automáticas.
-- [ ] O roteiro não promete lembretes automáticos.
-- [ ] O roteiro não promete redução de faltas.
-- [ ] O roteiro não promete aumento de faturamento.
-- [ ] O CTA foi validado.
-- [ ] A narração foi revisada.
-- [ ] Os textos de tela foram revisados.
-- [ ] O E2E local com emuladores foi executado.
-- [ ] A agenda foi validada em Chromium.
-- [ ] Os filtros foram validados no navegador.
-- [ ] A busca foi validada no navegador.
-- [ ] O modal foi validado no navegador.
-- [ ] As ações demonstradas foram validadas em ambiente local.
-- [ ] Todos os dados usados são fictícios.
-- [ ] Nenhuma cena sugere horários disponíveis na agenda do gestor.
-- [ ] Nenhuma cena apresenta reminder como promessa comercial.
+- [x] A funcionalidade demonstrada foi validada por execução autenticada.
+- [x] A captura de evidência está atualizada.
+- [ ] A demonstração final corresponde ao produto atual.
+- [x] O comportamento móvel foi validado em viewport emulado.
+- [x] Nenhum dado pessoal aparece nas capturas de evidência.
+- [x] O roteiro não promete mensagens automáticas.
+- [x] O roteiro não promete lembretes automáticos.
+- [x] O roteiro não promete redução de faltas.
+- [x] O roteiro não promete aumento de faturamento.
+- [ ] O CTA por canal foi validado.
+- [ ] A narração foi revisada e aprovada.
+- [ ] Os textos de tela foram revisados e aprovados.
+- [x] O E2E local com emuladores foi executado.
+- [x] A agenda foi validada em Chromium.
+- [x] Os filtros foram validados no navegador.
+- [x] A busca foi validada no navegador.
+- [x] O modal foi validado no navegador.
+- [x] A ação Confirmar foi validada no ambiente local.
+- [x] Todos os dados das evidências são fictícios.
+- [x] Nenhuma cena sugere horários disponíveis na agenda do gestor.
+- [x] Nenhuma cena apresenta reminder como promessa comercial.
+- [ ] A gravação final foi revisada para dados pessoais.
 - [ ] O roteiro foi aprovado para gravação.
 - [ ] O roteiro foi aprovado para publicação.
 
-Nenhum item está marcado: o briefing continua em validação, o hook continua em rascunho e a agenda ainda não foi executada em ambiente autenticado. Gravação e publicação permanecem bloqueadas.
+Itens marcados por evidência: a execução autenticada de 2026-11-05 ([VALIDACAO-EXECUCAO-2026-11-05.md](../../../00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md)) cobre validação em Chromium, filtros, busca, modal, ação Confirmar, comportamento móvel em viewport emulado, captura de evidência atualizada e dados fictícios; os itens de promessa refletem o texto atual do roteiro. "A demonstração final corresponde ao produto atual" e "A gravação final foi revisada para dados pessoais" permanecem abertos porque nenhuma peça foi gravada. Aprovações de briefing, hook, CTA, textos, gravação e publicação continuam com o titular: gravação e publicação permanecem bloqueadas.
+
+As capturas de 2026-11-05 são evidência técnica. Não estão automaticamente aprovadas como frames de publicação: trazem identificação técnica E2E, enquadramento de validação, possíveis valores fictícios inadequados e ainda exigem adaptação vertical, revisão de marca, fixture editorial dedicada e revisão quadro a quadro.
 
 ## 14. Aprovação
 
@@ -346,4 +351,4 @@ Nenhum item está marcado: o briefing continua em validação, o hook continua e
 - Data da aprovação: pendente
 - Autorizado para gravação: não
 - Autorizado para publicação: não
-- Observações: "Roteiro revisado com base na auditoria técnica. A produção permanece bloqueada até execução autenticada local com emuladores e dados fictícios." Este documento não autoriza gravar, publicar, agendar nem registrar métricas. Estados e critério de pronto em [`../../README.md`](../../README.md).
+- Observações: "Roteiro revisado com base na auditoria técnica. A execução autenticada local com emuladores e dados fictícios foi concluída em 2026-11-05; a produção permanece bloqueada até a aprovação editorial do briefing, do hook e deste roteiro pelo titular." Este documento não autoriza gravar, publicar, agendar nem registrar métricas. Estados e critério de pronto em [`../../README.md`](../../README.md).

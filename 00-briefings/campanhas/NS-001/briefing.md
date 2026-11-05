@@ -12,9 +12,9 @@
 - Nome: Organização e visibilidade da agenda
 - Responsável: pendente de definição (não há responsável documentado no repositório)
 - Data de criação: 2026-11-02
-- Data de atualização: 2026-11-02
+- Data de atualização: 2026-11-05
 - Status: em validação
-- Versão: 0.2
+- Versão: 0.3
 
 ## 2. Objetivo da campanha
 
@@ -75,10 +75,11 @@ Não inventar: ticket médio, quantidade de faltas, prejuízo mensal, percentual
 - Funcionalidade: Agenda do Marca Salão (painel do salão, item de menu "Agendamentos", rota `/gestor/agenda`).
 - Onde está disponível: no painel do gestor. A rota foi conferida por leitura de código no commit `6342a33a36b0a4eadd0f5a62770f1eee485156ee` do repositório `Jonatasbottaro/Salao02` (`src/app/(dashboard)/gestor/agenda/page.tsx`, registrada em `ROUTE_MAP.md`). A leitura arquivada em 18/10/2026 ([`../../../marcas/marcasalao/posts/2026-10-18-organizacao-agenda-equipe/README.md`](../../../marcas/marcasalao/posts/2026-10-18-organizacao-agenda-equipe/README.md)) já citava o mesmo arquivo.
 - Documento de validação: [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md).
+- Validação por execução autenticada: [`VALIDACAO-EXECUCAO-2026-11-05.md`](VALIDACAO-EXECUCAO-2026-11-05.md) — E2E local com emuladores e verificação manual em Chromium autenticado, com dados fictícios, em 2026-11-05.
 
 ### Confirmado no código
 
-Sustentado pela leitura do commit auditado. Nada desta lista foi aberto em navegador:
+Sustentado pela leitura do commit auditado. Na auditoria técnica inicial, essas capacidades foram confirmadas por leitura de código. A execução autenticada posterior está registrada separadamente na subseção "Confirmado por execução autenticada em 2026-11-05".
 
 - visão dia;
 - visão semana;
@@ -112,22 +113,50 @@ Alcance mais estreito que o anterior: são comportamentos isolados, executados c
 - cancelamento e recusa entre tenants (`src/app/api/bookings/cancel/route.test.ts`);
 - regras isoladas do lembrete de 24 horas, com envio mockado (`src/lib/notifications/booking-reminders.test.ts`).
 
-### Pendente de execução autenticada
+Mocks e jsdom não equivalem à aplicação completa. Os testes de reminder não autorizam promessa comercial: implementação, teste automatizado, implantação, configuração, execução, entrega real e autorização comercial são coisas diferentes.
 
-Nenhum item abaixo foi observado em tela:
+### Confirmado por execução autenticada em 2026-11-05
 
-- renderização real da agenda;
-- login e autorização;
+Registrado em [`VALIDACAO-EXECUCAO-2026-11-05.md`](VALIDACAO-EXECUCAO-2026-11-05.md), em emuladores locais com dados fictícios e Chromium:
+
+- aplicação local iniciada;
+- autenticação do gestor;
+- rota `/gestor/agenda`;
 - carregamento dos dados;
-- ação real dos filtros de profissional e status no navegador;
-- busca de cliente no navegador;
-- abertura do modal de detalhes;
-- efetivação das ações de status;
-- conteúdo gerado por "Exportar CSV";
-- integração entre o agendamento público e a agenda do painel;
-- comportamento em celular;
-- estado atual da tela — a captura registrada no repositório é de 02/10/2026;
-- significado operacional de cada valor do filtro de status.
+- visão Dia;
+- visão Semana;
+- visão Mês;
+- filtro por profissional;
+- filtro por status;
+- busca por cliente;
+- modal;
+- horário;
+- cliente;
+- profissional;
+- serviço;
+- preço;
+- status;
+- status de pagamento;
+- ação manual Confirmar;
+- persistência após recarga;
+- viewport móvel 390 × 844;
+- jornada pública integrada à agenda;
+- dados fictícios.
+
+### Continua pendente ou fora do escopo
+
+- Firestore de produção;
+- staging;
+- aparelho físico real;
+- conteúdo gerado por Exportar CSV;
+- notificações externas;
+- scheduler em produção;
+- entrega real por canais;
+- peça final;
+- revisão editorial;
+- aprovação;
+- gravação;
+- publicação.
 
 ### Não suportadas na agenda do gestor
 
@@ -190,7 +219,8 @@ Não associar nenhuma destas etapas a horários disponíveis, slots livres ou of
 
 ## 10. Materiais necessários
 
-- Captura atual da agenda, revalidada na data da produção (a registrada no Git em 02/10/2026 é a única disponível).
+- Captura atual da agenda obtida na execução autenticada de 2026-11-05, em [`capturas/2026-11-05/`](capturas/2026-11-05/); a captura anterior permanece como histórico. As capturas são evidência técnica, não frames aprovados de publicação.
+- Recomendação futura: criar uma fixture editorial separada, com nomes fictícios neutros, campos completos, serviços e valores plausíveis, para obtenção de capturas e gravações finais (não criada nesta tarefa).
 - Validação da resolução e da legibilidade da captura no formato final do canal.
 - Gravação de tela somente após validar o fluxo que será demonstrado.
 - Elementos oficiais de marca existentes no repositório: identidade verde-petróleo, menta e branco, logo MS/tesoura, conforme as artes aprovadas em [`../../../marcas/marcasalao/posts/`](../../../marcas/marcasalao/posts/).
@@ -259,29 +289,34 @@ Nenhuma meta numérica foi criada. Nenhuma métrica realizada foi preenchida: n�
 - Restrições de marca: identidade verde-petróleo, menta e branco; sem tela fictícia; sem simular botão clicável em imagem estática; não republicar para corrigir legenda.
 - Risco de material herdado: existem textos antigos neste repositório que tratam automação de contato como capacidade comercial já disponível — por exemplo [`../../../04-legendas/roteiro_enviar_link.md`](../../../04-legendas/roteiro_enviar_link.md) ("sua agenda atualiza no automático 24 horas por dia") e [`../../../templates/youtube_horizontal/index.html`](../../../templates/youtube_horizontal/index.html) ("Automatize o envio de lembretes aos clientes"). São rascunhos/template históricos, não referência de qualidade; não devem ser reutilizados nesta campanha. A auditoria localizou implementação técnica de reminder no produto, mas isso **não** reabilita esses textos: implantação, configuração dos canais e entrega real seguem pendentes e a promessa comercial continua não autorizada. Nenhum desses arquivos foi alterado nesta tarefa.
 - Risco de formulação herdada fora deste escopo: a afirmação absoluta de que o sistema não possui mensagens ou lembretes automáticos ainda aparece em [`../../README.md`](../../README.md), [`../../../02-hooks/README.md`](../../../02-hooks/README.md) e [`../../../03-roteiros/README.md`](../../../03-roteiros/README.md), arquivos que esta tarefa não modifica. Fica registrada como pendência editorial; a formulação técnica vigente é a da seção 7.
+- Pendência editorial de marca: a interface capturada exibe o nome de produto "Meu Salão", enquanto a campanha usa "Marca Salão". A produção final deve confirmar qual nome e identidade visual são oficiais para uso público; não alterar a interface do produto nem corrigir a captura por edição sem autorização, e não afirmar que um dos nomes está errado sem decisão oficial.
 - Pendências: ver seções 7, 8, 12 e 16.
 
 ## 15. Checklist de validação
 
-- [ ] A dor é real e compreensível.
+- [x] A dor é compreensível editorialmente.
+- [ ] A dor foi validada por pesquisa com o público.
 - [x] O público está definido.
 - [x] O impacto não foi inventado.
-- [ ] A funcionalidade existe no sistema atual.
-- [ ] A funcionalidade foi verificada.
-- [ ] As capturas correspondem ao comportamento descrito.
+- [x] A funcionalidade existe no sistema atual.
+- [x] A funcionalidade foi verificada.
+- [x] As capturas correspondem ao comportamento descrito.
 - [x] O conteúdo não promete mensagens automáticas.
 - [x] O conteúdo não promete lembretes automáticos.
 - [x] O conteúdo não promete resultados garantidos.
 - [x] A responsabilidade do estabelecimento está clara quando aplicável.
 - [x] O CTA está definido.
+- [ ] O CTA por canal foi validado.
 - [ ] As métricas estão definidas.
-- [ ] As pendências críticas foram resolvidas.
+- [ ] As pendências editoriais críticas foram resolvidas.
 - [ ] O briefing foi aprovado antes da produção.
-- [ ] A demonstração mostra somente comportamentos confirmados.
-- [ ] Nenhum dado pessoal aparece nas capturas.
-- [ ] A mensagem não apresenta organização da agenda como prevenção automática de faltas.
+- [ ] A demonstração final mostra somente comportamentos confirmados.
+- [x] Nenhum dado pessoal aparece nas capturas de evidência.
+- [x] A mensagem não apresenta organização da agenda como prevenção automática de faltas.
 
-Os itens marcados referem-se ao texto deste briefing. A validação por leitura de código e testes selecionados existe e está registrada em [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md), mas ela não preenche estes checkboxes: "existe no sistema atual" e "foi verificada" exigem execução autenticada, responsável definido e data de validação no ambiente em uso; as capturas ainda são a única de 02/10/2026; e as pendências críticas continuam abertas. O briefing permanece **não aprovado**.
+Os itens marcados referem-se ao texto deste briefing e à evidência registrada. "Existe no sistema atual" e "foi verificada" foram preenchidos pela execução autenticada de 2026-11-05 ([`VALIDACAO-EXECUCAO-2026-11-05.md`](VALIDACAO-EXECUCAO-2026-11-05.md)), com responsável e data registrados naquele documento; as capturas de evidência são as de [`capturas/2026-11-05/`](capturas/2026-11-05/). "A dor é compreensível editorialmente" refere-se à formulação da pergunta de reconhecimento da seção 4; não há pesquisa com o público e nenhuma métrica de dor foi inventada. "A demonstração final mostra somente comportamentos confirmados" permanece aberto porque nenhuma peça foi gravada. O briefing permanece **não aprovado**.
+
+As capturas de 2026-11-05 são evidência técnica. Não estão automaticamente aprovadas como frames de publicação: trazem identificação técnica E2E, enquadramento de validação, possíveis valores fictícios inadequados e ainda exigem adaptação vertical, revisão de marca, fixture editorial dedicada e revisão quadro a quadro.
 
 ## 16. Aprovação
 
@@ -289,4 +324,4 @@ Os itens marcados referem-se ao texto deste briefing. A validação por leitura 
 - Revisado por: pendente de definição
 - Aprovado por: pendente
 - Data da aprovação: pendente
-- Observações: briefing em validação; produção não autorizada até a execução autenticada da agenda em ambiente local com emuladores e dados fictícios. A versão 0.2 incorpora a validação técnica registrada em [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md) e remove dos textos atuais qualquer associação entre a agenda do gestor e horários disponíveis. Este documento não autoriza publicar, agendar ou gerar materiais. Estados e critério de pronto em [`../../README.md`](../../README.md).
+- Observações: briefing em validação. A execução autenticada da agenda em ambiente local com emuladores e dados fictícios foi concluída em 2026-11-05 e está registrada em [`VALIDACAO-EXECUCAO-2026-11-05.md`](VALIDACAO-EXECUCAO-2026-11-05.md); a produção continua não autorizada até a aprovação deste briefing e a definição do responsável. A versão 0.2 incorporou a validação técnica registrada em [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md) e removeu dos textos atuais qualquer associação entre a agenda do gestor e horários disponíveis; a versão 0.3 registra a execução autenticada e as capturas de 2026-11-05. Este documento não autoriza publicar, agendar ou gerar materiais. Estados e critério de pronto em [`../../README.md`](../../README.md).
