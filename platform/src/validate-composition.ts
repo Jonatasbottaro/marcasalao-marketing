@@ -3,18 +3,23 @@
  *
  * Valida a estrutura propria da composicao e o vinculo com um ProjectManifest
  * informado explicitamente: mesmo projeto, mesmo locale e profile presente em
- * outputProfiles. Nao le arquivos, nao acessa rede, nao verifica existencia
- * fisica de assets e nao conhece nenhum projeto especifico.
+ * outputProfiles. Nao le arquivos, nao acessa rede, nao abre assets, nao
+ * verifica existencia fisica e nao conhece nenhum projeto especifico.
  *
  * Os erros sao coletados todos, em ordem de emissao fixa: primeiro o manifesto
  * do projeto, depois a estrutura da composicao, depois os vinculos entre eles.
+ * Warnings sao heuristicas tecnicas (texto longo, cena curta, renderer
+ * undecided): nao tornam a composicao invalida e nao substituem aprovacao
+ * editorial.
  */
 
 import {
     COMPOSITION_FPS_MAX,
     COMPOSITION_FPS_MIN,
     COMPOSITION_MAX_TAGS,
+    COMPOSITION_MAX_TEXT_LENGTH,
     COMPOSITION_METADATA_STATUSES,
+    COMPOSITION_MIN_TEXT_DURATION_MS,
     COMPOSITION_SCENE_TYPES,
     COMPOSITION_SCHEMA_VERSION,
     COMPOSITION_TOP_LEVEL_FIELDS,
@@ -77,17 +82,27 @@ function isAbsoluteishPath(value: string): boolean {
     return value.startsWith('/') || value.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(value)
 }
 
-function pathSegments(value: string): string[] {
-    return value.split(/[\\/]/).filter((segment) => segment.length > 0)
-}
-
-/** Detecta URL/protocolo ou credenciais embutidas em um caminho ou href. */
+/** Detecta URL/protocolo, inclusive protocol-relative e file URL. */
 function hasUrlScheme(value: string): boolean {
-    return /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value)
+    return value.startsWith('//') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value)
 }
 
 function hasEmbeddedCredentials(value: string): boolean {
     return /^https?:\/\/[^/@]*:[^/@]*@/.test(value)
+}
+
+/** Validacao local de URL http(s): sintaxe e hostname, sem qualquer requisicao. */
+function isWellFormedHttpUrl(value: string): boolean {
+    try {
+        const parsed = new URL(value)
+        return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
+    } catch {
+        return false
+    }
+}
+
+function pathSegments(value: string): string[] {
+    return value.split(/[\\/]/).filter((segment) => segment.length > 0)
 }
 
 function detectSensitiveAssetPath(value: string): boolean {
@@ -112,7 +127,7 @@ function detectSensitiveAssetPath(value: string): boolean {
 function validateAssetReference(value: unknown, basePath: string, errors: ValidationIssue[]): void {
     if (!isPlainObject(value)) {
         errors.push(issue(
-            'COMPOSITION_SCENE_CONTENT_ASSET_REQUIRED',
+            'COMPOSITION_ASSET_REQUIRED',
             basePath,
             'asset must be an object with id and path.',
         ))
@@ -129,50 +144,69 @@ function validateAssetReference(value: unknown, basePath: string, errors: Valida
         }
     }
 
-    if (!isNonEmptyString(value.id) || !KEBAB_CASE_PATTERN.test(value.id)) {
+    if (value.id === undefined || !isNonEmptyString(value.id)) {
         errors.push(issue(
             'COMPOSITION_ASSET_ID_INVALID',
             `${basePath}.id`,
-            'asset.id must be a non-empty kebab-case string.',
+            'asset.id is required and must be a non-empty kebab-case string.',
+        ))
+    } else if (!KEBAB_CASE_PATTERN.test(value.id)) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_ID_INVALID',
+            `${basePath}.id`,
+            'asset.id must be kebab-case (lowercase letters, digits and dashes).',
         ))
     }
 
-    if (!isNonEmptyString(value.path)) {
+    if (value.path === undefined || !isNonEmptyString(value.path)) {
         errors.push(issue(
-            'COMPOSITION_ASSET_PATH_INVALID',
+            'COMPOSITION_ASSET_PATH_REQUIRED',
             `${basePath}.path`,
             'asset.path is required and must be a non-empty relative path.',
         ))
-    } else {
-        const assetPath = value.path
-        if (isAbsoluteishPath(assetPath) || hasUrlScheme(assetPath)) {
-            errors.push(issue(
-                'COMPOSITION_ASSET_PATH_INVALID',
-                `${basePath}.path`,
-                'asset.path must be a relative path without protocol or URL.',
-            ))
-        }
-        if (pathSegments(assetPath).some((segment) => segment === '..')) {
-            errors.push(issue(
-                'COMPOSITION_ASSET_PATH_INVALID',
-                `${basePath}.path`,
-                'asset.path must not traverse outside the project (".." segments are not allowed).',
-            ))
-        }
-        if (hasEmbeddedCredentials(assetPath)) {
-            errors.push(issue(
-                'COMPOSITION_ASSET_PATH_INVALID',
-                `${basePath}.path`,
-                'asset.path must not embed credentials.',
-            ))
-        }
-        if (detectSensitiveAssetPath(assetPath)) {
-            errors.push(issue(
-                'COMPOSITION_ASSET_PATH_SENSITIVE',
-                `${basePath}.path`,
-                'asset.path must not point to sensitive files (.env, keys, credentials).',
-            ))
-        }
+        return
+    }
+
+    const assetPath = value.path
+    if (assetPath.startsWith('//')) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_URL',
+            `${basePath}.path`,
+            'asset.path must not be a protocol-relative URL.',
+        ))
+    } else if (isAbsoluteishPath(assetPath)) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_ABSOLUTE',
+            `${basePath}.path`,
+            'asset.path must be a relative path (POSIX absolute, drive letter and UNC are rejected).',
+        ))
+    } else if (hasUrlScheme(assetPath)) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_URL',
+            `${basePath}.path`,
+            'asset.path must not be a URL or use any protocol (http, https, file).',
+        ))
+    }
+    if (pathSegments(assetPath).some((segment) => segment === '..')) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_TRAVERSAL',
+            `${basePath}.path`,
+            'asset.path must not traverse outside the project (".." segments are not allowed).',
+        ))
+    }
+    if (hasEmbeddedCredentials(assetPath)) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_URL',
+            `${basePath}.path`,
+            'asset.path must not embed credentials.',
+        ))
+    }
+    if (detectSensitiveAssetPath(assetPath)) {
+        errors.push(issue(
+            'COMPOSITION_ASSET_PATH_SENSITIVE',
+            `${basePath}.path`,
+            'asset.path must not point to sensitive files (.env, keys, credentials).',
+        ))
     }
 }
 
@@ -195,29 +229,49 @@ function validateSceneContent(
 
     for (const key of Object.keys(value)) {
         if (!allowedFields.includes(key)) {
-            errors.push(issue(
-                'COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN',
-                `${basePath}.${key}`,
-                `Field "${key}" is not allowed in content of a "${sceneType}" scene.`,
-            ))
+            if (key === 'asset' && (sceneType === 'text' || sceneType === 'cta')) {
+                errors.push(issue(
+                    'COMPOSITION_ASSET_NOT_ALLOWED',
+                    `${basePath}.asset`,
+                    `asset is not allowed in content of a "${sceneType}" scene.`,
+                ))
+            } else {
+                errors.push(issue(
+                    'COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN',
+                    `${basePath}.${key}`,
+                    `Field "${key}" is not allowed in content of a "${sceneType}" scene.`,
+                ))
+            }
         }
     }
 
     if (sceneType === 'text' || sceneType === 'cta') {
         if (!isNonEmptyString(value.text)) {
             errors.push(issue(
-                'COMPOSITION_SCENE_CONTENT_TEXT_REQUIRED',
+                'COMPOSITION_TEXT_REQUIRED',
                 `${basePath}.text`,
                 `content.text is required and must be a non-empty string in a "${sceneType}" scene.`,
             ))
         }
         if (sceneType === 'cta' && value.href !== undefined) {
             const href = value.href
-            if (!isNonEmptyString(href) || !/^https?:\/\//i.test(href) || hasEmbeddedCredentials(href)) {
+            if (!isNonEmptyString(href)) {
                 errors.push(issue(
-                    'COMPOSITION_SCENE_CONTENT_HREF_INVALID',
+                    'COMPOSITION_CTA_HREF_INVALID',
                     `${basePath}.href`,
-                    'content.href must be an http(s) URL without embedded credentials; it is never fetched.',
+                    'content.href must be a non-empty http(s) URL when present; it is never fetched.',
+                ))
+            } else if (hasEmbeddedCredentials(href)) {
+                errors.push(issue(
+                    'COMPOSITION_CTA_HREF_CREDENTIALS',
+                    `${basePath}.href`,
+                    'content.href must not embed user and password.',
+                ))
+            } else if (!isWellFormedHttpUrl(href)) {
+                errors.push(issue(
+                    'COMPOSITION_CTA_HREF_INVALID',
+                    `${basePath}.href`,
+                    'content.href must be a well-formed http(s) URL; relative URLs are rejected in v1.',
                 ))
             }
         }
@@ -226,7 +280,7 @@ function validateSceneContent(
     if (sceneType === 'image' || sceneType === 'video') {
         if (value.asset === undefined) {
             errors.push(issue(
-                'COMPOSITION_SCENE_CONTENT_ASSET_REQUIRED',
+                'COMPOSITION_ASSET_REQUIRED',
                 `${basePath}.asset`,
                 `content.asset is required in a "${sceneType}" scene.`,
             ))
@@ -252,17 +306,25 @@ function validateSceneContent(
     }
 }
 
-function validateScenes(value: unknown, errors: ValidationIssue[]): number {
+interface SceneScanResult {
+    sceneCount: number
+    totalDurationMs: number | null
+    warnings: ValidationIssue[]
+}
+
+function validateScenes(value: unknown, errors: ValidationIssue[], warnings: ValidationIssue[]): SceneScanResult {
     if (!Array.isArray(value)) {
         errors.push(issue(
-            'COMPOSITION_SCENES_REQUIRED',
+            'COMPOSITION_SCENE_REQUIRED',
             'scenes',
             'scenes is required and must be an array.',
         ))
-        return 0
+        return { sceneCount: 0, totalDurationMs: 0, warnings }
     }
 
     const seenIds = new Set<string>()
+    let totalDurationMs = 0
+    let overflow = false
 
     value.forEach((scene, index) => {
         const basePath = `scenes[${index}]`
@@ -286,11 +348,17 @@ function validateScenes(value: unknown, errors: ValidationIssue[]): number {
             }
         }
 
-        if (!isNonEmptyString(scene.id) || !KEBAB_CASE_PATTERN.test(scene.id)) {
+        if (scene.id === undefined || !isNonEmptyString(scene.id)) {
+            errors.push(issue(
+                'COMPOSITION_SCENE_ID_REQUIRED',
+                `${basePath}.id`,
+                'scene.id is required and must be a non-empty string.',
+            ))
+        } else if (!KEBAB_CASE_PATTERN.test(scene.id)) {
             errors.push(issue(
                 'COMPOSITION_SCENE_ID_INVALID',
                 `${basePath}.id`,
-                'scene.id must be a non-empty kebab-case string.',
+                'scene.id must be kebab-case (lowercase letters, digits and dashes).',
             ))
         } else if (seenIds.has(scene.id)) {
             errors.push(issue(
@@ -303,7 +371,9 @@ function validateScenes(value: unknown, errors: ValidationIssue[]): number {
         }
 
         const sceneType = scene.type
-        if (typeof sceneType !== 'string' || !(COMPOSITION_SCENE_TYPES as readonly string[]).includes(sceneType)) {
+        const typeIsValid =
+            typeof sceneType === 'string' && (COMPOSITION_SCENE_TYPES as readonly string[]).includes(sceneType)
+        if (!typeIsValid) {
             errors.push(issue(
                 'COMPOSITION_SCENE_TYPE_INVALID',
                 `${basePath}.type`,
@@ -311,12 +381,33 @@ function validateScenes(value: unknown, errors: ValidationIssue[]): number {
             ))
         }
 
-        if (!isPositiveInteger(scene.durationMs)) {
+        let durationIsValid = false
+        let validDuration: number | null = null
+        if (scene.durationMs === undefined) {
             errors.push(issue(
                 'COMPOSITION_SCENE_DURATION_INVALID',
                 `${basePath}.durationMs`,
-                'scene.durationMs must be an integer greater than zero.',
+                'scene.durationMs is required and must be an integer greater than zero.',
             ))
+        } else if (
+            typeof scene.durationMs !== 'number' ||
+            !Number.isInteger(scene.durationMs) ||
+            scene.durationMs <= 0 ||
+            scene.durationMs > Number.MAX_SAFE_INTEGER
+        ) {
+            errors.push(issue(
+                'COMPOSITION_SCENE_DURATION_INVALID',
+                `${basePath}.durationMs`,
+                'scene.durationMs must be a safe integer greater than zero.',
+            ))
+        } else {
+            durationIsValid = true
+            validDuration = scene.durationMs
+            if (totalDurationMs + validDuration > Number.MAX_SAFE_INTEGER) {
+                overflow = true
+            } else {
+                totalDurationMs += validDuration
+            }
         }
 
         if (scene.content === undefined) {
@@ -325,12 +416,42 @@ function validateScenes(value: unknown, errors: ValidationIssue[]): number {
                 `${basePath}.content`,
                 'scene.content is required.',
             ))
-        } else if (typeof sceneType === 'string' && (COMPOSITION_SCENE_TYPES as readonly string[]).includes(sceneType)) {
+        } else if (typeIsValid) {
             validateSceneContent(scene.content, sceneType as CompositionSceneType, `${basePath}.content`, errors)
+        }
+
+        // Warnings heuristicos, em ordem estavel de cena.
+        const sceneText = isPlainObject(scene.content) && isNonEmptyString(scene.content.text)
+            ? scene.content.text
+            : null
+        if (typeIsValid && (sceneType === 'text' || sceneType === 'cta') && sceneText !== null) {
+            if (sceneText.length > COMPOSITION_MAX_TEXT_LENGTH) {
+                warnings.push(issue(
+                    'COMPOSITION_SCENE_TEXT_LONG',
+                    `${basePath}.content.text`,
+                    `Scene text has ${sceneText.length} characters; more than ${COMPOSITION_MAX_TEXT_LENGTH} is a technical heuristic, not editorial approval.`,
+                ))
+            }
+            if (durationIsValid && validDuration !== null && validDuration < COMPOSITION_MIN_TEXT_DURATION_MS) {
+                warnings.push(issue(
+                    'COMPOSITION_SCENE_DURATION_SHORT',
+                    `${basePath}.durationMs`,
+                    `Scene with text lasts ${validDuration} ms; less than ${COMPOSITION_MIN_TEXT_DURATION_MS} ms is a technical heuristic, not editorial approval.`,
+                ))
+            }
         }
     })
 
-    return value.length
+    if (overflow) {
+        errors.push(issue(
+            'COMPOSITION_DURATION_OVERFLOW',
+            'scenes',
+            'The sum of scene durations exceeds Number.MAX_SAFE_INTEGER; totalDurationMs is reported as null.',
+        ))
+        return { sceneCount: value.length, totalDurationMs: null, warnings }
+    }
+
+    return { sceneCount: value.length, totalDurationMs, warnings }
 }
 
 function validateFormat(value: unknown, errors: ValidationIssue[]): CompositionReportFormat | null {
@@ -354,11 +475,17 @@ function validateFormat(value: unknown, errors: ValidationIssue[]): CompositionR
     }
 
     let profile: string | null = null
-    if (!isNonEmptyString(value.profile) || !KEBAB_CASE_PATTERN.test(value.profile)) {
+    if (value.profile === undefined || !isNonEmptyString(value.profile)) {
+        errors.push(issue(
+            'COMPOSITION_FORMAT_PROFILE_REQUIRED',
+            'format.profile',
+            'format.profile is required and must be a non-empty string.',
+        ))
+    } else if (!KEBAB_CASE_PATTERN.test(value.profile)) {
         errors.push(issue(
             'COMPOSITION_FORMAT_PROFILE_INVALID',
             'format.profile',
-            'format.profile must be a non-empty kebab-case string.',
+            'format.profile must be kebab-case (lowercase letters, digits and dashes).',
         ))
     } else {
         profile = value.profile
@@ -406,7 +533,7 @@ function validateFormat(value: unknown, errors: ValidationIssue[]): CompositionR
     return { profile, width: value.width, height: value.height, fps: value.fps }
 }
 
-function validateRenderer(value: unknown, errors: ValidationIssue[]): string | null {
+function validateRenderer(value: unknown, errors: ValidationIssue[], warnings: ValidationIssue[]): string | null {
     if (!isPlainObject(value)) {
         errors.push(issue(
             'COMPOSITION_RENDERER_REQUIRED',
@@ -432,13 +559,30 @@ function validateRenderer(value: unknown, errors: ValidationIssue[]): string | n
         }
     }
 
-    if (!isNonEmptyString(value.adapter) || !KEBAB_CASE_PATTERN.test(value.adapter)) {
+    if (value.adapter === undefined || !isNonEmptyString(value.adapter)) {
+        errors.push(issue(
+            'COMPOSITION_RENDERER_ADAPTER_REQUIRED',
+            'renderer.adapter',
+            'renderer.adapter is required and must be a non-empty string.',
+        ))
+        return null
+    }
+
+    if (!KEBAB_CASE_PATTERN.test(value.adapter)) {
         errors.push(issue(
             'COMPOSITION_RENDERER_ADAPTER_INVALID',
             'renderer.adapter',
-            'renderer.adapter must be a non-empty kebab-case string; "undecided" is accepted.',
+            'renderer.adapter must be kebab-case (lowercase letters, digits and dashes).',
         ))
         return null
+    }
+
+    if (value.adapter === 'undecided') {
+        warnings.push(issue(
+            'COMPOSITION_RENDERER_UNDECIDED',
+            'renderer.adapter',
+            'renderer.adapter is "undecided": no renderer is adopted by this composition yet.',
+        ))
     }
 
     return value.adapter
@@ -486,7 +630,7 @@ function validateMetadata(value: unknown, errors: ValidationIssue[]): void {
     if (value.tags !== undefined) {
         if (!Array.isArray(value.tags) || value.tags.length > COMPOSITION_MAX_TAGS) {
             errors.push(issue(
-                'COMPOSITION_METADATA_TAGS_INVALID',
+                'COMPOSITION_METADATA_INVALID',
                 'metadata.tags',
                 `metadata.tags must be an array with at most ${COMPOSITION_MAX_TAGS} items.`,
             ))
@@ -496,7 +640,7 @@ function validateMetadata(value: unknown, errors: ValidationIssue[]): void {
         value.tags.forEach((tag, index) => {
             if (!isNonEmptyString(tag)) {
                 errors.push(issue(
-                    'COMPOSITION_METADATA_TAGS_INVALID',
+                    'COMPOSITION_METADATA_INVALID',
                     `metadata.tags[${index}]`,
                     'metadata.tags items must be non-empty strings.',
                 ))
@@ -515,28 +659,19 @@ function validateMetadata(value: unknown, errors: ValidationIssue[]): void {
     }
 }
 
-function sumDurations(scenes: unknown): number {
-    if (!Array.isArray(scenes)) return 0
-    let total = 0
-    for (const scene of scenes) {
-        if (isPlainObject(scene) && isPositiveInteger(scene.durationMs)) {
-            total += scene.durationMs
-        }
-    }
-    return total
-}
-
 /**
  * Valida uma composicao contra um manifesto de projeto qualquer. Ambos sao
- * dados de entrada: o nucleo nao le arquivos e nao conhece projetos especificos.
+ * dados de entrada: o nucleo nao le arquivos, nao acessa rede e nao conhece
+ * projetos especificos. As entradas nao sao mutadas.
  */
 export function validateComposition(compositionInput: unknown, projectInput: unknown): CompositionValidationReport {
     const errors: ValidationIssue[] = []
+    const warnings: ValidationIssue[] = []
 
     const projectReport = validateProjectManifest(projectInput)
     if (!projectReport.valid) {
         errors.push(issue(
-            'COMPOSITION_PROJECT_MANIFEST_INVALID',
+            'COMPOSITION_MANIFEST_INVALID',
             'project',
             `The supplied ProjectManifest is invalid: ${projectReport.errors.length} error(s).`,
         ))
@@ -546,6 +681,7 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
     let projectId: string | null = null
     let schemaVersion: number | null = null
     let sceneCount = 0
+    let totalDurationMs: number | null = 0
     let format: CompositionReportFormat | null = null
     let rendererAdapter: string | null = null
 
@@ -576,7 +712,7 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
             ))
         }
 
-        if (!isNonEmptyString(record.projectId)) {
+        if (record.projectId === undefined || !isNonEmptyString(record.projectId)) {
             errors.push(issue(
                 'COMPOSITION_PROJECT_ID_REQUIRED',
                 'projectId',
@@ -592,7 +728,7 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
             projectId = record.projectId
         }
 
-        if (!isNonEmptyString(record.id)) {
+        if (record.id === undefined || !isNonEmptyString(record.id)) {
             errors.push(issue(
                 'COMPOSITION_ID_REQUIRED',
                 'id',
@@ -625,18 +761,18 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
         }
 
         format = validateFormat(record.format, errors)
-        sceneCount = validateScenes(record.scenes, errors)
-        rendererAdapter = validateRenderer(record.renderer, errors)
+
+        const sceneScan = validateScenes(record.scenes, errors, warnings)
+        sceneCount = sceneScan.sceneCount
+        totalDurationMs = sceneScan.totalDurationMs
+
+        rendererAdapter = validateRenderer(record.renderer, errors, warnings)
 
         if (record.metadata !== undefined) {
             validateMetadata(record.metadata, errors)
         }
-    }
 
-    if (typeof compositionInput === 'object' && compositionInput !== null) {
-        schemaVersion = isPlainObject(compositionInput) && typeof compositionInput.schemaVersion === 'number'
-            ? compositionInput.schemaVersion
-            : null
+        schemaVersion = typeof record.schemaVersion === 'number' ? record.schemaVersion : null
     }
 
     if (projectReport.valid && isPlainObject(compositionInput)) {
@@ -662,7 +798,7 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
             const profiles = Array.isArray(project.outputProfiles) ? project.outputProfiles : []
             if (!profiles.includes(format.profile)) {
                 errors.push(issue(
-                    'COMPOSITION_PROFILE_NOT_IN_PROJECT',
+                    'COMPOSITION_FORMAT_PROFILE_NOT_ALLOWED',
                     'format.profile',
                     `format.profile "${format.profile}" is not declared in project.outputProfiles.`,
                 ))
@@ -673,13 +809,13 @@ export function validateComposition(compositionInput: unknown, projectInput: unk
     return {
         valid: errors.length === 0,
         errors,
-        warnings: [],
+        warnings,
         summary: errors.length === 0 ? COMPOSITION_VALID_SUMMARY : compositionInvalidSummary(errors.length),
         projectId,
         compositionId,
         schemaVersion,
         sceneCount,
-        totalDurationMs: sumDurations(isPlainObject(compositionInput) ? compositionInput.scenes : undefined),
+        totalDurationMs,
         format,
         rendererAdapter,
     }

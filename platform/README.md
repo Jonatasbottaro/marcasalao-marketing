@@ -114,26 +114,47 @@ continuam regidas por `AGENTS.md`, `WORKFLOW.md` e pelos briefings aprovados.
 
 ## Códigos de validação de composição (estáveis)
 
-`COMPOSITION_INVALID`, `COMPOSITION_UNKNOWN_FIELD`, `COMPOSITION_SCHEMA_VERSION_UNSUPPORTED`,
-`COMPOSITION_PROJECT_ID_REQUIRED`, `COMPOSITION_PROJECT_ID_INVALID`, `COMPOSITION_ID_REQUIRED`,
+`COMPOSITION_INVALID`, `COMPOSITION_MANIFEST_INVALID`, `COMPOSITION_UNKNOWN_FIELD`,
+`COMPOSITION_SCHEMA_VERSION_UNSUPPORTED`, `COMPOSITION_PROJECT_ID_REQUIRED`,
+`COMPOSITION_PROJECT_ID_INVALID`, `COMPOSITION_PROJECT_ID_MISMATCH`, `COMPOSITION_ID_REQUIRED`,
 `COMPOSITION_ID_INVALID`, `COMPOSITION_TITLE_REQUIRED`, `COMPOSITION_LOCALE_REQUIRED`,
-`COMPOSITION_FORMAT_REQUIRED`, `COMPOSITION_FORMAT_PROFILE_INVALID`,
-`COMPOSITION_FORMAT_WIDTH_INVALID`, `COMPOSITION_FORMAT_HEIGHT_INVALID`,
-`COMPOSITION_FORMAT_FPS_INVALID`, `COMPOSITION_SCENES_REQUIRED`, `COMPOSITION_SCENE_INVALID`,
+`COMPOSITION_LOCALE_MISMATCH`, `COMPOSITION_FORMAT_REQUIRED`,
+`COMPOSITION_FORMAT_PROFILE_REQUIRED`, `COMPOSITION_FORMAT_PROFILE_INVALID`,
+`COMPOSITION_FORMAT_PROFILE_NOT_ALLOWED`, `COMPOSITION_FORMAT_WIDTH_INVALID`,
+`COMPOSITION_FORMAT_HEIGHT_INVALID`, `COMPOSITION_FORMAT_FPS_INVALID`,
+`COMPOSITION_SCENE_REQUIRED`, `COMPOSITION_SCENE_INVALID`, `COMPOSITION_SCENE_ID_REQUIRED`,
 `COMPOSITION_SCENE_ID_INVALID`, `COMPOSITION_SCENE_ID_DUPLICATE`, `COMPOSITION_SCENE_TYPE_INVALID`,
 `COMPOSITION_SCENE_DURATION_INVALID`, `COMPOSITION_SCENE_CONTENT_REQUIRED`,
-`COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN`, `COMPOSITION_SCENE_CONTENT_TEXT_REQUIRED`,
-`COMPOSITION_SCENE_CONTENT_HREF_INVALID`, `COMPOSITION_SCENE_CONTENT_ASSET_REQUIRED`,
-`COMPOSITION_ASSET_ID_INVALID`, `COMPOSITION_ASSET_PATH_INVALID`, `COMPOSITION_ASSET_PATH_SENSITIVE`,
-`COMPOSITION_RENDERER_REQUIRED`, `COMPOSITION_RENDERER_ADAPTER_INVALID`,
+`COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN`, `COMPOSITION_TEXT_REQUIRED`,
+`COMPOSITION_ASSET_REQUIRED`, `COMPOSITION_ASSET_NOT_ALLOWED`, `COMPOSITION_ASSET_ID_INVALID`,
+`COMPOSITION_ASSET_PATH_REQUIRED`, `COMPOSITION_ASSET_PATH_ABSOLUTE`,
+`COMPOSITION_ASSET_PATH_TRAVERSAL`, `COMPOSITION_ASSET_PATH_SENSITIVE`,
+`COMPOSITION_ASSET_PATH_URL`, `COMPOSITION_CTA_HREF_INVALID`,
+`COMPOSITION_CTA_HREF_CREDENTIALS`, `COMPOSITION_RENDERER_REQUIRED`,
+`COMPOSITION_RENDERER_ADAPTER_REQUIRED`, `COMPOSITION_RENDERER_ADAPTER_INVALID`,
 `COMPOSITION_RENDERER_OPTIONS_UNSUPPORTED`, `COMPOSITION_METADATA_INVALID`,
-`COMPOSITION_METADATA_STATUS_INVALID`, `COMPOSITION_METADATA_TAGS_INVALID`,
-`COMPOSITION_METADATA_TAG_DUPLICATE`, `COMPOSITION_PROJECT_MANIFEST_INVALID`,
-`COMPOSITION_PROJECT_ID_MISMATCH`, `COMPOSITION_LOCALE_MISMATCH`,
-`COMPOSITION_PROFILE_NOT_IN_PROJECT`.
+`COMPOSITION_METADATA_STATUS_INVALID`, `COMPOSITION_METADATA_TAG_DUPLICATE`,
+`COMPOSITION_DURATION_OVERFLOW`.
 
 Ordem de emissão fixa: primeiro o manifesto do projeto, depois a estrutura da
-composição, depois os vínculos entre os dois.
+composição, depois os vínculos entre os dois. A automação deve confiar nos códigos,
+não nas mensagens livres.
+
+## Warnings técnicos (heurísticas, não aprovação editorial)
+
+`COMPOSITION_SCENE_TEXT_LONG` (texto de cena `text`/`cta` acima de 160 caracteres),
+`COMPOSITION_SCENE_DURATION_SHORT` (cena com texto com `durationMs` abaixo de 1000) e
+`COMPOSITION_RENDERER_UNDECIDED` (`renderer.adapter: "undecided"`). Warnings não tornam
+a composição inválida (`valid` continua `true`), têm `code`, `path` e `message` e ordem
+de emissão estável (ordem das cenas; renderer por último). Os limites são heurísticas
+técnicas de legibilidade/duração: não substituem revisão editorial.
+
+## Política de duração
+
+`totalDurationMs` é a soma dos `durationMs` inteiros positivos das cenas. Cada valor
+individual deve ser um inteiro seguro (> 0 e <= `Number.MAX_SAFE_INTEGER`); se a soma
+ultrapassar `Number.MAX_SAFE_INTEGER`, o validador emite `COMPOSITION_DURATION_OVERFLOW`
+e reporta `totalDurationMs: null` — nunca um número impreciso.
 
 ## Formato do relatório de composição
 
@@ -231,6 +252,8 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
   `renderer.adapter: "undecided"` é aceito e nenhum adapter precisa estar instalado);
 - **HyperFrames não foi instalado** e permanece apenas possibilidade futura atrás de adaptador;
 - **Nenhum vídeo é gerado** e nenhum preview/render/upload/publicação existe;
+- **Nenhuma ferramenta audiovisual externa foi instalada** por estas fatias (HyperFrames,
+  Google Flow, ElevenLabs, FFmpeg, CapCut etc. permanecem não adotados);
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não

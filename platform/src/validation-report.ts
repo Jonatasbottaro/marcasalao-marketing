@@ -61,8 +61,11 @@ export interface CompositionValidationReport {
     schemaVersion: number | null
     /** Quantidade de cenas declaradas (0 quando ausente ou malformado). */
     sceneCount: number
-    /** Soma dos durationMs inteiros positivos das cenas. */
-    totalDurationMs: number
+    /**
+     * Soma dos durationMs inteiros positivos das cenas; null quando a soma
+     * ultrapassa Number.MAX_SAFE_INTEGER (COMPOSITION_DURATION_OVERFLOW).
+     */
+    totalDurationMs: number | null
     /** Formato ecoado quando bem formado; null caso contrario. */
     format: CompositionReportFormat | null
     /** Adaptador de renderizacao declarado, quando disponivel como string. */
