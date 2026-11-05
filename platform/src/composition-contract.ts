@@ -35,6 +35,12 @@ export const COMPOSITION_FPS_MAX = 120
 /** Limite documentado de tags em metadata. */
 export const COMPOSITION_MAX_TAGS = 8
 
+/** Limite tecnico (heuristica) de caracteres em text/cta para warning. */
+export const COMPOSITION_MAX_TEXT_LENGTH = 160
+
+/** Duracao minima (heuristica) para cena com texto, em milissegundos. */
+export const COMPOSITION_MIN_TEXT_DURATION_MS = 1000
+
 /** Campos de topo conhecidos, em ordem fixa de verificacao. */
 export const COMPOSITION_TOP_LEVEL_FIELDS = [
     'schemaVersion',
