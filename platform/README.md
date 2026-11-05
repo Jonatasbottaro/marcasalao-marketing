@@ -1,10 +1,12 @@
-# Platform — núcleo modular da Content Factory (primeira fatia)
+# Platform — núcleo modular da Content Factory
 
-Esta pasta contém a **primeira fatia** do núcleo modular previsto em
-[`docs/decisoes/MKT-VIDEO-001-producao-modular.md`](../docs/decisoes/MKT-VIDEO-001-producao-modular.md)
-e [`docs/decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md`](../docs/decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md):
+Esta pasta contém as fatias implementadas do núcleo modular previsto em
+[`docs/decisoes/MKT-VIDEO-001-producao-modular.md`](../docs/decisoes/MKT-VIDEO-001-producao-modular.md),
+[`docs/decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md`](../docs/decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md)
+e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md):
 
-**Manifesto de projeto → validação → relatório estruturado → testes com dois projetos diferentes.**
+1. **Primeira fatia** — Manifesto de projeto → validação → relatório estruturado → testes com dois projetos diferentes.
+2. **Segunda fatia** — Composition v1 → vínculo entre projeto e composição → validação → relatório estruturado → CLI → testes com dois projetos.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -68,6 +70,97 @@ fixa e determinística. A automação deve confiar nos códigos, não nas mensag
 Determinístico: sem timestamp, sem caminhos absolutos da máquina, sem IDs aleatórios.
 `warnings` existe para evolução futura e hoje é sempre `[]`.
 
+## O que é a Composition v1
+
+É um **contrato declarativo** (`*.composition.json`) que descreve uma peça em cenas:
+formato de saída, cenas com texto canônico ou referências de assets, adaptador de
+renderização e metadata técnica. Ela **não é roteiro, não é BeatPlan e não é
+renderização**: não existem beats executáveis, áudio, prompts, providers, hashes,
+licenças, montagem nem geração de assets nesta fatia. Assets são **referenciados, não
+gerados**, e a existência física não é verificada. O texto canônico permanece
+estruturado e editável fora de imagens e vídeos.
+
+## Campos da composição
+
+| Campo | Regra |
+|---|---|
+| `schemaVersion` | Inteiro `1` (única versão suportada) |
+| `projectId` | Obrigatório, kebab-case; deve ser igual a `project.id` |
+| `id` | Obrigatório, kebab-case |
+| `title` | Obrigatório, não vazio (opaco ao núcleo) |
+| `locale` | Obrigatório; na v1 deve ser **igual** a `project.locale` |
+| `format` | Objeto com `profile` (kebab-case, presente em `project.outputProfiles`), `width` e `height` inteiros positivos e `fps` inteiro entre 1 e 120 |
+| `scenes` | Array de cenas: `id` kebab-case único, `type` em `text`/`image`/`video`/`cta`, `durationMs` inteiro > 0 e `content` em forma fechada por tipo |
+| `renderer` | Objeto com `adapter` kebab-case obrigatório; `undecided` é aceito e nenhum adapter precisa estar instalado; `options` não é suportado na v1 |
+| `metadata` | Opcional e pequeno: `status` em `draft`/`review`/`approved`/`archived`, `description` e `tags` (strings sem duplicata, no máximo 8) |
+| campos desconhecidos | **Proibidos** no topo, em `format`, em cada cena, em `content`, em `asset`, em `renderer` e em `metadata` |
+
+`content` por tipo: `text` exige `text` e proíbe `asset`; `cta` exige `text` e aceita
+`href` somente http(s) sem credenciais embutidas (a URL nunca é acessada); `image` e
+`video` exigem `asset` e aceitam `alt`. `accessibilityLabel` é opcional em todos.
+
+## AssetReference mínimo
+
+`asset` tem somente `id` (kebab-case) e `path` (caminho relativo seguro: sem absoluto,
+sem `..`, sem URL/protocolo, sem credenciais e sem arquivos sensíveis). **AssetReference
+não substitui o futuro AssetManifest**: hash, licença, origem, provider, prompt,
+dimensões e duração pertencem a uma fatia futura.
+
+## Metadata técnica ≠ autorização editorial
+
+`metadata.status: "approved"` é um estado **técnico** do artefato declarativo. Ele não
+concede autorização editorial, de gravação ou de publicação: essas autorizações
+continuam regidas por `AGENTS.md`, `WORKFLOW.md` e pelos briefings aprovados.
+
+## Códigos de validação de composição (estáveis)
+
+`COMPOSITION_INVALID`, `COMPOSITION_UNKNOWN_FIELD`, `COMPOSITION_SCHEMA_VERSION_UNSUPPORTED`,
+`COMPOSITION_PROJECT_ID_REQUIRED`, `COMPOSITION_PROJECT_ID_INVALID`, `COMPOSITION_ID_REQUIRED`,
+`COMPOSITION_ID_INVALID`, `COMPOSITION_TITLE_REQUIRED`, `COMPOSITION_LOCALE_REQUIRED`,
+`COMPOSITION_FORMAT_REQUIRED`, `COMPOSITION_FORMAT_PROFILE_INVALID`,
+`COMPOSITION_FORMAT_WIDTH_INVALID`, `COMPOSITION_FORMAT_HEIGHT_INVALID`,
+`COMPOSITION_FORMAT_FPS_INVALID`, `COMPOSITION_SCENES_REQUIRED`, `COMPOSITION_SCENE_INVALID`,
+`COMPOSITION_SCENE_ID_INVALID`, `COMPOSITION_SCENE_ID_DUPLICATE`, `COMPOSITION_SCENE_TYPE_INVALID`,
+`COMPOSITION_SCENE_DURATION_INVALID`, `COMPOSITION_SCENE_CONTENT_REQUIRED`,
+`COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN`, `COMPOSITION_SCENE_CONTENT_TEXT_REQUIRED`,
+`COMPOSITION_SCENE_CONTENT_HREF_INVALID`, `COMPOSITION_SCENE_CONTENT_ASSET_REQUIRED`,
+`COMPOSITION_ASSET_ID_INVALID`, `COMPOSITION_ASSET_PATH_INVALID`, `COMPOSITION_ASSET_PATH_SENSITIVE`,
+`COMPOSITION_RENDERER_REQUIRED`, `COMPOSITION_RENDERER_ADAPTER_INVALID`,
+`COMPOSITION_RENDERER_OPTIONS_UNSUPPORTED`, `COMPOSITION_METADATA_INVALID`,
+`COMPOSITION_METADATA_STATUS_INVALID`, `COMPOSITION_METADATA_TAGS_INVALID`,
+`COMPOSITION_METADATA_TAG_DUPLICATE`, `COMPOSITION_PROJECT_MANIFEST_INVALID`,
+`COMPOSITION_PROJECT_ID_MISMATCH`, `COMPOSITION_LOCALE_MISMATCH`,
+`COMPOSITION_PROFILE_NOT_IN_PROJECT`.
+
+Ordem de emissão fixa: primeiro o manifesto do projeto, depois a estrutura da
+composição, depois os vínculos entre os dois.
+
+## Formato do relatório de composição
+
+```json
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [],
+  "summary": "Composition is valid.",
+  "projectId": "marca-salao",
+  "compositionId": "pilot-composition",
+  "schemaVersion": 1,
+  "sceneCount": 3,
+  "totalDurationMs": 10000,
+  "format": {
+    "profile": "vertical-social",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "rendererAdapter": "undecided"
+}
+```
+
+`totalDurationMs` é a soma dos `durationMs` inteiros positivos das cenas. Determinístico:
+sem timestamp, sem caminhos absolutos, sem IDs aleatórios, sem stack traces.
+
 ## Como executar
 
 Requisito: **Node >= 22** (runtime mínimo, declarado em `engines`: `>=22 <25`). O
@@ -85,6 +178,10 @@ npm test                  # build + node --test dist/tests/*.test.js (JavaScript
 # CLI compilada (exit 0 válido · 1 manifesto inválido · 2 uso/JSON malformado)
 npm run content:validate-project -- --project examples/projects/marca-salao.project.json --json
 npm run content:validate-project -- --project examples/projects/fixture-project.project.json
+
+# CLI de composicao (exit 0 válida · 1 inválida · 2 uso/JSON malformado)
+npm run content:validate-composition -- --project examples/projects/marca-salao.project.json --composition examples/compositions/marca-salao-pilot.composition.json --json
+npm run content:validate-composition -- --project examples/projects/fixture-project.project.json --composition examples/compositions/fixture-project-pilot.composition.json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -116,10 +213,10 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 - TypeScript com sintaxe erasable (sem enums/namespaces), **compilado com `tsc` antes
   da execução** (ESM/NodeNext, target ES2022, saída em `dist/`) — **zero dependências
   de runtime**;
-- Validações explícitas escritas à mão (superfície pequena e enumerada); o arquivo
-  `schemas/project.schema.json` (JSON Schema draft-07) é a descrição normativa do
-  contrato e espelha o validador, que é testado por 32 casos (além dos testes de
-  portabilidade do build);
+- Validações explícitas escritas à mão (superfície pequena e enumerada); os arquivos
+  `schemas/project.schema.json` e `schemas/composition.schema.json` (JSON Schema
+  draft-07) são a descrição normativa dos contratos e espelham os validadores, testados
+  por suas suítes em `tests/` (além dos testes de portabilidade do build);
 - `node:test` nativo para os testes, executados sobre o JavaScript compilado em
   `dist/tests`;
 - DevDependencies apenas para o gate de tipos e o build, fixadas: `typescript@5.9.3`
@@ -128,8 +225,10 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 
 ## Limites atuais (expressos)
 
-- **Implementação de composição ainda não iniciada** (sem cenas, timeline ou composição);
-- **Nenhum renderizador foi implementado** (HTML/FFmpeg/HyperFrames/edição: nada adotado);
+- **Composition v1 implementada apenas como contrato declarativo** (sem beats, áudio,
+  prompts, providers, montagem, timeline executável ou geração de assets);
+- **Nenhum renderizador foi implementado** (HTML/FFmpeg/HyperFrames/edição: nada adotado;
+  `renderer.adapter: "undecided"` é aceito e nenhum adapter precisa estar instalado);
 - **HyperFrames não foi instalado** e permanece apenas possibilidade futura atrás de adaptador;
 - **Nenhum vídeo é gerado** e nenhum preview/render/upload/publicação existe;
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
@@ -139,7 +238,7 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 
 ## Próximos incrementos possíveis (não compromissos)
 
-- Composition (formato, cenas, timeline, textos, mídia, legendas, áudio, CTA);
+- Evolução da Composition (BeatPlan, AssetManifest completo, AudioPlan, RenderPlan);
 - Validator editorial (briefing/roteiro aprovados) e de assets;
 - Adaptadores de renderizador (HTML/CSS + FFmpeg como primeiro candidato);
 - Preview e renderização reproduzíveis; inspeção e report de artefatos;
