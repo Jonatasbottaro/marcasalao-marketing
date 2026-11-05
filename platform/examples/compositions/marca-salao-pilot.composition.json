@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "projectId": "marca-salao",
+  "id": "pilot-composition",
+  "title": "Piloto tecnico de composicao",
+  "locale": "pt-BR",
+  "format": {
+    "profile": "vertical-social",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "scenes": [
+    {
+      "id": "opening",
+      "type": "text",
+      "durationMs": 3000,
+      "content": {
+        "text": "Texto de demonstracao."
+      }
+    },
+    {
+      "id": "demo-frame",
+      "type": "image",
+      "durationMs": 4000,
+      "content": {
+        "asset": {
+          "id": "screen-01",
+          "path": "projects/marca-salao/assets/screen-01.png"
+        },
+        "alt": "Quadro tecnico de demonstracao."
+      }
+    },
+    {
+      "id": "closing",
+      "type": "cta",
+      "durationMs": 3000,
+      "content": {
+        "text": "Conheca o projeto."
+      }
+    }
+  ],
+  "renderer": {
+    "adapter": "undecided"
+  },
+  "metadata": {
+    "status": "draft",
+    "description": "Exemplo tecnico do contrato Composition v1; nao e peca aprovada.",
+    "tags": [
+      "exemplo",
+      "contrato"
+    ]
+  }
+}
