@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "projectId": "marca-salao",
+  "compositionId": "pilot-composition",
+  "id": "pilot-beat-plan",
+  "locale": "pt-BR",
+  "beats": [
+    {
+      "id": "opening-question",
+      "order": 1,
+      "sceneIds": [
+        "opening"
+      ],
+      "narrativeFunction": "hook",
+      "startMs": 0,
+      "durationMs": 3000,
+      "narration": {
+        "text": "Texto tecnico de demonstracao para o beat de abertura."
+      },
+      "onScreenText": "Pergunta de abertura.",
+      "visualIntent": "Apresentar uma pergunta de abertura sobre fundo neutro.",
+      "motionIntent": "none",
+      "transitionIn": "none",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "technical-example"
+      ],
+      "validationStatus": "draft"
+    },
+    {
+      "id": "demo-step-one",
+      "order": 2,
+      "sceneIds": [
+        "demo-frame"
+      ],
+      "narrativeFunction": "demonstration",
+      "startMs": 3000,
+      "durationMs": 2500,
+      "narration": {
+        "text": "Descricao tecnica do primeiro passo da demonstracao."
+      },
+      "onScreenText": "Primeiro passo.",
+      "visualIntent": "Mostrar um quadro tecnico do fluxo em demonstracao.",
+      "motionIntent": "slow-zoom",
+      "transitionIn": "cut",
+      "transitionOut": "dissolve",
+      "editorialEvidence": [
+        "technical-example",
+        "functional-demonstration"
+      ],
+      "validationStatus": "review"
+    },
+    {
+      "id": "demo-step-two",
+      "order": 3,
+      "sceneIds": [
+        "demo-frame",
+        "closing"
+      ],
+      "narrativeFunction": "demonstration",
+      "startMs": 5500,
+      "durationMs": 2500,
+      "narration": {
+        "text": "Descricao tecnica do segundo passo da demonstracao."
+      },
+      "onScreenText": "Segundo passo.",
+      "visualIntent": "Manter o quadro tecnico enquanto a chamada final entra.",
+      "motionIntent": "hold",
+      "transitionIn": "dissolve",
+      "transitionOut": "fade",
+      "editorialEvidence": [
+        "technical-example"
+      ],
+      "validationStatus": "review"
+    },
+    {
+      "id": "closing-call",
+      "order": 4,
+      "sceneIds": [
+        "closing"
+      ],
+      "narrativeFunction": "cta",
+      "startMs": 8000,
+      "durationMs": 2000,
+      "narration": {
+        "text": "Chamada tecnica de encerramento."
+      },
+      "onScreenText": "Chamada de encerramento.",
+      "visualIntent": "Encerrar com uma chamada tecnica em texto.",
+      "motionIntent": "none",
+      "transitionIn": "fade",
+      "transitionOut": "none",
+      "editorialEvidence": [
+        "technical-example"
+      ],
+      "validationStatus": "draft"
+    }
+  ],
+  "metadata": {
+    "status": "draft",
+    "description": "Exemplo tecnico do contrato BeatPlan v1; nao e peca aprovada.",
+    "tags": [
+      "exemplo",
+      "contrato"
+    ]
+  }
+}

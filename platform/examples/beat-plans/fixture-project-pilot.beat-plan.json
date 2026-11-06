@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "projectId": "fixture-project",
+  "compositionId": "pilot-composition",
+  "id": "pilot-beat-plan",
+  "locale": "en-US",
+  "beats": [
+    {
+      "id": "opening-statement",
+      "order": 1,
+      "sceneIds": [
+        "opening"
+      ],
+      "narrativeFunction": "context",
+      "startMs": 0,
+      "durationMs": 2500,
+      "onScreenText": "Demonstration text.",
+      "visualIntent": "Open with a neutral technical statement on a plain background.",
+      "motionIntent": "slow-zoom",
+      "transitionIn": "fade",
+      "transitionOut": "dissolve",
+      "editorialEvidence": [
+        "fixture-example"
+      ],
+      "validationStatus": "review"
+    },
+    {
+      "id": "closing-action",
+      "order": 2,
+      "sceneIds": [
+        "closing"
+      ],
+      "narrativeFunction": "cta",
+      "startMs": 2500,
+      "durationMs": 2500,
+      "narration": {
+        "text": "Technical narration line for the closing beat."
+      },
+      "onScreenText": "Learn about the project.",
+      "visualIntent": "Close with a technical call to action written as editable text.",
+      "motionIntent": "hold",
+      "transitionIn": "dissolve",
+      "transitionOut": "none",
+      "editorialEvidence": [
+        "fixture-example"
+      ],
+      "validationStatus": "draft"
+    }
+  ],
+  "metadata": {
+    "status": "draft"
+  }
+}
