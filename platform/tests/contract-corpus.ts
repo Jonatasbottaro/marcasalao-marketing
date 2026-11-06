@@ -240,9 +240,10 @@ export const atOutsideAuthorityHrefs: readonly string[] = [
 
 /**
  * Hrefs sem host imediatamente depois de `scheme://`. O parser WHATWG descarta barras e
- * barras invertidas extras e reconstrói o host com o trecho seguinte; o espelho normativo
- * declara essa entrada invalida, entao o core tambem precisa recusar (etapa 6). Nos dois
- * motores e na CLI esses hrefs saem COMPOSITION_CTA_HREF_INVALID.
+ * barras invertidas extras e reconstrói o host com o trecho seguinte — com `?` e `#` o parser
+ * ate falha, mas a forma continua fora do contrato. O espelho normativo declara essas
+ * entradas invalidas, entao o core tambem precisa recusar todas (etapa 6). Nos dois motores
+ * e na CLI elas saem COMPOSITION_CTA_HREF_INVALID.
  */
 export const emptyAuthorityHrefs: readonly string[] = [
     'https:///example.com',

@@ -355,7 +355,9 @@ outputs e não lê `.env`. A **existência física** de assets não é verificad
 | protocolo do `href` em maiúsculas (`HTTPS://example.com`) | rejeitado só pelo schema | aceito pelos dois |
 | `assets/secretaria`, `assets/secretaria.png` | rejeitados pelo core (substring) | aceitos pelos dois |
 | `href: "http:/example.com"` e `href: "https:\\example.com"` (sem `://` literal) | **aceitos pelo core** porque `new URL()` normaliza; inválidos pelo schema | `COMPOSITION_CTA_HREF_INVALID` nos dois motores |
-| `href: "https:///example.com"`, `"https:////example.com"`, `"https://\example.com"` (autoridade vazia) | **aceitos pelo core** porque o parser descarta as barras extras e reconstrói o host; inválidos pelo schema | `COMPOSITION_CTA_HREF_INVALID` nos dois motores e saída `1` na CLI |
+| `href: "https:///example.com"` e `"https:////example.com"` (autoridade vazia) | **aceitos pelo core** porque o parser descarta as barras extras e reconstrói o host; inválidos pelo schema | `COMPOSITION_CTA_HREF_INVALID` nos dois motores e saída `1` na CLI |
+| `href: "https://\example.com"` (barra invertida no início da autoridade) | **aceitos pelos dois motores**: o parser descartava a barra, e a classe do schema não excluía a barra invertida | `COMPOSITION_CTA_HREF_INVALID` nos dois motores e saída `1` na CLI |
+| `href: "https://example.com\@mencao"` (`@` em caminho aberto por barra invertida) | rejeitado pelos dois como credencial, embora o `@` esteja no caminho | aceito pelos dois motores e pela CLI |
 | `href: "https://example.com?email=a@b.com"` e `"https://example.com#@contato"` (`@` em query/fragmento, sem barra depois do host) | aceitos pelo core, **rejeitados pelo schema** como se fossem credencial | aceitos pelos dois motores e pela CLI |
 
 Os códigos anteriores (`*_ABSOLUTE`, `*_TRAVERSAL`, `*_SENSITIVE`, `COMPOSITION_ASSET_PATH_URL`,
@@ -381,10 +383,13 @@ entrada antes de qualquer checagem. O validador agora inspeciona a string **orig
 espelho delimita a autoridade do mesmo jeito, nos dois lados do `scheme://`:
 
 - **início da autoridade** (etapa 5 + etapa 6): `http:/exemplo.com` e `https:\\exemplo.com`
-  não têm o prefixo literal; `https:///exemplo.com`, `https:////exemplo.com`,
-  `https://\exemplo.com`, `https://?query` e `https://#fragmento` têm autoridade vazia — o
-  parser descartaria as barras extras e reconstruiria o host a partir do trecho seguinte.
-  Todos viram `COMPOSITION_CTA_HREF_INVALID` **nos dois motores** e saída `1` na CLI;
+  não têm o prefixo literal; `https:///exemplo.com`, `https:////exemplo.com` e
+  `https://\exemplo.com` têm autoridade vazia — o parser descarta as barras extras e
+  reconstrói o host a partir do trecho seguinte, e por isso o core os aceitava (no caso da
+  barra invertida, o próprio espelho também aceitava, porque a classe não excluía a barra).
+  `https://?query` e `https://#fragmento` já falhavam nos dois e entram no corpus para
+  manter a forma coberta. Todos viram `COMPOSITION_CTA_HREF_INVALID` **nos dois motores**,
+  com saída `1` na CLI;
 - **fim da autoridade** (etapa 6): a regex de credencial do espelho parava só em `/`, então
   um `@` de query ou fragmento (`https://exemplo.com?email=a@b.com`,
   `https://exemplo.com#@contato`) era lido como credencial e rejeitado **só pelo schema**.
