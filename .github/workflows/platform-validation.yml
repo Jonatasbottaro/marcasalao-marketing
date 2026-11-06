@@ -1,0 +1,59 @@
+name: Validar contratos da platform
+
+# Gate do núcleo modular: roda apenas sobre o que pode quebrá-lo (a própria
+# platform e este arquivo). O preview de vídeos (.github/workflows/video-preview.yml)
+# continua com os gatilhos e os passos dele intactos.
+
+on:
+  push:
+    paths:
+      - 'platform/**'
+      - '.github/workflows/platform-validation.yml'
+  pull_request:
+    paths:
+      - 'platform/**'
+      - '.github/workflows/platform-validation.yml'
+  workflow_dispatch:
+
+# Só lê o repositório: o gate não publica, não faz deploy e não usa segredos.
+permissions:
+  contents: read
+
+jobs:
+  contratos:
+    name: ${{ matrix.os }} · Node ${{ matrix.node-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Um ambiente quebrado não deve esconder o veredito dos outros três.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # Faixa de platform/package.json: "node": ">=22 <25".
+        node-version: ['22', '24']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Instalação reprodutível (npm ci)
+        working-directory: platform
+        run: npm ci
+
+      - name: Limpeza dos artefatos locais
+        working-directory: platform
+        run: npm run clean
+
+      - name: Verificação de tipos (tsc --noEmit)
+        working-directory: platform
+        run: npm run typecheck
+
+      - name: Suíte completa (já inclui o corpus de contratos em dist/)
+        working-directory: platform
+        run: npm test

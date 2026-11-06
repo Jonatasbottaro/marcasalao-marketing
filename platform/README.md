@@ -141,6 +141,12 @@ uma fatia futura.
 concede autorização editorial, de gravação ou de publicação: essas autorizações
 continuam regidas por `AGENTS.md`, `WORKFLOW.md` e pelos briefings aprovados.
 
+A fronteira vale para todo o núcleo: **documento estruturalmente válido não é produto
+aprovado**. Exit code `0` das CLIs, `valid: true` no relatório e um job verde no gate
+significam apenas que o manifesto e a composição respeitam o contrato. Eles não dizem que
+o conteúdo é verdadeiro, que a arte existe no disco, que há renderizador instalado, que o
+briefing/roteiro foi aprovado pelo titular ou que algo pode ser publicado ou agendado.
+
 ## Códigos de validação de composição (estáveis)
 
 `COMPOSITION_INVALID`, `COMPOSITION_MANIFEST_INVALID`, `COMPOSITION_UNKNOWN_FIELD`,
@@ -243,6 +249,28 @@ relação ao diretório atual de execução.
 
 Exit codes da CLI: `0` válido · `1` manifesto inválido (relatório emitido) · `2` erro de
 uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trace).
+
+## Gate automático (GitHub Actions)
+
+Arquivo: `.github/workflows/platform-validation.yml`.
+
+| Aspecto | Configuração |
+|---|---|
+| Gatilhos | `pull_request` e `push` **filtrados** por `platform/**` e pelo próprio workflow; `workflow_dispatch` para execução manual |
+| Matriz | `ubuntu-latest` + `windows-latest` × Node `22` + `24` — os quatro dentro de `engines: ">=22 <25"` (`fail-fast: false`, para que um ambiente não oculte o veredito dos outros) |
+| Cache | `actions/setup-node@v4` com `cache: npm` e `cache-dependency-path: platform/package-lock.json` |
+| Ordem | `npm ci` → `npm run clean` → `npm run typecheck` → `npm test`, todas com `working-directory: platform` |
+| Permissões | `contents: read`; nenhum segredo é referenciado no arquivo |
+
+`npm test` compila e roda a suíte inteira, **inclusive o corpus de contratos**
+(`tests/contracts/*.test.js`) sobre o JavaScript de `dist/`; por isso o job não repete
+`npm run test:contracts`, que existe para execução local focada. O `typecheck` é também o
+teste de tipo: uma diretiva `@ts-expect-error` que deixa de falhar quebra o build.
+
+O gate cobre só o núcleo. `.github/workflows/video-preview.yml` segue com seus gatilhos e
+passos originais (`02-reels-shorts/*.mp4` e `release`), sem alteração. E o limite continua
+o mesmo do item anterior: **verde no gate = contrato estruturalmente válido**, não
+renderização, não conteúdo verificado, não autorização de produção.
 
 ## Como adicionar um novo projeto
 
@@ -400,7 +428,10 @@ Nenhuma requisição, DNS ou resolução de caminho é feita — nunca.
 - DevDependencies apenas para o gate de tipos, o build e a execução dos schemas, fixadas:
   `typescript@5.9.3` (Apache-2.0), `@types/node@24.19.2` (MIT) e `ajv@8.20.0` (MIT).
   `ajv` é **dev-only**: nem o núcleo nem as CLIs o importam, e `dependencies` continua
-  inexistente. Nenhum pacote de vídeo ou parser YAML foi adicionado.
+  inexistente. Nenhum pacote de vídeo ou parser YAML foi adicionado;
+- O gate de CI (`platform-validation.yml`) usa **exatamente essas devDependencies** —
+  `npm ci` não instala runtime algum, porque não há o que instalar — e os quatro ambientes
+  da matriz executam os mesmos scripts deste `package.json`, sem passo específico de CI.
 
 ## Limites atuais (expressos)
 
