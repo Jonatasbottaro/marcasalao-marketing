@@ -1,0 +1,3 @@
+# Os scripts de shell do gate rodam tambem no windows-latest, onde o checkout padrao do
+# runner converte texto em CRLF e o bash passa a falhar. LF neles e obrigatorio.
+*.sh text eol=lf
