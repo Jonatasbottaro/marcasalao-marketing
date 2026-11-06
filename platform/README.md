@@ -32,11 +32,11 @@ formados, com o mesmo validador para qualquer projeto.
 |---|---|
 | `schemaVersion` | Inteiro `1` (única versão suportada) |
 | `id` | Obrigatório, kebab-case |
-| `name` | Obrigatório, não vazio (opaco ao núcleo) |
-| `locale` | Obrigatório (opaco ao núcleo) |
-| `timezone` | Obrigatório (opaco ao núcleo) |
-| `brandTheme` | Obrigatório e **opaco ao núcleo** |
-| `assetRoot` | Caminho **relativo seguro**: sem absoluto, sem `..`, sem arquivos sensíveis |
+| `name` | Obrigatório, com ao menos um caractere não em branco (opaco ao núcleo) |
+| `locale` | Obrigatório, com ao menos um caractere não em branco (opaco ao núcleo) |
+| `timezone` | Obrigatório, com ao menos um caractere não em branco (opaco ao núcleo) |
+| `brandTheme` | Obrigatório, com ao menos um caractere não em branco e **opaco ao núcleo** |
+| `assetRoot` | Caminho **relativo seguro**: sem caractere de controle, sem absoluto (POSIX, unidade Windows, UNC), sem URL/protocolo, sem `..` e sem referências sensíveis por nome/extensão (ver *Segurança de caminhos*) |
 | `contentPolicies` | Objeto com exatamente 4 booleanos explícitos (ausência é erro, não default) |
 | `outputProfiles` | Array não vazio, itens em kebab-case, sem duplicatas |
 | campos desconhecidos | **Proibidos** no topo e em `contentPolicies` (`additionalProperties: false`) |
@@ -46,7 +46,8 @@ formados, com o mesmo validador para qualquer projeto.
 `PROJECT_MANIFEST_INVALID`, `PROJECT_SCHEMA_VERSION_UNSUPPORTED`, `PROJECT_ID_REQUIRED`,
 `PROJECT_ID_INVALID`, `PROJECT_NAME_REQUIRED`, `PROJECT_LOCALE_REQUIRED`,
 `PROJECT_TIMEZONE_REQUIRED`, `PROJECT_BRAND_THEME_REQUIRED`, `PROJECT_ASSET_ROOT_REQUIRED`,
-`PROJECT_ASSET_ROOT_ABSOLUTE`, `PROJECT_ASSET_ROOT_TRAVERSAL`, `PROJECT_ASSET_ROOT_SENSITIVE`,
+`PROJECT_ASSET_ROOT_CONTROL_CHARACTER`, `PROJECT_ASSET_ROOT_ABSOLUTE`, `PROJECT_ASSET_ROOT_URL`,
+`PROJECT_ASSET_ROOT_TRAVERSAL`, `PROJECT_ASSET_ROOT_SENSITIVE`,
 `PROJECT_CONTENT_POLICY_INVALID`, `PROJECT_OUTPUT_PROFILE_REQUIRED`,
 `PROJECT_OUTPUT_PROFILE_INVALID`, `PROJECT_OUTPUT_PROFILE_DUPLICATE`, `PROJECT_UNKNOWN_FIELD`.
 
@@ -87,24 +88,27 @@ estruturado e editável fora de imagens e vídeos.
 | `schemaVersion` | Inteiro `1` (única versão suportada) |
 | `projectId` | Obrigatório, kebab-case; deve ser igual a `project.id` |
 | `id` | Obrigatório, kebab-case |
-| `title` | Obrigatório, não vazio (opaco ao núcleo) |
-| `locale` | Obrigatório; na v1 deve ser **igual** a `project.locale` |
+| `title` | Obrigatório, com ao menos um caractere não em branco (opaco ao núcleo) |
+| `locale` | Obrigatório, não em branco; na v1 deve ser **igual** a `project.locale` |
 | `format` | Objeto com `profile` (kebab-case, presente em `project.outputProfiles`), `width` e `height` inteiros positivos e `fps` inteiro entre 1 e 120 |
-| `scenes` | Array de cenas: `id` kebab-case único, `type` em `text`/`image`/`video`/`cta`, `durationMs` inteiro > 0 e `content` em forma fechada por tipo |
+| `scenes` | Array de cenas: `id` kebab-case único, `type` em `text`/`image`/`video`/`cta`, `durationMs` inteiro seguro (> 0 e <= `Number.MAX_SAFE_INTEGER`) e `content` em forma fechada por tipo |
 | `renderer` | Objeto com `adapter` kebab-case obrigatório; `undecided` é aceito e nenhum adapter precisa estar instalado; `options` não é suportado na v1 |
-| `metadata` | Opcional e pequeno: `status` em `draft`/`review`/`approved`/`archived`, `description` e `tags` (strings sem duplicata, no máximo 8) |
+| `metadata` | Opcional e pequeno: `status` em `draft`/`review`/`approved`/`archived`, `description` e `tags` (strings não em branco, sem duplicata, no máximo 8) |
 | campos desconhecidos | **Proibidos** no topo, em `format`, em cada cena, em `content`, em `asset`, em `renderer` e em `metadata` |
 
 `content` por tipo: `text` exige `text` e proíbe `asset`; `cta` exige `text` e aceita
-`href` somente http(s) sem credenciais embutidas (a URL nunca é acessada); `image` e
-`video` exigem `asset` e aceitam `alt`. `accessibilityLabel` é opcional em todos.
+`href` somente http(s) absoluto, com hostname e **sem username nem password** (a URL
+nunca é acessada — é tratada como dado); `image` e `video` exigem `asset` e aceitam
+`alt`. `alt`, `accessibilityLabel` e os demais campos textuais são opcionais onde o tipo
+os permite, mas quando presentes exigem ao menos um caractere não em branco.
 
 ## AssetReference mínimo
 
-`asset` tem somente `id` (kebab-case) e `path` (caminho relativo seguro: sem absoluto,
-sem `..`, sem URL/protocolo, sem credenciais e sem arquivos sensíveis). **AssetReference
-não substitui o futuro AssetManifest**: hash, licença, origem, provider, prompt,
-dimensões e duração pertencem a uma fatia futura.
+`asset` tem somente `id` (kebab-case) e `path` (caminho relativo seguro: sem caractere de
+controle, sem absoluto, sem `..`, sem URL/protocolo e sem referências sensíveis por
+nome/extensão — ver *Segurança de caminhos*). **AssetReference não substitui o futuro
+AssetManifest**: hash, licença, origem, provider, prompt, dimensões e duração pertencem a
+uma fatia futura.
 
 ## Metadata técnica ≠ autorização editorial
 
@@ -127,9 +131,10 @@ continuam regidas por `AGENTS.md`, `WORKFLOW.md` e pelos briefings aprovados.
 `COMPOSITION_SCENE_DURATION_INVALID`, `COMPOSITION_SCENE_CONTENT_REQUIRED`,
 `COMPOSITION_SCENE_CONTENT_FIELD_FORBIDDEN`, `COMPOSITION_TEXT_REQUIRED`,
 `COMPOSITION_ASSET_REQUIRED`, `COMPOSITION_ASSET_NOT_ALLOWED`, `COMPOSITION_ASSET_ID_INVALID`,
-`COMPOSITION_ASSET_PATH_REQUIRED`, `COMPOSITION_ASSET_PATH_ABSOLUTE`,
+`COMPOSITION_ASSET_PATH_REQUIRED`, `COMPOSITION_ASSET_PATH_CONTROL_CHARACTER`,
+`COMPOSITION_ASSET_PATH_ABSOLUTE`, `COMPOSITION_ASSET_PATH_URL`,
 `COMPOSITION_ASSET_PATH_TRAVERSAL`, `COMPOSITION_ASSET_PATH_SENSITIVE`,
-`COMPOSITION_ASSET_PATH_URL`, `COMPOSITION_CTA_HREF_INVALID`,
+`COMPOSITION_CTA_HREF_INVALID`,
 `COMPOSITION_CTA_HREF_CREDENTIALS`, `COMPOSITION_RENDERER_REQUIRED`,
 `COMPOSITION_RENDERER_ADAPTER_REQUIRED`, `COMPOSITION_RENDERER_ADAPTER_INVALID`,
 `COMPOSITION_RENDERER_OPTIONS_UNSUPPORTED`, `COMPOSITION_METADATA_INVALID`,
@@ -223,11 +228,85 @@ uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trac
 
 ## Segurança de caminhos
 
-`assetRoot` rejeita caminhos absolutos (POSIX, letra de unidade e UNC), qualquer segmento
-`..` e referências a arquivos sensíveis (`.env`, chaves privadas, `*.pem`/`*.key`,
-credenciais, `service_account`, secrets, `.git`). A CLI lê **somente** o arquivo informado,
-não acessa rede, não altera arquivos, não cria outputs e não lê `.env`.
-A **existência física** de assets não é verificada nesta fatia (fora de escopo).
+A classificação léxica é **uma função pura compartilhada** (`src/relative-path.ts`,
+`inspectRelativePath`) usada pelos dois contratos. Ela recebe a string e devolve as
+violações em ordem fixa — `CONTROL_CHARACTER`, `ABSOLUTE`, `URL`, `TRAVERSAL`,
+`SENSITIVE` — sem rede, sem leitura de assets, sem verificação de existência e sem
+alterar a entrada. Cada contrato traduz a violação para os **próprios** códigos e caminhos
+de erro: `PROJECT_ASSET_ROOT_*` para `assetRoot` e `COMPOSITION_ASSET_PATH_*` para
+`asset.path`.
+
+Rejeitam, nos dois contratos:
+
+- caractere de controle (`U+0000`–`U+001F` e `U+007F`) em qualquer posição;
+- caminho absoluto POSIX (`/var/assets`), com barras invertidas ou UNC
+  (`\\servidor\share\a.png`) e letra de unidade Windows (`C:\assets\x`);
+- URL ou qualquer protocolo (`http:`, `https:`, `file:` e protocol-relative `//…`);
+- segmento `..` em qualquer um dos dois separadores;
+- referências sensíveis **por segmento, nome e extensão**, nunca por substring do caminho
+  inteiro: nomes pontados `.env`/`.env.local`/`.git` (e o que vier depois do ponto),
+  extensões `.pem`, `.key`, `.p12`, `.pfx`, prefixos de chave SSH (`id_rsa`, `id_ecdsa`,
+  `id_ed25519`) e nomes de segmento que sejam exatamente um de `secret(s)`, `password(s)`,
+  `credential(s)`, `privatekey`, `serviceaccount` — comparados também com os tokens do nome
+  (separados por `.`, `_`, `-`) e com o nome sem separadores.
+
+Aceitam explicitamente (eram falsos positivos do antigo bloqueio por substring):
+`assets/secretaria`, `assets/secretaria.png`, `assets/cenas/01.png`, `assets/keys/x.png`,
+`assets/.gitignore`, `assets/env/.gitmodules`, `assets/passphrase.txt`.
+
+A CLI lê **somente** o arquivo informado, não acessa rede, não altera arquivos, não cria
+outputs e não lê `.env`. A **existência física** de assets não é verificada nesta fatia.
+
+### Endurecimentos desta correção (documentados porque mudam entradas antes aceitas)
+
+| Entrada | Antes | Agora |
+|---|---|---|
+| `assetRoot: "https://example.com/assets"` | aceita pelos dois motores | `PROJECT_ASSET_ROOT_URL` (schema: inválido) |
+| caminho com caractere de controle (`assets` + NUL + `b.png`) | aceita pelos dois motores | `PROJECT_ASSET_ROOT_CONTROL_CHARACTER` / `COMPOSITION_ASSET_PATH_CONTROL_CHARACTER` |
+| `href: "https://usuario@example.com"` (usuário sem senha) | aceita pelos dois motores | `COMPOSITION_CTA_HREF_CREDENTIALS` (schema: inválido) |
+| string obrigatória só com espaços (`title`, `text`, `name`, `assetRoot`…) | aceita pelo schema | rejeitada pelos dois (`*_REQUIRED` / `pattern: \S`) |
+| `durationMs` acima de `Number.MAX_SAFE_INTEGER` | rejeitada só pelo core | rejeitada também pelo schema (`maximum`) |
+| protocolo do `href` em maiúsculas (`HTTPS://example.com`) | rejeitado só pelo schema | aceito pelos dois |
+| `assets/secretaria`, `assets/secretaria.png` | rejeitados pelo core (substring) | aceitos pelos dois |
+
+Os códigos anteriores (`*_ABSOLUTE`, `*_TRAVERSAL`, `*_SENSITIVE`, `COMPOSITION_ASSET_PATH_URL`,
+`COMPOSITION_CTA_HREF_*`) e suas mensagens permanecem os mesmos; `*_URL` no manifesto e
+`*_CONTROL_CHARACTER` nos dois contratos são os únicos códigos novos desta etapa.
+
+## Regras do schema × regras do core
+
+Os schemas draft-07 espelham a parte **estrutural** das regras; o validador TypeScript é a
+implementação de referência e mantém as verificações **semânticas** que o vocabulário
+draft-07 não expressa. Não há promessa de equivalência total, e cada divergência conhecida
+é testada em `tests/path-url-validation.test.ts`:
+
+| Só o core (TypeScript) | Por quê |
+|---|---|
+| nomes sensíveis por **token** (`assets/secret.txt`, `assets/api-secrets.yaml`, `assets/service_account.json`) | exige segmentar o nome, normalizar separadores e comparar listas — não há predicado equivalente em draft-07 sem uma regex ilegível |
+| host do `href` pelo **parser de URL** (`https://:8443`, `https://exa mple.com`) | o schema exige `scheme://` + primeiro caractere do host; a sintaxe completa é do `new URL()` |
+
+| Só o schema | Por quê |
+|---|---|
+| `href` na forma canônica `scheme://host…` | o parser do core aceita variantes raras como `http:/exemplo.com` e `https:\\exemplo.com`; o espelho normativo exige a forma canônica http(s) |
+
+O que **ambos** expressam e concordam caso a caso: absoluto (POSIX/unidade/UNC),
+protocol-relative e protocolos, `..`, `.env*`/`.git*`, extensões de chave,
+`id_rsa`/`id_ecdsa`/`id_ed25519`, caracteres de controle, strings obrigatórias não em
+branco (`pattern: "\S"`), `durationMs <= 9007199254740991` e `href` com username ou senha
+(inclusive protocolo em maiúsculas). Nenhuma extensão proprietária de schema é usada — só
+o vocabulário draft-07.
+
+## Regras textuais e de URL
+
+`isNonEmptyString` (trim) vale para todo campo de texto obrigatório ou opcional: `name`,
+`locale`, `timezone`, `brandTheme`, `assetRoot`, `title`, `locale` da composição, `text`,
+`alt`, `accessibilityLabel`, `description`, `tags` e `asset.path`. "Apenas espaços" é erro,
+não conteúdo.
+
+`content.href` é validado com `new URL()` **como dado**: protocolo precisa ser `http:` ou
+`https:` (o parser normaliza a caixa), o hostname precisa existir e `username`/`password`
+precisam ser vazios; uma `@` na autoridade também é rejeitada, mesmo sem usuário escrito.
+Nenhuma requisição, DNS ou resolução de caminho é feita — nunca.
 
 ## Stack e dependências
 
@@ -242,9 +321,10 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
   mais de um tipo;
 - `node:test` nativo para os testes, executados sobre o JavaScript compilado em
   `dist/tests`;
-- O espelho normativo é **executado** em `tests/composition-schema.test.ts` por um motor
-  JSON Schema draft-07 real (`ajv`), que compara schema e validador TypeScript caso a
-  caso, inclusive nos dois exemplos oficiais;
+- O espelho normativo é **executado** em `tests/composition-schema.test.ts` e
+  `tests/path-url-validation.test.ts` por um motor JSON Schema draft-07 real (`ajv`), que
+  compara schema e validador TypeScript caso a caso, inclusive nos dois exemplos oficiais e
+  nas divergências conhecidas entre os dois;
 - DevDependencies apenas para o gate de tipos, o build e a execução dos schemas, fixadas:
   `typescript@5.9.3` (Apache-2.0), `@types/node@24.19.2` (MIT) e `ajv@8.20.0` (MIT).
   `ajv` é **dev-only**: nem o núcleo nem as CLIs o importam, e `dependencies` continua
@@ -260,11 +340,13 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 - **Nenhum vídeo é gerado** e nenhum preview/render/upload/publicação existe;
 - **Nenhuma ferramenta audiovisual externa foi instalada** por estas fatias (HyperFrames,
   Google Flow, ElevenLabs, FFmpeg, CapCut etc. permanecem não adotados);
-- **O espelho JSON Schema não expressa o que o draft-07 não declara**: unicidade de
-  `id` de cena, soma de `durationMs` sem overflow, vínculo de `format.profile` e `locale`
-  com o ProjectManifest e a heurística de arquivos sensíveis em `asset.path` (`.env`,
-  `*.pem`, `*.key`, credenciais). Essas regras continuam apenas no validador TypeScript,
-  que é a implementação de referência;
+- **O espelho JSON Schema expressa só o que o draft-07 declara**: ficam apenas no
+  validador TypeScript (implementação de referência) a unicidade de `id` de cena, a soma de
+  `durationMs` sem overflow, o vínculo de `format.profile` e `locale` com o ProjectManifest,
+  a detecção de nomes sensíveis **por token** (p. ex. `assets/api-secrets.yaml`) e a
+  sintaxe completa de `href` pelo parser de URL. O inverso também existe: o schema exige a
+  forma canônica `scheme://host` no `href`. A lista completa e testada está em *Regras do
+  schema × regras do core*;
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não

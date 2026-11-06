@@ -28,36 +28,43 @@
     },
     "name": {
       "type": "string",
-      "minLength": 1,
-      "description": "Nome de exibicao do projeto; opaco para o nucleo."
+      "pattern": "\\S",
+      "description": "Nome de exibicao do projeto; opaco para o nucleo. Apenas espacos em branco nao bastam."
     },
     "locale": {
       "type": "string",
-      "minLength": 1,
-      "description": "Idioma do projeto, opaco para o nucleo."
+      "pattern": "\\S",
+      "description": "Idioma do projeto, opaco para o nucleo. Apenas espacos em branco nao bastam."
     },
     "timezone": {
       "type": "string",
-      "minLength": 1,
-      "description": "Fuso horario do projeto, opaco para o nucleo."
+      "pattern": "\\S",
+      "description": "Fuso horario do projeto, opaco para o nucleo. Apenas espacos em branco nao bastam."
     },
     "brandTheme": {
       "type": "string",
-      "minLength": 1,
-      "description": "Identificacao opaca do tema visual no projeto consumidor; o nucleo nao interpreta."
+      "pattern": "\\S",
+      "description": "Identificacao opaca do tema visual no projeto consumidor; o nucleo nao interpreta. Apenas espacos em branco nao bastam."
     },
     "assetRoot": {
       "type": "string",
-      "minLength": 1,
+      "pattern": "\\S",
       "not": {
         "anyOf": [
+          { "pattern": "[\\x00-\\x1F\\x7F]" },
+          { "pattern": "^//" },
           { "pattern": "^/" },
           { "pattern": "^\\\\" },
           { "pattern": "^[A-Za-z]:[\\\\/]" },
-          { "pattern": "(^|[\\\\/])\\.\\.([\\\\/]|$)" }
+          { "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:" },
+          { "pattern": "(^|[\\\\/])\\.\\.([\\\\/]|$)" },
+          { "pattern": "(^|[\\\\/])\\.[eE][nN][vV](\\.|[\\\\/]|$)" },
+          { "pattern": "(^|[\\\\/])\\.[gG][iI][tT](\\.|[\\\\/]|$)" },
+          { "pattern": "(\\.[pP][eE][mM]|\\.[kK][eE][yY]|\\.[pP]12|\\.[pP][fF][xX])([\\\\/]|$)" },
+          { "pattern": "(^|[\\\\/])[iI][dD]_([rR][sS][aA]|[eE][cC][dD][sS][aA]|[eE][dD]25519)" }
         ]
       },
-      "description": "Caminho relativo seguro para a raiz de assets; sem caminho absoluto, sem traversal e sem apontar para arquivos sensiveis (.env, chaves, credenciais). A existencia fisica NAO e verificada nesta fatia."
+      "description": "Caminho relativo seguro para a raiz de assets: sem caractere de controle, sem caminho absoluto (POSIX, barras invertidas/UNC, letra de unidade Windows), sem URL ou qualquer protocolo (inclusive protocol-relative), sem traversal (\"..\") e sem referencias a arquivos sensiveis previstas no contrato (.env*, .git*, chaves .pem/.key/.p12/.pfx e id_rsa/id_ecdsa/id_ed25519). As comparacoes sao por segmento, nome e extensao, nunca por substring do caminho inteiro: \"projects/x/secretaria\" e aceito. A existencia fisica NAO e verificada nesta fatia. Outros nomes de chave/credencial previstos pelo nucleo (por exemplo segmento \"service_account\" ou token \"secrets\") dependem de comparacao por tokens e seguem sendo regra do validador TypeScript, nao expressavel em JSON Schema."
     },
     "contentPolicies": {
       "type": "object",
