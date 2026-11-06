@@ -12,7 +12,7 @@
 - Nome: Organização e visibilidade da agenda
 - Responsável: pendente de definição (não há responsável documentado no repositório)
 - Data de criação: 2026-11-02
-- Data de atualização: 2026-11-05
+- Data de atualização: 2026-11-06
 - Status: em validação
 - Versão: 0.3
 
@@ -284,7 +284,7 @@ Nenhuma meta numérica foi criada. Nenhuma métrica realizada foi preenchida: n�
 
 - Riscos de mensagem: confundir organização da agenda com prevenção automática de faltas; usar o termo no-show como se o sistema resolvesse a causa sozinho; apresentar hipótese como fato; prometer resultado financeiro; atribuir à agenda do gestor a exibição de horários disponíveis, que pertence ao fluxo público do cliente.
 - Riscos de promessa indevida: usar mensagens, lembretes ou confirmações como argumento comercial; sugerir preenchimento automático de horários vagos; garantir aumento de ocupação ou de faturamento. A proibição comercial se mantém mesmo depois de a auditoria ter localizado implementação técnica de reminder — ver seção 7 deste briefing e seção 7 de [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md).
-- Dependências: execução autenticada da agenda em ambiente local com emuladores e dados fictícios; captura atualizada; definição de responsável; política de CTA por rede já registrada em [`../../../AGENTS.md`](../../../AGENTS.md). A leitura de código e os testes selecionados já foram feitos e estão registrados em [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md); o que falta é a confirmação de comportamento executado.
+- Dependências: a execução autenticada da agenda em ambiente local com emuladores e dados fictícios e as capturas de evidência foram concluídas em 2026-11-05, conforme [`VALIDACAO-EXECUCAO-2026-11-05.md`](VALIDACAO-EXECUCAO-2026-11-05.md). A leitura de código e os testes selecionados estão registrados separadamente em [`VALIDACAO-FUNCIONAL-AGENDA.md`](VALIDACAO-FUNCIONAL-AGENDA.md); a execução local não comprova identidade exata com aquele commit. Para produção, permanecem a definição do responsável, as aprovações editoriais, a revisão do CTA por rede conforme [`../../../AGENTS.md`](../../../AGENTS.md) e a preparação/revisão da demonstração final. Esta correção documental não concede autorização de gravação ou publicação.
 - Restrições técnicas: vídeo sem áudio, com legendas queimadas e `.srt` correspondente; narração entregue como texto separado.
 - Restrições de marca: identidade verde-petróleo, menta e branco; sem tela fictícia; sem simular botão clicável em imagem estática; não republicar para corrigir legenda.
 - Risco de material herdado: existem textos antigos neste repositório que tratam automação de contato como capacidade comercial já disponível — por exemplo [`../../../04-legendas/roteiro_enviar_link.md`](../../../04-legendas/roteiro_enviar_link.md) ("sua agenda atualiza no automático 24 horas por dia") e [`../../../templates/youtube_horizontal/index.html`](../../../templates/youtube_horizontal/index.html) ("Automatize o envio de lembretes aos clientes"). São rascunhos/template históricos, não referência de qualidade; não devem ser reutilizados nesta campanha. A auditoria localizou implementação técnica de reminder no produto, mas isso **não** reabilita esses textos: implantação, configuração dos canais e entrega real seguem pendentes e a promessa comercial continua não autorizada. Nenhum desses arquivos foi alterado nesta tarefa.
