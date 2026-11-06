@@ -81,6 +81,10 @@ test('package.json declara build compilado, engines Node >= 22 e zero dependenci
     assert.match(pkg.scripts?.build ?? '', /\btsc\b/)
     assert.ok((pkg.scripts?.test ?? '').includes('node --test'))
     assert.ok((pkg.scripts?.test ?? '').includes('dist/tests'))
+    // A suíte inteira precisa incluir tests/contracts/: o glob tem de ser recursivo.
+    assert.match(pkg.scripts?.test ?? '', /dist\/tests\/\*\*\/\*\.test\.js/)
+    assert.match(pkg.scripts?.['test:contracts'] ?? '', /node --test "dist\/tests\/contracts\/\*\.test\.js"/)
+    assert.match(pkg.scripts?.['test:contracts'] ?? '', /^npm run build/, 'test:contracts roda sobre JavaScript compilado')
     assert.ok((pkg.scripts?.['content:validate-project'] ?? '').includes('node dist/src/validate-project-cli.js'))
     assert.equal(pkg.dependencies, undefined, 'nenhuma dependencia de runtime e permitida')
     assert.deepEqual(Object.keys(pkg.devDependencies ?? {}).sort(), ['@types/node', 'ajv', 'typescript'])

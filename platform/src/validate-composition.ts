@@ -14,6 +14,7 @@
  */
 
 import {
+    COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE,
     COMPOSITION_FPS_MAX,
     COMPOSITION_FPS_MIN,
     COMPOSITION_MAX_TAGS,
@@ -62,14 +63,6 @@ const ASSET_PATH_VIOLATIONS: Record<RelativePathViolation, { code: string; messa
         code: 'COMPOSITION_ASSET_PATH_SENSITIVE',
         message: 'asset.path must not point to sensitive files (.env, keys, credentials).',
     },
-}
-
-/** Campos permitidos em content, por tipo de cena (forma fechada). */
-const CONTENT_FIELDS_BY_SCENE_TYPE: Record<CompositionSceneType, readonly string[]> = {
-    text: ['text', 'accessibilityLabel'],
-    cta: ['text', 'href', 'accessibilityLabel'],
-    image: ['asset', 'alt', 'accessibilityLabel'],
-    video: ['asset', 'alt', 'accessibilityLabel'],
 }
 
 /** Campos permitidos em metadata (forma fechada). */
@@ -180,7 +173,7 @@ function validateSceneContent(
         return
     }
 
-    const allowedFields = CONTENT_FIELDS_BY_SCENE_TYPE[sceneType]
+    const allowedFields: readonly string[] = COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE[sceneType]
 
     for (const key of Object.keys(value)) {
         if (!allowedFields.includes(key)) {

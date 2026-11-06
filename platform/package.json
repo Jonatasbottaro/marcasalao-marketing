@@ -10,7 +10,8 @@
     "clean": "node ./scripts/clean.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "test": "npm run build && node --test \"dist/tests/**/*.test.js\"",
+    "test:contracts": "npm run build && node --test \"dist/tests/contracts/*.test.js\"",
     "content:validate-project": "npm run build --silent && node dist/src/validate-project-cli.js",
     "content:validate-composition": "npm run build --silent && node dist/src/validate-composition-cli.js"
   },

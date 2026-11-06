@@ -102,6 +102,31 @@ nunca é acessada — é tratada como dado); `image` e `video` exigem `asset` e 
 `alt`. `alt`, `accessibilityLabel` e os demais campos textuais são opcionais onde o tipo
 os permite, mas quando presentes exigem ao menos um caractere não em branco.
 
+### Fonte normativa da estrutura
+
+A estrutura dos contratos tem **três descrições**, e cada uma tem seu papel:
+
+| Artefato | É a fonte normativa de | Não decide |
+|---|---|---|
+| `src/project-contract.ts` e `src/composition-contract.ts` (tipos) | a forma da estrutura: quais campos existem, quais tipos de cena há, qual `content` pertence a qual `type` | semântica entre documentos |
+| `schemas/*.schema.json` (draft-07) | a forma **estrutural** verificável fora do TypeScript | regras que o vocabulário draft-07 não expressa |
+| `src/validate-project.ts` e `src/validate-composition.ts` | **implementação de referência**: aceitação, códigos públicos, ordem de emissão e relatório | — |
+
+`CompositionScene` é uma **união discriminada por `type`**
+(`CompositionTextScene | CompositionImageScene | CompositionVideoScene | CompositionCtaScene`),
+então o compilador rejeita combinações inválidas de `type`/`content` antes de qualquer
+execução. A superfície de `content` por tipo existe em um único lugar —
+`COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE` —, usada pelo validador para rejeitar campos,
+espelhada nas chaves de `#/definitions/*Content.properties` no schema e conferida nos
+testes de contrato contra as duas fontes. `CompositionSceneOfType<T>` (`Extract` por tipo)
+é o narrowing público.
+
+O teste de compilação é o próprio `tsc`: `tests/contracts/type-discrimination.test.ts`
+marca cada combinação inválida com `@ts-expect-error`. Se o TypeScript deixar de rejeitar
+uma delas, a diretiva fica não-usada, o build falha e o gate inteiro para. Não há `any`,
+`@ts-ignore` nem relaxamento de `strict` nesse mecanismo — `npm run build` e
+`npm run typecheck` **são** o teste de tipos.
+
 ## AssetReference mínimo
 
 `asset` tem somente `id` (kebab-case) e `path` (caminho relativo seguro: sem caractere de
@@ -199,7 +224,8 @@ npm ci                    # instala as devDependencies (typescript, @types/node,
 npm run clean             # apaga dist/ (script Node portátil)
 npm run build             # compila src/ e tests/ para dist/ (tsc, NodeNext)
 npm run typecheck         # tsc --noEmit
-npm test                  # build + node --test dist/tests/*.test.js (JavaScript compilado)
+npm test                  # build + node --test "dist/tests/**/*.test.js" (JavaScript compilado)
+npm run test:contracts    # build + node --test "dist/tests/contracts/*.test.js" (só os contratos)
 
 # CLI compilada (exit 0 válido · 1 manifesto inválido · 2 uso/JSON malformado)
 npm run content:validate-project -- --project examples/projects/marca-salao.project.json --json
@@ -278,7 +304,8 @@ Os códigos anteriores (`*_ABSOLUTE`, `*_TRAVERSAL`, `*_SENSITIVE`, `COMPOSITION
 Os schemas draft-07 espelham a parte **estrutural** das regras; o validador TypeScript é a
 implementação de referência e mantém as verificações **semânticas** que o vocabulário
 draft-07 não expressa. Não há promessa de equivalência total, e cada divergência conhecida
-é testada em `tests/path-url-validation.test.ts`:
+é testada como diferença (nunca como equivalência) em `tests/path-url-validation.test.ts` e
+no corpus classificado de `tests/contracts/`:
 
 | Só o core (TypeScript) | Por quê |
 |---|---|
@@ -295,6 +322,46 @@ protocol-relative e protocolos, `..`, `.env*`/`.git*`, extensões de chave,
 branco (`pattern: "\S"`), `durationMs <= 9007199254740991` e `href` com username ou senha
 (inclusive protocolo em maiúsculas). Nenhuma extensão proprietária de schema é usada — só
 o vocabulário draft-07.
+
+## Corpus compartilhado e classificação dos casos
+
+Um único corpus (`tests/contract-corpus.ts`), montado com os builders do harness
+compartilhado (`tests/contract-harness.ts`: motor ajv real + builders de documentos +
+leitura dos exemplos oficiais), roda **os mesmos objetos** contra o schema draft-07 e contra
+o validador TypeScript. Não há tabelas duplicadas por arquivo.
+
+| Grupo | O que prova | Quem decide |
+|---|---|---|
+| `structuralProjectCases` (47) e `structuralCompositionCases` (120) | a regra vive na forma do próprio documento | **os dois precisam coincidir** no veredicto |
+| `semanticCases` (21) | vínculo com o ProjectManifest (`projectId`, `locale`, `format.profile`), manifesto inválido, unicidade de `id` de cena, soma de `durationMs` com overflow, nomes sensíveis por token, sintaxe de `href` pelo parser e as heurísticas de warning | **só o TypeScript**; o veredicto do schema para o mesmo documento fica registrado em `schemaAccepts` |
+| `schemaStricterCases` (2) | o espelho exige a forma canônica `scheme://host`, que o parser do core aceita | diferença registrada, testada como diferença |
+
+Cada caso carrega nome, documento e (quando inválido) os **códigos exatos** esperados do
+validador; os casos semânticos trazem também o projeto contra o qual são validados, o
+motivo (`reason`) e os warnings esperados. O motivo da classificação é parte do corpus,
+não um comentário solto: os testes de contrato exigem que todo `SemanticReason` documentado
+tenha ao menos um caso.
+
+Rodam em `tests/contracts/`:
+
+- `structural-parity.test.ts` — os 167 casos estruturais, veredicto dos dois motores e
+  códigos exatos do core, mais os dois pares oficiais;
+- `semantic-rules.test.ts` — os 21 casos semânticos (códigos, warnings separados de erros,
+  `totalDurationMs`, veredicto registrado do schema, imutabilidade da entrada e
+  determinismo), incluindo a prova de que **o schema é mudo quanto ao vínculo**: a mesma
+  composição é aceita pelo schema contra dois manifestos opostos enquanto o core produz
+  `COMPOSITION_PROJECT_ID_MISMATCH`, `COMPOSITION_LOCALE_MISMATCH` e
+  `COMPOSITION_FORMAT_PROFILE_NOT_ALLOWED`;
+- `type-discrimination.test.ts` — as combinações `type`/`content` rejeitadas em compilação
+  (`@ts-expect-error`), paridade entre os tipos, `COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE`
+  e as propriedades do schema;
+- `cli-parity.test.ts` — exit codes `0`/`1`/`2` das duas CLIs sobre amostras do corpus, com
+  o JSON do processo igual ao relatório em memória, saída byte a byte idêntica entre
+  execuções, ausência de caminho absoluto/timestamp/stack trace e arquivos intactos.
+
+`npm test` executa tudo (292 testes nesta etapa); `npm run test:contracts` executa
+especificamente a verificação de contrato (204 testes) — ambas sobre o JavaScript
+compilado em `dist/`.
 
 ## Regras textuais e de URL
 
@@ -321,10 +388,15 @@ Nenhuma requisição, DNS ou resolução de caminho é feita — nunca.
   mais de um tipo;
 - `node:test` nativo para os testes, executados sobre o JavaScript compilado em
   `dist/tests`;
-- O espelho normativo é **executado** em `tests/composition-schema.test.ts` e
-  `tests/path-url-validation.test.ts` por um motor JSON Schema draft-07 real (`ajv`), que
-  compara schema e validador TypeScript caso a caso, inclusive nos dois exemplos oficiais e
-  nas divergências conhecidas entre os dois;
+- O espelho normativo é **executado** por um motor JSON Schema draft-07 real (`ajv`) no
+  harness compartilhado `tests/contract-harness.ts`, usado por
+  `tests/contracts/structural-parity.test.ts`, `tests/contracts/semantic-rules.test.ts`,
+  `tests/composition-schema.test.ts` e `tests/path-url-validation.test.ts`, que comparam
+  schema e validador TypeScript caso a caso, inclusive nos dois exemplos oficiais e nas
+  divergências conhecidas entre os dois;
+- Os testes de **tipo** são o próprio `tsc`: as diretivas `@ts-expect-error` de
+  `tests/contracts/type-discrimination.test.ts` falham o build se alguma combinação inválida
+  de `type`/`content` deixar de ser rejeitada;
 - DevDependencies apenas para o gate de tipos, o build e a execução dos schemas, fixadas:
   `typescript@5.9.3` (Apache-2.0), `@types/node@24.19.2` (MIT) e `ajv@8.20.0` (MIT).
   `ajv` é **dev-only**: nem o núcleo nem as CLIs o importam, e `dependencies` continua
@@ -346,7 +418,18 @@ Nenhuma requisição, DNS ou resolução de caminho é feita — nunca.
   a detecção de nomes sensíveis **por token** (p. ex. `assets/api-secrets.yaml`) e a
   sintaxe completa de `href` pelo parser de URL. O inverso também existe: o schema exige a
   forma canônica `scheme://host` no `href`. A lista completa e testada está em *Regras do
-  schema × regras do core*;
+  schema × regras do core* e no corpus classificado;
+- **Paridade é estrutural, nunca de decisão**: os 167 casos estruturais exigem o mesmo
+  veredicto dos dois motores; os 21 casos semânticos exigem os códigos do validador e
+  **registram** o que o schema faz com o mesmo documento. Nada nesta fatia promete que o
+  schema resolva vínculo entre documentos;
+- **`scenes: []` é aceito** pelos dois motores: a v1 não declara número mínimo de cenas, e
+  endurecer isso seria um requisito novo, não uma correção. Continua aceito, documentado e
+  coberto por caso explícito no corpus (`scenes vazio (v1 aceita: nenhum minimo declarado)`);
+- **`renderer.adapter: "undecided"` e `metadata.status: "approved"` não mudam de sentido**
+  com esta correção: o primeiro é um adaptador ainda não escolhido (e produz apenas
+  `COMPOSITION_RENDERER_UNDECIDED`), o segundo é estado técnico. Nenhum dos dois significa
+  prontidão de produção nem autorização editorial;
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não
