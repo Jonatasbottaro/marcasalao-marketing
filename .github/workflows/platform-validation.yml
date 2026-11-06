@@ -31,6 +31,11 @@ jobs:
         # Faixa de platform/package.json: "node": ">=22 <25".
         node-version: ['22', '24']
 
+    defaults:
+      run:
+        # bash nos dois sistemas: pipefail e captura de exit code são os mesmos passos.
+        shell: bash
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,7 +49,10 @@ jobs:
 
       - name: Instalação reprodutível (npm ci)
         working-directory: platform
-        run: npm ci
+        run: |
+          mkdir -p gate-logs
+          set -o pipefail
+          npm ci 2>&1 | tee gate-logs/npm-ci.log
 
       - name: Limpeza dos artefatos locais
         working-directory: platform
@@ -52,8 +60,28 @@ jobs:
 
       - name: Verificação de tipos (tsc --noEmit)
         working-directory: platform
-        run: npm run typecheck
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee gate-logs/typecheck.log
 
-      - name: Suíte completa (já inclui o corpus de contratos em dist/)
+      - name: Suíte completa com TAP integral (já inclui o corpus de contratos)
         working-directory: platform
-        run: npm test
+        # O script npm test ja fixa --test-reporter=tap antes dos padroes de arquivo, entao o
+        # log e TAP completo nos quatro ambientes da matriz. pipefail + exit "$code" preservam
+        # o codigo original do npm test.
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee gate-logs/npm-test.tap
+          code=$?
+          echo "npm test exit code: $code" >> "$GITHUB_STEP_SUMMARY"
+          echo "npm test exit code: $code"
+          exit "$code"
+
+      - name: Publicar logs do gate (apenas em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-logs-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: platform/gate-logs/**
+          if-no-files-found: warn
+          retention-days: 30

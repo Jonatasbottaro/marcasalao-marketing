@@ -81,14 +81,24 @@ function isPositiveInteger(value: unknown): value is number {
 }
 
 /**
+ * Forma canonica exigida pelo espelho normativo (`^[hH][tT][tT][pP][sS]?://`): o prefixo
+ * precisa estar literalmente na string. Sem essa checagem, o parser de URL normalizaria
+ * `http:/example.com` e `https:\\example.com` em URLs validas, e o core aceitaria como
+ * `valid: true` uma estrutura que o schema draft-07 declara invalida.
+ */
+const CANONICAL_HTTP_HREF = /^https?:\/\//i
+
+/**
  * href e tratado somente como dado: o parser de URL do Node nao resolve DNS, nao abre
- * conexao e nao faz nenhuma requisicao. Aceita http(s) absoluto com hostname e sem
- * credenciais (username ou password), em qualquer caixa do protocolo.
+ * conexao e nao faz nenhuma requisicao. Aceita http(s) absoluto na forma canonica
+ * scheme://host, com hostname e sem credenciais (username ou password), em qualquer
+ * caixa do protocolo.
  */
 type HrefViolation = 'INVALID' | 'CREDENTIALS'
 
 function inspectHttpHref(value: string): HrefViolation | null {
     if (containsControlCharacter(value)) return 'INVALID'
+    if (!CANONICAL_HTTP_HREF.test(value)) return 'INVALID'
 
     let parsed: URL
     try {

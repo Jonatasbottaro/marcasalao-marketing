@@ -259,13 +259,26 @@ Arquivo: `.github/workflows/platform-validation.yml`.
 | Gatilhos | `pull_request` e `push` **filtrados** por `platform/**` e pelo próprio workflow; `workflow_dispatch` para execução manual |
 | Matriz | `ubuntu-latest` + `windows-latest` × Node `22` + `24` — os quatro dentro de `engines: ">=22 <25"` (`fail-fast: false`, para que um ambiente não oculte o veredito dos outros) |
 | Cache | `actions/setup-node@v4` com `cache: npm` e `cache-dependency-path: platform/package-lock.json` |
-| Ordem | `npm ci` → `npm run clean` → `npm run typecheck` → `npm test`, todas com `working-directory: platform` |
+| Ordem | `npm ci` → `npm run clean` → `npm run typecheck` → `npm test`, todas com `working-directory: platform` e `shell: bash` nos dois sistemas |
 | Permissões | `contents: read`; nenhum segredo é referenciado no arquivo |
+| Diagnóstico | cada passo de verificação grava a saída completa em `platform/gate-logs/` e o passo de testes preserva o **exit code original** (`set -o pipefail` + `exit "$code"`); `actions/upload-artifact@v4` publica os logs **só em falha**, com nome por combinação da matriz |
 
 `npm test` compila e roda a suíte inteira, **inclusive o corpus de contratos**
 (`tests/contracts/*.test.js`) sobre o JavaScript de `dist/`; por isso o job não repete
 `npm run test:contracts`, que existe para execução local focada. O `typecheck` é também o
 teste de tipo: uma diretiva `@ts-expect-error` que deixa de falhar quebra o build.
+
+`npm test` e `npm run test:contracts` fixam `--test-reporter=tap` **antes** dos padrões de
+arquivo, então o log é o TAP completo — nomes dos testes, mensagens de asserção e o resumo
+`# tests`/`# pass`/`# fail` — nos quatro ambientes da matriz. Isso é intencional: fora de TTY
+o Node 22 já emite TAP por default, mas o Node 24 emite o repórter `spec`; depender do
+default trocaria o formato do diagnóstico no meio da matriz. Uma opção colocada depois do
+primeiro argumento posicional é ignorada pelo `node --test`, e há asserção em
+`tests/build-portability.test.ts` que trava a ordem. O upload do artifact roda com
+`if: failure()`, depois de o passo já ter marcado o job como vermelho: ele **acrescenta** o
+log, não substitui o veredito, e não há retry automático em nenhum passo. Localmente, o mesmo
+padrão serve (`npm test > gate-logs/npm-test.tap 2>&1; echo "exit=$?"`); `gate-logs/` está no
+`.gitignore` da `platform/`.
 
 O gate cobre só o núcleo. `.github/workflows/video-preview.yml` segue com seus gatilhos e
 passos originais (`02-reels-shorts/*.mp4` e `release`), sem alteração. E o limite continua
@@ -322,6 +335,7 @@ outputs e não lê `.env`. A **existência física** de assets não é verificad
 | `durationMs` acima de `Number.MAX_SAFE_INTEGER` | rejeitada só pelo core | rejeitada também pelo schema (`maximum`) |
 | protocolo do `href` em maiúsculas (`HTTPS://example.com`) | rejeitado só pelo schema | aceito pelos dois |
 | `assets/secretaria`, `assets/secretaria.png` | rejeitados pelo core (substring) | aceitos pelos dois |
+| `href: "http:/example.com"` e `href: "https:\\example.com"` (sem `://` literal) | **aceitos pelo core** porque `new URL()` normaliza; inválidos pelo schema | `COMPOSITION_CTA_HREF_INVALID` nos dois motores |
 
 Os códigos anteriores (`*_ABSOLUTE`, `*_TRAVERSAL`, `*_SENSITIVE`, `COMPOSITION_ASSET_PATH_URL`,
 `COMPOSITION_CTA_HREF_*`) e suas mensagens permanecem os mesmos; `*_URL` no manifesto e
@@ -340,9 +354,13 @@ no corpus classificado de `tests/contracts/`:
 | nomes sensíveis por **token** (`assets/secret.txt`, `assets/api-secrets.yaml`, `assets/service_account.json`) | exige segmentar o nome, normalizar separadores e comparar listas — não há predicado equivalente em draft-07 sem uma regex ilegível |
 | host do `href` pelo **parser de URL** (`https://:8443`, `https://exa mple.com`) | o schema exige `scheme://` + primeiro caractere do host; a sintaxe completa é do `new URL()` |
 
-| Só o schema | Por quê |
-|---|---|
-| `href` na forma canônica `scheme://host…` | o parser do core aceita variantes raras como `http:/exemplo.com` e `https:\\exemplo.com`; o espelho normativo exige a forma canônica http(s) |
+**Nenhuma regra é só do schema.** A forma canônica `scheme://host` do `href` já era exigida
+pelo espelho normativo e o core a aceitava por outra via, porque `new URL()` normaliza
+`http:/exemplo.com` e `https:\\exemplo.com`. O validador agora verifica o prefixo
+`http(s)://` literalmente, antes de chamar o parser: as duas formas voltam a ser rejeitadas
+**pelos dois motores**, com `COMPOSITION_CTA_HREF_INVALID` no core, e figuram como casos
+estruturais do corpus. Não sobrou divergência em que o schema declara inválida uma estrutura
+que o core aceita como `valid: true`.
 
 O que **ambos** expressam e concordam caso a caso: absoluto (POSIX/unidade/UNC),
 protocol-relative e protocolos, `..`, `.env*`/`.git*`, extensões de chave,
@@ -360,9 +378,8 @@ o validador TypeScript. Não há tabelas duplicadas por arquivo.
 
 | Grupo | O que prova | Quem decide |
 |---|---|---|
-| `structuralProjectCases` (47) e `structuralCompositionCases` (120) | a regra vive na forma do próprio documento | **os dois precisam coincidir** no veredicto |
+| `structuralProjectCases` (47) e `structuralCompositionCases` (122) | a regra vive na forma do próprio documento | **os dois precisam coincidir** no veredicto |
 | `semanticCases` (21) | vínculo com o ProjectManifest (`projectId`, `locale`, `format.profile`), manifesto inválido, unicidade de `id` de cena, soma de `durationMs` com overflow, nomes sensíveis por token, sintaxe de `href` pelo parser e as heurísticas de warning | **só o TypeScript**; o veredicto do schema para o mesmo documento fica registrado em `schemaAccepts` |
-| `schemaStricterCases` (2) | o espelho exige a forma canônica `scheme://host`, que o parser do core aceita | diferença registrada, testada como diferença |
 
 Cada caso carrega nome, documento e (quando inválido) os **códigos exatos** esperados do
 validador; os casos semânticos trazem também o projeto contra o qual são validados, o
@@ -372,7 +389,7 @@ tenha ao menos um caso.
 
 Rodam em `tests/contracts/`:
 
-- `structural-parity.test.ts` — os 167 casos estruturais, veredicto dos dois motores e
+- `structural-parity.test.ts` — os 169 casos estruturais, veredicto dos dois motores e
   códigos exatos do core, mais os dois pares oficiais;
 - `semantic-rules.test.ts` — os 21 casos semânticos (códigos, warnings separados de erros,
   `totalDurationMs`, veredicto registrado do schema, imutabilidade da entrada e
@@ -387,8 +404,8 @@ Rodam em `tests/contracts/`:
   o JSON do processo igual ao relatório em memória, saída byte a byte idêntica entre
   execuções, ausência de caminho absoluto/timestamp/stack trace e arquivos intactos.
 
-`npm test` executa tudo (292 testes nesta etapa); `npm run test:contracts` executa
-especificamente a verificação de contrato (204 testes) — ambas sobre o JavaScript
+`npm test` executa tudo (294 testes nesta etapa); `npm run test:contracts` executa
+especificamente a verificação de contrato (206 testes) — ambas sobre o JavaScript
 compilado em `dist/`.
 
 ## Regras textuais e de URL
@@ -447,16 +464,25 @@ Nenhuma requisição, DNS ou resolução de caminho é feita — nunca.
   validador TypeScript (implementação de referência) a unicidade de `id` de cena, a soma de
   `durationMs` sem overflow, o vínculo de `format.profile` e `locale` com o ProjectManifest,
   a detecção de nomes sensíveis **por token** (p. ex. `assets/api-secrets.yaml`) e a
-  sintaxe completa de `href` pelo parser de URL. O inverso também existe: o schema exige a
-  forma canônica `scheme://host` no `href`. A lista completa e testada está em *Regras do
-  schema × regras do core* e no corpus classificado;
-- **Paridade é estrutural, nunca de decisão**: os 167 casos estruturais exigem o mesmo
+  sintaxe completa de `href` pelo parser de URL. O inverso **não** existe: desde a etapa 5 o
+  core exige a forma canônica `scheme://host` literalmente, então nenhuma estrutura declarada
+  inválida pelo schema retorna `valid: true` no validador. A lista completa e testada está em
+  *Regras do schema × regras do core* e no corpus classificado;
+- **Paridade é estrutural, nunca de decisão**: os 169 casos estruturais exigem o mesmo
   veredicto dos dois motores; os 21 casos semânticos exigem os códigos do validador e
   **registram** o que o schema faz com o mesmo documento. Nada nesta fatia promete que o
   schema resolva vínculo entre documentos;
 - **`scenes: []` é aceito** pelos dois motores: a v1 não declara número mínimo de cenas, e
   endurecer isso seria um requisito novo, não uma correção. Continua aceito, documentado e
   coberto por caso explícito no corpus (`scenes vazio (v1 aceita: nenhum minimo declarado)`);
+- **Ocorrência local sem causa determinada**: na etapa 4, uma única execução de `npm test` em
+  Windows + Node 22.23.4 terminou com `# pass 286 / # fail 6`. Os nomes dos seis testes não
+  foram preservados porque a saída foi canalizada para `tail` antes de inspeção; 12 execuções
+  seguintes, com saída integral, deram 292/292, e 6 execuções isoladas mais 3 paralelas dos
+  testes de CLI não reproduziram a falha. **Nada foi corrigido "por garantia" e não há retry
+  automático**: o que existe é a captura completa de TAP + exit code (local e no gate), para
+  que a próxima ocorrência venha com diagnóstico. Ela permanece registrada como não
+  diagnosticada;
 - **`renderer.adapter: "undecided"` e `metadata.status: "approved"` não mudam de sentido**
   com esta correção: o primeiro é um adaptador ainda não escolhido (e produz apenas
   `COMPOSITION_RENDERER_UNDECIDED`), o segundo é estado técnico. Nenhum dos dois significa

@@ -44,7 +44,6 @@ import {
     blankValues,
     lexicalPathCases,
     rejectedHrefs,
-    schemaStricterCases,
     tokenSensitivePaths,
     urlParserOnlyHrefs,
 } from './contract-corpus.js'
@@ -234,14 +233,12 @@ test('regras do parser de URL permanecem apenas no core', () => {
     }
 })
 
-test('o schema exige a forma canonica scheme://host; o core usa o parser de URL', () => {
-    for (const caseItem of schemaStricterCases) {
-        assert.equal(
-            validateCompositionDocument(caseItem.document).valid,
-            true,
-            `o core deveria aceitar (${caseItem.reason}): ${JSON.stringify(compositionCodes(validateCompositionDocument(caseItem.document)))}`,
-        )
-        assert.equal(compositionSchemaCheck(caseItem.document).valid, false, `o schema deveria exigir a forma canonica: ${caseItem.name}`)
+test('a forma canonica scheme://host e exigida pelos dois motores (etapa 5)', () => {
+    for (const href of ['http:/example.com', `https:${B}${B}example.com`, 'http:/example.com/agenda', 'https:\\example.com']) {
+        const composition = compositionWithHref(href)
+        const report = validateCompositionDocument(composition)
+        assert.deepEqual(compositionCodes(report), ['COMPOSITION_CTA_HREF_INVALID'], `o core aceitou href ${JSON.stringify(href)}`)
+        assert.equal(compositionSchemaCheck(composition).valid, false, `o schema aceitou href ${JSON.stringify(href)}`)
     }
 })
 

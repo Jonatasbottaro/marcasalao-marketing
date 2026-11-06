@@ -9,10 +9,14 @@
  * - **semanticas** (`semanticCases`): a regra depende de outro documento (ProjectManifest),
  *   de identidade entre itens, de aritmetica de duracoes ou de comparacao por tokens — o
  *   validador TypeScript e a autoridade, com codigos proprios, e o que o schema faz com o
- *   mesmo documento fica registrado em `schemaAccepts`, caso a caso;
- * - **schema mais estrito** (`schemaStricterCases`): o espelho exige uma forma que o core
- *   aceita (URL canonica `scheme://host`); o par e testado como diferenca documentada,
- *   nunca como equivalencia.
+ *   mesmo documento fica registrado em `schemaAccepts`, caso a caso.
+ *
+ * Nao ha mais categoria de "schema mais estrito": a forma canonica `scheme://host` do `href`
+ * era aceita pelo core porque o parser de URL normalizava a entrada, e passou a ser exigida
+ * literalmente pelo validador (etapa 5). Restam apenas divergencias em que o CORE e mais
+ * estrito que o espelho — nomes por token e sintaxe de host do parser de URL —, nunca o
+ * contrario: nenhuma estrutura declarada invalida pelo schema normativo retorna
+ * `valid: true` no core.
  */
 import {
     B,
@@ -56,12 +60,6 @@ export interface SemanticCase {
     readonly schemaAccepts: boolean
     readonly totalDurationMs?: number | null
     readonly warnings?: readonly string[]
-}
-
-export interface SchemaStricterCase {
-    readonly name: string
-    readonly document: Record<string, unknown>
-    readonly reason: string
 }
 
 /** Violacao lexica compartilhada e os codigos que cada contrato produz para ela. */
@@ -496,9 +494,21 @@ export const lexicalAndTextCases: readonly StructuralCase[] = [
         valid: false,
         codes: ['COMPOSITION_SCENE_DURATION_INVALID'],
     },
+    {
+        name: 'href sem barras duplas (regressao de conformidade: o core normalizava)',
+        document: compositionWithHref('http:/example.com'),
+        valid: false,
+        codes: ['COMPOSITION_CTA_HREF_INVALID'],
+    },
+    {
+        name: 'href com barras invertidas (regressao de conformidade: o core normalizava)',
+        document: compositionWithHref(`https:${B}${B}example.com`),
+        valid: false,
+        codes: ['COMPOSITION_CTA_HREF_INVALID'],
+    },
 ]
 
-/** Documento com um campo textual especifico recebendo o valor testado. */
+/** Os tres grupos de estrutura juntos: cena, superficie do documento e lexica/texto/URL. */
 export const structuralCompositionCases: readonly StructuralCase[] = [
     ...sceneShapeCases,
     ...surfaceCases,
@@ -517,12 +527,6 @@ export const tokenSensitivePaths: readonly string[] = [
 
 /** Hosts que apenas o parser de URL reprova (etapa 2). */
 export const urlParserOnlyHrefs: readonly string[] = ['https://:8443', 'https://exa mple.com']
-
-/** Formas que o core aceita (parser) e o espelho normativo nao: URL canonica. */
-export const schemaStricterCases: readonly SchemaStricterCase[] = [
-    { name: 'href sem barras duplas', document: compositionWithHref('http:/example.com'), reason: 'o schema exige a forma canonica scheme://host' },
-    { name: 'href com barras invertidas', document: compositionWithHref(`https:${B}${B}example.com`), reason: 'o schema exige a forma canonica scheme://host' },
-]
 
 const baseProject = projectWith({})
 
