@@ -1,6 +1,12 @@
 # Marca Salão Marketing
 
-Central de divulgação do projeto Marca Salão (Meu Salão).
+Repositório de marketing do Marca Salão, com fluxos também organizados para a Multitrack Hub e um núcleo reutilizável de produção de conteúdo em evolução.
+
+## Contexto e continuidade
+
+Comece por [docs/contexto/README.md](docs/contexto/README.md). O [estado atual](docs/contexto/ESTADO-ATUAL.md) diferencia o código integrado na main, as alterações em revisão e as pendências editoriais. As [próximas etapas](docs/contexto/PROXIMOS-PASSOS.md) e o [handoff](docs/contexto/HANDOFF.md) orientam a retomada entre agentes e computadores.
+
+A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/README.md). As decisões de arquitetura são registros históricos; não substituem a verificação do código e das PRs.
 
 ## Estrutura
 - `00-briefings/` - Briefings de campanha: dor, impacto, evidência e limites de promessa antes de produzir
@@ -10,6 +16,9 @@ Central de divulgação do projeto Marca Salão (Meu Salão).
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
 - `03-roteiros/` - Roteiros por campanha: cenas, textos de tela e narração em rascunho
 - `04-legendas/` - Legendas, roteiros e scripts de áudio
+- `marcas/` - Materiais, configurações e integrações específicas de Marca Salão e Multitrack Hub
+- `platform/` - Contratos, schemas, validação, relatórios, CLIs e testes do núcleo reutilizável
+- `docs/contexto/` - Contexto compartilhado, estado atual, próximos passos e procedimento de retomada
 
 ## Ferramentas
 - CapCut (mobile/desktop)
