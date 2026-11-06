@@ -89,6 +89,21 @@ function isPositiveInteger(value: unknown): value is number {
 const CANONICAL_HTTP_HREF = /^https?:\/\//i
 
 /**
+ * Delimitadores da autoridade na string original. O parser WHATWG descarta barras e barras
+ * invertidas extras depois de `scheme://` e reconstrói o host com o trecho seguinte, entao
+ * `https:///example.com` e `https:\\example.com` sairiam validos do core enquanto o schema
+ * os declara invalidos. A forma canonica e conferida na string, antes da normalizacao.
+ */
+const AUTHORITY_DELIMITERS = /[/?#\\]/
+
+/** Autoridade literal de um href na forma canonica: o trecho entre `://` e o primeiro delimitador. */
+function literalAuthority(value: string): string {
+    const afterScheme = value.slice(value.indexOf('://') + 3)
+    const end = afterScheme.search(AUTHORITY_DELIMITERS)
+    return end === -1 ? afterScheme : afterScheme.slice(0, end)
+}
+
+/**
  * href e tratado somente como dado: o parser de URL do Node nao resolve DNS, nao abre
  * conexao e nao faz nenhuma requisicao. Aceita http(s) absoluto na forma canonica
  * scheme://host, com hostname e sem credenciais (username ou password), em qualquer
@@ -100,6 +115,11 @@ function inspectHttpHref(value: string): HrefViolation | null {
     if (containsControlCharacter(value)) return 'INVALID'
     if (!CANONICAL_HTTP_HREF.test(value)) return 'INVALID'
 
+    const authority = literalAuthority(value)
+    // Autoridade vazia significa que o host so aparece depois de um delimitador: o parser
+    // o traria de volta, mas a string nao esta na forma canonica do contrato.
+    if (authority.length === 0) return 'INVALID'
+
     let parsed: URL
     try {
         parsed = new URL(value)
@@ -110,8 +130,8 @@ function inspectHttpHref(value: string): HrefViolation | null {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return 'INVALID'
     if (parsed.hostname.length === 0) return 'INVALID'
     if (parsed.username.length > 0 || parsed.password.length > 0) return 'CREDENTIALS'
-
-    const authority = value.slice(value.indexOf('://') + 3).split(/[/?#]/)[0] ?? ''
+    // `@` na autoridade e credencial ate quando username e password estao vazios
+    // (`https://@example.com`); `@` em caminho, query ou fragmento nao e.
     return authority.includes('@') ? 'CREDENTIALS' : null
 }
 

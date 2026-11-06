@@ -11,12 +11,13 @@
  *   validador TypeScript e a autoridade, com codigos proprios, e o que o schema faz com o
  *   mesmo documento fica registrado em `schemaAccepts`, caso a caso.
  *
- * Nao ha mais categoria de "schema mais estrito": a forma canonica `scheme://host` do `href`
- * era aceita pelo core porque o parser de URL normalizava a entrada, e passou a ser exigida
- * literalmente pelo validador (etapa 5). Restam apenas divergencias em que o CORE e mais
- * estrito que o espelho — nomes por token e sintaxe de host do parser de URL —, nunca o
- * contrario: nenhuma estrutura declarada invalida pelo schema normativo retorna
- * `valid: true` no core.
+ * Nao ha categoria de "schema mais estrito". A forma canonica `scheme://host` do `href` e
+ * conferida na string original, antes da normalizacao do parser de URL: a etapa 5 fechou o
+ * prefixo (`http:/example.com`) e a etapa 6 fechou o inicio e o termino da autoridade
+ * (`https:///example.com` rejeitado, `@` em caminho/query/fragmento aceito). Restam apenas
+ * divergencias em que o CORE e mais estrito que o espelho — nomes por token e sintaxe de
+ * host do parser de URL —, nunca o contrario: nenhuma estrutura declarada invalida pelo
+ * schema normativo retorna `valid: true` no core.
  */
 import {
     B,
@@ -220,6 +221,36 @@ export const rejectedHrefs: readonly { href: string; code: string }[] = [
     { href: 'example.com/a', code: 'COMPOSITION_CTA_HREF_INVALID' },
     { href: 'https://', code: 'COMPOSITION_CTA_HREF_INVALID' },
     { href: `https://example.com${NUL}`, code: 'COMPOSITION_CTA_HREF_INVALID' },
+]
+
+/**
+ * Hrefs com `@` fora da autoridade: caminho, query ou fragmento, com e sem barra depois do
+ * host. Ate a etapa 6 a regex de credencial do schema procurava o `@` sem parar em `?` nem
+ * em `#`, entao documentos validos eram rejeitados so pelo espelho. Nos dois motores e na
+ * CLI esses hrefs precisam ser ACEITOS; credenciais reais seguem em `rejectedHrefs`.
+ */
+export const atOutsideAuthorityHrefs: readonly string[] = [
+    'https://example.com?email=a@b.com',
+    'https://example.com#@contato',
+    'https://example.com/?email=a@b.com',
+    `https://example.com${B}@mencao`,
+    'https://example.com/agenda@2026',
+    'https://example.com:8443/rota?q=a@b#f=c@d',
+]
+
+/**
+ * Hrefs sem host imediatamente depois de `scheme://`. O parser WHATWG descarta barras e
+ * barras invertidas extras e reconstrói o host com o trecho seguinte; o espelho normativo
+ * declara essa entrada invalida, entao o core tambem precisa recusar (etapa 6). Nos dois
+ * motores e na CLI esses hrefs saem COMPOSITION_CTA_HREF_INVALID.
+ */
+export const emptyAuthorityHrefs: readonly string[] = [
+    'https:///example.com',
+    'https:////example.com',
+    `https://${B}example.com`,
+    `HTTPS://${B}${B}example.com`,
+    'https://?query=1',
+    'https://#fragmento',
 ]
 
 /** Campos textuais obrigatorios ou opcionais que nao podem ser so espacos. */
@@ -506,6 +537,17 @@ export const lexicalAndTextCases: readonly StructuralCase[] = [
         valid: false,
         codes: ['COMPOSITION_CTA_HREF_INVALID'],
     },
+    ...atOutsideAuthorityHrefs.map((href) => ({
+        name: `href com @ fora da autoridade ${href} (regressao de conformidade: o espelho rejeitava)`,
+        document: compositionWithHref(href),
+        valid: true,
+    })),
+    ...emptyAuthorityHrefs.map((href) => ({
+        name: `href com autoridade vazia ${href} (regressao de conformidade: o core normalizava)`,
+        document: compositionWithHref(href),
+        valid: false,
+        codes: ['COMPOSITION_CTA_HREF_INVALID'],
+    })),
 ]
 
 /** Os tres grupos de estrutura juntos: cena, superficie do documento e lexica/texto/URL. */

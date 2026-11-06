@@ -39,9 +39,11 @@ import {
 import {
     acceptedHrefs,
     acceptedPaths,
+    atOutsideAuthorityHrefs,
     blankProjectFields,
     blankStringFields,
     blankValues,
+    emptyAuthorityHrefs,
     lexicalPathCases,
     rejectedHrefs,
     tokenSensitivePaths,
@@ -233,12 +235,21 @@ test('regras do parser de URL permanecem apenas no core', () => {
     }
 })
 
-test('a forma canonica scheme://host e exigida pelos dois motores (etapa 5)', () => {
-    for (const href of ['http:/example.com', `https:${B}${B}example.com`, 'http:/example.com/agenda', 'https:\\example.com']) {
+test('a forma canonica scheme://host e exigida na string, antes da normalizacao do parser', () => {
+    for (const href of ['http:/example.com', `https:${B}${B}example.com`, 'http:/example.com/agenda', ...emptyAuthorityHrefs]) {
         const composition = compositionWithHref(href)
         const report = validateCompositionDocument(composition)
         assert.deepEqual(compositionCodes(report), ['COMPOSITION_CTA_HREF_INVALID'], `o core aceitou href ${JSON.stringify(href)}`)
         assert.equal(compositionSchemaCheck(composition).valid, false, `o schema aceitou href ${JSON.stringify(href)}`)
+    }
+})
+
+test('o @ de caminho, query ou fragmento nao e credencial nos dois motores (etapa 6)', () => {
+    for (const href of atOutsideAuthorityHrefs) {
+        const composition = compositionWithHref(href)
+        const report = validateCompositionDocument(composition)
+        assert.equal(report.valid, true, `o core rejeitou href ${JSON.stringify(href)}: ${compositionCodes(report).join(', ')}`)
+        assert.equal(compositionSchemaCheck(composition).valid, true, `o schema rejeitou href ${JSON.stringify(href)}`)
     }
 })
 

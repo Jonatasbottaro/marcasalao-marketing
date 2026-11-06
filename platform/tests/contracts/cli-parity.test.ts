@@ -16,6 +16,7 @@ import { after, test } from 'node:test'
 import type { CompositionValidationReport, ProjectValidationReport } from '../../src/validation-report.js'
 import {
     compositionWith,
+    compositionWithHref,
     moduleRoot,
     officialPairs,
     projectWith,
@@ -24,7 +25,13 @@ import {
     validateCompositionDocument,
     validateProjectDocument,
 } from '../contract-harness.js'
-import { semanticCases, structuralCompositionCases, structuralProjectCases } from '../contract-corpus.js'
+import {
+    atOutsideAuthorityHrefs,
+    emptyAuthorityHrefs,
+    semanticCases,
+    structuralCompositionCases,
+    structuralProjectCases,
+} from '../contract-corpus.js'
 
 const projectCli = path.join(moduleRoot, 'dist', 'src', 'validate-project-cli.js')
 const compositionCli = path.join(moduleRoot, 'dist', 'src', 'validate-composition-cli.js')
@@ -112,6 +119,25 @@ test('exit 1: cada caso invalido da amostra devolve o mesmo relatorio do validad
             validateCompositionDocument(caseItem.document),
             `CLI divergiu do validador em "${caseItem.name}"`,
         )
+    }
+})
+
+test('a CLI acompanha os dois motores no limite da autoridade do href', () => {
+    const projectPath = stage('projeto-autoridade', projectWith({}))
+
+    for (const [index, href] of atOutsideAuthorityHrefs.entries()) {
+        const compositionPath = stage(`href-fora-da-autoridade-${index}`, compositionWithHref(href))
+        const result = run(compositionCli, ['--project', projectPath, '--composition', compositionPath, '--json'])
+        assert.equal(result.status, 0, `a CLI recusou href valido ${JSON.stringify(href)}: ${result.stdout}`)
+        assert.equal((JSON.parse(result.stdout) as CompositionValidationReport).valid, true)
+    }
+
+    for (const [index, href] of emptyAuthorityHrefs.entries()) {
+        const compositionPath = stage(`href-autoridade-vazia-${index}`, compositionWithHref(href))
+        const result = run(compositionCli, ['--project', projectPath, '--composition', compositionPath, '--json'])
+        assert.equal(result.status, 1, `a CLI aceitou href sem host na autoridade ${JSON.stringify(href)}`)
+        const report = JSON.parse(result.stdout) as CompositionValidationReport
+        assert.deepEqual(report.errors.map((error) => error.code), ['COMPOSITION_CTA_HREF_INVALID'])
     }
 })
 

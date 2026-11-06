@@ -142,14 +142,14 @@
         "text": { "type": "string", "pattern": "\\S" },
         "href": {
           "type": "string",
-          "pattern": "^[hH][tT][tT][pP][sS]?://[^/?#@]",
+          "pattern": "^[hH][tT][tT][pP][sS]?://[^/?#@\\\\]",
           "not": {
             "anyOf": [
-              { "pattern": "^[hH][tT][tT][pP][sS]?://[^/@]*@" },
+              { "pattern": "^[hH][tT][tT][pP][sS]?://[^/?#@\\\\]*@" },
               { "pattern": "[\\x00-\\x1F\\x7F]" }
             ]
           },
-          "description": "URL http(s) absoluta com hostname e sem credenciais (username ou password) na autoridade; protocolo aceito em qualquer caixa e sem caracteres de controle. O schema expressa a sintaxe minima: a validacao completa pelo parser de URL (host vazio, host malformado, espacos) e do validador TypeScript. href nunca e acessado pela validacao."
+          "description": "URL http(s) absoluta com hostname e sem credenciais (username ou password) na autoridade; protocolo aceito em qualquer caixa e sem caracteres de controle. A autoridade comeca logo apos scheme:// e termina no primeiro separador de caminho (barra), barra invertida, sinal de interrogacao ou almofada, entao arroba em caminho, query ou fragmento nao e credencial. O schema expressa a sintaxe minima: a validacao completa pelo parser de URL (host vazio, host malformado, espacos) e do validador TypeScript. href nunca e acessado pela validacao."
         },
         "accessibilityLabel": { "type": "string", "pattern": "\\S" }
       },
