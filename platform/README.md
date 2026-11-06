@@ -190,7 +190,7 @@ execução direta de `.ts` é necessária. Zero dependências de runtime.
 
 ```bash
 # a partir de platform/
-npm ci                    # instala as devDependencies (typescript, @types/node)
+npm ci                    # instala as devDependencies (typescript, @types/node, ajv)
 npm run clean             # apaga dist/ (script Node portátil)
 npm run build             # compila src/ e tests/ para dist/ (tsc, NodeNext)
 npm run typecheck         # tsc --noEmit
@@ -236,13 +236,19 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
   de runtime**;
 - Validações explícitas escritas à mão (superfície pequena e enumerada); os arquivos
   `schemas/project.schema.json` e `schemas/composition.schema.json` (JSON Schema
-  draft-07) são a descrição normativa dos contratos e espelham os validadores, testados
-  por suas suítes em `tests/` (além dos testes de portabilidade do build);
+  draft-07) são a descrição normativa dos contratos e espelham os validadores. A cena é
+  discriminada **inteira** pelo seu `type` no schema de composição (`oneOf` de quatro
+  definições com `type` constante), porque a mesma forma de `content` pode pertencer a
+  mais de um tipo;
 - `node:test` nativo para os testes, executados sobre o JavaScript compilado em
   `dist/tests`;
-- DevDependencies apenas para o gate de tipos e o build, fixadas: `typescript@5.9.3`
-  (Apache-2.0) e `@types/node@24.19.2` (MIT). Nenhum pacote de vídeo, parser YAML ou
-  JSON Schema runtime foi adicionado; nenhuma dependência foi adicionada nesta fatia.
+- O espelho normativo é **executado** em `tests/composition-schema.test.ts` por um motor
+  JSON Schema draft-07 real (`ajv`), que compara schema e validador TypeScript caso a
+  caso, inclusive nos dois exemplos oficiais;
+- DevDependencies apenas para o gate de tipos, o build e a execução dos schemas, fixadas:
+  `typescript@5.9.3` (Apache-2.0), `@types/node@24.19.2` (MIT) e `ajv@8.20.0` (MIT).
+  `ajv` é **dev-only**: nem o núcleo nem as CLIs o importam, e `dependencies` continua
+  inexistente. Nenhum pacote de vídeo ou parser YAML foi adicionado.
 
 ## Limites atuais (expressos)
 
@@ -254,6 +260,11 @@ A **existência física** de assets não é verificada nesta fatia (fora de esco
 - **Nenhum vídeo é gerado** e nenhum preview/render/upload/publicação existe;
 - **Nenhuma ferramenta audiovisual externa foi instalada** por estas fatias (HyperFrames,
   Google Flow, ElevenLabs, FFmpeg, CapCut etc. permanecem não adotados);
+- **O espelho JSON Schema não expressa o que o draft-07 não declara**: unicidade de
+  `id` de cena, soma de `durationMs` sem overflow, vínculo de `format.profile` e `locale`
+  com o ProjectManifest e a heurística de arquivos sensíveis em `asset.path` (`.env`,
+  `*.pem`, `*.key`, credenciais). Essas regras continuam apenas no validador TypeScript,
+  que é a implementação de referência;
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não

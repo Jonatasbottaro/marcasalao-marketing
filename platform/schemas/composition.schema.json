@@ -70,81 +70,14 @@
     },
     "scenes": {
       "type": "array",
-      "description": "Cenas declarativas da composicao, em ordem.",
+      "description": "Cenas declarativas da composicao, em ordem. Cada cena e discriminada inteira pelo seu proprio `type` (oneOf exclusivo por tipo): a forma de content nunca e comparada isoladamente, porque a mesma forma pode pertencer a mais de um tipo.",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "type", "durationMs", "content"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-            "description": "Identificador da cena em kebab-case, unico dentro da composicao."
-          },
-          "type": {
-            "type": "string",
-            "enum": ["text", "image", "video", "cta"],
-            "description": "Tipo da cena na v1."
-          },
-          "durationMs": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Duracao da cena em milissegundos, inteiro maior que zero."
-          },
-          "content": {
-            "description": "Conteudo da cena, em forma fechada por tipo.",
-            "oneOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["text"],
-                "properties": {
-                  "text": { "type": "string", "minLength": 1 },
-                  "accessibilityLabel": { "type": "string", "minLength": 1 }
-                },
-                "description": "Conteudo de cena text: texto canonico estruturado; asset e proibido."
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["text"],
-                "properties": {
-                  "text": { "type": "string", "minLength": 1 },
-                  "href": {
-                    "type": "string",
-                    "pattern": "^https?://",
-                    "not": { "pattern": "^https?://[^/@]*:[^/@]*@" },
-                    "description": "URL http(s) sem credenciais embutidas; nunca e acessada pelo validador."
-                  },
-                  "accessibilityLabel": { "type": "string", "minLength": 1 }
-                },
-                "description": "Conteudo de cena cta: chamada declarativa; asset e proibido."
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["asset"],
-                "properties": {
-                  "asset": { "$ref": "#/definitions/assetReference" },
-                  "alt": { "type": "string", "minLength": 1 },
-                  "accessibilityLabel": { "type": "string", "minLength": 1 }
-                },
-                "description": "Conteudo de cena image: referencia de asset existente."
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["asset"],
-                "properties": {
-                  "asset": { "$ref": "#/definitions/assetReference" },
-                  "alt": { "type": "string", "minLength": 1 },
-                  "accessibilityLabel": { "type": "string", "minLength": 1 }
-                },
-                "description": "Conteudo de cena video: referencia de asset existente."
-              }
-            ]
-          }
-        }
+        "oneOf": [
+          { "$ref": "#/definitions/textScene" },
+          { "$ref": "#/definitions/imageScene" },
+          { "$ref": "#/definitions/videoScene" },
+          { "$ref": "#/definitions/ctaScene" }
+        ]
       }
     },
     "renderer": {
@@ -180,6 +113,101 @@
     }
   },
   "definitions": {
+    "sceneId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador da cena em kebab-case, unico dentro da composicao (a unicidade e verificada pelo validador TypeScript)."
+    },
+    "sceneDurationMs": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Duracao da cena em milissegundos, inteiro maior que zero (inteiro seguro e soma sem overflow verificados pelo validador TypeScript)."
+    },
+    "textContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1 },
+        "accessibilityLabel": { "type": "string", "minLength": 1 }
+      },
+      "description": "Conteudo de cena text: texto canonico estruturado; href, alt e asset sao proibidos."
+    },
+    "ctaContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string", "minLength": 1 },
+        "href": {
+          "type": "string",
+          "pattern": "^https?://",
+          "not": { "pattern": "^https?://[^/@]*:[^/@]*@" },
+          "description": "URL http(s) sem credenciais embutidas; nunca e acessada pelo validador."
+        },
+        "accessibilityLabel": { "type": "string", "minLength": 1 }
+      },
+      "description": "Conteudo de cena cta: chamada declarativa com href opcional; alt e asset sao proibidos."
+    },
+    "mediaContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset"],
+      "properties": {
+        "asset": { "$ref": "#/definitions/assetReference" },
+        "alt": { "type": "string", "minLength": 1 },
+        "accessibilityLabel": { "type": "string", "minLength": 1 }
+      },
+      "description": "Conteudo de cena image ou video: referencia de asset existente; text e href sao proibidos."
+    },
+    "textScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "durationMs", "content"],
+      "properties": {
+        "id": { "$ref": "#/definitions/sceneId" },
+        "type": { "const": "text" },
+        "durationMs": { "$ref": "#/definitions/sceneDurationMs" },
+        "content": { "$ref": "#/definitions/textContent" }
+      },
+      "description": "Cena text completa: `type` const torna esta alternativa exclusiva entre as quatro."
+    },
+    "imageScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "durationMs", "content"],
+      "properties": {
+        "id": { "$ref": "#/definitions/sceneId" },
+        "type": { "const": "image" },
+        "durationMs": { "$ref": "#/definitions/sceneDurationMs" },
+        "content": { "$ref": "#/definitions/mediaContent" }
+      },
+      "description": "Cena image completa: content obrigatoriamente referencia um asset."
+    },
+    "videoScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "durationMs", "content"],
+      "properties": {
+        "id": { "$ref": "#/definitions/sceneId" },
+        "type": { "const": "video" },
+        "durationMs": { "$ref": "#/definitions/sceneDurationMs" },
+        "content": { "$ref": "#/definitions/mediaContent" }
+      },
+      "description": "Cena video completa: content obrigatoriamente referencia um asset."
+    },
+    "ctaScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "durationMs", "content"],
+      "properties": {
+        "id": { "$ref": "#/definitions/sceneId" },
+        "type": { "const": "cta" },
+        "durationMs": { "$ref": "#/definitions/sceneDurationMs" },
+        "content": { "$ref": "#/definitions/ctaContent" }
+      },
+      "description": "Cena cta completa: href http(s) opcional e asset proibido."
+    },
     "assetReference": {
       "type": "object",
       "additionalProperties": false,

@@ -83,5 +83,5 @@ test('package.json declara build compilado, engines Node >= 22 e zero dependenci
     assert.ok((pkg.scripts?.test ?? '').includes('dist/tests'))
     assert.ok((pkg.scripts?.['content:validate-project'] ?? '').includes('node dist/src/validate-project-cli.js'))
     assert.equal(pkg.dependencies, undefined, 'nenhuma dependencia de runtime e permitida')
-    assert.deepEqual(Object.keys(pkg.devDependencies ?? {}).sort(), ['@types/node', 'typescript'])
+    assert.deepEqual(Object.keys(pkg.devDependencies ?? {}).sort(), ['@types/node', 'ajv', 'typescript'])
 })
