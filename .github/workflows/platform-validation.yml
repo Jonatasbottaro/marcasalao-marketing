@@ -1,0 +1,107 @@
+name: Validar contratos da platform
+
+# Gate do núcleo modular: roda apenas sobre o que pode quebrá-lo (a própria
+# platform e este arquivo). O preview de vídeos (.github/workflows/video-preview.yml)
+# continua com os gatilhos e os passos dele intactos.
+
+on:
+  push:
+    paths:
+      - 'platform/**'
+      - '.github/workflows/platform-validation.yml'
+  pull_request:
+    paths:
+      - 'platform/**'
+      - '.github/workflows/platform-validation.yml'
+  workflow_dispatch:
+
+# Só lê o repositório: o gate não publica, não faz deploy e não usa segredos.
+permissions:
+  contents: read
+
+jobs:
+  contratos:
+    name: ${{ matrix.os }} · Node ${{ matrix.node-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Um ambiente quebrado não deve esconder o veredito dos outros três.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # Faixa de platform/package.json: "node": ">=22 <25".
+        node-version: ['22', '24']
+
+    defaults:
+      run:
+        # bash nos dois sistemas: os passos compartilham platform/scripts/gate-step.sh,
+        # mantido com LF por platform/.gitattributes (o checkout do Windows usaria CRLF).
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Instalação reprodutível (npm ci)
+        working-directory: platform
+        run: bash scripts/gate-step.sh gate-logs/npm-ci.log "npm ci" npm ci
+
+      - name: Limpeza dos artefatos locais
+        working-directory: platform
+        run: npm run clean
+
+      - name: Verificação de tipos (tsc --noEmit)
+        working-directory: platform
+        run: bash scripts/gate-step.sh gate-logs/typecheck.log "typecheck" npm run typecheck
+
+      # O script npm test ja fixa --test-reporter=tap antes dos padroes de arquivo, entao o
+      # log e TAP integral nos quatro ambientes da matriz. gate-step.sh preserva o codigo do
+      # npm test e escreve o resumo mesmo quando a suite falha, sob o errexit do runner.
+      - name: Suíte completa com TAP integral (já inclui o corpus de contratos)
+        working-directory: platform
+        run: bash scripts/gate-step.sh gate-logs/npm-test.tap "npm test" npm test
+
+      # Prova explicita do ramo de falha, no mesmo shell e com o mesmo gate-step.sh dos
+      # passos acima: (1) um comando que escreve saida e termina em 7 precisa preservar o 7,
+      # salvar o log e escrever o resumo; (2) uma falha do tee nunca pode virar sucesso.
+      # O 7 fica retido numa variavel do passo, entao o job so fica vermelho se a propria
+      # captura quebrar — o ensaio nao sabota o gate.
+      - name: 'Prova do ramo de falha: log, resumo e codigo 7 alcancaveis'
+        working-directory: platform
+        if: always()
+        run: |
+          ensaio=0
+          saida=$(bash scripts/gate-step.sh gate-logs/ensaio-falha.log "ensaio-falha" bash -c 'echo "ensaio: linha 1"; echo "ensaio: linha 2"; exit 7') || ensaio=$?
+          test "$ensaio" = 7
+          test -s gate-logs/ensaio-falha.log
+          grep -q 'ensaio: linha 2' gate-logs/ensaio-falha.log
+          case "$saida" in
+            *'ensaio-falha: codigo de saida 7 (tee 0)'*) ;;
+            *) echo "o resumo nao saiu no stdout do passo com os dois status"; exit 1 ;;
+          esac
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            grep -q 'ensaio-falha: codigo de saida 7 (tee 0)' "$GITHUB_STEP_SUMMARY"
+            echo "prova ok: codigo 7 preservado, log salvo e resumo escrito no step summary"
+          else
+            echo "prova ok: codigo 7 preservado, log salvo e resumo emitido no stdout do passo"
+          fi
+
+          tee_code=0
+          bash scripts/gate-step.sh gate-logs "ensaio-tee" bash -c 'echo "ensaio-tee: linha"' > /dev/null 2>&1 || tee_code=$?
+          test "$tee_code" -ne 0
+          echo "prova ok: falha do tee nao vira sucesso silencioso (codigo devolvido ${tee_code})"
+
+      - name: Publicar logs do gate (apenas em falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-logs-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: platform/gate-logs/**
+          if-no-files-found: warn
+          retention-days: 30

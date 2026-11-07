@@ -14,6 +14,7 @@
  */
 
 import {
+    COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE,
     COMPOSITION_FPS_MAX,
     COMPOSITION_FPS_MIN,
     COMPOSITION_MAX_TAGS,
@@ -26,6 +27,7 @@ import {
     KEBAB_CASE_PATTERN,
     type CompositionSceneType,
 } from './composition-contract.js'
+import { containsControlCharacter, inspectRelativePath, type RelativePathViolation } from './relative-path.js'
 import { validateProjectManifest } from './validate-project.js'
 import {
     COMPOSITION_VALID_SUMMARY,
@@ -36,30 +38,31 @@ import {
     type ValidationIssue,
 } from './validation-report.js'
 
-/** Segmentos/nomes sensiveis que um asset nao pode referenciar. */
-const SENSITIVE_ASSET_PATTERNS = [
-    '.env',
-    'private_key',
-    'privatekey',
-    'service_account',
-    'serviceaccount',
-    'credential',
-    'credentials',
-    'secret',
-    'secrets',
-    'password',
-    '.git',
-] as const
-
-/** Extensoes de chave privada/certificado sensiveis. */
-const SENSITIVE_EXTENSIONS = ['.pem', '.key', '.p12', '.pfx'] as const
-
-/** Campos permitidos em content, por tipo de cena (forma fechada). */
-const CONTENT_FIELDS_BY_SCENE_TYPE: Record<CompositionSceneType, readonly string[]> = {
-    text: ['text', 'accessibilityLabel'],
-    cta: ['text', 'href', 'accessibilityLabel'],
-    image: ['asset', 'alt', 'accessibilityLabel'],
-    video: ['asset', 'alt', 'accessibilityLabel'],
+/**
+ * Cada violacao lexica de caminho e traduzida para o codigo e o caminho de erro
+ * proprios da Composition; a deteccao em si e compartilhada com o ProjectManifest.
+ */
+const ASSET_PATH_VIOLATIONS: Record<RelativePathViolation, { code: string; message: string }> = {
+    CONTROL_CHARACTER: {
+        code: 'COMPOSITION_ASSET_PATH_CONTROL_CHARACTER',
+        message: 'asset.path must not contain control characters.',
+    },
+    ABSOLUTE: {
+        code: 'COMPOSITION_ASSET_PATH_ABSOLUTE',
+        message: 'asset.path must be a relative path (POSIX absolute, drive letter and UNC are rejected).',
+    },
+    URL: {
+        code: 'COMPOSITION_ASSET_PATH_URL',
+        message: 'asset.path must not be a URL or use any protocol (http, https, file).',
+    },
+    TRAVERSAL: {
+        code: 'COMPOSITION_ASSET_PATH_TRAVERSAL',
+        message: 'asset.path must not traverse outside the project (".." segments are not allowed).',
+    },
+    SENSITIVE: {
+        code: 'COMPOSITION_ASSET_PATH_SENSITIVE',
+        message: 'asset.path must not point to sensitive files (.env, keys, credentials).',
+    },
 }
 
 /** Campos permitidos em metadata (forma fechada). */
@@ -77,51 +80,59 @@ function isPositiveInteger(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
-/** Detecta caminhos absolutos POSIX, Windows (letra de unidade) e UNC. */
-function isAbsoluteishPath(value: string): boolean {
-    return value.startsWith('/') || value.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(value)
+/**
+ * Forma canonica exigida pelo espelho normativo (`^[hH][tT][tT][pP][sS]?://`): o prefixo
+ * precisa estar literalmente na string. Sem essa checagem, o parser de URL normalizaria
+ * `http:/example.com` e `https:\\example.com` em URLs validas, e o core aceitaria como
+ * `valid: true` uma estrutura que o schema draft-07 declara invalida.
+ */
+const CANONICAL_HTTP_HREF = /^https?:\/\//i
+
+/**
+ * Delimitadores da autoridade na string original. O parser WHATWG descarta barras e barras
+ * invertidas extras depois de `scheme://` e reconstrói o host com o trecho seguinte, entao
+ * `https:///example.com` e `https:\\example.com` sairiam validos do core enquanto o schema
+ * os declara invalidos. A forma canonica e conferida na string, antes da normalizacao.
+ */
+const AUTHORITY_DELIMITERS = /[/?#\\]/
+
+/** Autoridade literal de um href na forma canonica: o trecho entre `://` e o primeiro delimitador. */
+function literalAuthority(value: string): string {
+    const afterScheme = value.slice(value.indexOf('://') + 3)
+    const end = afterScheme.search(AUTHORITY_DELIMITERS)
+    return end === -1 ? afterScheme : afterScheme.slice(0, end)
 }
 
-/** Detecta URL/protocolo, inclusive protocol-relative e file URL. */
-function hasUrlScheme(value: string): boolean {
-    return value.startsWith('//') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value)
-}
+/**
+ * href e tratado somente como dado: o parser de URL do Node nao resolve DNS, nao abre
+ * conexao e nao faz nenhuma requisicao. Aceita http(s) absoluto na forma canonica
+ * scheme://host, com hostname e sem credenciais (username ou password), em qualquer
+ * caixa do protocolo.
+ */
+type HrefViolation = 'INVALID' | 'CREDENTIALS'
 
-function hasEmbeddedCredentials(value: string): boolean {
-    return /^https?:\/\/[^/@]*:[^/@]*@/.test(value)
-}
+function inspectHttpHref(value: string): HrefViolation | null {
+    if (containsControlCharacter(value)) return 'INVALID'
+    if (!CANONICAL_HTTP_HREF.test(value)) return 'INVALID'
 
-/** Validacao local de URL http(s): sintaxe e hostname, sem qualquer requisicao. */
-function isWellFormedHttpUrl(value: string): boolean {
+    const authority = literalAuthority(value)
+    // Autoridade vazia significa que o host so aparece depois de um delimitador: o parser
+    // o traria de volta, mas a string nao esta na forma canonica do contrato.
+    if (authority.length === 0) return 'INVALID'
+
+    let parsed: URL
     try {
-        const parsed = new URL(value)
-        return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname.length > 0
+        parsed = new URL(value)
     } catch {
-        return false
-    }
-}
-
-function pathSegments(value: string): string[] {
-    return value.split(/[\\/]/).filter((segment) => segment.length > 0)
-}
-
-function detectSensitiveAssetPath(value: string): boolean {
-    const lowerSegments = pathSegments(value).map((segment) => segment.toLowerCase())
-    const lowerValue = value.toLowerCase()
-
-    for (const segment of lowerSegments) {
-        if (SENSITIVE_ASSET_PATTERNS.some((pattern) => segment === pattern || segment.startsWith(`${pattern}.`))) {
-            return true
-        }
-        if (SENSITIVE_EXTENSIONS.some((extension) => segment.endsWith(extension))) {
-            return true
-        }
-        if (segment.startsWith('id_rsa') || segment.startsWith('id_ed25519') || segment.startsWith('id_ecdsa')) {
-            return true
-        }
+        return 'INVALID'
     }
 
-    return SENSITIVE_ASSET_PATTERNS.some((pattern) => lowerValue.includes(pattern))
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return 'INVALID'
+    if (parsed.hostname.length === 0) return 'INVALID'
+    if (parsed.username.length > 0 || parsed.password.length > 0) return 'CREDENTIALS'
+    // `@` na autoridade e credencial ate quando username e password estao vazios
+    // (`https://@example.com`); `@` em caminho, query ou fragmento nao e.
+    return authority.includes('@') ? 'CREDENTIALS' : null
 }
 
 function validateAssetReference(value: unknown, basePath: string, errors: ValidationIssue[]): void {
@@ -168,45 +179,12 @@ function validateAssetReference(value: unknown, basePath: string, errors: Valida
     }
 
     const assetPath = value.path
-    if (assetPath.startsWith('//')) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_URL',
-            `${basePath}.path`,
-            'asset.path must not be a protocol-relative URL.',
-        ))
-    } else if (isAbsoluteishPath(assetPath)) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_ABSOLUTE',
-            `${basePath}.path`,
-            'asset.path must be a relative path (POSIX absolute, drive letter and UNC are rejected).',
-        ))
-    } else if (hasUrlScheme(assetPath)) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_URL',
-            `${basePath}.path`,
-            'asset.path must not be a URL or use any protocol (http, https, file).',
-        ))
-    }
-    if (pathSegments(assetPath).some((segment) => segment === '..')) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_TRAVERSAL',
-            `${basePath}.path`,
-            'asset.path must not traverse outside the project (".." segments are not allowed).',
-        ))
-    }
-    if (hasEmbeddedCredentials(assetPath)) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_URL',
-            `${basePath}.path`,
-            'asset.path must not embed credentials.',
-        ))
-    }
-    if (detectSensitiveAssetPath(assetPath)) {
-        errors.push(issue(
-            'COMPOSITION_ASSET_PATH_SENSITIVE',
-            `${basePath}.path`,
-            'asset.path must not point to sensitive files (.env, keys, credentials).',
-        ))
+    for (const violation of inspectRelativePath(assetPath)) {
+        const rule = ASSET_PATH_VIOLATIONS[violation]
+        const message = violation === 'URL' && assetPath.startsWith('//')
+            ? 'asset.path must not be a protocol-relative URL.'
+            : rule.message
+        errors.push(issue(rule.code, `${basePath}.path`, message))
     }
 }
 
@@ -225,7 +203,7 @@ function validateSceneContent(
         return
     }
 
-    const allowedFields = CONTENT_FIELDS_BY_SCENE_TYPE[sceneType]
+    const allowedFields: readonly string[] = COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE[sceneType]
 
     for (const key of Object.keys(value)) {
         if (!allowedFields.includes(key)) {
@@ -261,18 +239,21 @@ function validateSceneContent(
                     `${basePath}.href`,
                     'content.href must be a non-empty http(s) URL when present; it is never fetched.',
                 ))
-            } else if (hasEmbeddedCredentials(href)) {
-                errors.push(issue(
-                    'COMPOSITION_CTA_HREF_CREDENTIALS',
-                    `${basePath}.href`,
-                    'content.href must not embed user and password.',
-                ))
-            } else if (!isWellFormedHttpUrl(href)) {
-                errors.push(issue(
-                    'COMPOSITION_CTA_HREF_INVALID',
-                    `${basePath}.href`,
-                    'content.href must be a well-formed http(s) URL; relative URLs are rejected in v1.',
-                ))
+            } else {
+                const violation = inspectHttpHref(href)
+                if (violation === 'CREDENTIALS') {
+                    errors.push(issue(
+                        'COMPOSITION_CTA_HREF_CREDENTIALS',
+                        `${basePath}.href`,
+                        'content.href must not embed a user or a password.',
+                    ))
+                } else if (violation === 'INVALID') {
+                    errors.push(issue(
+                        'COMPOSITION_CTA_HREF_INVALID',
+                        `${basePath}.href`,
+                        'content.href must be a well-formed absolute http(s) URL with a hostname; relative URLs, other protocols and control characters are rejected in v1.',
+                    ))
+                }
             }
         }
     }

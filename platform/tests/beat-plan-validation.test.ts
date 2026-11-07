@@ -1167,6 +1167,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         'beat-plan-contract.ts',
         'composition-contract.ts',
         'project-contract.ts',
+        'relative-path.ts',
         'validate-beat-plan-cli.ts',
         'validate-beat-plan.ts',
         'validate-composition-cli.ts',

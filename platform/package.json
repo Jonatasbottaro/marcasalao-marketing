@@ -10,13 +10,15 @@
     "clean": "node ./scripts/clean.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "test": "npm run build && node --test --test-reporter=tap \"dist/tests/**/*.test.js\"",
+    "test:contracts": "npm run build && node --test --test-reporter=tap \"dist/tests/contracts/*.test.js\"",
     "content:validate-project": "npm run build --silent && node dist/src/validate-project-cli.js",
     "content:validate-composition": "npm run build --silent && node dist/src/validate-composition-cli.js",
     "content:validate-beat-plan": "npm run build --silent && node dist/src/validate-beat-plan-cli.js"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
+    "ajv": "8.20.0",
     "typescript": "5.9.3"
   }
 }

@@ -76,22 +76,91 @@ export interface AssetReference {
     path: string
 }
 
-/** Conteudo de cena; a forma fechada depende do tipo (ver validador e schema). */
-export interface CompositionSceneContent {
-    text?: string
-    href?: string
-    alt?: string
+/** Conteudo de cena `text`: texto canonico estruturado; sem href, alt nem asset. */
+export interface CompositionTextContent {
+    text: string
     accessibilityLabel?: string
-    asset?: AssetReference
 }
 
-export interface CompositionScene {
-    id: string
-    type: CompositionSceneType
-    /** Inteiro maior que zero, em milissegundos. */
-    durationMs: number
-    content: CompositionSceneContent
+/** Conteudo de cena `cta`: chamada com href http(s) opcional; sem alt nem asset. */
+export interface CompositionCtaContent {
+    text: string
+    href?: string
+    accessibilityLabel?: string
 }
+
+/** Conteudo de cenas `image` e `video`: asset obrigatorio; sem text nem href. */
+export interface CompositionMediaContent {
+    asset: AssetReference
+    alt?: string
+    accessibilityLabel?: string
+}
+
+/**
+ * Superficie de `content` por tipo de cena, na mesma ordem de COMPOSITION_SCENE_TYPES.
+ * E a unica fonte dessa superficie: o validador a usa para rejeitar campos, o schema
+ * espelha as mesmas chaves em `#/definitions/*Content` e os testes de contrato
+ * comparam as tres.
+ */
+export const COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE = {
+    text: ['text', 'accessibilityLabel'],
+    image: ['asset', 'alt', 'accessibilityLabel'],
+    video: ['asset', 'alt', 'accessibilityLabel'],
+    cta: ['text', 'href', 'accessibilityLabel'],
+} as const satisfies Record<CompositionSceneType, readonly string[]>
+
+/** Nomes de campo permitidos em `content` para o tipo de cena dado. */
+export type CompositionContentFields<T extends CompositionSceneType> =
+    (typeof COMPOSITION_CONTENT_FIELDS_BY_SCENE_TYPE)[T][number]
+
+/**
+ * Uniao das formas de content existentes na v1. So e meaningful como documentacao:
+ * quem precisa de garantia de compatibilidade usa a cena, nao o conteudo isolado,
+ * porque a mesma forma pertence a mais de um tipo (image e video).
+ */
+export type CompositionSceneContent = CompositionTextContent | CompositionCtaContent | CompositionMediaContent
+
+interface CompositionSceneFields {
+    /** Identificador kebab-case, unico dentro da composicao. */
+    id: string
+    /** Inteiro seguro maior que zero, em milissegundos. */
+    durationMs: number
+}
+
+export interface CompositionTextScene extends CompositionSceneFields {
+    type: 'text'
+    content: CompositionTextContent
+}
+
+export interface CompositionImageScene extends CompositionSceneFields {
+    type: 'image'
+    content: CompositionMediaContent
+}
+
+export interface CompositionVideoScene extends CompositionSceneFields {
+    type: 'video'
+    content: CompositionMediaContent
+}
+
+export interface CompositionCtaScene extends CompositionSceneFields {
+    type: 'cta'
+    content: CompositionCtaContent
+}
+
+/**
+ * Cena da composicao: uniao **discriminada por `type`**. A combinacao de um tipo com
+ * a forma de content de outro tipo e um erro de compilacao, entao o TypeScript e o
+ * schema e o validador rejeitam a mesma coisa (o schema faz isso com `oneOf` de quatro
+ * definicoes com `type` constante).
+ */
+export type CompositionScene =
+    | CompositionTextScene
+    | CompositionImageScene
+    | CompositionVideoScene
+    | CompositionCtaScene
+
+/** Cena de um tipo especifico; util para assertoes de tipo nos testes de contrato. */
+export type CompositionSceneOfType<T extends CompositionSceneType> = Extract<CompositionScene, { type: T }>
 
 /** Adaptador de renderizacao; nenhum adapter precisa estar instalado. */
 export interface CompositionRenderer {
