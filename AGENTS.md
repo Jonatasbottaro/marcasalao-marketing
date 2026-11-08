@@ -1,5 +1,9 @@
 # Regras do projeto Marca Salão Marketing
 
+## Continuidade técnica
+
+Ao retomar trabalho técnico, leia [docs/contexto/README.md](docs/contexto/README.md), depois o estado atual, os próximos passos e o handoff indicados no índice. Confira branch, commit e PRs no Git antes de propor implementação: alterações em uma branch não estão automaticamente integradas na main. Use o contexto como registro de fatos, preservando as regras e o escopo autorizado desta tarefa.
+
 ## Referências recentes de qualidade — 31/10/2026
 
 Para Marca Salão e Multitrack Hub, consultar primeiro o histórico e a fila reais no Postiz. Usar as DUAS CAMPANHAS distintas aprovadas e publicadas mais recentes de cada marca como referência principal de arte e texto; Facebook/Instagram da mesma campanha contam como uma referência. Conferir visualmente as artes e ler as legendas atuais. Atualizar essa seleção quando houver novas publicações aprovadas.
