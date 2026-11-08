@@ -27,7 +27,13 @@ dois:
   `@temporalio`;
 - todas as dependências novas ficam confinadas ao pacote isolado
   `orchestration/temporal/`, com `package-lock.json` próprio e versões exatas;
-- `@temporalio/testing` é `devDependency` (só testes); o resto é runtime do piloto.
+- `@temporalio/testing` é `devDependency`: atende os testes de integração e o
+  comando de desenvolvimento `pilot:local`, que sobe o servidor efêmero. O resto —
+  `@temporalio/client`, `@temporalio/common`, `@temporalio/worker` e
+  `@temporalio/workflow` — é runtime do piloto, com versões exatas `1.25.0`.
+  `@temporalio/common` entra no runtime porque o Workflow precisa classificar
+  `ApplicationFailure`/`TimeoutFailure` e o cliente precisa reconhecer
+  `WorkflowExecutionAlreadyStartedError`.
 
 Ou seja: a dependência entra onde o pedido a colocou, e o núcleo continua exatamente
 como estava.
@@ -97,6 +103,12 @@ explícita em vez de sobrescrever.
 - Task Queue: `marketing-temporal-pilot-v1`, exclusiva do piloto.
 - Namespace: `default`, local.
 - `workflowId`: `temporal-pilot-<requestId>` — derivado da entrada, não do relógio.
+- Políticas no `start`: `WorkflowIdReusePolicy.REJECT_DUPLICATE` e
+  `WorkflowIdConflictPolicy.FAIL`. Repetir um `requestId` nunca é silencioso: o
+  cliente imprime `TEMPORAL_PILOT_WORKFLOW_ID_CONFLICT` e sai com código `1`.
+- `PILOT_TASK_QUEUE` e `PILOT_NAMESPACE` ficam no módulo do Workflow porque worker e
+  cliente precisam concordar sobre eles; um teste estático exige que o nome da fila
+  apareça em um único arquivo-fonte do pacote.
 - Nenhum acesso a Temporal Cloud, a namespace remoto ou a Task Queue de produção.
 
 ## 8. Timeouts e retries
@@ -141,6 +153,11 @@ Campos permitidos: `workflowId`, `requestId`, `projectId`, `operation`, `status`
 `activity`, `attempt`, `failureCode`. Nada de conteúdo integral do payload, dado
 pessoal, token ou texto de campanha. Sem stack de observabilidade, sem OpenTelemetry.
 
+A lista acima vale para registro/log. O `TemporalPilotResult` do §4 é contrato de
+saída, não log: ele devolve o `output` do plano (rótulo curto, contagem e flag), e o
+parse recusa valor com aparência de credencial antes de aceitar o payload. A mensagem
+de falha é fixa por código e caminho e nunca repete o valor que chegou na entrada.
+
 ## 11. Execução local
 
 - `src/worker/main.ts`: Worker mínimo nos três passos do piloto, shutdown gracioso,
@@ -149,6 +166,14 @@ pessoal, token ou texto de campanha. Sem stack de observabilidade, sem OpenTelem
   inicia com `workflowId` derivado e imprime o resultado estruturado.
 - `npm run pilot:local`: sobe o servidor local efêmero do próprio SDK, roda um
   `requestId` de demonstração, imprime o resultado e derruba tudo no `finally`.
+- `src/local/main.ts`: é o corpo desse comando — worker real e cliente real sobre
+  `TestWorkflowEnvironment.createLocal()`. Recusa `--address`, porque ali não há
+  endereço a escolher: o servidor nasceu e morre com o processo.
+- Códigos de saída: `0` somente em `completed`; `1` em `rejected`, `failed`, colisão
+  de `workflowId` ou recusa de argumento. A recusa de argumento acontece antes de
+  qualquer conexão, o que os testes de processo verificam offline.
+- O shutdown gracioso do worker vem do Runtime do SDK, que escuta `SIGINT`, `SIGTERM`,
+  `SIGQUIT` e `SIGUSR2` (`Runtime.options.shutdownSignals`, esses quatro por padrão).
 
 O binário do servidor de teste fica no cache do usuário (`%TEMP%` no Windows,
 `$TMPDIR` em Unix), nunca no repositório. Nada é baixado para dentro do checkout.
@@ -159,6 +184,12 @@ Integração do Workflow com `TestWorkflowEnvironment`, serial por ambiente, com
 `teardown` e `shutdown` em `finally`. Unidades para núcleo e Activities. Estáticos
 para as proibições do Workflow (`fs`, rede, `Date.now`, `Math.random`, `console`) e
 para a fronteira do núcleo. Replay com `Worker.runReplayHistory`.
+
+Testes de processo cobrem os três pontos de entrada como processos reais: recusa de
+flag e de endereço remoto antes de qualquer conexão, e importar `src/worker/main.ts`
+ou `src/client/main.ts` não deixa handle ativo — o processo filho termina sozinho.
+A guarda de endereço é compartilhada (`src/local-address.ts`) para que cliente e
+worker não possam divergir sobre o que é "local".
 
 ## 13. Limitações
 

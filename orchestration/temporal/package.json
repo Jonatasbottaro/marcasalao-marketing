@@ -1,0 +1,32 @@
+{
+  "name": "marcasalao-marketing-temporal-pilot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Piloto TEMPORAL-01: camada de orquestracao com Temporal separada do nucleo modular. Workflow deterministico, Activities idempotentes, retries e timeouts explicitos, erros estruturados, execucao local. Nao orquestra OutputPlan, BeatPlan, previa, exportacao, renderizacao, midia nem campanha.",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "clean": "node ./scripts/clean.mjs",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test --test-reporter=tap \"dist/tests/**/*.test.js\"",
+    "test:unit": "npm run build && node --test --test-reporter=tap \"dist/tests/pilot-core/*.test.js\" \"dist/tests/activities/*.test.js\" \"dist/tests/client/*.test.js\" \"dist/tests/local-address.test.js\" \"dist/tests/boundary/*.test.js\" \"dist/tests/process/*.test.js\"",
+    "test:integration": "npm run build && node --test --test-reporter=tap \"dist/tests/workflow/*.test.js\"",
+    "pilot:worker": "npm run build --silent && node dist/src/worker/main.js",
+    "pilot:run": "npm run build --silent && node dist/src/client/main.js",
+    "pilot:local": "npm run build --silent && node dist/src/local/main.js"
+  },
+  "dependencies": {
+    "@temporalio/client": "1.25.0",
+    "@temporalio/common": "1.25.0",
+    "@temporalio/worker": "1.25.0",
+    "@temporalio/workflow": "1.25.0"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "1.25.0",
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}
