@@ -2,23 +2,29 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-## 1. Concluir a integração da correção dos contratos
+## 1. Elaborar o PRD de TEMPORAL-02
 
-Conferir a PR de correção indicada no estado atual, seu HEAD, os checks e eventuais mudanças posteriores à revisão. A integração é uma tarefa própria; esta atualização documental não a executa.
+Este é o único próximo passo técnico registrado em [ESTADO-ATUAL.md](ESTADO-ATUAL.md): orquestrar um único passo real do núcleo, sem mídia e sem antecipar TEMPORAL-04. A integração da correção de contratos que ocupava esta posição foi concluída na main pelo merge commit `0c97c2a`, e TEMPORAL-01 está integrado, aprovado e com CI verde — nenhuma das duas segue trabalho pendente.
 
-Critérios de conclusão:
+Pré-condições:
 
-- o GitHub registra a integração e a main contém o comportamento corrigido;
-- o schema discrimina as cenas e o corpus estrutural é executado por um motor real;
-- os casos de URL revisados concordam e o diagnóstico do gate funciona também em falha;
-- a matriz do HEAD integrado passa;
-- ESTADO-ATUAL.md é atualizado para retirar a distinção entre main anterior e correção pendente.
+- TEMPORAL-01 integrado — cumprido;
+- contexto atualizado — cumprido quando esta PR for integrada;
+- escolha explícita do passo real do núcleo;
+- contrato de entrada e saída pequeno;
+- nenhuma dependência de fornecedor;
+- autorização do titular.
 
-Se houver squash ou rebase, registre o commit que efetivamente entrou na main; não exija que os hashes originais continuem sendo ancestrais.
+Critérios de conclusão do PRD:
 
-## 2. Reconciliar o BeatPlan existente
+- um passo real, um contrato de entrada e um de saída, sem combinar OutputPlan e BeatPlan;
+- política de retry, timeout e colisão de `workflowId` declarada antes de qualquer implementação;
+- nada de prévia, exportação, mídia ou deploy no escopo;
+- o documento não inicia implementação, não escolhe fornecedor e não instala modelo.
 
-Inspecionar a branch de BeatPlan indicada no estado atual antes de escrever código novo. Comparar contratos, validação, relatórios, scripts e testes com a versão integrada da correção.
+## 2. Revisar as branches públicas de R001 e BeatPlan
+
+Inspecionar a branch do R001 (catálogo de perfis, OutputPlan e as CLIs `content:profiles` e `content:plan-output`) e a branch de BeatPlan antes de escrever código novo. Comparar contratos, validação, relatórios, scripts e testes com os contratos de projeto e composição já integrados na main.
 
 Critérios de conclusão:
 
@@ -60,6 +66,14 @@ Não é necessário implementar todos os planos conceituais antes dessa prova.
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.
 
 Na próxima validação funcional, registrar o commit executado, alterações locais, ambiente, fixture, comandos, resultados e evidências. Não atribuir retroativamente um commit à execução antiga.
+
+## Tarefas secundárias permitidas
+
+1. Confirmar no Git se R001 e BeatPlan continuam branch-only antes de tratar qualquer um deles como integrado.
+2. Decidir se branches já integradas podem ser arquivadas. Esta lista não autoriza exclusão de branch nem de conteúdo.
+3. Acompanhar a PR #7 até a integração, conferindo merged e o conteúdo efetivamente na main.
+
+Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md); não repeti-los aqui.
 
 ## Critério para encerrar uma tarefa
 

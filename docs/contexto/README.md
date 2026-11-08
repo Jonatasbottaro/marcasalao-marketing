@@ -10,6 +10,7 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 4. [HANDOFF.md](HANDOFF.md): procedimento para conferir a situação real e retomar uma tarefa.
 5. [platform/README.md](../../platform/README.md): arquitetura, contratos, comandos e limites do núcleo.
 6. [WORKFLOW.md](../../WORKFLOW.md): fluxo de produção e regra de vídeo sem áudio.
+7. [orchestration/temporal/README.md](../../orchestration/temporal/README.md): piloto TEMPORAL-01, comandos, evidência medida e limitações.
 
 ## Qual fonte consultar
 
@@ -20,6 +21,7 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 | Conteúdo e estado editorial de uma campanha | Briefing, hooks, roteiro e registros de aprovação da própria campanha |
 | Resultado de teste ou CI | Execução identificada por commit, ambiente e link/log |
 | Estado técnico consolidado do projeto | ESTADO-ATUAL.md, reconferido no Git e no GitHub |
+| Estado do piloto de orquestração | orchestration/temporal/README.md e docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md |
 | Próxima tarefa | PROXIMOS-PASSOS.md, confrontado com as branches existentes |
 | Publicações e rascunhos atuais | Estado remoto real, consultado quando a tarefa envolver conteúdo |
 
@@ -27,11 +29,12 @@ ESTADO-ATUAL.md concentra os fatos técnicos que mudam. Os outros arquivos apont
 
 ## Organização do projeto
 
-O repositório reúne três frentes:
+O repositório reúne quatro frentes:
 
 - fluxo editorial de campanhas: evidência funcional, briefing, hook, roteiro e revisão;
 - produção e integrações específicas das marcas em marcas/ e ferramentas existentes;
-- núcleo reutilizável em platform/, que recebe dados dos projetos e valida contratos.
+- núcleo reutilizável em platform/, que recebe dados dos projetos e valida contratos;
+- orquestração experimental em orchestration/temporal/, que roda o piloto TEMPORAL-01 sem alterar o núcleo.
 
 A existência dos fluxos anteriores não significa que estejam integrados ao novo núcleo. Marca, domínio, tema e regras comerciais pertencem ao projeto consumidor; a implementação compartilhada deve continuar independente deles.
 
