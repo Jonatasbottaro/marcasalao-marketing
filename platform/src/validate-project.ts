@@ -13,6 +13,7 @@ import {
     PROJECT_SCHEMA_VERSION,
     type ProjectManifest,
 } from './project-contract.js'
+import { inspectRelativePath, type RelativePathViolation } from './relative-path.js'
 import {
     VALID_SUMMARY,
     invalidSummary,
@@ -34,23 +35,32 @@ const KNOWN_TOP_LEVEL_FIELDS = [
     'outputProfiles',
 ] as const
 
-/** Segmentos/nomes de arquivo sensiveis que o assetRoot nao pode referenciar. */
-const SENSITIVE_ASSET_PATTERNS = [
-    '.env',
-    'private_key',
-    'privatekey',
-    'service_account',
-    'serviceaccount',
-    'credential',
-    'credentials',
-    'secret',
-    'secrets',
-    'password',
-    '.git',
-] as const
-
-/** Extensoes de chave privada/certificado sensiveis. */
-const SENSITIVE_EXTENSIONS = ['.pem', '.key', '.p12', '.pfx'] as const
+/**
+ * Cada violacao lexica de caminho e traduzida para o codigo e o caminho de erro
+ * proprios do ProjectManifest; a deteccao em si e compartilhada com a Composition.
+ */
+const ASSET_ROOT_VIOLATIONS: Record<RelativePathViolation, { code: string; message: string }> = {
+    CONTROL_CHARACTER: {
+        code: 'PROJECT_ASSET_ROOT_CONTROL_CHARACTER',
+        message: 'assetRoot must not contain control characters.',
+    },
+    ABSOLUTE: {
+        code: 'PROJECT_ASSET_ROOT_ABSOLUTE',
+        message: 'assetRoot must be a relative path.',
+    },
+    URL: {
+        code: 'PROJECT_ASSET_ROOT_URL',
+        message: 'assetRoot must not be a URL or use any protocol (http, https, file), including protocol-relative references.',
+    },
+    TRAVERSAL: {
+        code: 'PROJECT_ASSET_ROOT_TRAVERSAL',
+        message: 'assetRoot must not traverse outside the allowed root (".." segments are not allowed).',
+    },
+    SENSITIVE: {
+        code: 'PROJECT_ASSET_ROOT_SENSITIVE',
+        message: 'assetRoot must not point to sensitive files (.env, keys, credentials).',
+    },
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -58,34 +68,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
     return typeof value === 'string' && value.trim().length > 0
-}
-
-/** Detecta caminhos absolutos POSIX, Windows (letra de unidade) e UNC. */
-function isAbsoluteishPath(value: string): boolean {
-    return value.startsWith('/') || value.startsWith('\\') || /^[A-Za-z]:[\\/]/.test(value)
-}
-
-function pathSegments(value: string): string[] {
-    return value.split(/[\\/]/).filter((segment) => segment.length > 0)
-}
-
-function detectSensitiveAssetPath(value: string): boolean {
-    const lowerSegments = pathSegments(value).map((segment) => segment.toLowerCase())
-    const lowerValue = value.toLowerCase()
-
-    for (const segment of lowerSegments) {
-        if (SENSITIVE_ASSET_PATTERNS.some((pattern) => segment === pattern || segment.startsWith(`${pattern}.`))) {
-            return true
-        }
-        if (SENSITIVE_EXTENSIONS.some((extension) => segment.endsWith(extension))) {
-            return true
-        }
-        if (segment.startsWith('id_rsa') || segment.startsWith('id_ed25519') || segment.startsWith('id_ecdsa')) {
-            return true
-        }
-    }
-
-    return SENSITIVE_ASSET_PATTERNS.some((pattern) => lowerValue.includes(pattern))
 }
 
 function validateContentPolicies(
@@ -219,26 +201,9 @@ export function validateProjectManifest(input: unknown): ProjectValidationReport
     if (!isNonEmptyString(record.assetRoot)) {
         errors.push(issue('PROJECT_ASSET_ROOT_REQUIRED', 'assetRoot', 'assetRoot is required.'))
     } else {
-        if (isAbsoluteishPath(record.assetRoot)) {
-            errors.push(issue(
-                'PROJECT_ASSET_ROOT_ABSOLUTE',
-                'assetRoot',
-                'assetRoot must be a relative path.',
-            ))
-        }
-        if (pathSegments(record.assetRoot).some((segment) => segment === '..')) {
-            errors.push(issue(
-                'PROJECT_ASSET_ROOT_TRAVERSAL',
-                'assetRoot',
-                'assetRoot must not traverse outside the allowed root (".." segments are not allowed).',
-            ))
-        }
-        if (detectSensitiveAssetPath(record.assetRoot)) {
-            errors.push(issue(
-                'PROJECT_ASSET_ROOT_SENSITIVE',
-                'assetRoot',
-                'assetRoot must not point to sensitive files (.env, keys, credentials).',
-            ))
+        for (const violation of inspectRelativePath(record.assetRoot)) {
+            const rule = ASSET_ROOT_VIOLATIONS[violation]
+            errors.push(issue(rule.code, 'assetRoot', rule.message))
         }
     }
 

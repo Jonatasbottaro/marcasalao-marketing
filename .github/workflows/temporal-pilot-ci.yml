@@ -1,0 +1,80 @@
+name: Validar piloto Temporal
+
+# Gate do piloto TEMPORAL-01: roda apenas sobre o pacote orchestration/temporal,
+# sobre o planejamento que ele Implementa e sobre este arquivo. Alterações de
+# campanhas, mídias ou da platform não disparam este workflow — o gate do núcleo
+# é .github/workflows/platform-validation.yml.
+
+on:
+  push:
+    paths:
+      - 'orchestration/temporal/**'
+      - 'docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md'
+      - '.github/workflows/temporal-pilot-ci.yml'
+  pull_request:
+    paths:
+      - 'orchestration/temporal/**'
+      - 'docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md'
+      - '.github/workflows/temporal-pilot-ci.yml'
+  workflow_dispatch:
+
+# Só lê o repositório: o gate não publica, não faz deploy e não usa segredos.
+permissions:
+  contents: read
+
+jobs:
+  piloto:
+    name: ${{ matrix.os }} · Node ${{ matrix.node-version }}
+    runs-on: ${{ matrix.os }}
+    # Um ambiente quebrado não deve esconder o veredito do outro.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # orchestration/temporal/package.json: "node": ">=22 <25".
+        node-version: ['22']
+
+    defaults:
+      run:
+        # bash nos dois sistemas, como no gate da platform.
+        shell: bash
+
+    # A suíte inteira mede 44 s em ambiente local; 15 minutos comportam a
+    # instalação das dependências do SDK sem deixar o job sem limite.
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: orchestration/temporal/package-lock.json
+
+      - name: Versão do Node e do npm
+        run: node --version && npm --version
+
+      - name: Instalação reprodutível (npm ci)
+        working-directory: orchestration/temporal
+        run: npm ci --no-audit --no-fund
+
+      - name: Limpeza dos artefatos locais
+        working-directory: orchestration/temporal
+        run: npm run clean
+
+      - name: Compilação (tsc)
+        working-directory: orchestration/temporal
+        run: npm run build
+
+      - name: Verificação de tipos (tsc --noEmit)
+        working-directory: orchestration/temporal
+        run: npm run typecheck
+
+      # O script npm test já roda o build e fixa --test-reporter=tap antes dos
+      # padrões de arquivo; a saída vai para o log do job, que é a evidência.
+      - name: Suíte completa do piloto (unidades, integração, estáticos e processo)
+        working-directory: orchestration/temporal
+        run: npm test
