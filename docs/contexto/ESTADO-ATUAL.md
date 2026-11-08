@@ -163,7 +163,7 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 Pré-condições:
 
 - TEMPORAL-01 integrado — cumprido, com evidência na seção acima;
-- contexto atualizado — cumprido por esta página a partir da integração da PR #7;
+- contexto atualizado na PR #7; será considerado integrado somente após o merge da PR.
 - escolha explícita do passo real;
 - contrato de entrada e saída pequeno;
 - nenhuma dependência de fornecedor;
