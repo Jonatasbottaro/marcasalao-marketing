@@ -23,7 +23,9 @@ TEMPORAL-04. O piloto é agnóstico ao tipo de mídia.
 | `src/local-address.ts` | única guarda de endereço local, compartilhada por cliente e worker | Não |
 
 `platform/` não importa nada de `@temporalio` e não foi tocado por este incremento;
-um teste estático continua vigiando essa fronteira.
+um teste estático deste pacote vigia essa fronteira quando a suíte do piloto é
+executada. Não há CI para `orchestration/temporal/`: `.github/workflows/platform-validation.yml`
+só dispara em `platform/**`, então a guarda depende de alguém rodar `npm test` aqui.
 
 ## Contratos
 
@@ -38,7 +40,10 @@ Identificadores casa com `^[a-z0-9][a-z0-9._-]{0,63}$`; `payload` aceita só
 
 A mensagem de falha é fixa por código e caminho e **nunca repete o valor recebido**:
 o mesmo par de argumentos produz o mesmo resultado, e nada de absoluto, credencial ou
-conteúdo de payload sai pelo registro.
+conteúdo de payload sai pela mensagem de falha nem pelo `TemporalPilotResult`. Essa
+garantia **não cobre a história do Temporal**: o servidor persiste o argumento cru do
+Workflow antes de a primeira Activity validar, então a pré-validação no cliente é a
+fronteira que impede conteúdo sensível de chegar à história (§10 da spec).
 
 ## Execução do Workflow
 
@@ -62,27 +67,48 @@ validatePilotRequest → preparePilotExecution → finalizePilotExecution
 
 ## Comandos
 
-Requer Node 22 (`engines: ">=22 <25"`). O `npm` do PATH desta máquina é Node 26, então
-use o Node 22 instalado pelo WinGet antes de rodar qualquer gate.
+Requer Node na faixa de `engines: ">=22 <25"`. Confira com `node --version` antes de
+qualquer gate: se o `npm` do PATH apontar para outra major, troque para um Node da faixa
+(nesta máquina o PATH traz Node 26 e os gates foram rodados com o Node 22 do WinGet).
+Os números abaixo foram medidos em Node 22.23.2 / npm 10.9.8.
+
+```bash
+# a partir de orchestration/temporal/
+npm ci                    # instala as versões exatas do lockfile (148 pacotes)
+npm run clean             # apaga dist/ (script Node portátil)
+npm run build             # compila src/ e tests/ para dist/ (tsc, NodeNext)
+npm run typecheck         # tsc --noEmit
+npm test                  # build + node --test "dist/tests/**/*.test.js"
+```
+
+`npm run clean` não é chamado por `test`: renomear ou apagar um teste deixa o `.js`
+antigo em `dist/`, e o glob continua executando-o. Rode `clean` antes de medir contagens.
 
 | Comando | O que faz |
 | --- | --- |
 | `npm run build` | `tsc` para `dist/` (o bundle do Workflow é gerado pelo webpack na criação do worker) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | as 108 telas (unidades, integração, estáticos e de processo) — 39 s |
-| `npm run test:unit` | 93 telas que não precisam de servidor (núcleo, Activities, cliente, endereço, fronteira e processo) |
-| `npm run test:integration` | 15 telas da camada de Workflow: 10 de integração com `TestWorkflowEnvironment` (inclui retry, timeout e replay) + 5 de classificação de falha |
+| `npm test` | os 108 testes (unidades, integração, estáticos e de processo) — 40 s medidos |
+| `npm run test:unit` | 93 testes que não precisam de servidor (núcleo, Activities, cliente, endereço, fronteira e processo) |
+| `npm run test:integration` | 15 testes da camada de Workflow: 10 de integração com `TestWorkflowEnvironment` (inclui retry, timeout e replay) + 5 de classificação de falha |
 | `npm run pilot:local` | servidor efêmero do SDK, `requestId` de demonstração, resultado impresso, tudo derrubado no `finally` |
 | `npm run pilot:worker` | worker real contra `127.0.0.1:7233` (ou `--address <host:porta>` local) |
 | `npm run pilot:run` | cliente real: inicia o Workflow e imprime o `TemporalPilotResult` |
 
-Telas por arquivo: núcleo 52 (entrada 17, plano 12, resultado 11, falha 8, códigos 4),
-Activities 9, cliente 10, endereço 8, fronteira estática 7, processo 7, sinal de falha 5,
-integração do Workflow 10.
+Testes por arquivo: núcleo 52 (`pilot-input` 17, `pilot-plan` 12, `pilot-result` 11,
+`pilot-outcome` 8, `failures` 4), `pilot-activities` 9, `pilot-start` 10, `local-address` 8,
+`pilot-boundary` 7, `entrypoints` 7, `pilot-failure-signal` 5, `content-pilot-workflow` 10.
 
 ## Rodada local medida (dois processos)
 
-Com um servidor local em `127.0.0.1:7233` e `npm run pilot:worker` rodando:
+Registro de uma rodada medida, não um comando do pacote. Nenhum script daqui sobe o
+servidor de `7233`: `pilot:local` cria um servidor efêmero em porta aleatória que morre
+no `finally`. Para reproduzir os dois processos, suba um servidor local com o CLI que o
+próprio SDK deixa em cache (`%TEMP%\temporal-sdk-typescript-1.25.0.exe` no Windows,
+`$TMPDIR` em Unix) usando `server start-dev --headless --ip 127.0.0.1 --port 7233
+--namespace default`, e rode `npm run pilot:worker` em outro processo.
+
+Com esse servidor no ar e o worker rodando:
 
 ```
 $ npm run pilot:run -- --request-id req-2001     # status completed,  exit 0
@@ -110,9 +136,17 @@ rodam offline justamente por isso.
 - Dependências diretas exatas: `@temporalio/client`, `@temporalio/common`,
   `@temporalio/worker` e `@temporalio/workflow` em `1.25.0` (todos MIT) e
   `@temporalio/testing` como devDependency (MIT), com `typescript` 5.9.3 (Apache-2.0) e
-  `@types/node` 24.19.2 (MIT). O grafo transitivo instalado tem 148 pacotes, todos de
-  licença permissiva (MIT, Apache-2.0, BSD-2/3, ISC, 0BSD, Unlicense), com uma exceção de
-  **dados**: `caniuse-lite`, CC-BY-4.0, trazido pelo webpack embutido no SDK.
+  `@types/node` 24.19.2 (MIT). O grafo transitivo **instalado** nesta máquina tem 148
+  pacotes (`npm ls --all --parseable` devolve 149 linhas, contando a raiz), enquanto o
+  `package-lock.json` tem 159 entradas: 12 são binários `optional` e 11 deles são de outras
+  plataformas, então não são instalados — só `@swc/core-win32-x64-msvc` entra aqui.
+  Nenhuma licença copyleft no grafo. As licenças são permissivas (MIT, Apache-2.0,
+  BSD-2/3, ISC, 0BSD, Unlicense), com uma exceção de **dados**: `caniuse-lite`, CC-BY-4.0,
+  trazido pelo webpack embutido no SDK — é base de dados de compatibilidade de navegador,
+  não código de runtime do projeto. Há ainda um registro incompleto: `unionfs@4.6.0` não
+  declara `license` nem no lockfile nem no próprio `package.json`, mas distribui um texto
+  `LICENSE` de domínio público (Unlicense); não é copyleft, só não está registrado nos
+  metadados.
   `platform/` continua com zero dependência de runtime nova.
 - `node_modules/`, `dist/` e `gate-logs/` são ignorados por este pacote.
 

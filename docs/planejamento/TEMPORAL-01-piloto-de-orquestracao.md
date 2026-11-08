@@ -64,8 +64,9 @@ local direta.
 - `schemaVersion`: fixo em `1`; outro valor é erro não retryable.
 - `requestId` e `projectId`: obrigatórios, casa com `^[a-z0-9][a-z0-9._-]{0,63}$`.
 - `operation`: restrito a `validate-pilot-request`.
-- `payload`: no máximo 4 chaves de um conjunto nomeado, valores primitivos curtos,
-  sem objeto aninhado, sem array, sem binário, sem caminho absoluto, sem segredo.
+- `payload`: no máximo 3 chaves de um conjunto nomeado — `label`, `count` e `flag` —,
+  valores primitivos curtos, sem objeto aninhado, sem array, sem binário, sem caminho
+  absoluto, sem segredo.
 
 `TemporalPilotResult` — `schemaVersion`, `requestId`, `projectId`, `status`,
 `completedSteps`, `failureCode`, `output`.
@@ -73,7 +74,12 @@ local direta.
 - `status`: `completed`, `rejected` ou `failed`.
 - `completedSteps`: ordem estável, subconjunto de `validate`, `prepare`, `finalize`.
 - `failureCode`: `null` em `completed`; sempre presente nos demais.
-- Em `rejected`, `output` é `null` (a entrada não foi adiante).
+- Em `rejected` e em `failed`, `output` é `null`. `rejected` significa recusa não
+  retryável: além dos seis códigos de entrada, inclui
+  `TEMPORAL_PILOT_ACTIVITY_NON_RETRYABLE`, que a Activity `finalize` usa quando o
+  invariante de saída não fecha. Esse caso pode ocorrer depois de `validate` e
+  `prepare` já concluídos, e `completedSteps` registra o progresso parcial — medir
+  `rejected` não é, portanto, prova de que nenhuma etapa rodou.
 
 Determinismo: o resultado é função apenas da entrada e do comportamento das
 Activities. Nenhuma Activity lê relógio, aleatoriedade, ambiente ou disco.
@@ -157,6 +163,15 @@ A lista acima vale para registro/log. O `TemporalPilotResult` do §4 é contrato
 saída, não log: ele devolve o `output` do plano (rótulo curto, contagem e flag), e o
 parse recusa valor com aparência de credencial antes de aceitar o payload. A mensagem
 de falha é fixa por código e caminho e nunca repete o valor que chegou na entrada.
+
+Essa garantia cobre a mensagem de falha e o resultado, **não a história do Temporal**.
+O argumento cru do Workflow é persistido pelo servidor antes de a primeira Activity
+validar, e fica decodificável na história. A pré-validação no cliente
+(`src/client/main.ts`) é a fronteira que impede conteúdo sensível de chegar lá; iniciar
+o Workflow por outro cliente contorna essa fronteira e grava o payload recebido. Foi
+medido: um `label` com aparência de credencial iniciado direto pelo cliente da SDK
+apareceu decodificado em dois dos três payloads da história, enquanto o
+`TemporalPilotResult` continuou sem ecoar o valor.
 
 ## 11. Execução local
 
