@@ -24,8 +24,11 @@ TEMPORAL-04. O piloto é agnóstico ao tipo de mídia.
 
 `platform/` não importa nada de `@temporalio` e não foi tocado por este incremento;
 um teste estático deste pacote vigia essa fronteira quando a suíte do piloto é
-executada. Não há CI para `orchestration/temporal/`: `.github/workflows/platform-validation.yml`
-só dispara em `platform/**`, então a guarda depende de alguém rodar `npm test` aqui.
+executada. O gate automático é
+[`.github/workflows/temporal-pilot-ci.yml`](../../.github/workflows/temporal-pilot-ci.yml),
+que dispara em `orchestration/temporal/**`, no planejamento de TEMPORAL-01 e no
+próprio arquivo — nada de campanha ou da platform aciona este job, e
+`.github/workflows/platform-validation.yml` continua sendo o gate do núcleo.
 
 ## Contratos
 
@@ -53,15 +56,21 @@ validatePilotRequest → preparePilotExecution → finalizePilotExecution
 
 - `startToCloseTimeout = 5 seconds`; retry `initialInterval 1s`, `backoffCoefficient 2`,
   `maximumInterval 5s`, `maximumAttempts 3`.
-- Violação de contrato é **não retryable** (`nonRetryableErrorTypes` com os seis códigos
-  de entrada + `TEMPORAL_PILOT_ACTIVITY_NON_RETRYABLE`) e encerra na primeira tentativa.
+- Violação de contrato é **não retryable** e encerra na primeira tentativa. A lista
+  `nonRetryableErrorTypes` da Retry Policy e o conjunto que classifica o resultado como
+  `rejected` derivam da mesma constante, `NON_RETRYABLE_PILOT_CODES`
+  (`src/pilot-core/failures.ts`): os seis códigos de entrada + `TEMPORAL_PILOT_ACTIVITY_NON_RETRYABLE`.
+  Um teste estático impede que as duas representações divergam ou que um código seja
+  escrito à mão em um dos dois consumidores.
 - Falha transitória é retryable; timeout é retryable até esgotar as três tentativas e aí
   vira `TEMPORAL_PILOT_TIMEOUT`.
 - Task Queue `marketing-temporal-pilot-v1`, namespace `default`,
   `workflowId = temporal-pilot-<requestId>`.
 - No `start`: `WorkflowIdReusePolicy.REJECT_DUPLICATE` + `WorkflowIdConflictPolicy.FAIL`.
   Repetir `requestId` devolve `TEMPORAL_PILOT_WORKFLOW_ID_CONFLICT` em vez de criar uma
-  execução paralela silenciosa.
+  execução paralela silenciosa. Além da rodada manual abaixo, a colisão é medida na
+  suíte de integração: um segundo `start` é recusado com a execução aberta e depois de
+  fechada, sem segunda chamada de Activity.
 - O Workflow não toca disco, rede, relógio, aleatoriedade, ambiente, console nem timer
   nativo, e obtém as Activities por `proxyActivities` — nunca como função local.
 
@@ -88,16 +97,17 @@ antigo em `dist/`, e o glob continua executando-o. Rode `clean` antes de medir c
 | --- | --- |
 | `npm run build` | `tsc` para `dist/` (o bundle do Workflow é gerado pelo webpack na criação do worker) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | os 108 testes (unidades, integração, estáticos e de processo) — 40 s medidos |
-| `npm run test:unit` | 93 testes que não precisam de servidor (núcleo, Activities, cliente, endereço, fronteira e processo) |
-| `npm run test:integration` | 15 testes da camada de Workflow: 10 de integração com `TestWorkflowEnvironment` (inclui retry, timeout e replay) + 5 de classificação de falha |
+| `npm test` | os 120 testes (unidades, integração, estáticos e de processo) — 44 s medidos |
+| `npm run test:unit` | 104 testes que não precisam de servidor (núcleo, Activities, cliente, endereço, fronteira e processo) — 13 s medidos |
+| `npm run test:integration` | 16 testes da camada de Workflow: 11 de integração com `TestWorkflowEnvironment` (inclui retry, timeout, replay e colisão de `workflowId`) + 5 de classificação de falha — 42 s medidos |
 | `npm run pilot:local` | servidor efêmero do SDK, `requestId` de demonstração, resultado impresso, tudo derrubado no `finally` |
 | `npm run pilot:worker` | worker real contra `127.0.0.1:7233` (ou `--address <host:porta>` local) |
 | `npm run pilot:run` | cliente real: inicia o Workflow e imprime o `TemporalPilotResult` |
 
-Testes por arquivo: núcleo 52 (`pilot-input` 17, `pilot-plan` 12, `pilot-result` 11,
-`pilot-outcome` 8, `failures` 4), `pilot-activities` 9, `pilot-start` 10, `local-address` 8,
-`pilot-boundary` 7, `entrypoints` 7, `pilot-failure-signal` 5, `content-pilot-workflow` 10.
+Testes por arquivo: núcleo 59 (`pilot-input` 17, `pilot-plan` 12, `pilot-result` 11,
+`pilot-outcome` 8, `non-retryable-codes` 7, `failures` 4), `pilot-activities` 9,
+`pilot-start` 14, `local-address` 8, `pilot-boundary` 7, `entrypoints` 7,
+`pilot-failure-signal` 5, `content-pilot-workflow` 11.
 
 ## Rodada local medida (dois processos)
 
@@ -150,6 +160,22 @@ rodam offline justamente por isso.
   `platform/` continua com zero dependência de runtime nova.
 - `node_modules/`, `dist/` e `gate-logs/` são ignorados por este pacote.
 
+## CI
+
+`.github/workflows/temporal-pilot-ci.yml` roda este pacote em Node 22, na matriz
+`ubuntu-latest` + `windows-latest`, com `fail-fast: false`, `permissions: contents: read`
+e `timeout-minutes: 15`. Os gatilhos são `push`, `pull_request` e `workflow_dispatch`
+restritos a `orchestration/temporal/**`, a
+`docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md` e ao próprio arquivo, então
+campanha, mídia e `platform/` não acionam este job. Os passos são
+`npm ci --no-audit --no-fund`, `npm run clean`, `npm run build`, `npm run typecheck`
+e `npm test`.
+
+Nenhum passo usa segredo, sobe serviço persistente, publica artefato ou faz deploy: a
+suíte inteira usa o servidor efêmero do SDK, que morre com o processo do teste. Por isso
+o CI não depende de sinal manual — nem de `Ctrl+C` no Windows, que segue como limitação
+abaixo.
+
 ## Limitações
 
 - `createTimeSkipping` usa o Test Server de pular-tempo, documentado pelo SDK como menos
@@ -158,9 +184,16 @@ rodam offline justamente por isso.
   histórias de versões futuras do Workflow.
 - As Activities não produzem efeito real de negócio: são puras por contrato, e é isso que
   torna a idempotência estrutural e não uma promessa.
+- **Não resolvido:** entregar `SIGINT`/`Ctrl+C` a um `npm run pilot:worker` rodando solto
+  no Windows. O que está medido é outro caminho: `pilot:local` e a suíte de integração
+  derrubam worker e ambiente no próprio `finally`, e importar os pontos de entrada não
+  deixa handle ativo (os testes de processo veem o filho terminar sozinho). Nenhum teste
+  nem o CI dependem de sinal de sistema operacional.
 
 ## Próximo gate
 
-Entre TEMPORAL-01 e TEMPORAL-02 está a revisão **Elephant–Goldfish**, que não é
-implementada aqui nem tem aprovação simulada. Menor passo seguinte: revisar este pacote
-e, aprovado, orquestrar um passo real do núcleo em TEMPORAL-02.
+A revisão **Elephant–Goldfish** de TEMPORAL-01 foi executada fora deste pacote e as três
+ressalvas prioritárias dela estão fechadas aqui: colisão de `workflowId` medida na suíte
+de integração, conjunto não retryable com fonte única e CI específico do pacote. Entre
+TEMPORAL-01 e TEMPORAL-02 não há aprovação simulada. Menor passo seguinte: orquestrar um
+passo real do núcleo em TEMPORAL-02, somente quando houver autorização.

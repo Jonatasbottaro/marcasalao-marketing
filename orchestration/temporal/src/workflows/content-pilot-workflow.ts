@@ -8,7 +8,7 @@
  */
 import { proxyActivities, type ActivityOptions } from '@temporalio/workflow'
 
-import { PILOT_FAILURE_CODES } from '../pilot-core/failures.js'
+import { NON_RETRYABLE_PILOT_CODES } from '../pilot-core/failures.js'
 import { echoIdentities, type PilotIdentities, type TemporalPilotInput } from '../pilot-core/pilot-input.js'
 import type { PilotOutput, PilotStep } from '../pilot-core/pilot-plan.js'
 import { failedPilotResult, rejectedPilotResult, type TemporalPilotResult } from '../pilot-core/pilot-result.js'
@@ -22,17 +22,6 @@ export const PILOT_TASK_QUEUE = 'marketing-temporal-pilot-v1'
 /** Namespace do piloto. Worker e cliente leem daqui para nao divergir. */
 export const PILOT_NAMESPACE = 'default'
 
-/** Codigo cujo significado e "a entrada nao passou": retry nao corrige entrada. */
-const NON_RETRYABLE_PILOT_CODES: string[] = [
-    PILOT_FAILURE_CODES.schemaUnsupported,
-    PILOT_FAILURE_CODES.requestIdRequired,
-    PILOT_FAILURE_CODES.projectIdRequired,
-    PILOT_FAILURE_CODES.operationInvalid,
-    PILOT_FAILURE_CODES.payloadInvalid,
-    PILOT_FAILURE_CODES.inputInvalid,
-    PILOT_FAILURE_CODES.nonRetryable,
-]
-
 const ACTIVITY_OPTIONS: ActivityOptions = {
     startToCloseTimeout: '5 seconds',
     retry: {
@@ -40,7 +29,7 @@ const ACTIVITY_OPTIONS: ActivityOptions = {
         backoffCoefficient: 2,
         maximumInterval: '5 seconds',
         maximumAttempts: 3,
-        nonRetryableErrorTypes: NON_RETRYABLE_PILOT_CODES,
+        nonRetryableErrorTypes: [...NON_RETRYABLE_PILOT_CODES],
     },
 }
 

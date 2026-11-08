@@ -14,6 +14,7 @@ import { WorkflowIdConflictPolicy, WorkflowIdReusePolicy } from '@temporalio/cli
 
 import { PILOT_FAILURE_CODES } from '../../src/pilot-core/failures.js'
 import { PILOT_OPERATION, PILOT_SCHEMA_VERSION, parsePilotInput } from '../../src/pilot-core/pilot-input.js'
+import { PILOT_NAMESPACE, PILOT_TASK_QUEUE } from '../../src/workflows/content-pilot-workflow.js'
 import { describeStartFailure, parseInputArguments, parseRunArguments, pilotStartOptions } from '../../src/client/pilot-start.js'
 
 function validInput(requestId = 'req-0001') {
@@ -87,6 +88,38 @@ test('as opcoes de inicio derivam o workflowId e barram colisao', () => {
     assert.deepEqual(options.args, [validInput('req-0009')])
     assert.equal(options.workflowIdReusePolicy, WorkflowIdReusePolicy.REJECT_DUPLICATE)
     assert.equal(options.workflowIdConflictPolicy, WorkflowIdConflictPolicy.FAIL)
+})
+
+test('as opcoes de inicio carregam exatamente as cinco chaves declaradas', () => {
+    const options = pilotStartOptions(validInput('req-0009'))
+
+    assert.deepEqual(Object.keys(options).sort(), ['args', 'taskQueue', 'workflowId', 'workflowIdConflictPolicy', 'workflowIdReusePolicy'])
+    assert.equal(options.args.length, 1, 'o Workflow recebe um unico argumento')
+})
+
+test('a mesma entrada produz opcoes equivalentes, sem relogio nem aleatoriedade', () => {
+    const input = validInput('req-estavel')
+
+    assert.deepEqual(pilotStartOptions(input), pilotStartOptions(input))
+    assert.equal(pilotStartOptions(input).workflowId, `temporal-pilot-${input.requestId}`)
+    assert.equal(pilotStartOptions(input).taskQueue, PILOT_TASK_QUEUE)
+})
+
+test('requestIds diferentes mudam apenas o workflowId', () => {
+    const first = pilotStartOptions(validInput('req-um'))
+    const second = pilotStartOptions(validInput('req-dois'))
+
+    assert.notEqual(first.workflowId, second.workflowId)
+    assert.equal(first.taskQueue, second.taskQueue)
+    assert.equal(first.workflowIdReusePolicy, second.workflowIdReusePolicy)
+    assert.equal(first.workflowIdConflictPolicy, second.workflowIdConflictPolicy)
+})
+
+test('as opcoes de inicio nao escolhem namespace: quem o escolhe e o cliente', () => {
+    const options = pilotStartOptions(validInput('req-namespace'))
+
+    assert.ok(!('namespace' in options), 'o namespace nao sai pelas opcoes de inicio')
+    assert.equal(PILOT_NAMESPACE, 'default')
 })
 
 test('a colisao de workflowId tem codigo proprio e os demais erros nao', () => {

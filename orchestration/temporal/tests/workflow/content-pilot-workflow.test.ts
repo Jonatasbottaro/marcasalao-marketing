@@ -11,13 +11,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { ApplicationFailure } from '@temporalio/common'
+import { ApplicationFailure, WorkflowExecutionAlreadyStartedError } from '@temporalio/common'
 import { TestWorkflowEnvironment } from '@temporalio/testing'
 import { Worker } from '@temporalio/worker'
 
 import * as pilotActivities from '../../src/activities/pilot-activities.js'
+import { describeStartFailure, pilotStartOptions } from '../../src/client/pilot-start.js'
 import { PILOT_FAILURE_CODES } from '../../src/pilot-core/failures.js'
-import { PILOT_OPERATION, PILOT_SCHEMA_VERSION, type TemporalPilotInput } from '../../src/pilot-core/pilot-input.js'
+import { PILOT_OPERATION, PILOT_SCHEMA_VERSION, parsePilotInput, type TemporalPilotInput } from '../../src/pilot-core/pilot-input.js'
 import type { TemporalPilotResult } from '../../src/pilot-core/pilot-result.js'
 import { PILOT_TASK_QUEUE } from '../../src/workflows/content-pilot-workflow.js'
 
@@ -33,17 +34,27 @@ async function withPilotWorker(activities: Record<string, unknown>, run: (ctx: P
     try {
         const worker = await Worker.create({ connection: env.nativeConnection, taskQueue: PILOT_TASK_QUEUE, workflowsPath, activities })
         const start = async (raw: unknown, requestId: string) => {
-            const handle = await env.client.workflow.start('contentPilotWorkflow', {
-                args: [raw],
-                taskQueue: PILOT_TASK_QUEUE,
-                workflowId: `temporal-pilot-${requestId}`,
-            })
+            const handle = await env.client.workflow.start('contentPilotWorkflow', startOptionsFor(raw, requestId))
             return await handle.result()
         }
         await worker.runUntil(() => run({ env, start }))
     } finally {
         await env.teardown()
     }
+}
+
+/**
+ * Opcoes de inicio de uma execucao do piloto.
+ *
+ * Entrada valida usa exatamente o construtor do cliente real, entao as politicas
+ * de `workflowId` do piloto valem tambem aqui. Entrada invalida nao passa no
+ * contrato do cliente e precisa mesmo comecar no servidor, que e onde o Workflow
+ * a recusa: esses testes provem a rejeicao de dentro para fora.
+ */
+function startOptionsFor(raw: unknown, requestId: string) {
+    const parsed = parsePilotInput(raw)
+    if (parsed.ok) return pilotStartOptions(parsed.input)
+    return { args: [raw], taskQueue: PILOT_TASK_QUEUE, workflowId: `temporal-pilot-${requestId}` }
 }
 
 function validRaw(requestId: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -79,6 +90,36 @@ function failingPrepare(counts: { prepare: number }, failure: () => Error, failu
     }
 }
 
+/** O que deve coincidir entre execucoes: o que deriva do requestId fica de fora. */
+function relatorioSemIdentidade(result: TemporalPilotResult) {
+    assert.ok(result.output, 'execucao concluida devolve saida')
+
+    return {
+        status: result.status,
+        completedSteps: result.completedSteps,
+        failureCode: result.failureCode,
+        saida: { plannedSteps: result.output.plannedSteps, label: result.output.label, count: result.output.count, flag: result.output.flag },
+    }
+}
+
+/** Inicio que se espera ser recusado: devolve o erro do servidor, ou null se ele deixou passar. */
+async function tentarIniciar(env: TestWorkflowEnvironment, input: TemporalPilotInput): Promise<unknown> {
+    try {
+        await env.client.workflow.start('contentPilotWorkflow', pilotStartOptions(input))
+        return null
+    } catch (error) {
+        return error
+    }
+}
+
+async function esperar(condicao: () => boolean, motivo: string, timeoutMs = 30000): Promise<void> {
+    const started = Date.now()
+    while (!condicao()) {
+        if (Date.now() - started > timeoutMs) throw new Error(`tempo esgotado esperando: ${motivo}`)
+        await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+}
+
 test('o caminho feliz conclui as tres etapas e devolve a saida do plano', async () => {
     await withPilotWorker(realActivities(), async ({ start }) => {
         const result = await start(validRaw('req-feliz'), 'req-feliz')
@@ -93,14 +134,74 @@ test('o caminho feliz conclui as tres etapas e devolve a saida do plano', async 
     })
 })
 
-test('executar a mesma entrada duas vezes produz relatorios identicos', async () => {
+test('duas execucoes da mesma entrada dao o mesmo relatorio, fora do que deriva do requestId', async () => {
     await withPilotWorker(realActivities(), async ({ start }) => {
-        const first = await start(validRaw('req-igual'), 'req-igual')
-        const second = await start(validRaw('req-igual'), 'req-igual')
+        const first = await start(validRaw('req-igual-a'), 'req-igual-a')
+        const second = await start(validRaw('req-igual-b'), 'req-igual-b')
 
         assert.equal(first.status, 'completed')
-        assert.deepEqual(second, first)
+        assert.equal(second.status, 'completed')
+        assert.deepEqual(relatorioSemIdentidade(first), relatorioSemIdentidade(second))
     })
+})
+
+test('um segundo inicio com o mesmo requestId e barrado sem criar execucao paralela', async () => {
+    const counts = { validate: 0, finalize: 0 }
+    const trava: { liberar: (() => void) | null } = { liberar: null }
+
+    const raw = validRaw('req-colisao')
+    const parsed = parsePilotInput(raw)
+    assert.ok(parsed.ok)
+
+    const env = await TestWorkflowEnvironment.createTimeSkipping()
+    const activities = {
+        ...pilotActivities,
+        validatePilotRequest: async (value: unknown) => {
+            counts.validate += 1
+            return pilotActivities.validatePilotRequest(value)
+        },
+        finalizePilotExecution: (...args: Parameters<typeof pilotActivities.finalizePilotExecution>) => {
+            counts.finalize += 1
+            // A execucao fica aberta de proposito: e assim que a politica de
+            // colisao pode ser observada contra uma execucao em andamento, e nao
+            // so contra uma ja concluida.
+            return new Promise<Awaited<ReturnType<typeof pilotActivities.finalizePilotExecution>>>((resolve) => {
+                trava.liberar = () => resolve(pilotActivities.finalizePilotExecution(...args))
+            })
+        },
+    }
+    const worker = await Worker.create({ connection: env.nativeConnection, taskQueue: PILOT_TASK_QUEUE, workflowsPath, activities })
+    const workerRun = worker.run()
+
+    try {
+        const handle = await env.client.workflow.start('contentPilotWorkflow', pilotStartOptions(parsed.input))
+        await esperar(() => counts.finalize === 1, 'a primeira execucao abriu e chegou à etapa final')
+        assert.equal(counts.validate, 1)
+
+        // WorkflowIdConflictPolicy.FAIL: o workflowId esta em uso por uma execucao aberta.
+        const enquantoAberta = await tentarIniciar(env, parsed.input)
+        assert.ok(enquantoAberta instanceof WorkflowExecutionAlreadyStartedError, 'o servidor devia recusar o segundo inicio')
+        assert.equal(describeStartFailure(enquantoAberta), PILOT_FAILURE_CODES.workflowIdConflict)
+
+        trava.liberar?.()
+        const result = await handle.result()
+        assert.equal(result.status, 'completed')
+        assert.deepEqual(result.completedSteps, ['validate', 'prepare', 'finalize'])
+        assert.equal(result.requestId, 'req-colisao')
+
+        // WorkflowIdReusePolicy.REJECT_DUPLICATE: a execucao concluiu, e mesmo assim nao se reabre.
+        const depoisDeFechada = await tentarIniciar(env, parsed.input)
+        assert.ok(depoisDeFechada instanceof WorkflowExecutionAlreadyStartedError, 'o servidor devia recusar o reuso')
+        assert.equal(describeStartFailure(depoisDeFechada), PILOT_FAILURE_CODES.workflowIdConflict)
+
+        assert.equal(counts.validate, 1, 'a recusa nao pode ter rodado uma segunda execucao')
+        assert.equal(counts.finalize, 1)
+    } finally {
+        trava.liberar?.()
+        await worker.shutdown()
+        await workerRun
+        await env.teardown()
+    }
 })
 
 test('violacao de contrato e rejeitada na primeira tentativa, sem retry', async () => {

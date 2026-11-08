@@ -21,6 +21,23 @@ export const PILOT_FAILURE_CODES = {
 
 export type PilotFailureCode = (typeof PILOT_FAILURE_CODES)[keyof typeof PILOT_FAILURE_CODES]
 
+/**
+ * Codigo cujo significado e "a entrada nao passou": retry nao corrige entrada.
+ *
+ * Fonte unica das duas representacoes do mesmo conjunto: a classificacao do
+ * resultado no nucleo e a `nonRetryableErrorTypes` da Retry Policy do Workflow.
+ * Immutable e sem estado por execucao, entao cabe no sandbox do Workflow.
+ */
+export const NON_RETRYABLE_PILOT_CODES = [
+    PILOT_FAILURE_CODES.schemaUnsupported,
+    PILOT_FAILURE_CODES.requestIdRequired,
+    PILOT_FAILURE_CODES.projectIdRequired,
+    PILOT_FAILURE_CODES.operationInvalid,
+    PILOT_FAILURE_CODES.payloadInvalid,
+    PILOT_FAILURE_CODES.inputInvalid,
+    PILOT_FAILURE_CODES.nonRetryable,
+] as const
+
 const CODE_VALUES: ReadonlySet<string> = new Set(Object.values(PILOT_FAILURE_CODES))
 
 export function isPilotFailureCode(value: unknown): value is PilotFailureCode {

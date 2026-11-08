@@ -6,7 +6,7 @@
  * status + codigo estavel. Violacao de contrato e sempre `rejected`; falha
  * tecnica e sempre `failed`; nada aqui inventa status nem codigo.
  */
-import { PILOT_FAILURE_CODES, isPilotFailureCode, type PilotFailureCode } from './failures.js'
+import { NON_RETRYABLE_PILOT_CODES, PILOT_FAILURE_CODES, isPilotFailureCode, type PilotFailureCode } from './failures.js'
 import type { PilotStatus } from './pilot-result.js'
 
 export type PilotFailureSignal =
@@ -19,16 +19,8 @@ export interface PilotOutcome {
     failureCode: PilotFailureCode
 }
 
-/** Codigo que significa "o piloto recusou a execucao", nao "quebrou". */
-const REJECTION_CODES: ReadonlySet<PilotFailureCode> = new Set([
-    PILOT_FAILURE_CODES.schemaUnsupported,
-    PILOT_FAILURE_CODES.requestIdRequired,
-    PILOT_FAILURE_CODES.projectIdRequired,
-    PILOT_FAILURE_CODES.operationInvalid,
-    PILOT_FAILURE_CODES.payloadInvalid,
-    PILOT_FAILURE_CODES.inputInvalid,
-    PILOT_FAILURE_CODES.nonRetryable,
-])
+/** Codigo que significa "o piloto recusou a execucao", nao "quebrou". Derivado da fonte unica. */
+const REJECTION_CODES: ReadonlySet<PilotFailureCode> = new Set(NON_RETRYABLE_PILOT_CODES)
 
 export function outcomeFor(signal: PilotFailureSignal): PilotOutcome {
     if (signal.kind === 'timeout') {

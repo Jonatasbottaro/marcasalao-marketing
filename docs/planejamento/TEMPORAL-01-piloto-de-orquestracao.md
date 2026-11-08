@@ -112,6 +112,13 @@ explícita em vez de sobrescrever.
 - Políticas no `start`: `WorkflowIdReusePolicy.REJECT_DUPLICATE` e
   `WorkflowIdConflictPolicy.FAIL`. Repetir um `requestId` nunca é silencioso: o
   cliente imprime `TEMPORAL_PILOT_WORKFLOW_ID_CONFLICT` e sai com código `1`.
+- As opções de início saem de uma única função (`pilotStartOptions`, em
+  `src/client/pilot-start.ts`) e são exercidas de duas formas: direto no cliente,
+  teste a teste, quanto às cinco chaves, à equivalência entre duas chamadas da mesma
+  entrada e à ausência de relógio e de aleatoriedade; e no servidor efêmero do SDK,
+  onde um segundo `start` com o mesmo `workflowId` é recusado enquanto a primeira
+  execução está aberta **e** depois que ela fecha, sem criar execução paralela. A
+  rodada manual de dois processos continua documentada no §11 e não é substituída.
 - `PILOT_TASK_QUEUE` e `PILOT_NAMESPACE` ficam no módulo do Workflow porque worker e
   cliente precisam concordar sobre eles; um teste estático exige que o nome da fila
   apareça em um único arquivo-fonte do pacote.
@@ -149,6 +156,19 @@ tentativa. Retry não corrige entrada inválida.
 
 Os dez primeiros são os sugeridos no briefing; `WORKFLOW_ID_CONFLICT` é necessário
 para cumprir "não permitir colisão silenciosa".
+
+O conjunto **não retryable** tem uma única fonte: `NON_RETRYABLE_PILOT_CODES`
+(`src/pilot-core/failures.ts`), uma constante `as const` dos seis códigos de entrada
+mais `TEMPORAL_PILOT_ACTIVITY_NON_RETRYABLE`. As duas representações derivam dela —
+`REJECTION_CODES`, que classifica o `TemporalPilotResult` como `rejected`, e
+`nonRetryableErrorTypes` da Retry Policy do Workflow — então as duas não podem
+divergir por construção. Um teste de unidades fixa o conteúdo e a ordem da lista,
+exige que `TEMPORAL_PILOT_ACTIVITY_TRANSIENT_FAILURE`, `TEMPORAL_PILOT_TIMEOUT`,
+`TEMPORAL_PILOT_WORKFLOW_FAILED` e `TEMPORAL_PILOT_WORKFLOW_ID_CONFLICT` estejam fora
+dela, e lê os dois módulos de produção para confirmar que nenhum código aparece
+escrito à mão e que ambos importam essa fonte. A lista é imutável e sem estado por
+execução, por isso cabe no sandbox do Workflow; nenhuma estrutura não determinística
+foi introduzida.
 
 Erros carregam `code` + mensagem sanitizada. A mensagem nunca inclui payload, valor
 de campo, caminho absoluto, credencial ou stack trace.
@@ -206,6 +226,34 @@ ou `src/client/main.ts` não deixa handle ativo — o processo filho termina soz
 A guarda de endereço é compartilhada (`src/local-address.ts`) para que cliente e
 worker não possam divergir sobre o que é "local".
 
+Medida em Node 22.23.2 / npm 10.9.8: `npm test` executa **120** testes (`104` em
+`test:unit`, `16` em `test:integration`), com `0` falhas. A suíte de integração é a
+que exercita o servidor efêmero: 11 testes em `content-pilot-workflow.test.ts`
+(caminho feliz, equivalência de relatório entre execuções, recusa de contrato na
+primeira tentativa, retry transitório, esgotamento de tentativas, recusa não
+retryable, vocabulário externo, ausência de vazamento, timeout, replay e a colisão
+de `workflowId`) mais 5 de classificação de falha.
+
+## 12.1 CI do piloto
+
+`.github/workflows/temporal-pilot-ci.yml` é o gate automático do pacote. Ele dispara
+em `push` e `pull_request` somente para `orchestration/temporal/**`, para este
+documento e para o próprio arquivo, e também por `workflow_dispatch`; uma alteração
+de campanha, mídia ou `platform/` não o aciona. Roda a matriz
+`[ubuntu-latest, windows-latest]` em Node `22` (a faixa de `engines`), com `bash`
+como shell nos dois sistemas, `fail-fast: false`, `permissions: contents: read`,
+`timeout-minutes: 15` e os passos `npm ci --no-audit --no-fund`, `npm run clean`,
+`npm run build`, `npm run typecheck`, `npm test`.
+
+O job não usa segredo, não sobe serviço persistente, não publica artefato e não faz
+deploy: a suíte inteira usa o servidor efêmero do SDK, que nasce e morre com o
+processo do teste. O ubuntu-latest entra na matriz porque a suíte não depende de
+caminho, sinal ou utilitário de Windows — os testes de processo usam
+`process.execPath` e `spawnSync`, e os caminhos vêm de `import.meta.url` — e porque
+a evidência de que o `TestWorkflowEnvironment` funciona em Linux é o próprio job, não
+uma medição desta máquina. O gate da platform permanece separado
+(`.github/workflows/platform-validation.yml`).
+
 ## 13. Limitações
 
 - `createTimeSkipping` usa o Test Server de pular-tempo (do SDK Java), que o próprio
@@ -214,6 +262,15 @@ worker não possam divergir sobre o que é "local".
   sobre `createLocal`.
 - Replay cobre a história gravada nesta execução; não prova compatibilidade com
   histórias de versões futuras do Workflow.
+- Shutdown por sinal do sistema operacional **não foi provado no Windows** para o
+  Worker autônomo (`npm run pilot:worker`). O que está provado: o `pilot:local` e a
+  suíte de integração derrubam worker e ambiente no próprio `finally`, e importar os
+  pontos de entrada não deixa handle ativo — os testes de processo medem o filho
+  terminando sozinho. Falta medir, no Windows, um `SIGINT`/`Ctrl+C` entregue a um
+  processo de Worker que roda solto; nenhum teste depende de sinal manual, e o CI não
+  usa sinal nenhum — cada processo fecha pelo próprio controle. Esta limitação fica
+  registrada como não resolvida; não se refez a tentativa nem se criou contorno
+  específico para o Windows nesta tarefa.
 
 ## 14. Fora de escopo de TEMPORAL-01
 
