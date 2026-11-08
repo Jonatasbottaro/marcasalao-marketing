@@ -173,4 +173,3 @@ test('a execucao local recusa flag desconhecida, sem valor e entrada fora do con
         assert.equal(parsed.ok, false, `deveria recusar: ${argv.join(' ')}`)
     }
 })
-
