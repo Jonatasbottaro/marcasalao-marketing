@@ -4,10 +4,12 @@
 
 - Data da atualização: 2026-11-08
 - Branch de referência: main
-- Commit da main: [07e38f47df50fd6d8b264bc999fe4082be4b2bb6](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/07e38f47df50fd6d8b264bc999fe4082be4b2bb6)
+- Commit da main: [fbd222d996527f6cf226051a8526f932accd7e5e](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/fbd222d996527f6cf226051a8526f932accd7e5e) — merge da PR #7, integrado em 08/11/2026
 - Fonte: Git, documentação integrada e GitHub Actions
 
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Esta atualização é documental: não altera código, `platform/`, `orchestration/temporal/`, campanhas nem CI.
+`fbd222d` é a referência corrente da main e contém TEMPORAL-01, a correção final de whitespace e os documentos de `docs/contexto/`, integrados pela PR #7: o primeiro pai `07e38f47df50fd6d8b264bc999fe4082be4b2bb6` traz o piloto e o whitespace, e o segundo pai `f94eff28aef956533039d707db1a22b23c9d8981` traz o contexto. O merge não é o commit técnico de fechamento de TEMPORAL-01, que permanece `07e38f47df50fd6d8b264bc999fe4082be4b2bb6`.
+
+O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Esta correção é documental: não altera código, `platform/`, `orchestration/temporal/`, campanhas nem CI.
 
 ## Núcleo reutilizável
 
@@ -21,6 +23,7 @@ O hash identifica o ponto consultado, não uma promessa de permanência. Reconfe
 - **Runtime do núcleo**: Node `>=22 <25`, TypeScript compilado para JavaScript, motor de schema apenas em desenvolvimento.
 - **Correção de contratos da PR #6**: integrada em 06/11/2026 pelo merge commit `0c97c2a`. A distinção entre "main anterior" e "correção pendente" que esta página mantinha foi retirada porque a main já contém o comportamento corrigido.
 - **TEMPORAL-01**: piloto de orquestração em [`orchestration/temporal/`](../../orchestration/temporal/README.md), planejado em [`docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md`](../planejamento/TEMPORAL-01-piloto-de-orquestracao.md) e protegido por CI específico em [`.github/workflows/temporal-pilot-ci.yml`](../../.github/workflows/temporal-pilot-ci.yml).
+- **PR #7 — contexto integrado**: [PR #7](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/7) integrada à main pelo merge `fbd222d996527f6cf226051a8526f932accd7e5e` em 08/11/2026. `docs/contexto/` (`README.md`, `ESTADO-ATUAL.md`, `PROXIMOS-PASSOS.md` e `HANDOFF.md`) passou a pertencer à main e é fato integrado, não proposta em revisão. A branch `codex/atualiza-contexto-projeto` pode continuar existindo sem representar trabalho pendente; a branch remota não foi excluída.
 
 ### Em branch pública
 
@@ -29,7 +32,6 @@ Registrar aqui apenas o que continua fora da main, conforme o Git real:
 - **R001 — catálogo de formatos sociais**: branch `codex/catalogo-formatos-sociais`, checkpoint `55aeecccfa38da06dfada875e75d81b265626abc`. O `git merge-base --is-ancestor` contra `origin/main` devolve saída 1: **branch-only**.
 - **OutputPlan, perfis de conteúdo e as CLIs `content:profiles` e `content:plan-output`**: existem apenas dentro da branch do R001. Listar a main para `platform/src/output-plan-contract.ts`, `platform/schemas/output-plan.schema.json`, `platform/src/output-profiles` e `platform/examples/output-plans` devolve vazio.
 - **BeatPlan**: branch `codex/core-beat-plan-v1`, checkpoint `bade62e3a720a853e6f3d18b52aa46bf544979a4`, **branch-only** pela mesma checagem. A branch toca `package.json`, README da platform, relatório de validação e testes de portabilidade — sobreposição que precisa de reconciliação antes de qualquer integração.
-- **PR #7 — esta página**: [PR #7](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/7), branch `codex/atualiza-contexto-projeto`, aberta. Enquanto aberta, o conteúdo de `docs/contexto/` não é fato da main.
 - **PR #1 — integração de ai-memory**: [PR #1](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/1), aberta. Fora do escopo técnico deste estado; não considerá-la integrada por associação.
 
 Nada acima está integrado, por mais que o trabalho exista e tenha evidência própria.
@@ -64,7 +66,7 @@ Nada acima está integrado, por mais que o trabalho exista e tenha evidência pr
 - Activities: `validatePilotRequest`, `preparePilotExecution`, `finalizePilotExecution`.
 - Task Queue: `marketing-temporal-pilot-v1`.
 - Namespace local: `default`.
-- Testes: **120** — 104 sem servidor e 16 na camada de Workflow, zero falhas e zero dispensados.
+- Testes: **120** — 104 sem servidor e 16 na camada de Workflow, zero falhas e zero testes ignorados.
 - CI: Ubuntu e Windows, Node 22, `fail-fast: false`, `permissions: contents: read`, teto de 15 minutos, disparado por paths do próprio pacote.
 - Run final: [42494941537](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42494941537), no push desse commit para a main.
 - Status do CI: **success** nos dois runners, cada um com `# tests 120 / # pass 120 / # fail 0 / # skipped 0` no log.
@@ -102,7 +104,7 @@ A correção final de whitespace removeu uma linha em branco excedente no fim de
 - Nenhuma ressalva obrigatória restante.
 - TEMPORAL-01 classificado como **aprovado**.
 
-O §15 do planejamento do TEMPORAL-01 manteve a redação original "Não é implementada aqui e não tem aprovação simulada": a frase descreve o recorte daquele commit e a proibição de simular aprovação, não uma pendência atual. A execução do gate está registrada acima, com as ressalvas fechadas nos commits integrados.
+O §15 do planejamento do TEMPORAL-01 preserva a redação histórica "Não é implementada aqui e não tem aprovação simulada": ela descreve o recorte daquele commit e a proibição de simular aprovação, não uma pendência atual. O gate Elephant–Goldfish foi executado depois, entre TEMPORAL-01 e TEMPORAL-02, e o estado posterior correto está neste contexto, na seção Gate Elephant–Goldfish acima, com as ressalvas fechadas nos commits integrados. O documento de planejamento permanece como registro histórico e não foi alterado por esta correção.
 
 ## TEMPORAL-02
 
@@ -135,8 +137,8 @@ O checkpoint informado do R001 é um commit documental posterior ao checkpoint d
 Preservado como evidência do que entrou na main pela PR #6:
 
 - [CI de pull_request: 42268435331](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42268435331) e [CI de push: 42268425001](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42268425001), quatro jobs completed/success cada, matriz Ubuntu e Windows × Node 22 e 24.
-- Log do job Ubuntu + Node 22: 308 testes aprovados, zero falhas e zero dispensados, com prova do código 7 e da falha de `tee`.
-- Revisão independente local em Linux + Node 24: typecheck aprovado, 307 testes aprovados e um dispensado porque a cópia de revisão não tinha metadados Git.
+- Log do job Ubuntu + Node 22: 308 testes aprovados, zero falhas e zero testes ignorados, com prova do código 7 e da falha de `tee`.
+- Revisão independente local em Linux + Node 24: typecheck aprovado, 307 testes aprovados e um teste ignorado porque a cópia de revisão não tinha metadados Git.
 - Casos de `@` fora da autoridade, autoridade vazia, barras extras e credenciais executados nos dois motores com os resultados esperados.
 - Limitação não diagnosticada, registrada na época: uma execução local antiga teve 286 testes aprovados e seis falhas sem nomes preservados. As correções de URL e de captura de logs não foram apresentadas como explicação dessa ocorrência.
 
@@ -162,18 +164,20 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 Pré-condições:
 
-- TEMPORAL-01 integrado — cumprido, com evidência na seção acima;
-- contexto atualizado na PR #7; será considerado integrado somente após o merge da PR.
-- escolha explícita do passo real;
-- contrato de entrada e saída pequeno;
-- nenhuma dependência de fornecedor;
-- autorização do titular.
+- TEMPORAL-01 integrado — **cumprido**, com evidência na seção acima;
+- contexto atualizado e integrado à main pela PR #7 — **cumprido**;
+- escolha explícita do passo real — **pendente**;
+- contrato de entrada e saída pequeno — **pendente**;
+- nenhuma dependência de fornecedor — **requisito**;
+- autorização do titular — **pendente**.
+
+O cumprimento das duas primeiras pré-condições não concede autorização automática para TEMPORAL-02: a autorização do titular continua necessária.
 
 Tarefas secundárias permitidas:
 
 1. revisar as branches públicas de R001 e BeatPlan;
 2. decidir se branches já integradas podem ser arquivadas;
-3. acompanhar a PR #7 até a integração.
+3. confirmar periodicamente se R001 e BeatPlan continuam branch-only antes de planejar qualquer integração.
 
 ## O que não fazer agora
 

@@ -8,12 +8,14 @@ Este é o único próximo passo técnico registrado em [ESTADO-ATUAL.md](ESTADO-
 
 Pré-condições:
 
-- TEMPORAL-01 integrado — cumprido;
-- contexto atualizado — cumprido quando esta PR for integrada;
-- escolha explícita do passo real do núcleo;
-- contrato de entrada e saída pequeno;
-- nenhuma dependência de fornecedor;
-- autorização do titular.
+- TEMPORAL-01 integrado — **cumprido**;
+- contexto atualizado e integrado pela PR #7 — **cumprido**;
+- escolha explícita do passo real do núcleo — **pendente**;
+- contrato de entrada e saída pequeno — **pendente**;
+- nenhuma dependência de fornecedor — **requisito**;
+- autorização do titular — **pendente**.
+
+O cumprimento das duas primeiras pré-condições não concede autorização automática para TEMPORAL-02: a autorização do titular continua necessária.
 
 Critérios de conclusão do PRD:
 
@@ -71,7 +73,6 @@ Na próxima validação funcional, registrar o commit executado, alterações lo
 
 1. Confirmar no Git se R001 e BeatPlan continuam branch-only antes de tratar qualquer um deles como integrado.
 2. Decidir se branches já integradas podem ser arquivadas. Esta lista não autoriza exclusão de branch nem de conteúdo.
-3. Acompanhar a PR #7 até a integração, conferindo merged e o conteúdo efetivamente na main.
 
 Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md); não repeti-los aqui.
 
