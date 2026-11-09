@@ -129,9 +129,9 @@ portanto, demonstrar que o arranjo "Workflow determinístico + Activity com efei
 externo nulo + núcleo puro" sobrevive ao contato com um contrato real.
 
 Há também um problema de fronteira ainda não resolvido: hoje não existe uma via
-pública de importação entre `platform/` e `orchestration/temporal/`. O PRD registra
-essa dificuldade como dependência de implementação, sem resolvê-la por hipótese
-(ver seções 18 e 29).
+pública e estável de importação entre `platform/` e `orchestration/temporal/`. O
+PRD registra essa dificuldade como **gate obrigatório** a satisfazer antes da futura
+Activity, sem resolvê-la por hipótese (ver seções 18 e 29).
 
 ## 6. Oportunidade
 
@@ -174,15 +174,20 @@ perfil social, preview, exportação, renderização, mídia, campanha ou public
 
 ### Ponto de integração real
 
-A função pública existente é:
+A função exportada pelo módulo interno existente é
+`validateComposition(compositionInput, projectInput)`. Ainda não existe uma
+fronteira pública e estável entre os pacotes `platform` e `orchestration/temporal`.
 
 ```ts
 validateComposition(compositionInput: unknown, projectInput: unknown): CompositionValidationReport
 ```
 
-A ordem dos argumentos é **Composition primeiro, ProjectManifest depois**. Essa ordem
-é a do código e deve ser respeitada pela Activity; invertê-la produziria relatórios
-errados sem erro de tipo, porque ambos os parâmetros são `unknown`.
+A ordem dos argumentos é **Composition primeiro, ProjectManifest depois**. Ambos os
+parâmetros são atualmente tipados como `unknown`. Essa ordem é a do código e deve
+ser respeitada pela Activity; invertê-la produziria relatórios errados sem erro de
+tipo, justamente porque o compilador não protege contra a inversão. O teste
+obrigatório de paridade com a chamada direta ao núcleo está na seção 26 e é a
+mitigação exigida para esse risco.
 
 A função já executa, internamente, `validateProjectManifest(projectInput)`, a
 validação estrutural da Composition e as três verificações de vínculo
@@ -243,7 +248,8 @@ Os CLIs existentes (`validate-project-cli.ts` e `validate-composition-cli.ts`)
 permanecem válidos para uso humano e para testes de paridade, mas não são a via de
 integração do Workflow.
 
-**Recomendação preferencial:** usar a API pura do núcleo por uma única Activity.
+**Recomendação preferencial:** usar a função pura do núcleo por uma única Activity,
+assim que o gate de fronteira pública da seção 18 estiver satisfeito.
 
 ## 10. Usuários técnicos e consumidores
 
@@ -304,9 +310,12 @@ adicional, API HTTP e stack de observabilidade externa.
 ## 13. Arquitetura conceitual
 
 ```
-  cliente (fronteira de pré-validação)
+  cliente (preflight)
       |  input pequeno, versionado, sem dado sensível
       |  valida tamanho, schemaVersion e padrões proibidos ANTES do start
+      |
+      +-- rejeição pré-start ---> erro do cliente (sem start, sem resultado
+      |                           de execução iniciada, sem retry)
       v
   CompositionValidationWorkflowInput  --->  [ history do Temporal ]
       |
@@ -400,12 +409,30 @@ Limites do piloto, a validar no cliente antes do `start`:
 | --- | --- |
 | `ProjectManifest` serializado | máximo de 64 KiB |
 | `Composition` serializada | máximo de 256 KiB |
-| input total | máximo de 384 KiB |
+| envelope completo | máximo de 384 KiB |
 
-Esses valores são limites do piloto, não limites do produto. Se o contrato real
-torná-los inadequados, o ajuste deve ser proporcional e justificado por medição dos
-exemplos técnicos integrados — nunca removido silenciosamente. A Opção B fica
-registrada como caminho de evolução, não como dívida a saldar neste incremento.
+### Método conceitual de medição
+
+```ts
+Buffer.byteLength(JSON.stringify(value), "utf8")
+```
+
+A medição é aplicada **separadamente** a `project`, a `composition` e ao envelope
+completo. A serialização é parte do preflight: não é uma conversão tolerante a
+perdas. Registros obrigatórios:
+
+- os valores são **limites conservadores do piloto**, não limites do produto;
+- **não equivalem ao tamanho final codificado pelo Temporal**, que inclui
+  codificação de payload, metadados e demais eventos da history;
+- valores não serializáveis são **rejeitados**, não omitidos em silêncio;
+- ciclos são **rejeitados**;
+- `BigInt` é **rejeitado**;
+- a medição dos exemplos reais integrados é **obrigatória antes da implementação**;
+  se ela tornar os valores inadequados, o ajuste deve ser proporcional e
+  justificado, nunca removido silenciosamente.
+
+A Opção B fica registrada como caminho de evolução, não como dívida a saldar neste
+incremento.
 
 ## 15. Política de history
 
@@ -450,13 +477,14 @@ Nome conceitual: `CompositionValidationWorkflowResult`.
 | `compositionId` | string ou nulo | Eco do relatório |
 | `status` | `valid` \| `invalid` \| `failed` | Classificação da execução |
 | `validation` | `CompositionValidationReport` ou nulo | Presente em `valid` e `invalid` |
-| `completedSteps` | lista estável | Um único passo: `validate-composition` |
+| `completedSteps` | lista estável | Regra fixa na seção "completedSteps" abaixo |
 | `failureCode` | string ou nulo | Obrigatório somente em `failed` |
 
 ### `valid`
 
 - validação executada;
-- relatório do núcleo com `valid: true`.
+- relatório do núcleo com `valid: true`;
+- `failureCode` nulo.
 
 ### `invalid`
 
@@ -464,7 +492,7 @@ Nome conceitual: `CompositionValidationWorkflowResult`.
 - relatório do núcleo com `valid: false`;
 - **não é falha técnica**;
 - **não deve ser retryable**;
-- `failureCode` permanece nulo.
+- `failureCode` nulo.
 
 ### `failed`
 
@@ -472,11 +500,72 @@ Nome conceitual: `CompositionValidationWorkflowResult`.
 - relatório do núcleo pode estar ausente;
 - `failureCode` obrigatório.
 
+### Classificação dos três caminhos
+
+#### Rejeição antes do start (preflight)
+
+Casos:
+
+- envelope malformado;
+- `schemaVersion` do envelope incompatível;
+- input acima do limite;
+- padrão sensível detectado.
+
+Esses casos **não iniciam Workflow**, **não entram em retry**, são **erro do
+cliente/preflight** e **não produzem `CompositionValidationWorkflowResult` de uma
+execução iniciada**. Não são `failed`, porque não há execução a classificar. Os
+códigos correspondentes estão na seção 23.
+
+#### Resultado inválido do domínio
+
+Inclui **qualquer** relatório do núcleo com `valid: false`:
+
+- `ProjectManifest` inválido;
+- Composition inválida;
+- `projectId` incompatível;
+- `locale` incompatível;
+- `format.profile` não permitido;
+- demais códigos `PROJECT_*` ou `COMPOSITION_*`.
+
+Esses casos retornam `status: invalid`, **incluem** `CompositionValidationReport`,
+possuem `failureCode: null`, **não lançam exceção**, **não entram em
+`nonRetryableErrorTypes`** e **não sofrem retry**. São um resultado normal de
+domínio, não uma falha de orquestração.
+
+#### Falha técnica
+
+- falha transitória;
+- falha inesperada;
+- timeout;
+- colisão de Workflow ID.
+
+Produzem `status: failed` com `failureCode` obrigatório. **Somente a falha
+transitória pode sofrer retry** (seção 21).
+
+### completedSteps
+
+```text
+valid:
+  ["validate-composition"]
+
+invalid:
+  ["validate-composition"]
+
+failed antes de receber o relatório:
+  []
+
+timeout:
+  []
+```
+
+O passo só é concluído quando a Activity **devolve** `CompositionValidationReport`.
+Não marcar como concluído apenas porque a Activity começou. A lista não cresce com
+warnings, erros ou tentativas de retry.
+
 O resultado deve **reutilizar ou encapsular** o `CompositionValidationReport`, sem
 reinterpretar, renomear ou remapear seus códigos (`COMPOSITION_*`, `PROJECT_*`). A
 Activity não duplica o validador: ela não reimplementa regra, não reconstrói o
-relatório e não cria um "relatório próprio" divergente. `completedSteps` é estável e
-não cresce com warnings ou erros.
+relatório e não cria um "relatório próprio" divergente.
 
 ## 17. Workflow proposto
 
@@ -487,7 +576,8 @@ Fluxo mínimo:
 1. aceitar input já pré-validado pelo cliente;
 2. chamar uma única Activity real, `validateCompositionActivity`;
 3. receber o relatório do núcleo;
-4. classificar `valid` ou `invalid`;
+4. classificar `valid` ou `invalid`; em falha técnica, classificar `failed` com
+   `failureCode`;
 5. retornar resultado estruturado.
 
 O Workflow não deve:
@@ -504,10 +594,18 @@ O Workflow não deve:
 A classificação de falhas técnicas segue o padrão neutro já usado em TEMPORAL-01:
 `ApplicationFailure` e `TimeoutFailure` são convertidos em sinal neutro, e a
 política de `nonRetryableErrorTypes` é montada a partir de uma lista explícita de
-códigos. O Workflow permanece determinístico para permitir replay.
+códigos **técnicos**. Nenhum código `PROJECT_*` ou `COMPOSITION_*` entra nessa
+lista: relatório com `valid: false` é `status: invalid`, não exceção. O Workflow
+permanece determinístico para permitir replay.
 
-`completedSteps` contém exatamente `['validate-composition']` em `valid` e `invalid`;
-em `failed`, registra os passos efetivamente concluídos, sem inventar sucesso.
+O preflight acontece **antes** do Workflow: envelope malformado,
+`schemaVersion` incompatível, payload acima do limite e padrão sensível são
+rejeitados pelo cliente sem iniciar execução. O Workflow só recebe input já
+pré-validado e nunca vê um erro de preflight como `failed`.
+
+`completedSteps` segue a regra fixa da seção 16: `["validate-composition"]` em
+`valid` e `invalid`; `[]` em `failed` antes de receber o relatório e em timeout.
+O Workflow não inventa sucesso.
 
 ## 18. Activity real proposta
 
@@ -516,7 +614,8 @@ Nome conceitual: `validateCompositionActivity`.
 Responsabilidade:
 
 - receber `ProjectManifest` e `Composition`;
-- chamar as APIs públicas existentes do núcleo;
+- chamar a função exportada pelo módulo interno, por meio do entrypoint público
+  definido no gate abaixo;
 - retornar `CompositionValidationReport`;
 - não executar CLI;
 - não chamar subprocesso;
@@ -525,15 +624,42 @@ Responsabilidade:
 - não criar output;
 - não alterar inputs.
 
-Ponto real de importação, conforme o código consultado:
+Origem real da função, conforme o código consultado:
 `platform/src/validate-composition.ts` exporta `validateComposition`, e
 `platform/src/validation-report.ts` define `CompositionValidationReport`. A Activity
 chama `validateComposition(composition, project)` — nessa ordem — e devolve o
-relatório sem transformação.
+relatório sem transformação. Isso descreve um módulo interno, **não** uma API
+pública entre pacotes.
+
+### Gate obrigatório antes da futura Activity
+
+A fronteira pública deixa de ser uma dependência informal e passa a ser um **gate
+obrigatório**, a satisfazer antes de escrever a Activity:
+
+1. definir o entrypoint público mínimo da `platform`;
+2. definir a forma de consumo compilado pelo pacote Temporal;
+3. preservar a `platform` sem dependência Temporal;
+4. impedir import relativo de arquivos internos;
+5. validar o build em checkout limpo;
+6. validar portabilidade em Ubuntu e Windows.
+
+Alternativas permitidas, **a decidir explicitamente** — nenhuma é escolhida de
+forma silenciosa por este PRD:
+
+- pacote local;
+- workspace;
+- artefato compilado.
+
+Proibido como solução:
+
+- import de `platform/src` por caminho relativo;
+- import de `dist` sem contrato de build;
+- duplicação do validador;
+- mover o validador para `orchestration/`.
 
 ### Dependência real de implementação (não resolvida por hipótese)
 
-Não existe hoje uma fronteira pública de importação entre os pacotes:
+Não existe hoje uma fronteira pública e estável de importação entre os pacotes:
 
 - `platform/package.json` não declara `exports`, `main`, `types` nem `files`, e não
   possui dependências de runtime;
@@ -545,17 +671,9 @@ Não existe hoje uma fronteira pública de importação entre os pacotes:
   diretório da `platform/` por URL relativa apenas para varrer arquivos — não é um
   import de runtime.
 
-Portanto, a futura implementação depende de **criar um export público mínimo** no
-núcleo, com as seguintes restrições:
-
-- expor somente o validador e os tipos de contrato necessários;
-- sem importar arquivos internos arbitrários da `platform/`;
-- sem adicionar Temporal, nem qualquer dependência de runtime, ao pacote `platform`;
-- sem mover validadores para `orchestration/`.
-
-A forma exata (campo `exports`, pacote de trabalho local ou build consumível) é
-decisão em aberto (seção 31, item 4). Este PRD não escolhe, não instala e não
-escreve essa configuração.
+A forma exata é decisão em aberto (seção 31, item 4). Este PRD não escolhe, não
+instala e não escreve essa configuração. O gate acima é condição de aceite da
+implementação, não autorização para executá-la.
 
 ## 19. Idempotência
 
@@ -638,30 +756,35 @@ Como a Activity é local, pura e curta, para o primeiro passo real:
 
 Justificativa:
 
-- erro de validação é determinístico e não retryable;
+- resultado de validação é determinístico e não gera retry;
 - falha técnica transitória pode repetir uma vez;
 - não existe rede nem serviço remoto;
 - três tentativas seriam pouco úteis nesta operação pura.
 
-Classificados como **não retryable**:
+### O que não é retryable — e por quê
 
-- input acima do limite;
-- `schemaVersion` incompatível;
-- `ProjectManifest` inválido;
-- `Composition` inválida;
-- incompatibilidade entre projeto e Composition;
-- padrão sensível detectado;
-- contrato malformado.
+**Rejeição antes do start (preflight).** Envelope malformado, `schemaVersion` do
+envelope incompatível, input acima do limite e padrão sensível detectado são erros
+do cliente. Não iniciam Workflow, portanto **não há tentativa a repetir** e não
+existe `nonRetryableErrorTypes` aplicável a eles.
 
-Distinção obrigatória: `ProjectManifest` inválido, `Composition` inválida e as
-incompatibilidades de vínculo são **resultado de domínio** (`status: invalid`), não
-falha da Activity. Elas nunca entram na política de retry porque nunca são lançadas
-como erro técnico. A lista acima se aplica, na prática, às rejeições da
-pré-validação do cliente e a eventuais guardas defensivas dentro da Activity.
+**Resultado inválido do domínio.** `ProjectManifest` inválido, Composition
+inválida, `projectId` incompatível, `locale` incompatível, `format.profile` não
+permitido e demais códigos `PROJECT_*` / `COMPOSITION_*` produzem `status: invalid`.
+Não são exceções, **não entram em `nonRetryableErrorTypes`** e **não sofrem retry**.
+Resultado `invalid` foi **removido de qualquer lista de erros não retryable da
+Activity**, porque não é erro.
+
+**Falha técnica não retryable.** Entram em `nonRetryableErrorTypes` apenas os
+códigos técnicos `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`,
+`TEMPORAL_COMPOSITION_TIMEOUT` e `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`.
+
+**Falha técnica retryable.** Somente
+`TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` pode sofrer retry, até
+`maximumAttempts: 2`.
 
 **Atenção:** uma Composition semanticamente inválida deve produzir
-`status: invalid`. Não deve falhar a Activity como erro técnico. Retry só ocorre
-para falha técnica inesperada ou explicitamente simulada.
+`status: invalid`. Não deve falhar a Activity como erro técnico.
 
 ## 22. Timeouts
 
@@ -678,22 +801,30 @@ adicional, nem polling, nem heartbeat, nem timeout encadeado neste incremento.
 
 Poucos códigos estáveis, todos de **orquestração**:
 
-| Código | Quando | Retry |
-| --- | --- | --- |
-| `TEMPORAL_COMPOSITION_INPUT_INVALID` | contrato malformado ou `schemaVersion` incompatível, detectado no cliente | não |
-| `TEMPORAL_COMPOSITION_INPUT_TOO_LARGE` | qualquer limite de payload excedido, detectado no cliente | não |
-| `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` | padrão sensível detectado antes do `start` | não |
-| `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` | falha técnica inesperada e repetível | sim, até `maximumAttempts` |
-| `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` | falha técnica não classificada como transitória | não |
-| `TEMPORAL_COMPOSITION_TIMEOUT` | `startToCloseTimeout` esgotado | não |
-| `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT` | colisão de Workflow ID em execução aberta ou reuso de ID concluído | não |
+| Código | Fase | Quando | Retry |
+| --- | --- | --- | --- |
+| `TEMPORAL_COMPOSITION_INPUT_INVALID` | preflight | envelope malformado ou `schemaVersion` do envelope incompatível | não — sem start |
+| `TEMPORAL_COMPOSITION_INPUT_TOO_LARGE` | preflight | qualquer limite de payload excedido | não — sem start |
+| `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` | preflight | padrão sensível detectado antes do `start` | não — sem start |
+| `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` | falha técnica | falha inesperada e repetível | **sim**, até `maximumAttempts` |
+| `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` | falha técnica | falha não classificada como transitória | não |
+| `TEMPORAL_COMPOSITION_TIMEOUT` | falha técnica | `startToCloseTimeout` esgotado | não |
+| `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT` | falha técnica | colisão de Workflow ID em execução aberta ou reuso de ID concluído | não |
+
+Os três primeiros são **erros do cliente/preflight**: não iniciam Workflow, não
+produzem `CompositionValidationWorkflowResult` de execução iniciada e não são
+lançados pela Activity. `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` permanece
+exclusivamente como erro do preflight.
 
 Não duplicar os códigos de validação do núcleo. Os `errors` e `warnings` de
 `CompositionValidationReport` permanecem com os códigos existentes (`COMPOSITION_*`,
-`PROJECT_*`), intactos e sem tradução.
+`PROJECT_*`), intactos e sem tradução. Nenhum código do núcleo aparece nesta tabela
+nem em `nonRetryableErrorTypes`.
 
-Distinção central: **falha da orquestração** (`failed` + `failureCode`) é diferente
-de **resultado inválido do domínio** (`invalid` + relatório, sem `failureCode`).
+Distinção central, em três vias: **rejeição antes do start** (erro do cliente, sem
+execução), **resultado inválido do domínio** (`invalid` + relatório, sem
+`failureCode`) e **falha da orquestração** (`failed` + `failureCode`). Somente a
+falha transitória sofre retry.
 
 ## 24. Observabilidade
 
@@ -726,18 +857,41 @@ uma execução com seu resultado.
   terá persistido os argumentos quando a Activity executar.
 - Documentos estritamente técnicos, sem dado pessoal, sem conteúdo de campanha real
   e sem asset binário.
-- Limites de payload aplicados por medição de tamanho serializado, não por
-  contagem de caracteres de campos isolados.
+- Limites de payload aplicados pelo método da seção 14, não por contagem de
+  caracteres de campos isolados.
 - Nenhuma credencial, nenhum token, nenhuma chave, nenhum cookie, nenhum arquivo
   de configuração privada, nenhum caminho absoluto e nenhuma URI de esquema de
   arquivo local.
 - Nenhum valor de fixture de segurança é reproduzido neste documento; em
   particular, nenhum valor usado nos testes de TEMPORAL-01 é copiado para cá.
 - Todas as ocorrências de termos como "token", "credencial" ou "chave" neste PRD
-  são **proibições textuais**, sem qualquer valor associado.
+  são **proibições ou exemplos lexicais**, sem qualquer valor associado.
 - Sanitização do relatório não é promessa de apagamento da history (seção 15).
 - `platform/` continua sem dependência de runtime e sem import de `@temporalio/*`.
 - Nenhuma publicação, agendamento ou criação de campanha decorre deste PRD.
+
+### Pré-validação de conteúdo sensível
+
+A pré-validação **não é um scanner universal de segredos**. É uma lista finita e
+testável de rejeições, executada antes do `start`:
+
+- rejeita **chaves conhecidas** de configuração sensível;
+- rejeita **URLs com credenciais** embutidas;
+- rejeita **caminhos absolutos**;
+- rejeita **arquivos sensíveis conhecidos** (por exemplo, configuração local de
+  ambiente);
+- aplica **heurísticas adicionais com testes de falso positivo**;
+- **nunca ecoa o valor rejeitado** — nem em mensagem de erro, nem em log, nem em
+  relatório.
+
+Texto normal de cena **não deve ser recusado apenas** por conter palavras como
+"token", "senha" ou "credencial" em contexto editorial. A heurística deve
+distinguir ocorrência lexical de dado sensível real; caso contrário, o preflight
+rejeitaria uma Composition tecnicamente válida **antes do start**, sem produzir
+qualquer `CompositionValidationWorkflowResult` de execução iniciada.
+
+`TEMPORAL_COMPOSITION_SENSITIVE_INPUT` permanece **erro do preflight**: sem start,
+sem retry e sem resultado de execução iniciada (seções 16, 21 e 23).
 
 ## 26. Testes propostos
 
@@ -746,13 +900,27 @@ Exigidos na futura implementação — não executados nesta tarefa.
 ### Contrato e cliente
 
 - input válido;
-- `schemaVersion` incompatível;
+- envelope malformado;
+- `schemaVersion` do envelope incompatível;
 - input acima do limite;
 - padrão sensível;
+- cada rejeição de preflight **não inicia Workflow**, **não produz resultado de
+  execução iniciada** e **não ecoa o valor rejeitado**;
 - Workflow ID previsível;
 - mesma entrada produz mesmas opções de start;
 - colisão em execução aberta;
 - reuso após conclusão recusado.
+
+### Medição dos limites
+
+- `project`, `composition` e envelope medidos separadamente;
+- valores não serializáveis rejeitados;
+- ciclos rejeitados;
+- `BigInt` rejeitado;
+- medição dos exemplos reais registrada antes da implementação;
+- heurística de conteúdo sensível não rejeita texto normal de cena que contenha
+  termos como "token", "senha" ou "credencial" em contexto editorial (teste de
+  falso positivo).
 
 ### Activity
 
@@ -772,11 +940,17 @@ Exigidos na futura implementação — não executados nesta tarefa.
 - `status: valid`;
 - `status: invalid`;
 - `status: failed`;
-- `invalid` não sofre retry;
-- falha transitória respeita `maximumAttempts`;
-- timeout classificado;
+- todo relatório com `valid: false` (projeto inválido, Composition inválida,
+  `projectId`, `locale`, `format.profile` e demais códigos do núcleo) produz
+  `invalid`, inclui `CompositionValidationReport`, mantém `failureCode: null`,
+  **não lança exceção**, **não entra em `nonRetryableErrorTypes`** e **não sofre
+  retry**;
+- somente falha transitória sofre retry e respeita `maximumAttempts`;
+- falha inesperada, timeout e colisão de Workflow ID classificadas sem retry;
+- `completedSteps` = `["validate-composition"]` em `valid` e `invalid`; `[]` em
+  `failed` antes de receber o relatório e em timeout;
+- o passo não é marcado como concluído apenas porque a Activity começou;
 - resultado preserva os códigos do núcleo;
-- `completedSteps` estável;
 - replay sem nondeterminismo.
 
 ### Fronteira
@@ -798,18 +972,21 @@ Exigidos na futura implementação — não executados nesta tarefa.
 
 ### Paridade com o núcleo
 
-Para cada caso de validação, comparar o retorno da Activity com a chamada direta a
-`validateComposition(composition, project)`: mesmos `valid`, `errors`, `warnings`,
-`summary` e campos derivados. Este é o teste que impede a duplicação silenciosa de
-regras.
+Para **cada caso do corpus definido para TEMPORAL-02**, comparar o retorno da
+Activity com a chamada direta a `validateComposition(composition, project)`:
+mesmos `valid`, `errors`, `warnings`, `summary` e campos derivados. O corpus é o
+conjunto de casos de teste versionado neste incremento; não há promessa de
+exaustividade universal. Este é o teste que impede a duplicação silenciosa de
+regras e protege contra a inversão da ordem dos argumentos.
 
 ## 27. Métricas de sucesso
 
 Métricas técnicas observáveis, sem métrica comercial e sem SLA de produção
 inventado:
 
-- 100% dos casos de validação retornam o mesmo `valid`, erros e warnings que a
-  chamada direta ao núcleo;
+- **todos os casos do corpus definido para TEMPORAL-02** retornam o mesmo `valid`,
+  `errors`, `warnings`, `summary` e campos derivados que a chamada direta ao núcleo;
+  o corpus é versionado e não representa promessa de cobertura universal;
 - zero divergência de códigos entre Activity e núcleo;
 - zero mutação dos inputs;
 - zero acesso externo;
@@ -840,8 +1017,8 @@ Activity.
 
 ### Retry de resultado inválido
 
-Mitigação: `invalid` como resultado normal de domínio; apenas falha técnica é
-retryable.
+Mitigação: `invalid` como resultado normal de domínio; apenas falha técnica
+transitória é retryable.
 
 ### Aumento excessivo da history
 
@@ -869,19 +1046,21 @@ Existências permitidas, já na `main`:
 - SDK Temporal TypeScript já integrado (`@temporalio/client`, `@temporalio/common`,
   `@temporalio/worker`, `@temporalio/workflow` e `@temporalio/testing` em versão
   exata `1.25.0`);
-- APIs públicas de validação da `platform/`: `validateComposition` e o tipo
-  `CompositionValidationReport`;
+- a função exportada pelo módulo interno `platform/src/validate-composition.ts`
+  (`validateComposition`) e o tipo `CompositionValidationReport`, ambos **ainda sem
+  fronteira pública e estável entre os pacotes**;
 - `ProjectManifest` e `Composition` v1;
 - exemplos técnicos integrados dos dois contratos, usados como primeiro consumidor.
 
 Não adicionar no planejamento: banco, Redis, armazenamento remoto, SDK de IA, Qwen,
 Higgsfield, renderer, FFmpeg, serviço de mídia, fila adicional ou API HTTP.
 
-**Dificuldade real de importação:** não há fronteira pública entre os pacotes
-(sem `exports`/`main`/`types` na `platform`, sem workspaces na raiz, sem project
-references ou aliases no `tsconfig` do Temporal). Isso está registrado como
-dependência de implementação na seção 18 e como decisão em aberto na seção 31. Não
-é resolvido por hipótese nem por caminho relativo disfarçado.
+**Dificuldade real de importação:** não há fronteira pública e estável entre os
+pacotes (sem `exports`/`main`/`types` na `platform`, sem workspaces na raiz, sem
+project references ou aliases no `tsconfig` do Temporal). Isso está registrado como
+**gate obrigatório** na seção 18 e como decisão em aberto na seção 31. Não é
+resolvido por hipótese, por import relativo de `platform/src` nem por caminho
+relativo disfarçado.
 
 ## 30. Roadmap do PRD
 
@@ -889,16 +1068,17 @@ Cinco etapas futuras, sem estimativa de data:
 
 | # | Etapa | Esforço | Depende de |
 | --- | --- | --- | --- |
-| 1 | Fronteira pública do núcleo: export mínimo de `validateComposition` e dos tipos de contrato | pequeno | decisão em aberto 4; autorização de implementação |
+| 1 | **Gate obrigatório de fronteira pública** (seção 18): entrypoint mínimo, consumo compilado, build em checkout limpo e portabilidade | pequeno | decisão em aberto 4; autorização de implementação |
 | 2 | Contrato de entrada e pré-validação no cliente (tamanho, `schemaVersion`, padrões proibidos) | pequeno | etapa 1; decisões 1, 2 e 3 |
 | 3 | Activity real, chamando o núcleo sem CLI nem subprocesso | pequeno | etapas 1 e 2 |
 | 4 | Workflow e cliente (Workflow ID, políticas de reuse/conflict, resultado estruturado) | médio | etapa 3; decisões 5, 6 e 7 |
-| 5 | Testes, replay, CI e gate independente | médio | etapa 4; decisões 8 e 9 |
+| 5 | Testes, replay, CI e **gate Elephant–Goldfish obrigatório** antes da integração na main | médio | etapa 4; decisões 8 e 9 |
 
 Esforço classificado qualitativamente; nenhuma etapa é classificada como grande
 porque o incremento tem um único passo real. A etapa 5 é a mais sensível, pois
-envolve replay e portabilidade em dois sistemas operacionais. Nenhuma etapa está
-autorada, iniciada ou agendada por este documento.
+envolve replay, portabilidade em dois sistemas operacionais e o gate independente
+da seção 31. Nenhuma etapa está autorizada, iniciada ou agendada por este
+documento.
 
 ## 31. Decisões em aberto
 
@@ -907,14 +1087,32 @@ autorada, iniciada ou agendada por este documento.
 | 1 | Documentos completos ou referências | Documentos completos (Opção A), com limites; referências ficam para incremento posterior |
 | 2 | Limites finais de payload | Manter 64 KiB / 256 KiB / 384 KiB e confirmar por medição dos exemplos técnicos antes da implementação |
 | 3 | Canonicalização e `contentHash` | Não incluir `contentHash` em TEMPORAL-02; usar `requestId` único e comparação estrutural nos testes; reservar canonicalização formal para depois |
-| 4 | Export público da `platform/` | Criar export mínimo e documentado, sem importar internos arbitrários, sem Temporal no núcleo e sem mover validadores; forma exata a decidir com autorização |
-| 5 | Política definitiva de retry | `maximumAttempts: 2`, com lista explícita de códigos não retryable; `invalid` nunca é falha |
+| 4 | Export público da `platform/` | Satisfazer o **gate obrigatório da seção 18** antes da Activity; escolher explicitamente entre pacote local, workspace ou artefato compilado; proibir import relativo de `platform/src`, import de `dist` sem contrato de build, duplicação do validador e mudança do validador para `orchestration/` |
+| 5 | Política definitiva de retry | `maximumAttempts: 2`, com lista explícita apenas de códigos **técnicos** não retryable; `invalid` nunca é falha nem entra nessa lista |
 | 6 | Formato do resultado | Encapsular `CompositionValidationReport` sem remapear códigos; `failureCode` somente em `failed` |
 | 7 | Estratégia de logs | Apenas os 11 campos permitidos da seção 24; sem stack externa |
-| 8 | Necessidade de novo gate Elephant–Goldfish | Avaliar gate independente antes da implementação; não simular aprovação; TEMPORAL-01 já registra o gate entre os incrementos |
+| 8 | Necessidade de novo gate Elephant–Goldfish | **Executar gate Elephant–Goldfish após a implementação de TEMPORAL-02 e antes de sua integração na main.** Gate obrigatório, não opcional; não simular aprovação |
 | 9 | Atualização posterior de `docs/contexto/` | Somente após PRD aprovado e integrado; `ESTADO-ATUAL.md` e `PROXIMOS-PASSOS.md` não são alterados agora |
 
 Nenhuma escolha crítica fica escondida para a implementação decidir sozinha.
+
+### Escopo do gate Elephant–Goldfish
+
+O gate independente deve revisar:
+
+- fronteira pública;
+- ordem dos argumentos;
+- paridade;
+- history;
+- payload;
+- `invalid` versus `failed`;
+- retries;
+- replay;
+- isolamento do núcleo;
+- ausência de mídia e fornecedores.
+
+**Este gate não é executado nesta tarefa.** A recomendação acima é de
+planejamento; não há implementação, execução nem aprovação simulada.
 
 ## 32. Critérios de aceite
 
@@ -929,8 +1127,20 @@ O PRD é considerado completo quando:
 - não há autorização automática de implementação;
 - a history é tratada explicitamente, com a distinção entre sanitização, history,
   logs e inputs da Activity;
-- `invalid` está claramente diferenciado de `failed`;
-- a Activity chama o núcleo real, pela ordem correta de argumentos;
+- as três vias estão separadas e sem sobreposição: **rejeição antes do start**,
+  **resultado `invalid` do domínio** e **falha técnica `failed`**;
+- nenhum caso de `invalid` aparece em lista de erros não retryable da Activity;
+- somente falha transitória está marcada como retryable;
+- `completedSteps` está definido para `valid`, `invalid`, `failed` sem relatório e
+  timeout, com a regra de conclusão vinculada ao retorno do relatório;
+- o método de medição dos limites e as rejeições de serialização estão definidos;
+- a Activity chama a função do módulo interno do núcleo pela ordem correta de
+  argumentos, com teste obrigatório de paridade sobre o corpus definido;
+- a terminologia não afirma que já existe API pública entre pacotes;
+- o **gate obrigatório de fronteira pública** está registrado antes da Activity,
+  com alternativas a decidir e soluções proibidas;
+- o **gate Elephant–Goldfish** está recomendado após a implementação e antes da
+  integração na main, sem execução nesta tarefa;
 - `platform/` não conhece Temporal;
 - a dificuldade real de importação entre pacotes está registrada, sem solução
   hipotética;
