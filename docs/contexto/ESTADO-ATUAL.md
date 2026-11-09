@@ -2,12 +2,21 @@
 
 ## Referência
 
-- Data da atualização: 2026-11-08
+- Data da atualização: 2026-11-09
 - Branch de referência: main
-- Commit da main: [fbd222d996527f6cf226051a8526f932accd7e5e](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/fbd222d996527f6cf226051a8526f932accd7e5e) — merge da PR #7, integrado em 08/11/2026
+- Commit da main: [33b46ce54649fc60340c2e85b15d0b39ad112cff](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/33b46ce54649fc60340c2e85b15d0b39ad112cff) — integração documental do PRD de TEMPORAL-02, integrado em 08/11/2026
 - Fonte: Git, documentação integrada e GitHub Actions
 
-`fbd222d` é a referência corrente da main e contém TEMPORAL-01, a correção final de whitespace e os documentos de `docs/contexto/`, integrados pela PR #7: o primeiro pai `07e38f47df50fd6d8b264bc999fe4082be4b2bb6` traz o piloto e o whitespace, e o segundo pai `f94eff28aef956533039d707db1a22b23c9d8981` traz o contexto. O merge não é o commit técnico de fechamento de TEMPORAL-01, que permanece `07e38f47df50fd6d8b264bc999fe4082be4b2bb6`.
+`33b46ce` é a referência corrente da main e contém o PRD de TEMPORAL-02. O intervalo `3304e82..33b46ce` adiciona **somente** `docs/planejamento/TEMPORAL-02-validacao-de-composition.md`: é integração documental, não implementação de TEMPORAL-02.
+
+Os marcos permanecem distintos e não se substituem:
+
+- commit técnico final de TEMPORAL-01: `07e38f47df50fd6d8b264bc999fe4082be4b2bb6`;
+- merge da estrutura `docs/contexto/` pela PR #7: `fbd222d996527f6cf226051a8526f932accd7e5e`;
+- correção pós-merge do contexto: `3304e82aedf5db59d6507ece6ca20b4df46ac973`;
+- integração documental do PRD de TEMPORAL-02: `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
+
+`33b46ce` **não** é implementação de TEMPORAL-02. Nenhum Workflow, Activity, código, dependência ou alteração em `platform/` e `orchestration/temporal/` entrou na main por esse commit.
 
 O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Esta correção é documental: não altera código, `platform/`, `orchestration/temporal/`, campanhas nem CI.
 
@@ -108,14 +117,62 @@ O §15 do planejamento do TEMPORAL-01 preserva a redação histórica "Não é i
 
 ## TEMPORAL-02
 
-- Status: **não iniciado**.
-- Autorização técnica: possível — o piloto está integrado e aprovado.
-- Autorização do titular: ainda necessária; nada aqui a presume.
-- Objetivo futuro: orquestrar um único passo real do núcleo.
-- Restrição: não iniciar múltiplas integrações.
-- Sem Qwen, sem Higgsfield, sem mídia, sem prévia, sem exportação e sem combinar OutputPlan e BeatPlan.
+- **PRD de TEMPORAL-02 integrado; implementação não iniciada.**
+- Arquivo: [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md), integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
+- Status do documento: **PRD em revisão**.
+- Aprovação do PRD: **não concedida**.
+- Implementação: **não iniciada**.
+- Autorização de implementação: **não concedida**.
+- Código: **nenhum**. Dependências: **nenhuma nova**. Temporal executado: **nenhum**. Deploy: **nenhum**.
+- `platform/` e `orchestration/temporal/` não foram alterados por essa integração.
 
-O PRD de TEMPORAL-02 não foi escrito nesta tarefa e a Activity real ainda não foi escolhida.
+Integrar o PRD **não** é aprová-lo, e aprovar o PRD **não** é autorizar a implementação: são decisões separadas e explícitas do titular.
+
+### Passo real planejado
+
+- Operação: `validate-composition` — **um único** passo.
+- Objetivo: validar uma Composition v1 contra um ProjectManifest válido.
+- Função existente do núcleo: `validateComposition(composition, project)` — exportada por módulo interno, **ainda sem fronteira pública estável** entre os pacotes `platform` e `orchestration/temporal`. A ordem é Composition primeiro, ProjectManifest depois.
+- Componentes **conceituais**, não implementados: Workflow `validateCompositionWorkflow`, Activity `validateCompositionActivity`, resultado `CompositionValidationWorkflowResult` e relatório do núcleo `CompositionValidationReport`.
+- Nenhum desses componentes existe em código na main.
+
+### Quatro vias planejadas
+
+- **A. Rejeição no preflight** — antes do start; sem Workflow; sem resultado de execução.
+- **B. Conflito no start** — `workflowId` já existente; sem nova execução; classificado pelo cliente; sem `CompositionValidationWorkflowResult`.
+- **C. Resultado do domínio** — `valid` ou `invalid`; relatório presente; `failureCode` nulo; `completedSteps` com `validate-composition`.
+- **D. Falha da execução** — `failed`; relatório ausente; `failureCode` obrigatório; `completedSteps` vazio enquanto nenhum relatório for recebido.
+
+A fonte canônica das quatro vias, dos códigos e dos contratos é o [PRD](../planejamento/TEMPORAL-02-validacao-de-composition.md); este resumo não o substitui.
+
+### Retries e timeouts planejados
+
+Política definida no PRD, **ainda não implementada**:
+
+- `startToCloseTimeout`: cinco segundos;
+- `maximumAttempts`: duas tentativas;
+- falha transitória pode gerar a segunda tentativa;
+- `StartToCloseTimeout` pode gerar a segunda tentativa;
+- falha inesperada planejada como não retryable;
+- `invalid` não sofre retry;
+- preflight não entra na Retry Policy;
+- conflito de start não entra na Retry Policy da Activity;
+- timeout persistente termina como `failed`;
+- `nonRetryableErrorTypes` não controla `TimeoutFailure`.
+
+Nada disso foi executado: não há Activity, Worker nem execução de Temporal para TEMPORAL-02.
+
+### Gates obrigatórios, nenhum executado
+
+- **Gate de fronteira pública** — obrigatório **antes** de criar a Activity: entrypoint público mínimo da `platform`; consumo compilado pelo pacote Temporal; proibição de import relativo de `platform/src`; proibição de import de `dist` sem contrato de build; proibição de duplicar o validador; proibição de mover o validador para `orchestration/`; build em checkout limpo; portabilidade em Ubuntu e Windows. A estratégia — pacote local, workspace ou artefato compilado — continua **em aberto**.
+- **Gate Elephant–Goldfish** — obrigatório **após** a futura implementação e **antes** da integração de TEMPORAL-02 na main. Revisões mínimas: fronteira pública, ordem dos argumentos, paridade, history, payload, quatro vias, `invalid` versus `failed`, retries, replay, isolamento do núcleo e ausência de mídia e fornecedores.
+
+O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPORAL-01** e não cobre TEMPORAL-02. Nenhum dos dois gates de TEMPORAL-02 foi executado.
+
+### Limites preservados
+
+- Sem Qwen, sem Higgsfield, sem mídia, sem prévia, sem exportação e sem combinar OutputPlan e BeatPlan.
+- TEMPORAL-02 **não antecipa TEMPORAL-04**, que continua reservado.
 
 ## TEMPORAL-04
 
@@ -127,8 +184,8 @@ O PRD de TEMPORAL-02 não foi escrito nesta tarefa e a Activity real ainda não 
 
 | Trabalho | Branch | Checkpoint | Evidência consultada | Classificação |
 | --- | --- | --- | --- | --- |
-| R001 | `codex/catalogo-formatos-sociais` | `55aeecccfa38da06dfada875e75d81b265626abc` | `git branch -r --contains` aponta só a branch; `merge-base --is-ancestor` contra `origin/main` com saída 1 | **branch-only**, estágio R001-05 concluído em 07/11/2026 |
-| BeatPlan | `codex/core-beat-plan-v1` | `bade62e3a720a853e6f3d18b52aa46bf544979a4` | mesmas checagens, saída 1; run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) de `Validar contratos da platform` nesse HEAD: completed/success | **branch-only**, CI verde no HEAD medido |
+| R001 | `codex/catalogo-formatos-sociais` | `55aeecccfa38da06dfada875e75d81b265626abc` | `git branch -r --contains` aponta só a branch; `merge-base --is-ancestor` contra `origin/main` com saída 1, reconferido em 09/11/2026 | **branch-only**, estágio R001-05 concluído em 07/11/2026 |
+| BeatPlan | `codex/core-beat-plan-v1` | `bade62e3a720a853e6f3d18b52aa46bf544979a4` | mesmas checagens, saída 1 em 09/11/2026; run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) de `Validar contratos da platform` nesse HEAD: completed/success | **branch-only**, CI verde no HEAD medido |
 
 O checkpoint informado do R001 é um commit documental posterior ao checkpoint de código da etapa R001-05. Nenhum dos dois HEADs está na main e nenhum foi substituído por trabalho equivalente: a main tem os contratos de projeto e composição, não o catálogo de perfis nem o BeatPlan. A branch de BeatPlan não foi homologada nesta atualização de contexto; o que foi consultado é o CI do HEAD medido.
 
@@ -160,18 +217,36 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 ## Próximo passo
 
-> Elaborar o PRD de TEMPORAL-02 para orquestrar um único passo real do núcleo, sem mídia e sem antecipar TEMPORAL-04.
+> Revisar e decidir sobre a aprovação do PRD de TEMPORAL-02.
+
+O PRD está integrado à main; a decisão de aprová-lo é a próxima etapa e ainda não foi tomada.
+
+- integração do PRD **não** equivale à aprovação;
+- aprovação do PRD **não** equivale à autorização de implementação;
+- a implementação depende de nova decisão explícita do titular.
+
+Critérios da decisão:
+
+1. aceitar ou rejeitar o passo `validate-composition`;
+2. aceitar ou ajustar os limites 64/256/384 KiB;
+3. escolher a estratégia da fronteira pública;
+4. aceitar ou ajustar duas tentativas;
+5. confirmar o gate Elephant–Goldfish obrigatório;
+6. manter TEMPORAL-04 fora;
+7. manter R001, OutputPlan e BeatPlan fora.
 
 Pré-condições:
 
 - TEMPORAL-01 integrado — **cumprido**, com evidência na seção acima;
 - contexto atualizado e integrado à main pela PR #7 — **cumprido**;
-- escolha explícita do passo real — **pendente**;
-- contrato de entrada e saída pequeno — **pendente**;
+- PRD de TEMPORAL-02 integrado à main — **cumprido** em `33b46ce`;
+- escolha explícita do passo real — **cumprida no PRD** (`validate-composition`), sujeita a aprovação;
+- contrato de entrada e saída pequeno — **documentado no PRD**, sujeito a aprovação;
 - nenhuma dependência de fornecedor — **requisito**;
+- aprovação do PRD — **pendente**;
 - autorização do titular — **pendente**.
 
-O cumprimento das duas primeiras pré-condições não concede autorização automática para TEMPORAL-02: a autorização do titular continua necessária.
+Nenhuma dessas condições concede autorização automática para implementar TEMPORAL-02: a autorização do titular continua necessária e separada da aprovação do PRD.
 
 Tarefas secundárias permitidas:
 
@@ -182,6 +257,8 @@ Tarefas secundárias permitidas:
 ## O que não fazer agora
 
 - não implementar TEMPORAL-02 nesta tarefa;
+- não aprovar o PRD de TEMPORAL-02 nesta tarefa;
+- não autorizar a implementação de TEMPORAL-02 nesta tarefa;
 - não iniciar TEMPORAL-04;
 - não integrar OutputPlan e BeatPlan;
 - não gerar prévia;
@@ -196,3 +273,5 @@ Tarefas secundárias permitidas:
 ## O que esta atualização não verificou
 
 Estado remoto de publicações e rascunhos no Postiz, execução de ComfyUI, implantação das integrações no servidor e novas jornadas do Salao02 não foram consultados nem executados. As CLIs e os testes do pacote temporal não foram reexecutados nesta tarefa: a contagem de 120 vem da documentação integrada na main e dos logs do run 42494941537, que é o portão automático do pacote. Consultar esses pontos quando fizerem parte da tarefa solicitada.
+
+Esta atualização é documental. Nenhum teste de código, execução de Temporal, execução da `platform` ou geração de mídia foi executado, e nenhum gate de TEMPORAL-02 foi rodado.
