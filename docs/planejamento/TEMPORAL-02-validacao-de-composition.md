@@ -315,7 +315,8 @@ adicional, API HTTP e stack de observabilidade externa.
       |  valida tamanho, schemaVersion e padrões proibidos ANTES do start
       |
       +-- rejeição pré-start ---> erro do cliente (sem start, sem resultado
-      |                           de execução iniciada, sem retry)
+      |                           de execução iniciada, fora da Retry Policy
+      |                           da Activity)
       v
   CompositionValidationWorkflowInput  --->  [ history do Temporal ]
       |
@@ -491,12 +492,12 @@ Nome conceitual: `CompositionValidationWorkflowResult`.
 - validação executada;
 - relatório do núcleo com `valid: false`;
 - **não é falha técnica**;
-- **não deve ser retryable**;
+- **está fora da Retry Policy da Activity**; não sofre retry;
 - `failureCode` nulo.
 
 ### `failed`
 
-- falha técnica da Activity ou do Workflow;
+- falha técnica da Activity, do Workflow ou da fronteira de start;
 - relatório do núcleo pode estar ausente;
 - `failureCode` obrigatório.
 
@@ -511,10 +512,11 @@ Casos:
 - input acima do limite;
 - padrão sensível detectado.
 
-Esses casos **não iniciam Workflow**, **não entram em retry**, são **erro do
-cliente/preflight** e **não produzem `CompositionValidationWorkflowResult` de uma
-execução iniciada**. Não são `failed`, porque não há execução a classificar. Os
-códigos correspondentes estão na seção 23.
+Esses casos **não iniciam Workflow**, **estão fora da Retry Policy da Activity**,
+são **erro do cliente/preflight** e **não produzem
+`CompositionValidationWorkflowResult` de uma execução iniciada**. Não são
+`failed`, porque não há execução a classificar. Os códigos correspondentes estão
+na seção 23.
 
 #### Resultado inválido do domínio
 
@@ -529,18 +531,24 @@ Inclui **qualquer** relatório do núcleo com `valid: false`:
 
 Esses casos retornam `status: invalid`, **incluem** `CompositionValidationReport`,
 possuem `failureCode: null`, **não lançam exceção**, **não entram em
-`nonRetryableErrorTypes`** e **não sofrem retry**. São um resultado normal de
-domínio, não uma falha de orquestração.
+`nonRetryableErrorTypes`**, **não sofrem retry** e **estão fora da Retry Policy da
+Activity**. São um resultado normal de domínio, não uma falha de orquestração.
 
 #### Falha técnica
 
-- falha transitória;
-- falha inesperada;
-- timeout;
-- colisão de Workflow ID.
+Produzem `status: failed` com `failureCode` obrigatório. A Retry Policy da
+Activity (seção 21) separa esses casos em três tratamentos:
 
-Produzem `status: failed` com `failureCode` obrigatório. **Somente a falha
-transitória pode sofrer retry** (seção 21).
+- **retryable até `maximumAttempts: 2`**:
+  `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e `StartToCloseTimeout`
+  (representado no resultado por `TEMPORAL_COMPOSITION_TIMEOUT` quando as
+  tentativas se esgotam);
+- **não retryable**: `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, quando lançado como
+  `ApplicationFailure` com `nonRetryable: true`;
+- **fora da Retry Policy da Activity**: colisão de Workflow ID
+  (`TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`), tratada na fronteira de start.
+
+Somente as duas condições retryable sofrem retry.
 
 ### completedSteps
 
@@ -592,11 +600,15 @@ O Workflow não deve:
 - chamar uma segunda capacidade real.
 
 A classificação de falhas técnicas segue o padrão neutro já usado em TEMPORAL-01:
-`ApplicationFailure` e `TimeoutFailure` são convertidos em sinal neutro, e a
-política de `nonRetryableErrorTypes` é montada a partir de uma lista explícita de
-códigos **técnicos**. Nenhum código `PROJECT_*` ou `COMPOSITION_*` entra nessa
-lista: relatório com `valid: false` é `status: invalid`, não exceção. O Workflow
-permanece determinístico para permitir replay.
+`ApplicationFailure` e `TimeoutFailure` são convertidos em sinal neutro.
+`nonRetryableErrorTypes` contém **apenas**
+`TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, lançado como `ApplicationFailure` com
+`nonRetryable: true`. `StartToCloseTimeout` / `TimeoutFailure` **não** entra nessa
+lista e é retryable até `maximumAttempts: 2`; ao esgotar as tentativas, produz
+`failed` com `TEMPORAL_COMPOSITION_TIMEOUT`. A colisão de Workflow ID é tratada
+na fronteira de start e não é erro da Activity. Nenhum código `PROJECT_*` ou
+`COMPOSITION_*` entra nessa lista: relatório com `valid: false` é `status: invalid`,
+não exceção. O Workflow permanece determinístico para permitir replay.
 
 O preflight acontece **antes** do Workflow: envelope malformado,
 `schemaVersion` incompatível, payload acima do limite e padrão sensível são
@@ -736,12 +748,14 @@ Preservar, sem alteração:
 
 - `WorkflowIdReusePolicy.REJECT_DUPLICATE`;
 - `WorkflowIdConflictPolicy.FAIL`;
-- colisão explícita, transformada em código de falha;
+- colisão explícita, transformada em código de falha e **fora da Retry Policy da
+  Activity**;
 - nenhum timestamp;
 - nenhuma aleatoriedade.
 
 Não reutilizar silenciosamente Workflow ID concluído. Colisão em execução aberta é
-um resultado esperado e testado, não um erro a esconder.
+um resultado esperado e testado, não um erro a esconder e não é candidata a retry
+de Activity.
 
 ## 21. Retries
 
@@ -754,34 +768,63 @@ Como a Activity é local, pura e curta, para o primeiro passo real:
 | `backoffCoefficient` | 2 |
 | `maximumInterval` | 2 segundos |
 
+`maximumAttempts: 2` significa **uma repetição** após a primeira tentativa.
+
 Justificativa:
 
 - resultado de validação é determinístico e não gera retry;
-- falha técnica transitória pode repetir uma vez;
+- falha técnica transitória e `StartToCloseTimeout` podem repetir uma vez;
 - não existe rede nem serviço remoto;
 - três tentativas seriam pouco úteis nesta operação pura.
 
-### O que não é retryable — e por quê
+### Classificação da Retry Policy da Activity
+
+**Retryable até o limite de duas tentativas (`maximumAttempts: 2`):**
+
+- `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE`;
+- `StartToCloseTimeout` — `TimeoutFailure` representado no resultado por
+  `TEMPORAL_COMPOSITION_TIMEOUT` quando as tentativas se esgotam.
+
+**Não retryable:**
+
+- `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, quando lançado como
+  `ApplicationFailure` com `nonRetryable: true`. É o único código em
+  `nonRetryableErrorTypes`.
+
+**Fora da Retry Policy da Activity:**
+
+- erros de preflight;
+- `invalid` do domínio;
+- colisão de Workflow ID (`TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`).
+
+### Por que cada caso fica onde fica
 
 **Rejeição antes do start (preflight).** Envelope malformado, `schemaVersion` do
 envelope incompatível, input acima do limite e padrão sensível detectado são erros
-do cliente. Não iniciam Workflow, portanto **não há tentativa a repetir** e não
-existe `nonRetryableErrorTypes` aplicável a eles.
+do cliente. Não iniciam Workflow, portanto **não há tentativa a repetir**; ficam
+**fora da Retry Policy da Activity** e não existe `nonRetryableErrorTypes`
+aplicável a eles.
 
 **Resultado inválido do domínio.** `ProjectManifest` inválido, Composition
 inválida, `projectId` incompatível, `locale` incompatível, `format.profile` não
 permitido e demais códigos `PROJECT_*` / `COMPOSITION_*` produzem `status: invalid`.
-Não são exceções, **não entram em `nonRetryableErrorTypes`** e **não sofrem retry**.
-Resultado `invalid` foi **removido de qualquer lista de erros não retryable da
-Activity**, porque não é erro.
+Não são exceções, **não entram em `nonRetryableErrorTypes`**, **não sofrem retry**
+e ficam **fora da Retry Policy da Activity**. Resultado `invalid` foi **removido
+de qualquer lista de erros não retryable da Activity**, porque não é erro.
 
-**Falha técnica não retryable.** Entram em `nonRetryableErrorTypes` apenas os
-códigos técnicos `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`,
-`TEMPORAL_COMPOSITION_TIMEOUT` e `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`.
+**Falha técnica não retryable.** Somente
+`TEMPORAL_COMPOSITION_ACTIVITY_FAILED` entra em `nonRetryableErrorTypes`, e apenas
+quando lançado como `ApplicationFailure` com `nonRetryable: true`.
 
-**Falha técnica retryable.** Somente
-`TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` pode sofrer retry, até
-`maximumAttempts: 2`.
+**Falha técnica retryable.** `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e
+`StartToCloseTimeout` sofrem retry até `maximumAttempts: 2`. Timeout não entra em
+`nonRetryableErrorTypes`; ao esgotar as tentativas, a execução é classificada como
+`failed` com `TEMPORAL_COMPOSITION_TIMEOUT`.
+
+**Colisão de Workflow ID.** Ocorre na fronteira de start, antes de qualquer
+execução de Activity. É classificada como `failed` com
+`TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`, mas **não é erro da Activity**, não
+entra em `nonRetryableErrorTypes` e fica **fora da Retry Policy da Activity**.
 
 **Atenção:** uma Composition semanticamente inválida deve produzir
 `status: invalid`. Não deve falhar a Activity como erro técnico.
@@ -793,9 +836,12 @@ códigos técnicos `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`,
 | `startToCloseTimeout` da Activity | 5 segundos |
 
 A operação é uma chamada de função pura sobre documentos já em memória; 5 segundos
-é folga ampla e preserva o padrão de TEMPORAL-01. Timeout é classificado como
-`failed` com `TEMPORAL_COMPOSITION_TIMEOUT`. Não há `scheduleToCloseTimeout`
-adicional, nem polling, nem heartbeat, nem timeout encadeado neste incremento.
+é folga ampla e preserva o padrão de TEMPORAL-01. `StartToCloseTimeout` é
+**retryable até `maximumAttempts: 2`** (seção 21); somente ao esgotar as
+tentativas a execução é classificada como `failed` com
+`TEMPORAL_COMPOSITION_TIMEOUT` e `completedSteps: []`. Não há
+`scheduleToCloseTimeout` adicional, nem polling, nem heartbeat, nem timeout
+encadeado neste incremento.
 
 ## 23. Códigos de falha
 
@@ -803,18 +849,20 @@ Poucos códigos estáveis, todos de **orquestração**:
 
 | Código | Fase | Quando | Retry |
 | --- | --- | --- | --- |
-| `TEMPORAL_COMPOSITION_INPUT_INVALID` | preflight | envelope malformado ou `schemaVersion` do envelope incompatível | não — sem start |
-| `TEMPORAL_COMPOSITION_INPUT_TOO_LARGE` | preflight | qualquer limite de payload excedido | não — sem start |
-| `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` | preflight | padrão sensível detectado antes do `start` | não — sem start |
-| `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` | falha técnica | falha inesperada e repetível | **sim**, até `maximumAttempts` |
-| `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` | falha técnica | falha não classificada como transitória | não |
-| `TEMPORAL_COMPOSITION_TIMEOUT` | falha técnica | `startToCloseTimeout` esgotado | não |
-| `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT` | falha técnica | colisão de Workflow ID em execução aberta ou reuso de ID concluído | não |
+| `TEMPORAL_COMPOSITION_INPUT_INVALID` | preflight | envelope malformado ou `schemaVersion` do envelope incompatível | fora da Retry Policy — sem start |
+| `TEMPORAL_COMPOSITION_INPUT_TOO_LARGE` | preflight | qualquer limite de payload excedido | fora da Retry Policy — sem start |
+| `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` | preflight | padrão sensível detectado antes do `start` | fora da Retry Policy — sem start |
+| `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` | falha técnica | falha inesperada e repetível | **sim**, até `maximumAttempts: 2` |
+| `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` | falha técnica | falha não classificada como transitória, lançada como `ApplicationFailure` com `nonRetryable: true` | não — único código em `nonRetryableErrorTypes` |
+| `TEMPORAL_COMPOSITION_TIMEOUT` | falha técnica | `StartToCloseTimeout` esgotado em cada tentativa | **sim**, até `maximumAttempts: 2`; `failed` ao esgotar |
+| `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT` | fronteira de start | colisão de Workflow ID em execução aberta ou reuso de ID concluído | fora da Retry Policy da Activity — não é erro da Activity |
 
 Os três primeiros são **erros do cliente/preflight**: não iniciam Workflow, não
-produzem `CompositionValidationWorkflowResult` de execução iniciada e não são
-lançados pela Activity. `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` permanece
-exclusivamente como erro do preflight.
+produzem `CompositionValidationWorkflowResult` de execução iniciada, não são
+lançados pela Activity e ficam **fora da Retry Policy da Activity**.
+`TEMPORAL_COMPOSITION_SENSITIVE_INPUT` permanece exclusivamente como erro do
+preflight. A colisão de Workflow ID também fica fora da Retry Policy da Activity,
+porque é resolvida na fronteira de start.
 
 Não duplicar os códigos de validação do núcleo. Os `errors` e `warnings` de
 `CompositionValidationReport` permanecem com os códigos existentes (`COMPOSITION_*`,
@@ -823,8 +871,10 @@ nem em `nonRetryableErrorTypes`.
 
 Distinção central, em três vias: **rejeição antes do start** (erro do cliente, sem
 execução), **resultado inválido do domínio** (`invalid` + relatório, sem
-`failureCode`) e **falha da orquestração** (`failed` + `failureCode`). Somente a
-falha transitória sofre retry.
+`failureCode`) e **falha da orquestração** (`failed` + `failureCode`). Sofrem retry
+apenas `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e `StartToCloseTimeout`;
+erros de preflight, `invalid` do domínio e colisão de Workflow ID ficam fora da
+Retry Policy da Activity.
 
 ## 24. Observabilidade
 
@@ -891,7 +941,8 @@ rejeitaria uma Composition tecnicamente válida **antes do start**, sem produzir
 qualquer `CompositionValidationWorkflowResult` de execução iniciada.
 
 `TEMPORAL_COMPOSITION_SENSITIVE_INPUT` permanece **erro do preflight**: sem start,
-sem retry e sem resultado de execução iniciada (seções 16, 21 e 23).
+sem retry, **fora da Retry Policy da Activity** e sem resultado de execução
+iniciada (seções 16, 21 e 23).
 
 ## 26. Testes propostos
 
@@ -943,10 +994,16 @@ Exigidos na futura implementação — não executados nesta tarefa.
 - todo relatório com `valid: false` (projeto inválido, Composition inválida,
   `projectId`, `locale`, `format.profile` e demais códigos do núcleo) produz
   `invalid`, inclui `CompositionValidationReport`, mantém `failureCode: null`,
-  **não lança exceção**, **não entra em `nonRetryableErrorTypes`** e **não sofre
-  retry**;
-- somente falha transitória sofre retry e respeita `maximumAttempts`;
-- falha inesperada, timeout e colisão de Workflow ID classificadas sem retry;
+  **não lança exceção**, **não entra em `nonRetryableErrorTypes`**, **não sofre
+  retry** e fica **fora da Retry Policy da Activity**;
+- `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e `StartToCloseTimeout`
+  sofrem retry e respeitam `maximumAttempts: 2`;
+- `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` é lançado como `ApplicationFailure` com
+  `nonRetryable: true` e não sofre retry;
+- colisão de Workflow ID fica fora da Retry Policy da Activity e é classificada
+  como `failed` com `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`;
+- `StartToCloseTimeout` esgotado produz `failed` com
+  `TEMPORAL_COMPOSITION_TIMEOUT` e `completedSteps: []`;
 - `completedSteps` = `["validate-composition"]` em `valid` e `invalid`; `[]` em
   `failed` antes de receber o relatório e em timeout;
 - o passo não é marcado como concluído apenas porque a Activity começou;
@@ -997,7 +1054,12 @@ inventado:
 - nenhum import de Temporal em `platform/`;
 - nenhum uso de OutputPlan ou BeatPlan;
 - payload dentro dos limites definidos;
-- `invalid` nunca gera retry.
+- apenas `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e
+  `StartToCloseTimeout` geram retry, respeitando `maximumAttempts: 2`;
+- `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` com `nonRetryable: true` não gera retry;
+- `invalid` nunca gera retry e fica fora da Retry Policy da Activity;
+- erros de preflight e colisão de Workflow ID ficam fora da Retry Policy da
+  Activity.
 
 ## 28. Riscos e mitigações
 
@@ -1015,10 +1077,13 @@ Mitigação: export público mínimo; contrato documentado; teste de fronteira.
 Mitigação: Activity chama o validador real; paridade entre chamada direta e
 Activity.
 
-### Retry de resultado inválido
+### Classificação incorreta da Retry Policy
 
-Mitigação: `invalid` como resultado normal de domínio; apenas falha técnica
-transitória é retryable.
+Mitigação: `invalid` como resultado normal de domínio, fora da Retry Policy da
+Activity; somente `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e
+`StartToCloseTimeout` são retryable, até `maximumAttempts: 2`;
+`TEMPORAL_COMPOSITION_ACTIVITY_FAILED` é `ApplicationFailure` com
+`nonRetryable: true`; preflight e colisão de Workflow ID ficam fora da política.
 
 ### Aumento excessivo da history
 
@@ -1088,7 +1153,7 @@ documento.
 | 2 | Limites finais de payload | Manter 64 KiB / 256 KiB / 384 KiB e confirmar por medição dos exemplos técnicos antes da implementação |
 | 3 | Canonicalização e `contentHash` | Não incluir `contentHash` em TEMPORAL-02; usar `requestId` único e comparação estrutural nos testes; reservar canonicalização formal para depois |
 | 4 | Export público da `platform/` | Satisfazer o **gate obrigatório da seção 18** antes da Activity; escolher explicitamente entre pacote local, workspace ou artefato compilado; proibir import relativo de `platform/src`, import de `dist` sem contrato de build, duplicação do validador e mudança do validador para `orchestration/` |
-| 5 | Política definitiva de retry | `maximumAttempts: 2`, com lista explícita apenas de códigos **técnicos** não retryable; `invalid` nunca é falha nem entra nessa lista |
+| 5 | Política definitiva de retry | `maximumAttempts: 2`; retryable: `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e `StartToCloseTimeout`; não retryable: `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` como `ApplicationFailure` com `nonRetryable: true`; fora da Retry Policy: preflight, `invalid` e colisão de Workflow ID |
 | 6 | Formato do resultado | Encapsular `CompositionValidationReport` sem remapear códigos; `failureCode` somente em `failed` |
 | 7 | Estratégia de logs | Apenas os 11 campos permitidos da seção 24; sem stack externa |
 | 8 | Necessidade de novo gate Elephant–Goldfish | **Executar gate Elephant–Goldfish após a implementação de TEMPORAL-02 e antes de sua integração na main.** Gate obrigatório, não opcional; não simular aprovação |
@@ -1130,7 +1195,12 @@ O PRD é considerado completo quando:
 - as três vias estão separadas e sem sobreposição: **rejeição antes do start**,
   **resultado `invalid` do domínio** e **falha técnica `failed`**;
 - nenhum caso de `invalid` aparece em lista de erros não retryable da Activity;
-- somente falha transitória está marcada como retryable;
+- `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE` e `StartToCloseTimeout`
+  estão marcados como retryable até `maximumAttempts: 2`;
+- `TEMPORAL_COMPOSITION_ACTIVITY_FAILED` com `nonRetryable: true` é o único
+  código em `nonRetryableErrorTypes`;
+- preflight, `invalid` do domínio e colisão de Workflow ID estão explicitamente
+  fora da Retry Policy da Activity;
 - `completedSteps` está definido para `valid`, `invalid`, `failed` sem relatório e
   timeout, com a regra de conclusão vinculada ao retorno do relatório;
 - o método de medição dos limites e as rejeições de serialização estão definidos;
