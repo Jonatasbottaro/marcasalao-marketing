@@ -210,6 +210,19 @@ Regras e garantias desta fatia:
 - **Política estreita e testável (não é scanner universal de segredos)**: recusa chaves proibidas conhecidas (`password`, `passwd`, `secret`, `token`, `accessToken`, `refreshToken`, `apiKey`, `privateKey`, `clientSecret`, `authorization`, `cookie`, `serviceAccount`, sem diferenciar caixa ou separadores), URLs com `username`/`password`, caminhos absolutos (Windows, UNC, POSIX e `file://`) e referências evidentes a arquivos sensíveis (`.env`, `.env.local`, PEM, P12/PFX, chaves privadas e `service-account` JSON), preservando textos editoriais legítimos que mencionem termos como "token", "senha" ou "credenciais".
 - **Mensagens sanitizadas e imutabilidade**: as mensagens são fixas por código, `path` indica apenas o local lógico (`$`, `$.schemaVersion`, `$.requestId`, `$.project`, `$.composition`, `$.project.<prohibited>`, `$.composition.<prohibited>`), **nenhum valor ou chave rejeitada é ecoado**, e o objeto de entrada jamais é mutado (quando `ok: true`, a mesma referência validada é devolvida).
 
+## TEMPORAL-02-03 — Activity real de validação de composição
+
+Esta fatia implementa **exclusivamente** a Activity `validateCompositionActivity`, confinada em `src/activities/composition-validation-activity.ts`:
+
+- **Dependência local**: consome o pacote compilado `marcasalao-marketing-platform` (`file:../../platform`) exclusivamente pelo entrypoint público `composition-validation-api` (sem imports relativos de `platform/src`).
+- **Contrato dedicado**: aceita `CompositionValidationActivityInput` contendo exclusivamente `project` e `composition` (desacoplado de `requestId` e do contrato de Workflow).
+- **Ordem dos parâmetros**: chama estritamente `validateComposition(composition, project)` (Composition primeiro, ProjectManifest depois).
+- **Sem remapeamento**: retorna diretamente o `CompositionValidationReport` emitido pela `platform`.
+- **Relatórios inválidos**: relatórios com `valid: false` são retornos normais de domínio e **não lançam exceção**.
+- **Erros inesperados**: falhas inesperadas na fronteira são capturadas e convertidas em `ApplicationFailure` não-retryable (`TEMPORAL_COMPOSITION_ACTIVITY_FAILED`), com mensagem sanitizada e fixa (`Composition validation activity failed unexpectedly.`), sem stack trace e sem payload bruto.
+- **Pureza e isolamento**: zero rede, zero I/O de disco, zero subprocessos, zero mutação dos inputs e zero duplicação do validador.
+- **Continuação do escopo restrito**: Workflow, Worker, cliente Temporal de validação, retries reais, timeouts reais e replay continuam não implementados e não autorizados.
+
 ## Próximo gate
 
 A revisão **Elephant–Goldfish** de TEMPORAL-01 foi executada fora deste pacote e as três

@@ -52,12 +52,22 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-          cache-dependency-path: orchestration/temporal/package-lock.json
+          cache-dependency-path: |
+            platform/package-lock.json
+            orchestration/temporal/package-lock.json
 
       - name: Versão do Node e do npm
         run: node --version && npm --version
 
-      - name: Instalação reprodutível (npm ci)
+      - name: Instalação reprodutível da platform (npm ci)
+        working-directory: platform
+        run: npm ci --no-audit --no-fund
+
+      - name: Compilação da platform (npm run build)
+        working-directory: platform
+        run: npm run build
+
+      - name: Instalação reprodutível do pacote Temporal (npm ci)
         working-directory: orchestration/temporal
         run: npm ci --no-audit --no-fund
 
