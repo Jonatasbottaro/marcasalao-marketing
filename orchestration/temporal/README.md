@@ -190,6 +190,26 @@ abaixo.
   deixa handle ativo (os testes de processo veem o filho terminar sozinho). Nenhum teste
   nem o CI dependem de sinal de sistema operacional.
 
+## TEMPORAL-02-02 — contrato de solicitação e preflight local
+
+Esta fatia implementa **exclusivamente** o contrato de entrada versionado e o preflight local do cliente para `TEMPORAL-02`, confinados em `src/composition-validation/`:
+
+- `src/composition-validation/composition-validation-failures.ts`: fonte única e imutável para os três códigos da Via A (rejeição de preflight antes do `start`): `TEMPORAL_COMPOSITION_INPUT_INVALID`, `TEMPORAL_COMPOSITION_INPUT_TOO_LARGE` e `TEMPORAL_COMPOSITION_SENSITIVE_INPUT`.
+- `src/composition-validation/composition-validation-input.ts`: contrato fechado `CompositionValidationWorkflowInput` (`schemaVersion: 1`, `requestId` no padrão `^[a-z0-9][a-z0-9._-]{0,63}$`, `project` e `composition`) e limites em bytes UTF-8.
+- `src/composition-validation/composition-validation-preflight.ts`: `preflightCompositionValidationInput(input)` e a fronteira local `startAfterCompositionPreflight(input, start)`.
+
+Regras e garantias desta fatia:
+
+- **Nenhum Workflow ou Activity de TEMPORAL-02 existe ainda**: `validateCompositionActivity`, `validateCompositionWorkflow`, Worker dedicado, cliente Temporal de validação e replay ainda não foram implementados.
+- **Pacote público da `platform` ainda não é consumido nesta fatia**: `project` e `composition` são verificados aqui apenas quanto a envelope, compatibilidade JSON sem perda, política estreita de conteúdo sensível e limites de bytes UTF-8. A validação semântica pelo núcleo (`validateComposition(composition, project)`) pertence à etapa futura da Activity.
+- **Limites exatos em bytes UTF-8** medidos sobre a representação JSON serializada (`Buffer.byteLength(JSON.stringify(value), "utf8")`):
+  - `project`: máximo de `64 KiB` (`65.536` bytes);
+  - `composition`: máximo de `256 KiB` (`262.144` bytes);
+  - envelope completo (`schemaVersion`, `requestId`, `project`, `composition`): máximo de `384 KiB` (`393.216` bytes).
+- **Proteção da history antes do `start`**: caso `workflow.start` fosse chamado, o servidor Temporal persistiria os argumentos brutos do Workflow na history antes da execução da Activity, e um relatório sanitizado posterior não apagaria o que já entrou na history. Por isso o preflight ocorre localmente **antes do `start`** e antes de qualquer conexão: entradas inválidas, acima do limite ou com conteúdo proibido são rejeitadas sem criar execução, sem tocar em `127.0.0.1:7233` e sem invocar o callback de start.
+- **Política estreita e testável (não é scanner universal de segredos)**: recusa chaves proibidas conhecidas (`password`, `passwd`, `secret`, `token`, `accessToken`, `refreshToken`, `apiKey`, `privateKey`, `clientSecret`, `authorization`, `cookie`, `serviceAccount`, sem diferenciar caixa ou separadores), URLs com `username`/`password`, caminhos absolutos (Windows, UNC, POSIX e `file://`) e referências evidentes a arquivos sensíveis (`.env`, `.env.local`, PEM, P12/PFX, chaves privadas e `service-account` JSON), preservando textos editoriais legítimos que mencionem termos como "token", "senha" ou "credenciais".
+- **Mensagens sanitizadas e imutabilidade**: as mensagens são fixas por código, `path` indica apenas o local lógico (`$`, `$.schemaVersion`, `$.requestId`, `$.project`, `$.composition`, `$.project.<prohibited>`, `$.composition.<prohibited>`), **nenhum valor ou chave rejeitada é ecoado**, e o objeto de entrada jamais é mutado (quando `ok: true`, a mesma referência validada é devolvida).
+
 ## Próximo gate
 
 A revisão **Elephant–Goldfish** de TEMPORAL-01 foi executada fora deste pacote e as três
