@@ -1,8 +1,21 @@
 {
   "name": "marcasalao-marketing-platform",
+  "version": "0.1.0",
   "private": true,
   "description": "Nucleo modular da Content Factory: manifesto de projeto, composicao declarativa v1, validacao e relatorio. Zero dependencias de runtime; TypeScript compilado para JavaScript antes da execucao, com Node >= 22.",
   "type": "module",
+  "main": "./dist/src/composition-validation-api.js",
+  "types": "./dist/src/composition-validation-api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/composition-validation-api.d.ts",
+      "import": "./dist/src/composition-validation-api.js"
+    }
+  },
+  "files": [
+    "dist/src",
+    "!dist/src/*-cli.*"
+  ],
   "engines": {
     "node": ">=22 <25"
   },

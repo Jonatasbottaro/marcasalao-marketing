@@ -9,7 +9,7 @@
         "outDir": "dist",
         "strict": true,
         "sourceMap": false,
-        "declaration": false,
+        "declaration": true,
         "noEmitOnError": true,
         "verbatimModuleSyntax": true,
         "erasableSyntaxOnly": true,

@@ -7,6 +7,7 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 
 1. **Primeira fatia** — Manifesto de projeto → validação → relatório estruturado → testes com dois projetos diferentes.
 2. **Segunda fatia** — Composition v1 → vínculo entre projeto e composição → validação → relatório estruturado → CLI → testes com dois projetos.
+3. **Fronteira pública mínima (`TEMPORAL-02-01`)** — Entrypoint público compilado (`dist/src/composition-validation-api.js` + `.d.ts`) para consumo externo de `validateComposition(composition, project)` sem importar `platform/src` nem caminhos internos de `dist/`.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -217,6 +218,34 @@ e reporta `totalDurationMs: null` — nunca um número impreciso.
 
 `totalDurationMs` é a soma dos `durationMs` inteiros positivos das cenas. Determinístico:
 sem timestamp, sem caminhos absolutos, sem IDs aleatórios, sem stack traces.
+
+## Fronteira pública mínima (`TEMPORAL-02-01`)
+
+Para permitir consumo por outro pacote sem acoplamento à estrutura interna de `platform/src`
+ou a caminhos relativos arbitrários de `dist/`, o pacote expõe um único entrypoint público:
+
+- **Nome do pacote**: `marcasalao-marketing-platform` (`private: true`, uso local/empacotado, não publicado no npm)
+- **Entrypoint-fonte**: `src/composition-validation-api.ts`
+- **Artefatos compilados expostos em `package.json`** (`main`, `types` e `exports["."]`) e incluídos em `files` (`dist/src`, sem `*-cli.*`):
+  - JavaScript ESM: `./dist/src/composition-validation-api.js`
+  - Declarações TypeScript: `./dist/src/composition-validation-api.d.ts`
+- **Superfície pública permitida**:
+  - Runtime: exclusivamente `validateComposition`
+  - Tipos (`export type`): `Composition`, `ProjectManifest` e `CompositionValidationReport`
+- **Ordem obrigatória dos argumentos**: `validateComposition(composition, project)` — `Composition` primeiro, `ProjectManifest` depois. A ordem invertida não é equivalente e produz relatório inválido (`COMPOSITION_MANIFEST_INVALID`).
+- **Proibição de imports internos**: consumidores externos devem importar apenas pelo nome público `marcasalao-marketing-platform`. Subpaths internos (`marcasalao-marketing-platform/dist/...` ou `marcasalao-marketing-platform/src/...`) são bloqueados pelo mapa `exports` do Node (`ERR_PACKAGE_PATH_NOT_EXPORTED`), e CLIs, helpers internos, `OutputPlan` ou `BeatPlan` não são exportados.
+- **Independência de runtime**: `platform` permanece com zero dependências de runtime e sem qualquer dependência ou import de `@temporalio/*` ou `orchestration`. Activity e Workflow Temporal **não** fazem parte desta fatia.
+
+```ts
+import {
+  validateComposition,
+  type Composition,
+  type CompositionValidationReport,
+  type ProjectManifest,
+} from 'marcasalao-marketing-platform'
+
+const report: CompositionValidationReport = validateComposition(composition, project)
+```
 
 ## Como executar
 
