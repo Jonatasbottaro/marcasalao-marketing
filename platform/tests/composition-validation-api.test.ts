@@ -469,4 +469,3 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
         rmSync(tempRoot, { recursive: true, force: true })
     }
 })
-

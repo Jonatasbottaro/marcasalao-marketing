@@ -2,53 +2,45 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-## 1. Revisar e decidir sobre a aprovação do PRD de TEMPORAL-02
+## 1. Decidir se TEMPORAL-02-02 está autorizado
 
-O PRD de TEMPORAL-02 está integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`, no arquivo [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md). A elaboração do PRD — que ocupava esta posição — foi concluída documentalmente. A implementação **não** foi iniciada.
+> Decidir se TEMPORAL-02-02 está autorizado.
 
-O PRD planeja um único passo real, `validate-composition`: validar uma Composition v1 contra um ProjectManifest válido. A Activity real ainda não existe; a função `validateComposition(composition, project)` é exportada por módulo interno, sem fronteira pública estável entre `platform` e `orchestration/temporal`.
+A primeira fatia técnica, **TEMPORAL-02-01** (fronteira pública mínima da `platform`, pacote `marcasalao-marketing-platform@0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts)), foi integrada à main em `f202377fac721aff1d4143a2598f76c03062f0ac`, com 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 ([run 42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)).
 
-Três estados permanecem distintos e não se deduzem um do outro:
+O [PRD de TEMPORAL-02](../planejamento/TEMPORAL-02-validacao-de-composition.md) permanece em revisão (aprovação não concedida, salvo decisão explícita posterior), a implementação global de `TEMPORAL-02` não está autorizada e **TEMPORAL-02-02 ainda não está autorizado**.
 
-- integração do PRD **não** equivale à aprovação;
-- aprovação do PRD **não** equivale à autorização de implementação;
-- a implementação depende de nova decisão explícita do titular.
+`TEMPORAL-02-02` significa somente:
 
-Critérios da decisão:
+- contrato de entrada;
+- preflight do cliente;
+- medição de payload;
+- rejeição antes do start;
+- segurança da history.
 
-1. aceitar ou rejeitar o passo `validate-composition`;
-2. aceitar ou ajustar os limites 64/256/384 KiB;
-3. escolher a estratégia da fronteira pública;
-4. aceitar ou ajustar duas tentativas;
-5. confirmar o gate Elephant–Goldfish obrigatório;
-6. manter TEMPORAL-04 fora;
-7. manter R001, OutputPlan e BeatPlan fora.
+Pré-condições cumpridas:
 
-Pré-condições:
+- PRD integrado (`33b46ce54649fc60340c2e85b15d0b39ad112cff`);
+- TEMPORAL-02-01 integrado (`f202377fac721aff1d4143a2598f76c03062f0ac`);
+- fronteira pública consumível (`marcasalao-marketing-platform@0.1.0`, entrypoint `composition-validation-api`);
+- CI Ubuntu e Windows verde (Node 22 e 24, run `42738388930`);
+- zero dependência Temporal na `platform`.
 
-- TEMPORAL-01 integrado — **cumprido**;
-- contexto atualizado e integrado pela PR #7 — **cumprido**;
-- PRD de TEMPORAL-02 integrado à main — **cumprido** em `33b46ce`;
-- escolha explícita do passo real — **registrada no PRD**, sujeita a aprovação;
-- contrato de entrada e saída pequeno — **documentado no PRD**, sujeito a aprovação;
-- nenhuma dependência de fornecedor — **requisito**;
-- aprovação do PRD — **pendente**;
-- autorização do titular — **pendente**.
+Itens ainda fora:
 
-Não iniciar implementação nesta tarefa: aprovar o PRD, se acontecer, ainda não autoriza código.
+- Activity (`validateCompositionActivity`);
+- Workflow (`validateCompositionWorkflow`);
+- retries reais;
+- timeout real;
+- replay;
+- Elephant–Goldfish de TEMPORAL-02;
+- R001;
+- OutputPlan;
+- BeatPlan;
+- TEMPORAL-04;
+- mídia.
 
-### Decisões ainda pendentes
-
-- forma do entrypoint público;
-- pacote local, workspace ou artefato compilado;
-- limites finais após medição dos exemplos;
-- `contentHash` fora desta fatia;
-- formato final do resultado;
-- estratégia de logs;
-- aprovação do PRD;
-- autorização da implementação.
-
-São recomendações e alternativas registradas no PRD, não decisões aprovadas. A fronteira pública é gate obrigatório **antes** de qualquer Activity; o gate Elephant–Goldfish é obrigatório **depois** da futura implementação e **antes** da integração na main. Nenhum dos dois foi executado.
+Não iniciar `TEMPORAL-02-02` nem elaborar plano de implementação sem decisão explícita do titular.
 
 ## 2. Revisar as branches públicas de R001 e BeatPlan
 

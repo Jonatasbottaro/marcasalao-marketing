@@ -4,21 +4,21 @@
 
 - Data da atualização: 2026-11-09
 - Branch de referência: main
-- Commit da main: [33b46ce54649fc60340c2e85b15d0b39ad112cff](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/33b46ce54649fc60340c2e85b15d0b39ad112cff) — integração documental do PRD de TEMPORAL-02, integrado em 08/11/2026
+- Commit da main: [f202377fac721aff1d4143a2598f76c03062f0ac](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/f202377fac721aff1d4143a2598f76c03062f0ac) — integração técnica de TEMPORAL-02-01 (fronteira pública mínima da `platform`), integrado em 09/11/2026
 - Fonte: Git, documentação integrada e GitHub Actions
 
-`33b46ce` é a referência corrente da main e contém o PRD de TEMPORAL-02. O intervalo `3304e82..33b46ce` adiciona **somente** `docs/planejamento/TEMPORAL-02-validacao-de-composition.md`: é integração documental, não implementação de TEMPORAL-02.
+`f202377` é a referência corrente da main e integra exclusivamente **TEMPORAL-02-01** (fronteira pública mínima da `platform` para validação de `Composition v1` contra `ProjectManifest`). A integração não cria Activity nem Workflow e não altera `orchestration/temporal/`.
 
 Os marcos permanecem distintos e não se substituem:
 
 - commit técnico final de TEMPORAL-01: `07e38f47df50fd6d8b264bc999fe4082be4b2bb6`;
 - merge da estrutura `docs/contexto/` pela PR #7: `fbd222d996527f6cf226051a8526f932accd7e5e`;
 - correção pós-merge do contexto: `3304e82aedf5db59d6507ece6ca20b4df46ac973`;
-- integração documental do PRD de TEMPORAL-02: `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
+- integração documental do PRD de TEMPORAL-02: `33b46ce54649fc60340c2e85b15d0b39ad112cff`;
+- atualização documental do contexto com o PRD de TEMPORAL-02: `d2ebab2cf773cefa24320d26921122d75b3eaa8e`;
+- integração técnica de TEMPORAL-02-01 (fronteira pública mínima da `platform`): `f202377fac721aff1d4143a2598f76c03062f0ac`.
 
-`33b46ce` **não** é implementação de TEMPORAL-02. Nenhum Workflow, Activity, código, dependência ou alteração em `platform/` e `orchestration/temporal/` entrou na main por esse commit.
-
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Esta correção é documental: não altera código, `platform/`, `orchestration/temporal/`, campanhas nem CI.
+O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado.
 
 ## Núcleo reutilizável
 
@@ -27,6 +27,7 @@ O hash identifica o ponto consultado, não uma promessa de permanência. Reconfe
 - **ProjectManifest**: contrato, schema, validador, relatório, CLI e exemplos em `platform/src/project-contract.ts`, `platform/src/validate-project.ts`, `platform/schemas/project.schema.json` e `platform/examples/projects/`.
 - **Composition v1**: composição declarativa por cenas e vínculo com o projeto em `platform/src/composition-contract.ts`, `platform/src/validate-composition.ts` e `platform/schemas/composition.schema.json`. Schema discriminado por tipo de cena e união discriminada no TypeScript.
 - **Contratos e validadores existentes**: funções puras com relatório de códigos, erros e warnings (`platform/src/validation-report.ts`), regra lexical de caminhos compartilhada (`platform/src/relative-path.ts`) e corpus de paridade entre tipos, schemas e validadores em `platform/tests/contracts/`, com execução real dos schemas em motor draft-07.
+- **Fronteira pública mínima da `platform` (TEMPORAL-02-01)**: pacote `marcasalao-marketing-platform` (`0.1.0`) com entrypoint público [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts), exportando em runtime exclusivamente `validateComposition(composition, project)` e em tipos `Composition`, `ProjectManifest` e `CompositionValidationReport`, com declarações TypeScript habilitadas em [`platform/tsconfig.json`](../../platform/tsconfig.json), subpaths internos bloqueados pelo mapa `exports` em [`platform/package.json`](../../platform/package.json) e suíte dedicada em [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts).
 - **CLIs existentes**: `content:validate-project` e `content:validate-composition`, além de `build`, `typecheck`, `test`, `test:contracts` e `clean` em [platform/package.json](../../platform/package.json).
 - **CI da plataforma**: [`.github/workflows/platform-validation.yml`](../../.github/workflows/platform-validation.yml), `Validar contratos da platform`, matriz Ubuntu e Windows × Node 22 e 24.
 - **Runtime do núcleo**: Node `>=22 <25`, TypeScript compilado para JavaScript, motor de schema apenas em desenvolvimento.
@@ -48,10 +49,10 @@ Nada acima está integrado, por mais que o trabalho exista e tenha evidência pr
 ### Planejado ou documentado
 
 - **R002 e R003**: sem documento próprio no repositório. A única ocorrência na main é o §14 do planejamento do TEMPORAL-01, que os declara não iniciados e não integrados.
-- **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main: `platform/src` contém somente os contratos de projeto e composição, os validadores, os dois CLIs, o relatório e a regra de caminhos.
+- **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main: `platform/src` contém somente os contratos de projeto e composição, os validadores, o entrypoint público da validação de composição, os dois CLIs, o relatório e a regra de caminhos.
 - **Qwen3.8**: família indicada para um futuro executor de texto, registrada no §15 do planejamento do TEMPORAL-01. Nada instalado, baixado, inferido ou acoplado.
 - **Higgsfield**: nenhuma ocorrência em código ou documentação da main. É referência externa de conversa, não ferramenta adotada.
-- **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo.
+- **TEMPORAL-02-01**, **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo.
 
 ## Limites do núcleo
 
@@ -115,26 +116,54 @@ A correção final de whitespace removeu uma linha em branco excedente no fim de
 
 O §15 do planejamento do TEMPORAL-01 preserva a redação histórica "Não é implementada aqui e não tem aprovação simulada": ela descreve o recorte daquele commit e a proibição de simular aprovação, não uma pendência atual. O gate Elephant–Goldfish foi executado depois, entre TEMPORAL-01 e TEMPORAL-02, e o estado posterior correto está neste contexto, na seção Gate Elephant–Goldfish acima, com as ressalvas fechadas nos commits integrados. O documento de planejamento permanece como registro histórico e não foi alterado por esta correção.
 
+## TEMPORAL-02-01
+
+- Status: integrado e aprovado tecnicamente;
+- commit técnico: `f202377fac721aff1d4143a2598f76c03062f0ac`;
+- escopo: fronteira pública mínima da `platform`;
+- pacote: `marcasalao-marketing-platform`;
+- versão: `0.1.0`;
+- entrypoint: `composition-validation-api` ([`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts));
+- export runtime: `validateComposition`;
+- tipos públicos: `Composition`, `ProjectManifest`, `CompositionValidationReport`;
+- ordem: `validateComposition(composition, project)`;
+- declarações TypeScript: habilitadas (`declaration: true` em [`platform/tsconfig.json`](../../platform/tsconfig.json));
+- consumo externo: validado por tarball temporário (`npm pack` e consumidor externo isolado em [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts));
+- subpaths internos: bloqueados pelo mapa `exports` (somente `"."` exposto; subpaths lançam `ERR_PACKAGE_PATH_NOT_EXPORTED`);
+- dependências de runtime: zero;
+- testes: 315 aprovados, zero falhas, zero ignorados;
+- CI: Ubuntu e Windows, Node 22 e 24;
+- run da main: [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930);
+- platform: sem dependência Temporal;
+- Activity: não iniciada;
+- Workflow: não iniciado;
+- deploy: nenhum.
+
+A remoção da linha em branco excedente no EOF de [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts) foi realizada posteriormente apenas como higiene (remoção de um byte de newline extra no fim do arquivo), sem alteração funcional.
+
 ## TEMPORAL-02
 
-- **PRD de TEMPORAL-02 integrado; implementação não iniciada.**
+- **PRD de TEMPORAL-02 integrado e em revisão; somente TEMPORAL-02-01 foi executado e integrado; implementação global não autorizada.**
 - Arquivo: [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md), integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
 - Status do documento: **PRD em revisão**.
-- Aprovação do PRD: **não concedida**.
-- Implementação: **não iniciada**.
-- Autorização de implementação: **não concedida**.
-- Código: **nenhum**. Dependências: **nenhuma nova**. Temporal executado: **nenhum**. Deploy: **nenhum**.
-- `platform/` e `orchestration/temporal/` não foram alterados por essa integração.
+- Aprovação do PRD: **não concedida**, salvo decisão explícita posterior.
+- Implementação global de TEMPORAL-02: **não autorizada**.
+- Fatia executada: **somente TEMPORAL-02-01** (fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`).
+- **TEMPORAL-02-02**: **ainda não autorizado** e **não iniciado** (cobre somente contrato de entrada, preflight do cliente, medição de payload, rejeição antes do start e segurança da history).
+- Activity (`validateCompositionActivity`): **não iniciada**.
+- Workflow (`validateCompositionWorkflow`): **não iniciado**.
+- `orchestration/temporal/`: **intacto** (nenhum código de TEMPORAL-02 adicionado).
+- Dependências de runtime novas: **nenhuma**. Temporal executado para TEMPORAL-02: **nenhum**. Deploy: **nenhum**.
 
-Integrar o PRD **não** é aprová-lo, e aprovar o PRD **não** é autorizar a implementação: são decisões separadas e explícitas do titular.
+Integrar o PRD **não** é aprová-lo, e integrar a fronteira pública mínima (`TEMPORAL-02-01`) **não** autoriza automaticamente `TEMPORAL-02-02`, a Activity ou o Workflow: cada fatia depende de decisão explícita do titular.
 
 ### Passo real planejado
 
 - Operação: `validate-composition` — **um único** passo.
 - Objetivo: validar uma Composition v1 contra um ProjectManifest válido.
-- Função existente do núcleo: `validateComposition(composition, project)` — exportada por módulo interno, **ainda sem fronteira pública estável** entre os pacotes `platform` e `orchestration/temporal`. A ordem é Composition primeiro, ProjectManifest depois.
-- Componentes **conceituais**, não implementados: Workflow `validateCompositionWorkflow`, Activity `validateCompositionActivity`, resultado `CompositionValidationWorkflowResult` e relatório do núcleo `CompositionValidationReport`.
-- Nenhum desses componentes existe em código na main.
+- Função existente do núcleo: `validateComposition(composition, project)` — agora reexportada pela fronteira pública mínima `marcasalao-marketing-platform` (`0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts)) integrada em `TEMPORAL-02-01` (`f202377fac721aff1d4143a2598f76c03062f0ac`). A ordem permanece Composition primeiro, ProjectManifest depois.
+- Componentes **conceituais**, ainda não implementados: Workflow `validateCompositionWorkflow`, Activity `validateCompositionActivity` e resultado `CompositionValidationWorkflowResult`.
+- Nenhum desses componentes de orquestração existe em código na main.
 
 ### Quatro vias planejadas
 
@@ -162,12 +191,12 @@ Política definida no PRD, **ainda não implementada**:
 
 Nada disso foi executado: não há Activity, Worker nem execução de Temporal para TEMPORAL-02.
 
-### Gates obrigatórios, nenhum executado
+### Gates obrigatórios de TEMPORAL-02
 
-- **Gate de fronteira pública** — obrigatório **antes** de criar a Activity: entrypoint público mínimo da `platform`; consumo compilado pelo pacote Temporal; proibição de import relativo de `platform/src`; proibição de import de `dist` sem contrato de build; proibição de duplicar o validador; proibição de mover o validador para `orchestration/`; build em checkout limpo; portabilidade em Ubuntu e Windows. A estratégia — pacote local, workspace ou artefato compilado — continua **em aberto**.
-- **Gate Elephant–Goldfish** — obrigatório **após** a futura implementação e **antes** da integração de TEMPORAL-02 na main. Revisões mínimas: fronteira pública, ordem dos argumentos, paridade, history, payload, quatro vias, `invalid` versus `failed`, retries, replay, isolamento do núcleo e ausência de mídia e fornecedores.
+- **Gate de fronteira pública (`TEMPORAL-02-01`)** — **concluído e integrado** na main em `f202377fac721aff1d4143a2598f76c03062f0ac`: entrypoint público mínimo da `platform` (`composition-validation-api`), pacote compilado consumível (`marcasalao-marketing-platform@0.1.0`), tipos públicos (`Composition`, `ProjectManifest`, `CompositionValidationReport`), subpaths internos bloqueados por `exports`, zero dependências de runtime, 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)).
+- **Gate Elephant–Goldfish de TEMPORAL-02** — **não executado**; permanece obrigatório **após** a futura implementação e **antes** da integração de TEMPORAL-02 na main. Revisões mínimas: fronteira pública, ordem dos argumentos, paridade, history, payload, quatro vias, `invalid` versus `failed`, retries, replay, isolamento do núcleo e ausência de mídia e fornecedores.
 
-O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPORAL-01** e não cobre TEMPORAL-02. Nenhum dos dois gates de TEMPORAL-02 foi executado.
+O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPORAL-01** e não cobre TEMPORAL-02.
 
 ### Limites preservados
 
@@ -187,7 +216,7 @@ O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPO
 | R001 | `codex/catalogo-formatos-sociais` | `55aeecccfa38da06dfada875e75d81b265626abc` | `git branch -r --contains` aponta só a branch; `merge-base --is-ancestor` contra `origin/main` com saída 1, reconferido em 09/11/2026 | **branch-only**, estágio R001-05 concluído em 07/11/2026 |
 | BeatPlan | `codex/core-beat-plan-v1` | `bade62e3a720a853e6f3d18b52aa46bf544979a4` | mesmas checagens, saída 1 em 09/11/2026; run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) de `Validar contratos da platform` nesse HEAD: completed/success | **branch-only**, CI verde no HEAD medido |
 
-O checkpoint informado do R001 é um commit documental posterior ao checkpoint de código da etapa R001-05. Nenhum dos dois HEADs está na main e nenhum foi substituído por trabalho equivalente: a main tem os contratos de projeto e composição, não o catálogo de perfis nem o BeatPlan. A branch de BeatPlan não foi homologada nesta atualização de contexto; o que foi consultado é o CI do HEAD medido.
+O checkpoint informado do R001 é um commit documental posterior ao checkpoint de código da etapa R001-05. Nenhum dos dois HEADs está na main e nenhum foi substituído por trabalho equivalente: a main tem os contratos de projeto e composição e a fronteira pública mínima da `platform`, não o catálogo de perfis nem o BeatPlan. A branch de BeatPlan não foi homologada nesta atualização de contexto; o que foi consultado é o CI do HEAD medido.
 
 ## Histórico da correção de contratos
 
@@ -217,36 +246,39 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 ## Próximo passo
 
-> Revisar e decidir sobre a aprovação do PRD de TEMPORAL-02.
+> Decidir se TEMPORAL-02-02 está autorizado.
 
-O PRD está integrado à main; a decisão de aprová-lo é a próxima etapa e ainda não foi tomada.
+`TEMPORAL-02-02` ainda **não está autorizado**. Caso venha a ser autorizado, `TEMPORAL-02-02` significa somente:
 
-- integração do PRD **não** equivale à aprovação;
-- aprovação do PRD **não** equivale à autorização de implementação;
-- a implementação depende de nova decisão explícita do titular.
+- contrato de entrada;
+- preflight do cliente;
+- medição de payload;
+- rejeição antes do start;
+- segurança da history.
 
-Critérios da decisão:
+Pré-condições cumpridas:
 
-1. aceitar ou rejeitar o passo `validate-composition`;
-2. aceitar ou ajustar os limites 64/256/384 KiB;
-3. escolher a estratégia da fronteira pública;
-4. aceitar ou ajustar duas tentativas;
-5. confirmar o gate Elephant–Goldfish obrigatório;
-6. manter TEMPORAL-04 fora;
-7. manter R001, OutputPlan e BeatPlan fora.
+- PRD integrado (`33b46ce54649fc60340c2e85b15d0b39ad112cff`);
+- `TEMPORAL-02-01` integrado (`f202377fac721aff1d4143a2598f76c03062f0ac`);
+- fronteira pública consumível (`marcasalao-marketing-platform@0.1.0`, `composition-validation-api`);
+- CI Ubuntu e Windows verde (Node 22 e 24, run `42738388930`);
+- zero dependência Temporal na `platform`.
 
-Pré-condições:
+Itens ainda fora:
 
-- TEMPORAL-01 integrado — **cumprido**, com evidência na seção acima;
-- contexto atualizado e integrado à main pela PR #7 — **cumprido**;
-- PRD de TEMPORAL-02 integrado à main — **cumprido** em `33b46ce`;
-- escolha explícita do passo real — **cumprida no PRD** (`validate-composition`), sujeita a aprovação;
-- contrato de entrada e saída pequeno — **documentado no PRD**, sujeito a aprovação;
-- nenhuma dependência de fornecedor — **requisito**;
-- aprovação do PRD — **pendente**;
-- autorização do titular — **pendente**.
+- Activity (`validateCompositionActivity`);
+- Workflow (`validateCompositionWorkflow`);
+- retries reais;
+- timeout real;
+- replay;
+- Elephant–Goldfish de TEMPORAL-02;
+- R001;
+- OutputPlan;
+- BeatPlan;
+- TEMPORAL-04;
+- mídia.
 
-Nenhuma dessas condições concede autorização automática para implementar TEMPORAL-02: a autorização do titular continua necessária e separada da aprovação do PRD.
+Nenhuma pré-condição cumprida concede autorização automática para `TEMPORAL-02-02` ou para a implementação global de `TEMPORAL-02`.
 
 Tarefas secundárias permitidas:
 
@@ -256,9 +288,9 @@ Tarefas secundárias permitidas:
 
 ## O que não fazer agora
 
-- não implementar TEMPORAL-02 nesta tarefa;
-- não aprovar o PRD de TEMPORAL-02 nesta tarefa;
-- não autorizar a implementação de TEMPORAL-02 nesta tarefa;
+- não implementar TEMPORAL-02-02 sem autorização explícita;
+- não criar preflight, Activity ou Workflow sem autorização explícita;
+- não tratar o PRD de TEMPORAL-02 como aprovado sem decisão explícita;
 - não iniciar TEMPORAL-04;
 - não integrar OutputPlan e BeatPlan;
 - não gerar prévia;
@@ -272,6 +304,4 @@ Tarefas secundárias permitidas:
 
 ## O que esta atualização não verificou
 
-Estado remoto de publicações e rascunhos no Postiz, execução de ComfyUI, implantação das integrações no servidor e novas jornadas do Salao02 não foram consultados nem executados. As CLIs e os testes do pacote temporal não foram reexecutados nesta tarefa: a contagem de 120 vem da documentação integrada na main e dos logs do run 42494941537, que é o portão automático do pacote. Consultar esses pontos quando fizerem parte da tarefa solicitada.
-
-Esta atualização é documental. Nenhum teste de código, execução de Temporal, execução da `platform` ou geração de mídia foi executado, e nenhum gate de TEMPORAL-02 foi rodado.
+Estado remoto de publicações e rascunhos no Postiz, execução de ComfyUI, implantação das integrações no servidor e novas jornadas do Salao02 não foram consultados nem executados. Os testes do pacote `orchestration/temporal/` não foram reexecutados nesta tarefa: a contagem de 120 vem da documentação integrada na main e dos logs do run 42494941537. Na `platform/`, o gate proporcional (clean, build, typecheck, teste isolado de `composition-validation-api` e suíte completa de 315 testes) foi executado em Node 22 para validar a remoção da newline excedente no EOF do arquivo de teste.
