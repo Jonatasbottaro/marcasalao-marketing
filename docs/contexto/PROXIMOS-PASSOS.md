@@ -2,34 +2,34 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-## 1. Decidir se TEMPORAL-02-02 está autorizado
+## 1. Decidir se TEMPORAL-02-03 está autorizado
 
-> Decidir se TEMPORAL-02-02 está autorizado.
+> Decidir se TEMPORAL-02-03 está autorizado.
 
-A primeira fatia técnica, **TEMPORAL-02-01** (fronteira pública mínima da `platform`, pacote `marcasalao-marketing-platform@0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts)), foi integrada à main em `f202377fac721aff1d4143a2598f76c03062f0ac`, com 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 ([run 42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)).
+As duas primeiras fatias técnicas foram integradas à main:
 
-O [PRD de TEMPORAL-02](../planejamento/TEMPORAL-02-validacao-de-composition.md) permanece em revisão (aprovação não concedida, salvo decisão explícita posterior), a implementação global de `TEMPORAL-02` não está autorizada e **TEMPORAL-02-02 ainda não está autorizado**.
+- **TEMPORAL-02-01** (fronteira pública mínima da `platform`, pacote `marcasalao-marketing-platform@0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts)), integrada em `f202377fac721aff1d4143a2598f76c03062f0ac` (fechamento documental em `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`), com 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 ([run 42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930));
+- **TEMPORAL-02-02** (contrato de solicitação versionado `CompositionValidationWorkflowInput`, códigos de falha da Via A e preflight local `preflightCompositionValidationInput` / `startAfterCompositionPreflight` em `orchestration/temporal/src/composition-validation/`), integrada em `29b40783320360350e59a13e39f49a60d2308507`, com 17 novos testes locais verdes e suíte integral de 137 testes aprovada no CI em Ubuntu e Windows, Node 22 ([run 42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305)).
 
-`TEMPORAL-02-02` significa somente:
+O [PRD de TEMPORAL-02](../planejamento/TEMPORAL-02-validacao-de-composition.md) permanece em revisão (aprovação não concedida, salvo decisão explícita posterior), a implementação global de `TEMPORAL-02` não está autorizada e **TEMPORAL-02-03 ainda não está autorizado**.
 
-- contrato de entrada;
-- preflight do cliente;
-- medição de payload;
-- rejeição antes do start;
-- segurança da history.
+Caso venha a ser autorizado, `TEMPORAL-02-03` deve ser restrito à **Activity real** (`validateCompositionActivity`), consumindo o pacote público `marcasalao-marketing-platform`, mantendo o Workflow (`validateCompositionWorkflow`) fora de escopo até etapa posterior.
 
 Pré-condições cumpridas:
 
 - PRD integrado (`33b46ce54649fc60340c2e85b15d0b39ad112cff`);
-- TEMPORAL-02-01 integrado (`f202377fac721aff1d4143a2598f76c03062f0ac`);
+- TEMPORAL-02-01 integrado (`f202377fac721aff1d4143a2598f76c03062f0ac` / `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`);
 - fronteira pública consumível (`marcasalao-marketing-platform@0.1.0`, entrypoint `composition-validation-api`);
-- CI Ubuntu e Windows verde (Node 22 e 24, run `42738388930`);
+- TEMPORAL-02-02 integrado (`29b40783320360350e59a13e39f49a60d2308507`), com contrato e preflight concluídos;
+- CI Ubuntu e Windows verde na `platform` (run `42738388930`) e em `orchestration/temporal/` (run `42748899305`, 137 testes);
+- limitação local do `@temporalio/core-bridge` no Windows documentada (testes locais sem addon nativo verdes; suíte integral comprovada no CI Ubuntu e Windows);
 - zero dependência Temporal na `platform`.
 
 Itens ainda fora:
 
 - Activity (`validateCompositionActivity`);
 - Workflow (`validateCompositionWorkflow`);
+- Worker e cliente Temporal de validação de composição;
 - retries reais;
 - timeout real;
 - replay;
@@ -40,7 +40,7 @@ Itens ainda fora:
 - TEMPORAL-04;
 - mídia.
 
-Não iniciar `TEMPORAL-02-02` nem elaborar plano de implementação sem decisão explícita do titular.
+Não iniciar `TEMPORAL-02-03` nem elaborar plano de implementação sem decisão explícita do titular.
 
 ## 2. Revisar as branches públicas de R001 e BeatPlan
 
