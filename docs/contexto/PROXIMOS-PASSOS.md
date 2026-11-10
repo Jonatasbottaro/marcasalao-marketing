@@ -13,34 +13,51 @@ As duas primeiras fatias técnicas foram integradas à main:
 
 O [PRD de TEMPORAL-02](../planejamento/TEMPORAL-02-validacao-de-composition.md) permanece em revisão (aprovação não concedida, salvo decisão explícita posterior), a implementação global de `TEMPORAL-02` não está autorizada e **TEMPORAL-02-03 ainda não está autorizado**.
 
-Caso venha a ser autorizado, `TEMPORAL-02-03` deve ser restrito à **Activity real** (`validateCompositionActivity`), consumindo o pacote público `marcasalao-marketing-platform`, mantendo o Workflow (`validateCompositionWorkflow`) fora de escopo até etapa posterior.
+Caso venha a ser autorizado, `TEMPORAL-02-03` deve ser restrito exclusivamente a:
 
-Pré-condições cumpridas:
+- Activity real (`validateCompositionActivity`);
+- consumo do pacote público `marcasalao-marketing-platform`;
+- chamada de: `validateComposition(composition, project)`;
+- retorno de `CompositionValidationReport`;
+- testes de paridade;
+- nenhuma rede;
+- nenhuma escrita;
+- nenhuma mutação.
 
-- PRD integrado (`33b46ce54649fc60340c2e85b15d0b39ad112cff`);
-- TEMPORAL-02-01 integrado (`f202377fac721aff1d4143a2598f76c03062f0ac` / `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`);
-- fronteira pública consumível (`marcasalao-marketing-platform@0.1.0`, entrypoint `composition-validation-api`);
-- TEMPORAL-02-02 integrado (`29b40783320360350e59a13e39f49a60d2308507`), com contrato e preflight concluídos;
-- CI Ubuntu e Windows verde na `platform` (run `42738388930`) e em `orchestration/temporal/` (run `42748899305`, 137 testes);
-- limitação local do `@temporalio/core-bridge` no Windows documentada (testes locais sem addon nativo verdes; suíte integral comprovada no CI Ubuntu e Windows);
-- zero dependência Temporal na `platform`.
+Registrar que continuam fora de TEMPORAL-02-03:
 
-Itens ainda fora:
-
-- Activity (`validateCompositionActivity`);
 - Workflow (`validateCompositionWorkflow`);
-- Worker e cliente Temporal de validação de composição;
+- Worker;
+- cliente Temporal real;
+- workflow.start;
 - retries reais;
 - timeout real;
+- colisão de Workflow ID;
 - replay;
-- Elephant–Goldfish de TEMPORAL-02;
-- R001;
+- gate Elephant–Goldfish;
 - OutputPlan;
 - BeatPlan;
 - TEMPORAL-04;
-- mídia.
+- mídia;
+- fornecedores;
+- deploy.
 
-Não iniciar `TEMPORAL-02-03` nem elaborar plano de implementação sem decisão explícita do titular.
+Não escrever o prompt de implementação de TEMPORAL-02-03 nesta tarefa.
+
+Pré-condições cumpridas:
+
+- fronteira pública da platform integrada (`marcasalao-marketing-platform@0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts));
+- contrato de entrada integrado (`CompositionValidationWorkflowInput`);
+- preflight integrado (`preflightCompositionValidationInput`);
+- limites definidos (64/256/384 KiB UTF-8);
+- segurança da history anterior ao start;
+- CI Ubuntu e Windows verde na `platform` (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)) e em `orchestration/temporal/` (run [42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305), 137 testes aprovados).
+
+Pré-condição ainda necessária:
+
+- autorização explícita do titular.
+
+A autorização concedida para TEMPORAL-02-02 foi consumida e não vale automaticamente para TEMPORAL-02-03.
 
 ## 2. Revisar as branches públicas de R001 e BeatPlan
 
