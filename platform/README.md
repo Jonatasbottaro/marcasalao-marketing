@@ -9,6 +9,7 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 2. **Segunda fatia** — Composition v1 → vínculo entre projeto e composição → validação → relatório estruturado → CLI → testes com dois projetos.
 3. **Terceira fatia (R001)** — catálogo declarativo de perfis de saída sociais → regras oficiais com escopo por contexto e pendências de fonte → `OutputPlan` canônico → compatibilidade Composition × OutputPlan → CLIs `content:profiles` e `content:plan-output`.
 4. **Fronteira pública mínima (`TEMPORAL-02-01`)** — Entrypoint público compilado (`dist/src/composition-validation-api.js` + `.d.ts`) para consumo externo de `validateComposition(composition, project)` sem importar `platform/src` nem caminhos internos de `dist/`.
+5. **BeatPlan v1 (fatia interna)** — tradução **temporal** declarativa de uma Composition válida: beats ordenados com `startMs`/`durationMs`, função narrativa, texto e intenções → schema draft-07 → validador vinculado a ProjectManifest e Composition → CLI `content:validate-beat-plan` → dois exemplos versionados. Sem export público, sem `OutputPlan`, sem Temporal, sem render e sem mídia.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -306,6 +307,62 @@ Ordem canônica das chaves do plano: `schemaVersion, projectId, catalogVersion, 
 profileRevision, mediaKind` e, então, `ruleContext` (se declarado) mais `image` **ou** `video`
 — nunca os dois, e `fps` só existe no ramo de vídeo.
 
+## BeatPlan v1 (fatia interna)
+
+O BeatPlan é a **tradução temporal** de uma Composition válida: uma sequência ordenada de
+beats, cada um com início, duração, função narrativa, texto e intenções. Ele não é roteiro,
+não é Composition e não é renderização — **não** gera beats automaticamente, não contém
+comando de ferramenta, não contém provider de mídia e não cria arquivos. A fatia é
+**interna ao pacote**: ver *Fronteira pública mínima* abaixo.
+
+| Peça | Onde | Papel |
+|---|---|---|
+| Contrato TypeScript v1 | `src/beat-plan-contract.ts` | `BeatPlan`, `Beat`, enums neutros (função narrativa, `motionIntent`, transições, `validationStatus`) e os limites documentados de texto e tags; nenhuma chave de projeto, fornecedor ou prompt executável |
+| Relatório aditivo | `src/validation-report.ts` (`BeatPlanValidationReport`) | mesma política dos relatórios existentes: ordem estável, sem timestamp, sem caminho absoluto, sem stack trace |
+| Espelho draft-07 | `schemas/beat-plan.schema.json` | só a forma estrutural, executado por `ajv` em `tests/contracts/beat-plan-schema.test.ts` |
+| Validador de referência | `src/validate-beat-plan.ts` — `validateBeatPlan(beatPlan, composition, project)` | confere manifesto, composição, estrutura, vínculo, cenas e timeline |
+| CLI | `src/validate-beat-plan-cli.ts`, script `content:validate-beat-plan` | `--project` + `--composition` + `--beat-plan` [+ `--json`], montada sobre o mesmo `src/cli-input.ts` das CLIs de saída |
+| Exemplos | `examples/beat-plans/*.beat-plan.json` | dois planos versionados, um por par oficial de Composition/ProjectManifest |
+
+**Relação com os contratos existentes.** Os três documentos são sempre entrada explícita: o
+núcleo não lê arquivos, não abre assets, não acessa rede e não conhece projeto específico, e
+nenhuma entrada é mutada. A ordem de emissão é fixa — `project` → `composition` → estrutura
+do plano → vínculo entre os três → relação com as cenas → timeline — e um manifesto ou uma
+composição inválidos produzem `BEAT_PLAN_PROJECT_MANIFEST_INVALID` /
+`BEAT_PLAN_COMPOSITION_INVALID`: o BeatPlan **delega** chamando `validateProjectManifest` e
+`validateComposition`, em vez de reescrever as regras alheias.
+
+**Timeline v1, estritamente linear.** O primeiro beat começa em `0`, os beats são contíguos
+(sem lacuna nem sobreposição) e o último termina exatamente na duração total da Composition
+(`BEAT_PLAN_TIMELINE_END_MISMATCH` fora disso). Nenhum tempo é corrigido, reordenado ou
+preenchido automaticamente. Todo `sceneId` precisa existir na composição, mas cena e beat
+**não** têm relação um para um: um beat pode atravessar duas cenas e uma cena pode aparecer em
+mais de um beat. Cena não referenciada é aviso (`BEAT_PLAN_SCENE_UNREFERENCED`), não erro.
+
+**Texto, não áudio.** `narration` é `{ text }` e nada mais: não há voz, provider, arquivo nem
+configuração de TTS, porque `AudioPlan` é fatia futura. É assim que a política de produção
+desta caixa — vídeo entregue sem áudio, narração entregue como texto separado — cabe no
+contrato. `motionIntent` e as transições descrevem **intenção** e não executam movimento nem
+animação.
+
+**Estado técnico ≠ autorização editorial.** `validationStatus: "validated"` e
+`metadata.status: "validated"` registram revisão técnica; nenhum estado concede aprovação
+editorial, autorização de gravação, de produção ou de publicação. Os avisos de comprimento e
+de tempo de leitura (`*_TEXT_LONG`, `BEAT_PLAN_READING_TIME_RISK`) são heurísticas técnicas e
+não substituem a leitura humana cronometrada.
+
+**O que o schema não decide.** Igualdade de `projectId`/`compositionId`/`locale`, existência
+de `sceneId`, continuidade e duração total não são expressáveis no vocabulário draft-07 e
+pertencem ao core — a mesma fronteira de *Regras do schema × regras do core*.
+
+**Fronteiras desta fatia.** O BeatPlan não entra no entrypoint público
+(`composition-validation-api.ts` continua exportando apenas `validateComposition`) e não ganha
+subpath: `marcasalao-marketing-platform/dist/src/beat-plan-contract.js` responde
+`ERR_PACKAGE_PATH_NOT_EXPORTED`. Não há integração com `OutputPlan` nem com o catálogo de
+saída, nada em `orchestration/temporal/` foi tocado e nenhum import de `@temporalio/*` existe.
+Não renderiza, não gera mídia, não abre asset e não publica. `VisualStyle`, `VisualAnchor`,
+`AssetManifest`, `AudioPlan` e `RenderPlan` continuam fatias futuras.
+
 ## Fronteira pública mínima (`TEMPORAL-02-01`)
 
 Para permitir consumo por outro pacote sem acoplamento à estrutura interna de `platform/src`
@@ -367,6 +424,10 @@ npm run --silent content:plan-output -- --project examples/projects/marca-salao-
 
 # o mesmo stdout regravado sobre o fixture é byte a byte igual (tests/output-plan-examples.test.ts)
 npm run --silent content:plan-output -- --project examples/projects/marca-salao-social.project.json --profile youtube-shorts --rule-context studio-upload --json > examples/output-plans/youtube-shorts-studio-upload.output-plan.json
+
+# CLI de beat plan (exit 0 valido · 1 plano/projeto/composicao invalidos · 2 uso/JSON malformado)
+npm run --silent content:validate-beat-plan -- --project examples/projects/marca-salao.project.json --composition examples/compositions/marca-salao-pilot.composition.json --beat-plan examples/beat-plans/marca-salao-pilot.beat-plan.json --json
+npm run --silent content:validate-beat-plan -- --project examples/projects/fixture-project.project.json --composition examples/compositions/fixture-project-pilot.composition.json --beat-plan examples/beat-plans/fixture-project-pilot.beat-plan.json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -386,10 +447,17 @@ uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trac
 | `examples/compositions/marca-salao-pilot.composition.json` | composição antiga do piloto, aceita sobre `vertical-social` — é ela que demonstra `OUTPUT_COMPAT_PROFILE_MISMATCH` |
 | `examples/compositions/marca-salao-social-reel.composition.json` | composição positiva em `instagram-reels-video` (14 s, sem áudio) |
 | `examples/output-plans/*.output-plan.json` | 5 planos canônicos gerados pelo stdout da CLI, comparados byte a byte e relidos por `ajv` + `validateOutputPlan` |
+| `examples/beat-plans/marca-salao-pilot.beat-plan.json` | plano de 4 beats (10000 ms) sobre a composição do piloto: um beat atravessa `demo-frame` e `closing`, e o plano fecha exatamente com a composição — zero erro e zero aviso |
+| `examples/beat-plans/fixture-project-pilot.beat-plan.json` | plano de 2 beats (5000 ms) em `en-US` sobre a composição do fixture: um beat sem `narration` é aceito, porque narração é opcional por design |
 
 Nenhum desses arquivos autoriza publicação: são fixtures de contrato. A demonstração da
 divergência exige que a composição antiga **primeiro** passe em `validateComposition` — há
-teste que prova isso antes do teste de compatibilidade.
+teste que prova isso antes do teste de compatibilidade. Os dois beat plans recebem o mesmo
+tratamento em `tests/beat-plan-examples.test.ts`: a referência é conferida no disco, o schema
+e o core rodam sobre o arquivo, a CLI é executada com ele, e os bytes são lidos em binário
+para garantir LF sem CR e exatamente uma newline final — a regra `examples/beat-plans/*.json
+text eol=lf` em `platform/.gitattributes` é o que impede o checkout do `windows-latest` de
+converter o exemplo que o gate do Ubuntu lê.
 
 ## Gate automático (GitHub Actions)
 
@@ -416,6 +484,10 @@ para o script continuar executável nos quatro ambientes e também
 `examples/output-plans/*.json text eol=lf` para os planos canônicos de OutputPlan: esses
 exemplos usam LF, a regra evita divergência CRLF/LF no checkout Windows e a comparação entre
 o stdout da CLI e o fixture versionado permanece byte a byte (`tests/output-plan-examples.test.ts`).
+A mesma razão vale para `examples/beat-plans/*.json text eol=lf`, acrescentado com o BeatPlan:
+os dois planos versionados são lidos em binário por `tests/beat-plan-examples.test.ts`, que
+exige LF, zero CR e uma única newline final — sem a regra, o `windows-latest` da matriz
+checkoutaria CRLF e os quatro ambientes deixariam de ler os mesmos bytes.
 
 A prova do ramo negativo é um passo do próprio workflow (`if: always()`), e não um ensaio
 solto: ele roda o **mesmo** `gate-step.sh` com um comando que imprime duas linhas e termina
@@ -560,7 +632,9 @@ o vocabulário draft-07.
 Um único corpus (`tests/contract-corpus.ts`), montado com os builders do harness
 compartilhado (`tests/contract-harness.ts`: motor ajv real + builders de documentos +
 leitura dos exemplos oficiais), roda **os mesmos objetos** contra o schema draft-07 e contra
-o validador TypeScript. Não há tabelas duplicadas por arquivo.
+o validador TypeScript. Não há tabelas duplicadas por arquivo. O BeatPlan fica fora desse
+corpus: o harness só compila os schemas que já existiam e não exporta o motor, então
+`tests/contracts/beat-plan-schema.test.ts` traz o próprio compile e o próprio corpus.
 
 | Grupo | O que prova | Quem decide |
 |---|---|---|
@@ -592,9 +666,15 @@ Rodam em `tests/contracts/`:
   limite da autoridade do `href`, os mesmos vereditos dos dois motores (os seis hrefs com
   `@` fora da autoridade saem `0`; os seis de autoridade vazia saem `1` com
   `COMPOSITION_CTA_HREF_INVALID`).
+- `beat-plan-schema.test.ts` — o espelho draft-07 do BeatPlan sobre os objetos do próprio
+  contrato, com as duas fronteiras registradas separadamente: o que a **forma** decide
+  (aqui) e o que só o core decide (vínculo de ids, `locale`, existência de cena,
+  continuidade e duração total). Os casos da segunda lista afirmam apenas o que o **motor**
+  aceita, para que a ausência de regra fique registrada e ninguém confunda "o motor não
+  reclamou" com equivalência.
 
-`npm test` executa tudo (308 testes nesta etapa); `npm run test:contracts` executa
-especificamente a verificação de contrato (219 testes) — ambas sobre o JavaScript
+`npm test` executa tudo (626 testes com o BeatPlan); `npm run test:contracts` executa
+especificamente a verificação de contrato (305 testes) — ambas sobre o JavaScript
 compilado em `dist/`.
 
 ## Regras textuais e de URL
@@ -619,7 +699,8 @@ resolução de caminho é feita — nunca.
   da execução** (ESM/NodeNext, target ES2022, saída em `dist/`) — **zero dependências
   de runtime**;
 - Validações explícitas escritas à mão (superfície pequena e enumerada); os arquivos
-  `schemas/project.schema.json` e `schemas/composition.schema.json` (JSON Schema
+  `schemas/project.schema.json`, `schemas/composition.schema.json`,
+  `schemas/output-plan.schema.json` e `schemas/beat-plan.schema.json` (JSON Schema
   draft-07) são a descrição normativa dos contratos e espelham os validadores. A cena é
   discriminada **inteira** pelo seu `type` no schema de composição (`oneOf` de quatro
   definições com `type` constante), porque a mesma forma de `content` pode pertencer a
@@ -631,7 +712,9 @@ resolução de caminho é feita — nunca.
   `tests/contracts/structural-parity.test.ts`, `tests/contracts/semantic-rules.test.ts`,
   `tests/composition-schema.test.ts` e `tests/path-url-validation.test.ts`, que comparam
   schema e validador TypeScript caso a caso, inclusive nos dois exemplos oficiais e nas
-  divergências conhecidas entre os dois;
+  divergências conhecidas entre os dois; o espelho do BeatPlan é executado pelo mesmo motor
+  em `tests/contracts/beat-plan-schema.test.ts`, que traz o próprio `compile` porque o
+  harness só conhece os schemas que já existiam;
 - Os testes de **tipo** são o próprio `tsc`: as diretivas `@ts-expect-error` de
   `tests/contracts/type-discrimination.test.ts` falham o build se alguma combinação inválida
   de `type`/`content` deixar de ser rejeitada;
@@ -645,8 +728,21 @@ resolução de caminho é feita — nunca.
 
 ## Limites atuais (expressos)
 
-- **Composition v1 implementada apenas como contrato declarativo** (sem beats, áudio,
-  prompts, providers, montagem, timeline executável ou geração de assets);
+- **Composition v1 implementada apenas como contrato declarativo** (sem áudio, prompts,
+  providers, montagem, timeline executável ou geração de assets dentro da composição: a
+  tradução temporal é um documento à parte, o `BeatPlan` interno, que também não renderiza
+  nada);
+- **`BeatPlan` não é superfície pública**: não sai por `composition-validation-api.ts` (o
+  entrypoint continua com `validateComposition` e os três tipos já documentados) e não ganha
+  subpath em `exports` — `dist/src/beat-plan-contract.js` responde
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`. Os módulos internos existem fisicamente no pacote, e as
+  CLIs continuam excluídas por `!dist/src/*-cli.*`;
+- **`BeatPlan` não se combina com `OutputPlan` nem com Temporal nesta tarefa**: nenhuma peça
+  do catálogo de saída ou do resolvedor lê um plano de beats, nada em
+  `orchestration/temporal/` foi tocado e nenhum import de `@temporalio/*` existe na `platform`;
+- **`BeatPlan` não corrige o que recebe**: não gera beats, não reordena o array, não preenche
+  lacuna, não corta beat, não altera a Composition e não verifica a existência física de
+  nenhuma evidência em `editorialEvidence` — são identificadores conceituais;
 - **Nenhum renderizador foi implementado** (HTML/FFmpeg/HyperFrames/edição: nada adotado;
   `renderer.adapter: "undecided"` é aceito e nenhum adapter precisa estar instalado);
 - **HyperFrames não foi instalado** e permanece apenas possibilidade futura atrás de adaptador;
@@ -704,7 +800,9 @@ resolução de caminho é feita — nunca.
 
 ## Próximos incrementos possíveis (não compromissos)
 
-- Evolução da Composition (BeatPlan, AssetManifest completo, AudioPlan, RenderPlan);
+- Evolução da Composition (`VisualStyle`, `VisualAnchor`, `AssetManifest` completo,
+  `AudioPlan`, `RenderPlan`) — o BeatPlan v1 existe como fatia interna e não muda isso:
+  amarrar o plano de beats a plano visual, de assets, de áudio ou de render continua futuro;
 - Validator editorial (briefing/roteiro aprovados) e de assets;
 - Adaptadores de renderizador (HTML/CSS + FFmpeg como primeiro candidato);
 - Preview e renderização reproduzíveis; inspeção e report de artefatos;
