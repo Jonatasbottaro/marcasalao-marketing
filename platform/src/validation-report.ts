@@ -6,6 +6,9 @@
  * A automacao deve confiar nos codigos estaveis, nao nas mensagens livres.
  */
 
+import type { RequiresInspection, OutputPlanGeometry } from './output-plan-contract.js'
+import type { OutputMediaKind, RuleContext } from './output-profiles/types.js'
+
 export interface ValidationIssue {
     /** Codigo estavel do erro ou aviso (ver README do modulo). */
     code: string
@@ -80,4 +83,63 @@ export function compositionInvalidSummary(errorCount: number): string {
 
 export function issue(code: string, path: string, message: string): ValidationIssue {
     return { code, path, message }
+}
+
+/**
+ * Relatorio de resolucao e de validacao do OutputPlan (R001-03). Mesmas regras
+ * de determinismo deste arquivo. Os campos ecoados vém do plano lido ou do
+ * catalogo quando o plano nao existe; `pendingRuleIds` e `requiresInspection`
+ * dizem o que **continua** por certificar, nunca o que foi certificado.
+ */
+export interface OutputPlanReport {
+    valid: boolean
+    errors: ValidationIssue[]
+    warnings: ValidationIssue[]
+    summary: string
+    projectId: string | null
+    profileId: string | null
+    catalogVersion: string | null
+    profileRevision: number | null
+    mediaKind: OutputMediaKind | null
+    /** Contexto declarado; null quando nao informado. Nunca "sem contexto" como string. */
+    ruleContext: RuleContext | null
+    geometry: OutputPlanGeometry | null
+    /** null em plano de imagem: fps nunca e 0 nem inventado. */
+    fps: number | null
+    /** Pendencias nominais do perfil (§2.2): ausencia de numero, nao zero. */
+    pendingRuleIds: readonly string[]
+    /** Necessidades de inspecao de arquivo, em ordem fixa (§6.2.1). */
+    requiresInspection: readonly RequiresInspection[]
+}
+
+/**
+ * Relatorio de compatibilidade Composition v1 x OutputPlan. Os relatorios das
+ * duas camadas entram **por inteiro**, sem resumo, para preservar a causa da
+ * falha; cada um e null quando aquela camada nao rodou. Avisos das camadas
+ * embutidas nao sao copiados para este relatorio.
+ */
+export interface OutputCompatibilityReport {
+    valid: boolean
+    errors: ValidationIssue[]
+    warnings: ValidationIssue[]
+    summary: string
+    compositionId: string | null
+    profileId: string | null
+    ruleContext: RuleContext | null
+    /** Soma declarada das cenas; null se ausente, malformada ou em overflow. Nao e duracao de arquivo. */
+    totalDurationMs: number | null
+    compositionReport: CompositionValidationReport | null
+    planReport: OutputPlanReport | null
+}
+
+export const OUTPUT_PLAN_VALID_SUMMARY = 'Output plan is valid.'
+
+export function outputPlanInvalidSummary(errorCount: number): string {
+    return `Output plan is invalid: ${errorCount} error(s).`
+}
+
+export const OUTPUT_COMPAT_VALID_SUMMARY = 'Composition is compatible with the output plan.'
+
+export function outputCompatInvalidSummary(errorCount: number): string {
+    return `Composition is not compatible with the output plan: ${errorCount} error(s).`
 }

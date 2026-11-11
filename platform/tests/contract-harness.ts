@@ -1,8 +1,8 @@
 /**
  * Infraestrutura compartilhada dos testes de contrato: motor JSON Schema real
- * (ajv), builders de documentos e leituras dos exemplos oficiais. ProjectManifest
- * e Composition usam o mesmo harness, entao schema e validador TypeScript sempre
- * sao comparados sobre os mesmos objetos.
+ * (ajv), builders de documentos e leituras dos exemplos oficiais. ProjectManifest,
+ * Composition e OutputPlan usam o mesmo harness, entao schema e validador
+ * TypeScript sempre sao comparados sobre os mesmos objetos.
  *
  * Nada aqui acessa rede nem abre assets além dos exemplos oficiais do modulo.
  */
@@ -12,9 +12,11 @@ import { fileURLToPath } from 'node:url'
 
 import AjvModule, { type AnySchemaObject } from 'ajv'
 
+import { CATALOG_VERSION, OUTPUT_PROFILES } from '../src/output-profiles/catalog.js'
 import { validateComposition } from '../src/validate-composition.js'
+import { validateOutputPlan } from '../src/validate-output-plan.js'
 import { validateProjectManifest } from '../src/validate-project.js'
-import type { CompositionValidationReport, ProjectValidationReport } from '../src/validation-report.js'
+import type { CompositionValidationReport, OutputPlanReport, ProjectValidationReport } from '../src/validation-report.js'
 
 const testDir = path.dirname(fileURLToPath(import.meta.url))
 
@@ -68,6 +70,7 @@ function compileSchema(file: string): (document: unknown) => SchemaCheck {
 
 export const projectSchemaCheck = compileSchema('project.schema.json')
 export const compositionSchemaCheck = compileSchema('composition.schema.json')
+export const outputPlanSchemaCheck = compileSchema('output-plan.schema.json')
 
 export function readProjectExample(name: string): Record<string, unknown> {
     return JSON.parse(readFileSync(path.join(projectsDir, name), 'utf8')) as Record<string, unknown>
@@ -196,4 +199,74 @@ export function validateCompositionDocument(
     project: unknown = projectWith(),
 ): CompositionValidationReport {
     return validateComposition(document, project)
+}
+
+/**
+ * Projeto tecnico de teste que permite os doze perfis do catalogo. `brandTheme`,
+ * `locale` e `assetRoot` continuam opacos: nada aqui depende de marca.
+ */
+export function catalogProject(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return projectWith({
+        outputProfiles: OUTPUT_PROFILES.map((profile) => profile.id),
+        ...overrides,
+    })
+}
+
+/**
+ * Revisao atual do perfil no catalogo. Builders de documento valido nao podem
+ * carregar numero de revisao proprio: o que fixa a revisao e o registro, e o
+ * teste hostil sobrescreve explicitamente (`{ profileRevision: 9 }`).
+ */
+export function catalogProfileRevision(profileId: string): number {
+    const profile = OUTPUT_PROFILES.find((item) => item.id === profileId)
+    if (profile === undefined) {
+        throw new Error(`perfil "${profileId}" nao existe no catalogo`)
+    }
+    return profile.revision
+}
+
+/**
+ * Plano canonico de video (youtube-shorts). Builders de teste recebem entrada
+ * hostil: a ordem canonica de §6.1 e garantia do resolvedor, nao destes builders.
+ */
+export function videoPlanWith(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+        schemaVersion: 1,
+        projectId: 'projeto-teste',
+        catalogVersion: CATALOG_VERSION,
+        profileId: 'youtube-shorts',
+        profileRevision: catalogProfileRevision('youtube-shorts'),
+        mediaKind: 'video',
+        video: { width: 1080, height: 1920, aspectRatio: '9:16', fps: 30 },
+        ...overrides,
+    }
+}
+
+/** Builder de plano de imagem (instagram-stories-image). */
+export function imagePlanWith(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+        schemaVersion: 1,
+        projectId: 'projeto-teste',
+        catalogVersion: CATALOG_VERSION,
+        profileId: 'instagram-stories-image',
+        profileRevision: catalogProfileRevision('instagram-stories-image'),
+        mediaKind: 'image',
+        image: { width: 1080, height: 1920, aspectRatio: '9:16' },
+        ...overrides,
+    }
+}
+
+export function validateOutputPlanDocument(
+    document: unknown,
+    project: unknown = catalogProject(),
+): OutputPlanReport {
+    return validateOutputPlan(document, project)
+}
+
+export function outputPlanCodes(report: OutputPlanReport): string[] {
+    return report.errors.map((error) => error.code)
+}
+
+export function outputPlanWarningCodes(report: OutputPlanReport): string[] {
+    return report.warnings.map((warning) => warning.code)
 }

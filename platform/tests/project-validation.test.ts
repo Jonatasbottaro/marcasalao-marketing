@@ -334,17 +334,27 @@ test('o nucleo nao contem condicional nem referencia a projetos especificos', ()
     ]
 
     for (const directory of coreScanDirectories) {
-        for (const entry of readdirSync(directory)) {
-            const content = readFileSync(path.join(directory, entry), 'utf8').toLowerCase()
+        for (const file of coreSourceFiles(directory)) {
+            const content = readFileSync(file, 'utf8').toLowerCase()
             for (const needle of forbidden) {
                 assert.ok(
                     !content.includes(needle),
-                    `Referencia proibida "${needle}" encontrada em ${path.join(directory, entry)}`,
+                    `Referencia proibida "${needle}" encontrada em ${file}`,
                 )
             }
         }
     }
 })
+
+/**
+ * Varredura recursiva: o nucleo passou a ter subpastas (`src/output-profiles/`),
+ * e um readdirSync raso deixaria de ler esses arquivos sem avisar.
+ */
+function coreSourceFiles(directory: string): string[] {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory() ? coreSourceFiles(path.join(directory, entry.name)) : [path.join(directory, entry.name)],
+    )
+}
 
 test('o schema declara a mesma superficie do contrato', () => {
     const schema = JSON.parse(readFileSync(path.join(moduleRoot, 'schemas', 'project.schema.json'), 'utf8')) as {

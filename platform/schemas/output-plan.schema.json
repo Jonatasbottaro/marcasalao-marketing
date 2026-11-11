@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OutputPlan",
+  "description": "Contrato declarativo do plano de saida canonico (v1), produzido pela resolucao de um perfil do catalogo contra um ProjectManifest informado. Descreve forma geometrica planejada: nao certifica formato de arquivo, nao contem duracao, nao afirma capacidade de exportacao nem de publicacao. Os limites abaixo sao estruturais; a relacao desses valores com o preset e com as regras do catalogo e semantica e decidida em platform/src/validate-output-plan.ts. Campos desconhecidos sao proibidos (additionalProperties=false) e os dois payloads sao mutuamente exclusivos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "catalogVersion",
+    "profileId",
+    "profileRevision",
+    "mediaKind"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao do contrato de plano suportada nesta fatia."
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "id do ProjectManifest consumido; deve ser igual a project.id."
+    },
+    "catalogVersion": {
+      "type": "string",
+      "const": "1",
+      "description": "Versao da tabela de perfis usada na resolucao. Catalogo mais novo exige decisao de contrato, nao coercava."
+    },
+    "profileId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Perfil do catalogo escolhido; deve existir no catalogo e constar em project.outputProfiles."
+    },
+    "profileRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Revisao do perfil no momento da resolucao: inteiro positivo e seguro. A igualdade com a revisao atual do catalogo e verificada pelo validador TypeScript."
+    },
+    "mediaKind": {
+      "type": "string",
+      "enum": ["image", "video"],
+      "description": "Tipo de midia do perfil; discrimina qual payload e obrigatorio. Nao e formato de arquivo."
+    },
+    "ruleContext": {
+      "type": "string",
+      "enum": ["in-app", "api-publishing", "ads", "studio-upload"],
+      "description": "Contexto das regras oficiais. Ausencia significa contexto nao informado e e representada pela chave ausente, nunca por null; com contexto ausente as regras condicionais nao sao avaliadas e a validade estrutural nao confirma exigencia oficial."
+    },
+    "image": {
+      "$ref": "#/definitions/imagePayload",
+      "description": "Payload obrigatorio quando mediaKind=e image e proibido quando mediaKind=e video."
+    },
+    "video": {
+      "$ref": "#/definitions/videoPayload",
+      "description": "Payload obrigatorio quando mediaKind=e video e proibido quando mediaKind=e image."
+    }
+  },
+  "oneOf": [
+    {
+      "title": "plano de imagem",
+      "required": ["image", "mediaKind"],
+      "properties": { "mediaKind": { "const": "image" } },
+      "not": { "required": ["video"] }
+    },
+    {
+      "title": "plano de video",
+      "required": ["video", "mediaKind"],
+      "properties": { "mediaKind": { "const": "video" } },
+      "not": { "required": ["image"] }
+    }
+  ],
+  "definitions": {
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Largura planejada em pixels: inteiro positivo e seguro."
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Altura planejada em pixels: inteiro positivo e seguro."
+    },
+    "aspectRatio": {
+      "type": "string",
+      "pattern": "^\\d+:\\d+$",
+      "description": "Proporcao declarada na forma W:H. A correspondencia com as dimensoes e com o preset do catalogo e verificada pelo validador TypeScript."
+    },
+    "fps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "description": "Quadros por segundo do preset interno de video: inteiro entre 1 e 120. So existe no ramo de video."
+    },
+    "imagePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "aspectRatio"],
+      "properties": {
+        "width": { "$ref": "#/definitions/width" },
+        "height": { "$ref": "#/definitions/height" },
+        "aspectRatio": { "$ref": "#/definitions/aspectRatio" }
+      },
+      "description": "Forma geometrica de imagem: sem fps, sem duracao e sem contener, porque nada aqui inspeciona arquivo."
+    },
+    "videoPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "aspectRatio", "fps"],
+      "properties": {
+        "width": { "$ref": "#/definitions/width" },
+        "height": { "$ref": "#/definitions/height" },
+        "aspectRatio": { "$ref": "#/definitions/aspectRatio" },
+        "fps": { "$ref": "#/definitions/fps" }
+      },
+      "description": "Forma geometrica e frame rate do preset de video. Duracao nao e campo do plano: pertence a Composition e ao BeatPlan."
+    }
+  }
+}

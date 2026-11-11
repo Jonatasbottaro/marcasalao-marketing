@@ -228,12 +228,22 @@ test('fronteira limpa: platform permanece sem dependencia de runtime, sem @tempo
     }
 
     const srcDir = path.join(moduleRoot, 'src')
-    for (const file of readdirSync(srcDir)) {
-        const content = readFileSync(path.join(srcDir, file), 'utf8')
-        assert.ok(!content.includes('@temporalio'), `import @temporalio proibido em src/${file}`)
-        assert.ok(!content.includes('orchestration'), `referencia a orchestration proibida em src/${file}`)
+    for (const filePath of collectSourceFiles(srcDir)) {
+        const relativePath = path.relative(moduleRoot, filePath).replace(/\\/g, '/')
+        const content = readFileSync(filePath, 'utf8')
+        assert.ok(!content.includes('@temporalio'), `import @temporalio proibido em ${relativePath}`)
+        assert.ok(!content.includes('orchestration'), `referencia a orchestration proibida em ${relativePath}`)
     }
 })
+
+/**
+ * Varredura recursiva para cobrir subpastas adicionadas em `src/` (como `output-profiles/`).
+ */
+function collectSourceFiles(directory: string): string[] {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory() ? collectSourceFiles(path.join(directory, entry.name)) : [path.join(directory, entry.name)],
+    )
+}
 
 test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo nome publico com tipos validos', () => {
     const npmCli = resolveNpmCli()
