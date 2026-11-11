@@ -2,20 +2,22 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-## 1. Deliberar sobre a ratificação da fatia Workflow de TEMPORAL-02
+## 1. Deliberar sobre a próxima fatia de TEMPORAL-02
 
-> Obter decisão explícita do titular sobre ratificar a fatia Workflow de TEMPORAL-02 e deliberar se o projeto permanece bloqueado ou se uma próxima fatia específica será autorizada.
+> Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
 A main consultada em 11/11/2026 é `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52`, contendo as fatias técnicas de validação de composição e a integração do R001. Marcos preservados:
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
 - **TEMPORAL-02-03**: Activity real [`validateCompositionActivity`](../../orchestration/temporal/src/activities/composition-validation-activity.ts), integrada em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`, com ratificação estrita registrada em `8f94e0205b470b46da918d78f8136fafa9a2286a`;
-- **Fatia Workflow**: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), [`CompositionValidationWorkflowResult`](../../orchestration/temporal/src/workflows/composition-validation-result.ts), [classificador de falhas](../../orchestration/temporal/src/workflows/composition-validation-failure-classifier.ts) e Retry Policy canônica do PRD integrados e homologados tecnicamente em `f5842107a0f307b4cc208c15fc4509c6d7d31f72`.
+- **Fatia Workflow**: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), [`CompositionValidationWorkflowResult`](../../orchestration/temporal/src/workflows/composition-validation-result.ts), [classificador de falhas](../../orchestration/temporal/src/workflows/composition-validation-failure-classifier.ts) e Retry Policy canônica do PRD integrados e homologados tecnicamente em `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, com ratificação do titular registrada em 11/11/2026.
 
 A evidência da fatia Workflow é de **17 testes novos, 162 testes aprovados, zero falhas, zero ignorados e repetibilidade 7/7**, exclusivamente em `f584210`. O CI da [branch técnica, run 42950735743](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42950735743), e da [main nesse SHA, run 42953193438](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42953193438), está verde em Ubuntu e Windows, Node 22. Não são testes do HEAD posterior `e86f3c9` nem foram repetidos nesta atualização documental. As evidências anteriores de cada fatia e os limites estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e no [README do Temporal](../../orchestration/temporal/README.md).
 
-A fatia Workflow de TEMPORAL-02 está tecnicamente integrada e homologada no commit f584210. A ratificação explícita do titular para essa fatia permanece pendente no fluxo de governança. A integração técnica não autoriza automaticamente cliente, Worker, workflow.start, Workflow ID ou qualquer implementação posterior.
+A fatia Workflow de TEMPORAL-02 está tecnicamente integrada e homologada no commit `f584210` e **ratificada pelo titular em 11/11/2026**. A ratificação abrange exclusivamente `validateCompositionWorkflow`, `CompositionValidationWorkflowResult`, `classifyCompositionActivityFailure`, a chamada tipada de `validateCompositionActivity`, os resultados `valid`, `invalid` e `failed`, a Retry Policy canônica do PRD, a classificação sanitizada de falhas, os testes puros, os testes de fronteira e os testes com `TestWorkflowEnvironment`, o Worker efêmero usado exclusivamente nos testes e o CI verde em Ubuntu e Windows, Node 22.
+
+A ratificação não aprova o PRD completo e não autoriza nova implementação. Nada fora dessa lista foi ratificado: cliente Temporal de validação, Worker de produção, `workflow.start` da aplicação, Workflow ID e suas políticas, colisão, `contentHash`, replay formal e o gate Elephant–Goldfish seguem bloqueados, como abaixo.
 
 O [PRD de TEMPORAL-02](../planejamento/TEMPORAL-02-validacao-de-composition.md) permanece formalmente em revisão, sem aprovação global. TEMPORAL-02 não está concluído integralmente, e nenhuma implementação posterior foi autorizada. Não reimplementar o Workflow já integrado nem definir antecipadamente qual será a próxima fatia.
 
@@ -39,7 +41,7 @@ Continuam estritamente bloqueados até autorização específica:
 
 Worker efêmero, cliente, `workflow.start` e IDs usados nos testes desta fatia não são implementação desses componentes na aplicação. Replay formal não foi executado nem aprovado, e o gate Elephant–Goldfish de TEMPORAL-01 não vale como aprovação de TEMPORAL-02. `contentHash` continua fora de TEMPORAL-02.
 
-As pré-condições técnicas já cumpridas — fronteira pública, input/preflight, Activity ratificada, Workflow homologado, Retry Policy exercitada e núcleo sem dependência Temporal — não substituem a decisão de governança. Mesmo que o titular ratifique o Workflow, qualquer próxima implementação exige autorização separada, com escopo explícito.
+As pré-condições técnicas já cumpridas — fronteira pública, input/preflight, Activity ratificada, Workflow ratificado em escopo estrito, Retry Policy exercitada e núcleo sem dependência Temporal — não substituem a decisão de governança. A ratificação da fatia Workflow não abre autorização automática: qualquer próxima implementação exige decisão separada do titular, com escopo explícito.
 
 ## 2. Revisar a branch de BeatPlan frente ao R001 integrado
 

@@ -6,9 +6,10 @@
 - Branch de referência: main
 - Commit da main consultada: [e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52) — integra o R001 e contém a fatia Workflow de TEMPORAL-02
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
+- Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-`e86f3c9` é o HEAD da main consultada, posterior à integração técnica do Workflow em `f584210`. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado e a Retry Policy estão integrados e homologados tecnicamente, mas a ratificação explícita da fatia Workflow permanece pendente. Worker de produção, cliente de validação, `workflow.start` da aplicação, política de Workflow ID e colisão continuam ausentes e bloqueados. O R001 está integrado no núcleo; BeatPlan continua branch-only e nenhum deles passa a compor TEMPORAL-02 por consequência.
+`e86f3c9` é o HEAD da main consultada, posterior à integração técnica do Workflow em `f584210`. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo; BeatPlan continua branch-only e nenhum deles passa a compor TEMPORAL-02 por consequência.
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -245,7 +246,22 @@ A remoção da linha em branco excedente no EOF de [`platform/tests/composition-
 
 ### Estado técnico e governança
 
-A fatia Workflow de TEMPORAL-02 está tecnicamente integrada e homologada no commit f584210. A ratificação explícita do titular para essa fatia permanece pendente no fluxo de governança. A integração técnica não autoriza automaticamente cliente, Worker, workflow.start, Workflow ID ou qualquer implementação posterior.
+A fatia Workflow de TEMPORAL-02 está tecnicamente integrada e homologada no commit `f5842107a0f307b4cc208c15fc4509c6d7d31f72` e **ratificada pelo titular em 2026-11-11**. A decisão não aprova automaticamente o PRD completo, não autoriza nova implementação e não abre qualquer fatia posterior.
+
+A ratificação abrange exclusivamente:
+
+- `validateCompositionWorkflow`;
+- `CompositionValidationWorkflowResult`;
+- `classifyCompositionActivityFailure`;
+- a chamada tipada de `validateCompositionActivity`;
+- os resultados `valid`, `invalid` e `failed`;
+- a Retry Policy canônica do PRD;
+- a classificação sanitizada de falhas;
+- os testes puros, os testes de fronteira e os testes com `TestWorkflowEnvironment`;
+- o Worker efêmero usado exclusivamente nos testes;
+- o CI verde em Ubuntu e Windows, Node 22.
+
+Nada fora dessa lista está ratificado. Permanecem bloqueados, sem autorização: Worker de produção dedicado à composição, cliente Temporal de validação, `workflow.start` da aplicação, Workflow ID de composição, `WorkflowIdReusePolicy`, `WorkflowIdConflictPolicy`, colisão de Workflow ID, `contentHash`, replay formal, gate Elephant–Goldfish de TEMPORAL-02, integração final completa de TEMPORAL-02, combinação de OutputPlan ou BeatPlan com Temporal, TEMPORAL-04, mídia, fornecedores e deploy.
 
 - Commit técnico: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, ancestral da main consultada em `e86f3c9`.
 - Workflow: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), recebendo `CompositionValidationWorkflowInput` e chamando a Activity já integrada `validateCompositionActivity` por `proxyActivities` tipado.
@@ -308,7 +324,7 @@ Os sete testes de Workflow exercitaram `valid` e `invalid` com Activity real, fa
 
 ## TEMPORAL-02
 
-- **PRD de TEMPORAL-02 integrado e formalmente em revisão; TEMPORAL-02-01, TEMPORAL-02-02, TEMPORAL-02-03 e a fatia Workflow estão integrados tecnicamente. A ratificação do Workflow está pendente; a implementação global e qualquer fatia posterior continuam não autorizadas.**
+- **PRD de TEMPORAL-02 integrado e formalmente em revisão; TEMPORAL-02-01, TEMPORAL-02-02, TEMPORAL-02-03 e a fatia Workflow estão integrados tecnicamente. A fatia Workflow foi ratificada pelo titular em 2026-11-11, em escopo estrito; a implementação global, a aprovação do PRD e qualquer fatia posterior continuam não autorizadas.**
 - Arquivo: [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md), integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
 - Status do documento: **PRD em revisão**.
 - Aprovação do PRD: **não concedida**.
@@ -317,12 +333,12 @@ Os sete testes de Workflow exercitaram `valid` e `invalid` com Activity real, fa
   - **TEMPORAL-02-01**: fronteira pública mínima da `platform` (`marcasalao-marketing-platform@0.1.0`, entrypoint `composition-validation-api`), integrada em `f202377fac721aff1d4143a2598f76c03062f0ac` (fechamento documental em `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`);
   - **TEMPORAL-02-02**: contrato de entrada versionado e preflight local anterior ao `start` em [`orchestration/temporal/src/composition-validation/`](../../orchestration/temporal/src/composition-validation/), integrado em `29b40783320360350e59a13e39f49a60d2308507`;
   - **TEMPORAL-02-03**: Activity real `validateCompositionActivity` em [`orchestration/temporal/src/activities/composition-validation-activity.ts`](../../orchestration/temporal/src/activities/composition-validation-activity.ts), integrada em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`, com ratificação registrada em `8f94e02`;
-  - **Fatia Workflow**: `validateCompositionWorkflow`, `CompositionValidationWorkflowResult`, classificador de falhas e Retry Policy integrados e homologados tecnicamente em `f584210`; ratificação explícita pendente.
+  - **Fatia Workflow**: `validateCompositionWorkflow`, `CompositionValidationWorkflowResult`, classificador de falhas e Retry Policy integrados e homologados tecnicamente em `f584210`, com ratificação do titular registrada em 2026-11-11 restrita ao escopo dessa fatia.
 - **Etapas posteriores**: Worker de produção, cliente de validação, start da aplicação, Workflow ID e colisão, replay formal e gate Elephant–Goldfish **não autorizados e bloqueados**.
 - Temporal executado para esta fatia: **somente em testes com ambiente efêmero**, conforme evidências de `f584210`; não há execução de produção.
 - Dependências externas novas da fatia Workflow: **nenhuma**; mantém o SDK isolado e a dependência local `marcasalao-marketing-platform` já integrada. Deploy: **nenhum**.
 
-Integrar o PRD **não** é aprová-lo. A ratificação da Activity não ratifica o Workflow, e a homologação técnica do Workflow não autoriza etapas posteriores. As descrições de implementação não iniciada no PRD preservam o recorte histórico de sua redação; o documento não foi alterado nesta atualização e sua aprovação global continua não concedida.
+Integrar o PRD **não** é aprová-lo. A ratificação da Activity (TEMPORAL-02-03) e a ratificação da fatia Workflow são registros distintos, cada um restrito ao próprio escopo, e nenhuma delas aprova o PRD completo nem autoriza etapas posteriores. As descrições de implementação não iniciada no PRD preservam o recorte histórico de sua redação; o documento não foi alterado nesta atualização e sua aprovação global continua não concedida.
 
 ### Passo real implementado
 
@@ -346,7 +362,7 @@ O [PRD](../planejamento/TEMPORAL-02-validacao-de-composition.md) registra o dese
 - **Gate de fronteira pública (`TEMPORAL-02-01`)** — **concluído e integrado** na main em `f202377fac721aff1d4143a2598f76c03062f0ac`: entrypoint público mínimo da `platform` (`composition-validation-api`), pacote compilado consumível (`marcasalao-marketing-platform@0.1.0`), tipos públicos (`Composition`, `ProjectManifest`, `CompositionValidationReport`), subpaths internos bloqueados por `exports`, zero dependências de runtime, 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)).
 - **Fatia de contrato e preflight local (`TEMPORAL-02-02`)** — **concluída e integrada** na main em `29b40783320360350e59a13e39f49a60d2308507`: envelope fechado (`schemaVersion: 1`, `requestId`, `project`, `composition`), três códigos da Via A, inspeção JSON sem perda, política estreita contra conteúdo sensível, limites UTF-8 de 64/256/384 KiB, prova de zero invocação do callback de `start` nas rejeições, 17 novos testes locais verdes e suíte integral de 137 testes verde no CI Ubuntu e Windows, Node 22 (run [42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305)).
 - **Fatia de Activity real (`TEMPORAL-02-03`)** — **concluída, integrada e ratificada** na main em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`: Activity pura `validateCompositionActivity`, consumo da dependência pública `marcasalao-marketing-platform`, contrato dedicado `CompositionValidationActivityInput`, chamada exata `validateComposition(composition, project)`, retorno de relatório sem remapeamento, `valid: false` normal, conversão sanitizada para `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, 8 novos testes dedicados, 145 testes integrais do pacote Temporal e CI verde em Ubuntu e Windows, Node 22 (run [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737)).
-- **Fatia Workflow** — **integrada e homologada tecnicamente** em `f584210`, com 17 testes novos, suíte de 162 aprovados e repetibilidade 7/7; CI Ubuntu e Windows, Node 22, no mesmo SHA. **Ratificação explícita pendente**, sem autorização de próxima fatia.
+- **Fatia Workflow** — **integrada e homologada tecnicamente** em `f584210` e **ratificada pelo titular em 2026-11-11** no escopo dessa fatia: 17 testes novos, suíte de 162 aprovados e repetibilidade 7/7; CI Ubuntu e Windows, Node 22, no mesmo SHA. A ratificação não aprova o PRD completo nem autoriza a próxima fatia.
 - **Replay formal de TEMPORAL-02** — **não executado nem aprovado**; os testes e sua repetição não o substituem.
 - **Gate Elephant–Goldfish de TEMPORAL-02** — **não executado**; permanece pendente e obrigatório antes da integração final completa de TEMPORAL-02, distinta das fatias já integradas. Sua execução depende de autorização específica. Revisões mínimas: fronteira pública, ordem dos argumentos, paridade, history, payload, quatro vias, `invalid` versus `failed`, retries, replay, isolamento do núcleo e ausência de mídia e fornecedores.
 
@@ -400,13 +416,14 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 ## Próximo passo
 
-> Obter decisão explícita do titular sobre ratificar a fatia Workflow de TEMPORAL-02 e deliberar se o projeto permanece bloqueado ou se uma próxima fatia específica será autorizada.
+> Deliberar se o projeto permanece bloqueado ou se uma próxima fatia específica de TEMPORAL-02 será autorizada, com escopo delimitado pelo titular. A ratificação da fatia Workflow, registrada em 2026-11-11, não autoriza nenhuma fatia posterior.
 
-O Workflow já está integrado e homologado tecnicamente; não deve ser reimplementado como próxima tarefa. Permanecem **bloqueados até autorização específica**:
+O Workflow já está integrado, homologado tecnicamente e ratificado no escopo dessa fatia; não deve ser reimplementado como próxima tarefa. Permanecem **bloqueados até autorização específica**:
 
 - Worker de produção dedicado à composição;
 - cliente Temporal de validação e `workflow.start` da aplicação;
 - Workflow ID, `WorkflowIdReusePolicy`, `WorkflowIdConflictPolicy` e colisão de Workflow ID de composição;
+- `contentHash` e qualquer canonicalização de entrada;
 - replay formal e gate Elephant–Goldfish de TEMPORAL-02;
 - integração final completa de TEMPORAL-02;
 - integração de BeatPlan e combinação de planos no Temporal;
@@ -418,11 +435,11 @@ Pré-condições técnicas já cumpridas, sem abrir autorização futura:
 - fronteira pública da platform integrada (`TEMPORAL-02-01`);
 - contrato de entrada versionado e preflight local integrados (`TEMPORAL-02-02`);
 - Activity real integrada e ratificada (`TEMPORAL-02-03`), com coordenação de build no CI;
-- Workflow, contrato de resultado, classificador e Retry Policy integrados e homologados tecnicamente em `f584210`;
+- Workflow, contrato de resultado, classificador e Retry Policy integrados e homologados tecnicamente em `f584210` e ratificados em escopo estrito pelo titular;
 - evidência de 162 testes e CI Ubuntu/Windows, Node 22, exclusivamente em `f584210`, detalhada na seção da fatia Workflow;
 - núcleo sem dependência Temporal.
 
-A ratificação explícita do Workflow ainda precisa ser deliberada separadamente. Mesmo uma eventual ratificação não autoriza a próxima fatia sem decisão específica que delimite seu escopo; o PRD completo permanece em revisão.
+A ratificação da fatia Workflow foi registrada pelo titular em 2026-11-11 e encerra estritamente o escopo homologado de `f584210`, sem aprovar o PRD completo. Ela não autoriza a próxima fatia: qualquer implementação posterior exige decisão específica que delimite seu escopo, e o PRD permanece em revisão.
 
 Tarefas secundárias de consulta:
 
@@ -434,7 +451,7 @@ Tarefas secundárias de consulta:
 
 - não reimplementar o Workflow já integrado nem criar Worker de produção sem autorização explícita;
 - não criar cliente Temporal de validação, start da aplicação, Workflow ID ou suas políticas sem autorização específica;
-- não tratar a homologação técnica do Workflow como ratificação, conclusão integral de TEMPORAL-02 ou autorização de próxima fatia;
+- não tratar a ratificação da fatia Workflow como conclusão integral de TEMPORAL-02, aprovação do PRD ou autorização de próxima fatia;
 - não tratar o PRD de TEMPORAL-02 como aprovado sem decisão explícita;
 - não executar replay formal ou gate Elephant–Goldfish de TEMPORAL-02 sem autorização;
 - não iniciar TEMPORAL-04;
@@ -450,7 +467,7 @@ Tarefas secundárias de consulta:
 
 ## O que esta atualização não verificou
 
-Esta atualização é exclusivamente documental: não executou instalação de dependências, build, typecheck ou testes e não alterou código, CI, campanhas ou mídia. As evidências de 162 testes e repetibilidade 7/7 foram obtidas na homologação anterior de `f584210`, não no HEAD posterior `e86f3c9`; a integração de R001 foi conferida por ancestralidade e conteúdo, sem nova homologação técnica. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
+Esta atualização é exclusivamente documental e registra a ratificação da fatia Workflow comunicada pelo titular em 2026-11-11: não executou instalação de dependências, build, typecheck ou testes e não alterou código, CI, campanhas ou mídia. As evidências de 162 testes e repetibilidade 7/7 foram obtidas na homologação anterior de `f584210`, não no HEAD posterior `e86f3c9`; a integração de R001 foi conferida por ancestralidade e conteúdo, sem nova homologação técnica. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
 
 Preserva-se a evidência histórica de TEMPORAL-02-03: suíte local Windows com Node 22, 145 testes aprovados em 52s, e CI Ubuntu/Windows no commit `db84270ad3e51eecb0b562fcdf3a7e36941288ab` (runs [42902255503](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902255503) e [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737)). Não é execução desta atualização.
 
