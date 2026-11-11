@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BeatPlan",
+  "description": "Contrato declarativo de BeatPlan da Content Factory (v1): a traducao temporal de uma Composition valida em beats ordenados. Nao e roteiro, nao e Composition e nao e renderizacao. O plano nao gera beats automaticamente, nao contem comandos de ferramenta, nao contem provider de midia e nao cria arquivos. Narration e somente texto (sem TTS, sem voz, sem arquivo); motionIntent e transicoes descrevem intencao e nao executam movimento nem animacao. O plano e sempre validado contra um ProjectManifest e uma Composition informados explicitamente. Campos desconhecidos sao proibidos (additionalProperties=false). Regras entre documentos e a timeline linear (comecar em zero, contiguidade, ausencia de lacunas e de sobreposicao, termino exatamente na duracao da Composition, existencia dos sceneIds e igualdade de projectId/compositionId/locale) NAO sao expressaveis neste schema: a implementacao de referencia de todas as regras esta em platform/src/validate-beat-plan.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "compositionId",
+    "id",
+    "locale",
+    "beats"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "id do ProjectManifest contra o qual o plano e validado; deve ser igual a project.id."
+    },
+    "compositionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "id da Composition traduzida temporalmente; deve ser igual a composition.id."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador do BeatPlan em kebab-case."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Idioma do plano; na v1 deve ser igual a project.locale e a composition.locale."
+    },
+    "beats": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Beats ordenados. A ordem do array deve corresponder ao campo order, que comeca em 1 e nao possui lacunas nem duplicacoes.",
+      "items": { "$ref": "#/definitions/beat" }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["draft", "review", "validated", "archived"],
+          "description": "Status tecnico do artefato. \"validated\" significa apenas que o plano passou por validacao tecnica no pipeline: NAO concede aprovacao de briefing, de hook, de roteiro, nem autorizacao de gravacao, de producao ou de publicacao."
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "tags": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Tags informativas, sem duplicacao e sem uso como logica do core."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "beat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "order",
+        "sceneIds",
+        "narrativeFunction",
+        "startMs",
+        "durationMs",
+        "visualIntent",
+        "motionIntent",
+        "transitionIn",
+        "transitionOut",
+        "editorialEvidence",
+        "validationStatus"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Identificador do beat em kebab-case, unico dentro do BeatPlan."
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Posicao do beat a partir de 1; unica, continua e igual a posicao no array."
+        },
+        "sceneIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "description": "Cenas da Composition referenciadas pelo beat. Cada id deve existir na Composition; um beat pode atravessar mais de uma cena e uma cena pode ser referenciada por mais de um beat. Cena e beat nao possuem relacao obrigatoria de um para um."
+        },
+        "narrativeFunction": {
+          "type": "string",
+          "enum": [
+            "hook",
+            "context",
+            "problem",
+            "demonstration",
+            "explanation",
+            "proof",
+            "transition",
+            "cta",
+            "closing"
+          ],
+          "description": "Funcao narrativa neutra; nenhuma funcao especifica de projeto consumidor pertence ao nucleo."
+        },
+        "startMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Inicio do beat em milissegundos, inteiro maior ou igual a zero e seguro para Number.MAX_SAFE_INTEGER."
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Duracao do beat em milissegundos, inteiro maior que zero e seguro para Number.MAX_SAFE_INTEGER."
+        },
+        "narration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string", "minLength": 1 }
+          },
+          "description": "Narracao como texto canonico. Sem provider, sem voz, sem arquivo e sem configuracao de TTS: o AudioPlan pertence a uma fatia futura."
+        },
+        "onScreenText": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Texto de tela canonico e editavel; nunca fica incorporado a imagem gerada."
+        },
+        "visualIntent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Descricao declarativa da intencao visual. Nao e prompt de fornecedor e nao pode conter configuracao executavel de ferramenta."
+        },
+        "motionIntent": {
+          "type": "string",
+          "enum": [
+            "none",
+            "slow-zoom",
+            "parallax-depth",
+            "camera-orbit",
+            "pan",
+            "tilt",
+            "hold"
+          ],
+          "description": "Intencao de movimento neutra; descreve, nao executa."
+        },
+        "transitionIn": {
+          "type": "string",
+          "enum": ["none", "cut", "fade", "dissolve", "slide", "material-dissolve"],
+          "description": "Intencao de transicao de entrada; descreve, nao executa animacao."
+        },
+        "transitionOut": {
+          "type": "string",
+          "enum": ["none", "cut", "fade", "dissolve", "slide", "material-dissolve"],
+          "description": "Intencao de transicao de saida; descreve, nao executa animacao."
+        },
+        "editorialEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Identificadores conceituais de evidencia editorial, sem duplicacao, sem caminhos absolutos e sem URLs. A existencia fisica NAO e verificada nesta versao."
+        },
+        "validationStatus": {
+          "type": "string",
+          "enum": ["draft", "review", "validated", "rejected"],
+          "description": "Estado tecnico do beat no pipeline. \"validated\" significa apenas revisao tecnica: NAO concede aprovacao editorial, autorizacao de gravacao nem autorizacao de publicacao."
+        }
+      }
+    }
+  }
+}

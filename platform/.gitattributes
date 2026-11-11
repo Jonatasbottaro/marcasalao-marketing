@@ -5,3 +5,7 @@
 # Exemplos de planos de saida comparados byte a byte contra o stdout da CLI:
 # checkout no Windows nao pode converter para CRLF.
 examples/output-plans/*.json text eol=lf
+
+# Exemplos de BeatPlan: mesma razao dos planos de saida. Os testes leem os bytes
+# do repositorio e o gate roda em windows-latest, onde o checkout padrao viraria CRLF.
+examples/beat-plans/*.json text eol=lf

@@ -143,3 +143,52 @@ export const OUTPUT_COMPAT_VALID_SUMMARY = 'Composition is compatible with the o
 export function outputCompatInvalidSummary(errorCount: number): string {
     return `Composition is not compatible with the output plan: ${errorCount} error(s).`
 }
+
+/**
+ * Relatorio estruturado de validacao de BeatPlan (estrutura propria, vinculo
+ * com ProjectManifest e Composition, relacao com cenas e timeline). Mesmas
+ * regras de determinismo: sem timestamp, sem caminho absoluto da maquina, sem
+ * ID aleatorio, sem stack trace, ordem estavel e codigos estaveis.
+ */
+export interface BeatPlanValidationReport {
+    valid: boolean
+    errors: ValidationIssue[]
+    warnings: ValidationIssue[]
+    summary: string
+    /** projectId declarado no plano, quando disponivel como string. */
+    projectId: string | null
+    /** compositionId declarado no plano, quando disponivel como string. */
+    compositionId: string | null
+    /** id declarado no plano, quando disponivel como string. */
+    beatPlanId: string | null
+    /** schemaVersion declarado, quando disponivel como numero. */
+    schemaVersion: number | null
+    /**
+     * Quantidade de entradas de beats que sao objetos JSON (0 quando beats esta
+     * ausente ou malformado). Contagem estrutural: nao implica beats validos.
+     */
+    beatCount: number
+    /** Quantidade de cenas da Composition valida (0 quando nao confiavel). */
+    compositionSceneCount: number
+    /** Quantidade de sceneIds unicos e existentes referenciados pelos beats. */
+    referencedSceneCount: number
+    /**
+     * Soma segura dos durationMs inteiros positivos dos beats; null quando nao
+     * pode ser calculada com seguranca (BEAT_PLAN_DURATION_OVERFLOW).
+     */
+    totalDurationMs: number | null
+    /** Duracao total calculada pela Composition; null quando nao confiavel. */
+    compositionDurationMs: number | null
+    /** Quantidade de beats com narration bem formada. */
+    narrationBeatCount: number
+    /** Quantidade de beats com onScreenText bem formado. */
+    onScreenTextBeatCount: number
+    /** metadata.status declarado e valido; null quando ausente ou invalido. */
+    metadataStatus: string | null
+}
+
+export const BEAT_PLAN_VALID_SUMMARY = 'Beat plan is valid.'
+
+export function beatPlanInvalidSummary(errorCount: number): string {
+    return `Beat plan is invalid: ${errorCount} error(s).`
+}
