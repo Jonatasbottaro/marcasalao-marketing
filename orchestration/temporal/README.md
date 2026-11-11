@@ -223,6 +223,22 @@ Esta fatia implementa **exclusivamente** a Activity `validateCompositionActivity
 - **Pureza e isolamento**: zero rede, zero I/O de disco, zero subprocessos, zero mutação dos inputs e zero duplicação do validador.
 - **Continuação do escopo restrito**: Workflow, Worker, cliente Temporal de validação, retries reais, timeouts reais e replay continuam não implementados e não autorizados.
 
+## TEMPORAL-02 — Fatia Workflow (`validateCompositionWorkflow`)
+
+Esta fatia implementa **exclusivamente** o Workflow determinístico e o contrato de resultado estruturado de `TEMPORAL-02` (consumindo a Activity `validateCompositionActivity` já integrada em `TEMPORAL-02-03`), confinados em `src/workflows/`:
+
+- `src/workflows/composition-validation-result.ts`: contrato `CompositionValidationWorkflowResult`, construtores puros e constantes dos códigos de falha de execução (`TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, `TEMPORAL_COMPOSITION_TIMEOUT` e `TEMPORAL_COMPOSITION_ACTIVITY_TRANSIENT_FAILURE`).
+- `src/workflows/composition-validation-failure-classifier.ts`: `classifyCompositionActivityFailure(error)`, percorrendo defensivamente a cadeia de `cause` (com proteção contra ciclos) para classificar `TimeoutFailure`, `ApplicationFailure` e mapear falhas desconhecidas de forma sanitizada para `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`.
+- `src/workflows/composition-validation-workflow.ts`: `validateCompositionWorkflow(input)`, que chama `validateCompositionActivity` exclusivamente por `proxyActivities` tipado com a Retry Policy canônica do PRD (`startToCloseTimeout: '5 seconds'`, `initialInterval: '1 second'`, `backoffCoefficient: 2`, `maximumInterval: '2 seconds'`, `maximumAttempts: 2`, `nonRetryableErrorTypes: ['TEMPORAL_COMPOSITION_ACTIVITY_FAILED']`).
+
+Regras e limites preservados nesta fatia (TEMPORAL-02 completo **não** está concluído):
+
+- `valid` e `invalid` são retornos normais de domínio com `CompositionValidationReport` intacto, `projectId` e `compositionId` vindos do relatório e `completedSteps: ['validate-composition']`.
+- `failed` retorna resultado sanitizado com `validation: null`, `projectId: null`, `compositionId: null`, `completedSteps: []` e `failureCode` obrigatório.
+- `workflow.start`, o cliente Temporal de validação e o Worker de produção para validação **ainda estão ausentes** (testes executam apenas com `TestWorkflowEnvironment` e Worker efêmero).
+- `Workflow ID` (fora desta fatia) e `contentHash` (fora de `TEMPORAL-02`) não são implementados.
+- O replay formal de `TEMPORAL-02` **não foi executado nem aprovado**, e o gate **Elephant–Goldfish de TEMPORAL-02 permanece pendente** antes da integração final (distinto do gate já concluído para `TEMPORAL-01` abaixo).
+
 ## Próximo gate
 
 A revisão **Elephant–Goldfish** de TEMPORAL-01 foi executada fora deste pacote e as três
