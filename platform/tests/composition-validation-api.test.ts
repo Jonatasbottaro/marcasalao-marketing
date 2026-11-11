@@ -8,7 +8,19 @@
  */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+    existsSync,
+    lstatSync,
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    readdirSync,
+    realpathSync,
+    rmSync,
+    symlinkSync,
+    writeFileSync,
+    type Dirent,
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
@@ -228,22 +240,199 @@ test('fronteira limpa: platform permanece sem dependencia de runtime, sem @tempo
     }
 
     const srcDir = path.join(moduleRoot, 'src')
+    const srcDirReal = realpathSync(srcDir)
+    const moduleRootReal = realpathSync(moduleRoot)
     for (const filePath of collectSourceFiles(srcDir)) {
-        const relativePath = path.relative(moduleRoot, filePath).replace(/\\/g, '/')
+        assert.ok(isWithinRoot(srcDirReal, filePath, true), `arquivo fora de platform/src: ${filePath}`)
+        const relativePath = path.relative(moduleRootReal, filePath).replace(/\\/g, '/')
         const content = readFileSync(filePath, 'utf8')
         assert.ok(!content.includes('@temporalio'), `import @temporalio proibido em ${relativePath}`)
         assert.ok(!content.includes('orchestration'), `referencia a orchestration proibida em ${relativePath}`)
     }
 })
 
-/**
- * Varredura recursiva para cobrir subpastas adicionadas em `src/` (como `output-profiles/`).
- */
-function collectSourceFiles(directory: string): string[] {
-    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
-        entry.isDirectory() ? collectSourceFiles(path.join(directory, entry.name)) : [path.join(directory, entry.name)],
-    )
+const IGNORED_SOURCE_DIRS = new Set(['node_modules', 'dist'])
+
+function isWithinRoot(rootReal: string, candidateReal: string, expectFile: boolean): boolean {
+    const relative = path.relative(rootReal, candidateReal)
+    if (expectFile && relative === '') return false
+    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) return false
+    return true
 }
+
+/**
+ * Varredura recursiva deterministica restrita ao root informado: ordena entradas,
+ * ignora symlinks (arquivo ou diretorio), exclui defensivamente dist/ e node_modules/
+ * e garante confinamento de caminho real dentro de rootReal.
+ */
+function collectSourceFiles(
+    rootDirectory: string,
+    readEntries: (directory: string) => readonly Dirent[] = (directory) => readdirSync(directory, { withFileTypes: true }),
+): string[] {
+    const rootReal = realpathSync(rootDirectory)
+
+    function walk(currentDirectory: string): string[] {
+        const entries = readEntries(currentDirectory)
+            .slice()
+            .sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0))
+
+        const collected: string[] = []
+        for (const entry of entries) {
+            if (entry.isSymbolicLink()) continue
+
+            const entryPath = path.join(currentDirectory, entry.name)
+            if (lstatSync(entryPath).isSymbolicLink()) continue
+
+            const candidateReal = realpathSync(entryPath)
+
+            if (entry.isDirectory()) {
+                if (IGNORED_SOURCE_DIRS.has(entry.name)) continue
+                if (!isWithinRoot(rootReal, candidateReal, false)) continue
+                collected.push(...walk(candidateReal))
+                continue
+            }
+
+            if (entry.isFile()) {
+                if (!isWithinRoot(rootReal, candidateReal, true)) continue
+                collected.push(candidateReal)
+            }
+        }
+        return collected
+    }
+
+    return walk(rootReal)
+}
+
+function createSymlinkOrSkip(
+    t: { skip: (message?: string) => void },
+    target: string,
+    linkPath: string,
+    type: 'file' | 'dir',
+): boolean {
+    try {
+        symlinkSync(target, linkPath, type)
+        return true
+    } catch (error: unknown) {
+        const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
+        if (process.platform === 'win32' && (code === 'EPERM' || code === 'EACCES' || code === 'ENOTSUP')) {
+            t.skip(`criacao de symlink indisponivel neste Windows (${code})`)
+            return false
+        }
+        throw error
+    }
+}
+
+test('collectSourceFiles ordena de forma deterministica, ignora dist/node_modules e confina ao root', () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'platform-collect-guard-'))
+    const scanRoot = path.join(tempRoot, 'src')
+    const subDir = path.join(scanRoot, 'nested')
+    const distDir = path.join(scanRoot, 'dist')
+    const nodeModulesDir = path.join(scanRoot, 'node_modules', 'pkg')
+
+    try {
+        mkdirSync(subDir, { recursive: true })
+        mkdirSync(distDir, { recursive: true })
+        mkdirSync(nodeModulesDir, { recursive: true })
+
+        writeFileSync(path.join(scanRoot, 'zeta.ts'), 'export const z = 1\n', 'utf8')
+        writeFileSync(path.join(scanRoot, 'alpha.ts'), 'export const a = 1\n', 'utf8')
+        writeFileSync(path.join(subDir, 'second.ts'), 'export const s = 2\n', 'utf8')
+        writeFileSync(path.join(subDir, 'first.ts'), 'export const f = 1\n', 'utf8')
+        writeFileSync(path.join(distDir, 'compiled.js'), '// @temporalio\n', 'utf8')
+        writeFileSync(path.join(nodeModulesDir, 'dep.js'), '// orchestration\n', 'utf8')
+
+        const rootReal = realpathSync(scanRoot)
+        const files = collectSourceFiles(scanRoot)
+        const reversedFsFiles = collectSourceFiles(scanRoot, (dir) =>
+            readdirSync(dir, { withFileTypes: true }).reverse(),
+        )
+        const relativeFiles = files.map((filePath) => path.relative(rootReal, filePath).replace(/\\/g, '/'))
+        const relativeReversed = reversedFsFiles.map((filePath) =>
+            path.relative(rootReal, filePath).replace(/\\/g, '/'),
+        )
+
+        assert.deepEqual(
+            relativeFiles,
+            ['alpha.ts', 'nested/first.ts', 'nested/second.ts', 'zeta.ts'],
+            'varredura deve ordenar entradas de modo deterministico e ignorar dist/ e node_modules/',
+        )
+        assert.deepEqual(
+            relativeReversed,
+            relativeFiles,
+            'ordem final nao pode depender da ordem devolvida pelo filesystem',
+        )
+
+        for (const filePath of files) {
+            const candidateReal = realpathSync(filePath)
+            assert.ok(isWithinRoot(rootReal, candidateReal, true), `caminho externo ao root alcancado: ${filePath}`)
+        }
+
+        assert.equal(isWithinRoot(rootReal, rootReal, true), false, 'arquivo esperado nao pode coincidir com o proprio root')
+        assert.equal(isWithinRoot(rootReal, realpathSync(tempRoot), true), false, 'caminho pai deve ser rejeitado')
+    } finally {
+        rmSync(tempRoot, { recursive: true, force: true })
+    }
+})
+
+test('collectSourceFiles ignora symlink de arquivo apontando para fora do root', (t) => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'platform-collect-symlink-file-'))
+    const scanRoot = path.join(tempRoot, 'src')
+    const outsideDir = path.join(tempRoot, 'outside')
+    const outsideFile = path.join(outsideDir, 'secret-orchestration.ts')
+    const insideFile = path.join(scanRoot, 'safe.ts')
+    const symlinkFile = path.join(scanRoot, 'escape-link.ts')
+
+    try {
+        mkdirSync(scanRoot, { recursive: true })
+        mkdirSync(outsideDir, { recursive: true })
+        writeFileSync(insideFile, 'export const safe = true\n', 'utf8')
+        writeFileSync(outsideFile, "import '@temporalio/workflow'\n// orchestration\n", 'utf8')
+
+        if (!createSymlinkOrSkip(t, outsideFile, symlinkFile, 'file')) return
+
+        const rootReal = realpathSync(scanRoot)
+        const files = collectSourceFiles(scanRoot)
+        const relativeFiles = files.map((filePath) => path.relative(rootReal, filePath).replace(/\\/g, '/'))
+
+        assert.deepEqual(
+            relativeFiles,
+            ['safe.ts'],
+            `symlink de arquivo externo foi listado/alcancado pela varredura: ${JSON.stringify(relativeFiles)}`,
+        )
+    } finally {
+        rmSync(tempRoot, { recursive: true, force: true })
+    }
+})
+
+test('collectSourceFiles ignora symlink de diretorio apontando para fora do root', (t) => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'platform-collect-symlink-dir-'))
+    const scanRoot = path.join(tempRoot, 'src')
+    const outsideDir = path.join(tempRoot, 'outside-dir')
+    const outsideFile = path.join(outsideDir, 'leak.ts')
+    const insideFile = path.join(scanRoot, 'safe.ts')
+    const symlinkDir = path.join(scanRoot, 'linked-outside')
+
+    try {
+        mkdirSync(scanRoot, { recursive: true })
+        mkdirSync(outsideDir, { recursive: true })
+        writeFileSync(insideFile, 'export const safe = true\n', 'utf8')
+        writeFileSync(outsideFile, "import '@temporalio/activity'\n// orchestration\n", 'utf8')
+
+        if (!createSymlinkOrSkip(t, outsideDir, symlinkDir, 'dir')) return
+
+        const rootReal = realpathSync(scanRoot)
+        const files = collectSourceFiles(scanRoot)
+        const relativeFiles = files.map((filePath) => path.relative(rootReal, filePath).replace(/\\/g, '/'))
+
+        assert.deepEqual(
+            relativeFiles,
+            ['safe.ts'],
+            `symlink de diretorio externo foi listado/alcancado pela varredura: ${JSON.stringify(relativeFiles)}`,
+        )
+    } finally {
+        rmSync(tempRoot, { recursive: true, force: true })
+    }
+})
 
 test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo nome publico com tipos validos', () => {
     const npmCli = resolveNpmCli()

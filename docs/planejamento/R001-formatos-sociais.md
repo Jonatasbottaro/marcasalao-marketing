@@ -872,7 +872,3 @@ Achados adicionais desta execução (nem confirmação nem refutação do enunci
 - **Os quatro defaults do pacote batem com o repositório**, mas com uma assimetria de proveniência: `1080×1080`, `1080×1920` e `1920×1080` têm evidência em caminhos técnicos; `1080×1350` só aparece em dado de marca (§1.2). Daí a decisão D-10.
 - **(R001-05) "Facebook sem fonte" era "Facebook com uma página só tentada".** A R001-02 registrou `P-FB-01` como "não consultado com sucesso" com base em `docs/video-api/`, que de fato só aponta para "Reference". As páginas específicas (`graph-api/reference/page/photos/`, `video-api/page-stories-api`, `video-api/guides/reels-publishing`) abriram e certificaram nove regras. O enunciado do pacote não dizia nada sobre o Facebook, e continua não dizendo: a correção é deste documento, não do pacote.
 - **(R001-05) o pacote pediu "formatos oficiais"; os oficiais vêm em camadas.** Duração, geometria e formato têm fonte primária; peso, bitrate, cadência e cota também, mas não são verificáveis por um plano que não abre arquivo nem autentica. Registrar os segundos como se fossem os primeiros é o erro que a separação `applies` × `value` existe para impedir (D-29).
-
-
-
-

@@ -412,7 +412,10 @@ ficava reduzido ao TAP do artifact. O script suspende o `errexit` só durante o 
 decide o código final assim: se o comando falhou, devolve o código dele; se só o `tee` falhou,
 devolve o do `tee` — uma falha de gravação de log nunca vira sucesso silencioso. Como o
 Windows converte texto para CRLF no checkout, `platform/.gitattributes` fixa `*.sh text eol=lf`
-para o script continuar executável nos quatro ambientes.
+para o script continuar executável nos quatro ambientes e também
+`examples/output-plans/*.json text eol=lf` para os planos canônicos de OutputPlan: esses
+exemplos usam LF, a regra evita divergência CRLF/LF no checkout Windows e a comparação entre
+o stdout da CLI e o fixture versionado permanece byte a byte (`tests/output-plan-examples.test.ts`).
 
 A prova do ramo negativo é um passo do próprio workflow (`if: always()`), e não um ensaio
 solto: ele roda o **mesmo** `gate-step.sh` com um comando que imprime duas linhas e termina
