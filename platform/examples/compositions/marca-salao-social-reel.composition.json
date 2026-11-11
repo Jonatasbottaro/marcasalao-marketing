@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "projectId": "marca-salao",
+  "id": "social-reel-example",
+  "title": "Exemplo tecnico de Reels vertical",
+  "locale": "pt-BR",
+  "format": {
+    "profile": "instagram-reels-video",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "scenes": [
+    {
+      "id": "opening",
+      "type": "text",
+      "durationMs": 4000,
+      "content": {
+        "text": "Contrato de saida em tres cenas."
+      }
+    },
+    {
+      "id": "demo-frame",
+      "type": "image",
+      "durationMs": 6000,
+      "content": {
+        "asset": {
+          "id": "screen-01",
+          "path": "projects/marca-salao/assets/screen-01.png"
+        },
+        "alt": "Quadro tecnico de demonstracao."
+      }
+    },
+    {
+      "id": "closing",
+      "type": "cta",
+      "durationMs": 4000,
+      "content": {
+        "text": "Conheca o sistema."
+      }
+    }
+  ],
+  "renderer": {
+    "adapter": "undecided"
+  },
+  "metadata": {
+    "status": "draft",
+    "description": "Exemplo tecnico do perfil instagram-reels-video; nao e peca aprovada nem campanha publicada.",
+    "tags": [
+      "exemplo",
+      "contrato",
+      "reels"
+    ]
+  }
+}

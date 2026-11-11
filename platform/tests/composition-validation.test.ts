@@ -607,17 +607,27 @@ test('o nucleo de composicao nao contem referencia a projetos ou fornecedores', 
     ]
 
     for (const directory of coreScanDirectories) {
-        for (const entry of readdirSync(directory)) {
-            const content = readFileSync(path.join(directory, entry), 'utf8').toLowerCase()
+        for (const file of coreSourceFiles(directory)) {
+            const content = readFileSync(file, 'utf8').toLowerCase()
             for (const needle of forbidden) {
                 assert.ok(
                     !content.includes(needle),
-                    `Referencia proibida "${needle}" encontrada em ${path.join(directory, entry)}`,
+                    `Referencia proibida "${needle}" encontrada em ${file}`,
                 )
             }
         }
     }
 })
+
+/**
+ * Varredura recursiva: o nucleo passou a ter subpastas (`src/output-profiles/`),
+ * e um readdirSync raso deixaria de ler esses arquivos sem avisar.
+ */
+function coreSourceFiles(directory: string): string[] {
+    return readdirSync(directory, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory() ? coreSourceFiles(path.join(directory, entry.name)) : [path.join(directory, entry.name)],
+    )
+}
 
 test('validador e CLI nao usam rede nem abrem assets', () => {
     const forbiddenCalls = ['fetch(', 'http.request', 'https.request', 'XMLHttpRequest', 'net.connect', 'readFile']

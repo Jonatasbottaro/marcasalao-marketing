@@ -101,3 +101,26 @@ test('package.json declara build compilado, engines Node >= 22 e zero dependenci
     assert.equal(pkg.dependencies, undefined, 'nenhuma dependencia de runtime e permitida')
     assert.deepEqual(Object.keys(pkg.devDependencies ?? {}).sort(), ['@types/node', 'ajv', 'typescript'])
 })
+
+test('os scripts das CLIs de saida rodam sobre o build silencioso', () => {
+    const pkg = JSON.parse(readFileSync(path.join(moduleRoot, 'package.json'), 'utf8')) as {
+        scripts?: Record<string, string>
+    }
+
+    const expectations: Record<string, string> = {
+        'content:profiles': 'dist/src/output-profiles-cli.js',
+        'content:plan-output': 'dist/src/output-plan-cli.js',
+    }
+
+    for (const [script, artifact] of Object.entries(expectations)) {
+        const value = pkg.scripts?.[script] ?? ''
+        assert.ok(value.includes(`node ${artifact}`), `${script} precisa executar ${artifact}`)
+        // --silent no build interno: sem ele o npm imprime o header do script no
+        // stdout, e o consumidor de JSON nao consegue parsear a saida.
+        assert.match(value, /^npm run build --silent && /, `${script} precisa compilar antes de executar, em modo silencioso`)
+        assert.ok(
+            existsSync(path.join(moduleRoot, ...artifact.split('/'))),
+            `${artifact} nao existe em dist/`,
+        )
+    }
+})
