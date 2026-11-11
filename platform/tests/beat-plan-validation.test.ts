@@ -847,9 +847,9 @@ test('inputs nao sao mutados pelo validador', () => {
 /* Requisitos 100 a 104: seguranca, independencia e coerencia                  */
 /* ========================================================================== */
 
-test('o validador e o contrato nao usam rede nem abrem arquivos', () => {
+test('validador, contrato e CLI nao usam rede nem abrem arquivos alem dos informados', () => {
     const forbiddenCalls = ['fetch(', 'http.request', 'https.request', 'XMLHttpRequest', 'net.connect', 'process.env', 'dotenv', 'axios', 'undici']
-    for (const relative of ['src/validate-beat-plan.ts', 'src/beat-plan-contract.ts']) {
+    for (const relative of ['src/validate-beat-plan.ts', 'src/validate-beat-plan-cli.ts', 'src/beat-plan-contract.ts']) {
         const content = readFileSync(path.join(moduleRoot, relative), 'utf8')
         for (const needle of forbiddenCalls) {
             assert.ok(!content.includes(needle), `chamada proibida "${needle}" em ${relative}`)
@@ -858,6 +858,12 @@ test('o validador e o contrato nao usam rede nem abrem arquivos', () => {
     const validator = readFileSync(path.join(moduleRoot, 'src', 'validate-beat-plan.ts'), 'utf8')
     assert.ok(!validator.includes('readFileSync('), 'somente a CLI pode ler arquivos; o validador nao')
     assert.ok(!validator.includes('writeFileSync('), 'o validador nao cria arquivos')
+
+    // A leitura de JSON da CLI vem do helper compartilhado: ela nao abre o
+    // filesystem por conta propria nem escreve em lugar nenhum.
+    const cli = readFileSync(path.join(moduleRoot, 'src', 'validate-beat-plan-cli.ts'), 'utf8')
+    assert.ok(!cli.includes('node:fs'), 'a CLI so le arquivos atraves de cli-input.ts')
+    assert.ok(!cli.includes('writeFileSync('), 'a CLI nao cria nem altera arquivos')
 })
 
 /**
@@ -885,7 +891,7 @@ function listModuleFiles(relativeRoot: string): string[] {
 }
 
 /** Arquivos que esta fatia adiciona ao nucleo. Nada alem deles e autorizado. */
-const BEAT_PLAN_SOURCE_FILES = ['beat-plan-contract.ts', 'validate-beat-plan.ts']
+const BEAT_PLAN_SOURCE_FILES = ['beat-plan-contract.ts', 'validate-beat-plan.ts', 'validate-beat-plan-cli.ts']
 const BEAT_PLAN_SCHEMA_FILES = ['beat-plan.schema.json']
 
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */

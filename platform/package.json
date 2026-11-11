@@ -28,7 +28,8 @@
     "content:validate-project": "npm run build --silent && node dist/src/validate-project-cli.js",
     "content:validate-composition": "npm run build --silent && node dist/src/validate-composition-cli.js",
     "content:profiles": "npm run build --silent && node dist/src/output-profiles-cli.js",
-    "content:plan-output": "npm run build --silent && node dist/src/output-plan-cli.js"
+    "content:plan-output": "npm run build --silent && node dist/src/output-plan-cli.js",
+    "content:validate-beat-plan": "npm run build --silent && node dist/src/validate-beat-plan-cli.js"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
