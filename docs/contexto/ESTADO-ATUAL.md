@@ -4,12 +4,14 @@
 
 - Data da atualização: 2026-11-11
 - Branch de referência: main
-- Commit da main consultada: [e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52) — integra o R001 e contém a fatia Workflow de TEMPORAL-02
+- Commit da main consultada: [d5761b1f37d1a5b5e55e2f1b7422c969e6194957](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/d5761b1f37d1a5b5e55e2f1b7422c969e6194957) — merge que integra o BeatPlan v1 interno, posterior ao R001 e à fatia Workflow de TEMPORAL-02
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
 - Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
+- Merge de integração do BeatPlan v1: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`
+- HEAD técnico reconciliado do BeatPlan: `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`, da branch `codex/reconcilia-beat-plan-v1`
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-`e86f3c9` é o HEAD da main consultada, posterior à integração técnica do Workflow em `f584210`. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo; BeatPlan continua branch-only e nenhum deles passa a compor TEMPORAL-02 por consequência.
+`d5761b1` é o HEAD da main consultada. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal.
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -25,9 +27,11 @@ Os marcos permanecem distintos e não se substituem:
 - integração técnica de TEMPORAL-02-03 (Activity real `validateCompositionActivity`): `db84270ad3e51eecb0b562fcdf3a7e36941288ab`;
 - registro da ratificação e contexto de TEMPORAL-02-03: `8f94e0205b470b46da918d78f8136fafa9a2286a`;
 - integração técnica da fatia Workflow de TEMPORAL-02: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`;
-- integração do R001 e HEAD da main consultada: `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52`, contendo a reconciliação `8e17785a5634167f8abdaebacb8388276b909cab`.
+- integração do R001: `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52`, contendo a reconciliação `8e17785a5634167f8abdaebacb8388276b909cab`;
+- reconciliação técnica do BeatPlan v1 sobre a main que já contém R001: `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`, com cinco commits temáticos preservados (`9c872a6`, `d46ea5a`, `4230eba`, `559d22c`, `7d919fc`);
+- merge de integração do BeatPlan v1 interno e HEAD da main consultada: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`.
 
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Os 162 testes e os runs da fatia Workflow referem-se exclusivamente a `f584210`, não ao HEAD posterior `e86f3c9`. Nenhum desses marcos representa implementação completa de TEMPORAL-02.
+O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Os 162 testes e os runs da fatia Workflow referem-se exclusivamente a `f584210`, não aos HEADs posteriores `e86f3c9` e `d5761b1`; os 626 testes e os runs do BeatPlan referem-se a `7d919fc` e `d5761b1`. Nenhum desses marcos representa implementação completa de TEMPORAL-02.
 
 ## Núcleo reutilizável
 
@@ -38,7 +42,8 @@ O hash identifica o ponto consultado, não uma promessa de permanência. Reconfe
 - **Contratos e validadores existentes**: funções puras com relatório de códigos, erros e warnings (`platform/src/validation-report.ts`), regra lexical de caminhos compartilhada (`platform/src/relative-path.ts`) e corpus de paridade entre tipos, schemas e validadores em `platform/tests/contracts/`, com execução real dos schemas em motor draft-07.
 - **Fronteira pública mínima da `platform` (TEMPORAL-02-01)**: pacote `marcasalao-marketing-platform` (`0.1.0`) com entrypoint público [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts), exportando em runtime exclusivamente `validateComposition(composition, project)` e em tipos `Composition`, `ProjectManifest` e `CompositionValidationReport`, com declarações TypeScript habilitadas em [`platform/tsconfig.json`](../../platform/tsconfig.json), subpaths internos bloqueados pelo mapa `exports` em [`platform/package.json`](../../platform/package.json) e suíte dedicada em [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts).
 - **R001 — OutputProfiles e OutputPlan interno**: catálogo de perfis em [`platform/src/output-profiles/`](../../platform/src/output-profiles/), contrato [`output-plan-contract.ts`](../../platform/src/output-plan-contract.ts), schema, resolvedor e validadores integrados em `e86f3c9`, após reconciliação em `8e17785`. Os cinco [exemplos de OutputPlan](../../platform/examples/output-plans/) estão versionados em LF, com regra explícita em [`platform/.gitattributes`](../../platform/.gitattributes). OutputPlan continua interno: não amplia o entrypoint público de validação nem integra esses planos ao Temporal.
-- **CLIs existentes**: `content:validate-project`, `content:validate-composition`, `content:profiles` e `content:plan-output`, além de `build`, `typecheck`, `test`, `test:contracts` e `clean` em [platform/package.json](../../platform/package.json).
+- **BeatPlan v1 interno**: contrato [`beat-plan-contract.ts`](../../platform/src/beat-plan-contract.ts), espelho draft-07 [`beat-plan.schema.json`](../../platform/schemas/beat-plan.schema.json), relatório aditivo `BeatPlanValidationReport` em [`validation-report.ts`](../../platform/src/validation-report.ts), validador [`validate-beat-plan.ts`](../../platform/src/validate-beat-plan.ts), CLI [`validate-beat-plan-cli.ts`](../../platform/src/validate-beat-plan-cli.ts) e [dois exemplos versionados](../../platform/examples/beat-plans/), integrados pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` a partir da reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`. Fatia **interna ao pacote**: não amplia o entrypoint público, não ganha subpath, não se combina com OutputPlan e não entra no Temporal. Detalhe na seção **BeatPlan v1 interno**.
+- **CLIs existentes**: `content:validate-project`, `content:validate-composition`, `content:profiles`, `content:plan-output` e `content:validate-beat-plan`, além de `build`, `typecheck`, `test`, `test:contracts` e `clean` em [platform/package.json](../../platform/package.json).
 - **CI da plataforma**: [`.github/workflows/platform-validation.yml`](../../.github/workflows/platform-validation.yml), `Validar contratos da platform`, matriz Ubuntu e Windows × Node 22 e 24.
 - **Runtime do núcleo**: Node `>=22 <25`, TypeScript compilado para JavaScript, motor de schema apenas em desenvolvimento.
 - **Correção de contratos da PR #6**: integrada em 06/11/2026 pelo merge commit `0c97c2a`. A distinção entre "main anterior" e "correção pendente" que esta página mantinha foi retirada porque a main já contém o comportamento corrigido.
@@ -49,15 +54,16 @@ O hash identifica o ponto consultado, não uma promessa de permanência. Reconfe
 
 Registrar aqui apenas o que continua fora da main, conforme o Git real:
 
-- **BeatPlan**: branch `codex/core-beat-plan-v1`, checkpoint `bade62e3a720a853e6f3d18b52aa46bf544979a4`, **branch-only**: `git merge-base --is-ancestor` contra `origin/main` em `e86f3c9` devolve saída 1. A branch toca `package.json`, README da platform, relatório de validação e testes de portabilidade — sobreposição que precisa de reconciliação com a main que já contém R001 antes de qualquer integração.
 - **PR #1 — integração de ai-memory**: [PR #1](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/1), aberta. Fora do escopo técnico deste estado; não considerá-la integrada por associação.
 
 Nada acima está integrado, por mais que o trabalho exista e tenha evidência própria.
 
+O BeatPlan **saiu desta lista**: a reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` foi integrada pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` e está na main. A branch histórica `codex/core-beat-plan-v1` (checkpoint `bade62e3a720a853e6f3d18b52aa46bf544979a4`) permanece apenas como registro da origem do trabalho, não como pendência de integração; `codex/reconcilia-beat-plan-v1` também não representa trabalho pendente. Nenhuma das duas branches foi excluída.
+
 ### Planejado ou documentado
 
 - **R002 e R003**: sem documento próprio no repositório. A única ocorrência na main é o §14 do planejamento do TEMPORAL-01, que os declara não iniciados e não integrados.
-- **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main. O núcleo já contém projeto, composição, fronteira pública de validação e R001 (catálogo, OutputPlan interno, resolvedor, validadores e CLIs); isso não implementa esses conceitos nem um renderizador.
+- **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main. O núcleo já contém projeto, composição, fronteira pública de validação, R001 (catálogo, OutputPlan interno, resolvedor, validadores e CLIs) e BeatPlan v1 interno; isso não implementa esses conceitos nem um renderizador. Os dois primeiros passos da ordem recomendada pela decisão (Composition → BeatPlan) estão cumpridos como contratos declarativos e não autorizam os seguintes.
 - **Qwen3.8**: família indicada para um futuro executor de texto, registrada no §15 do planejamento do TEMPORAL-01. Nada instalado, baixado, inferido ou acoplado.
 - **Higgsfield**: nenhuma ocorrência em código ou documentação da main. É referência externa de conversa, não ferramenta adotada.
 - **TEMPORAL-02-01**, **TEMPORAL-02-02**, **TEMPORAL-02-03**, **fatia Workflow de TEMPORAL-02**, **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo. As seções das fatias iniciais preservam o recorte e as evidências de cada commit; ausências registradas nesses marcos não substituem o estado atual da fatia Workflow.
@@ -71,6 +77,77 @@ Nada acima está integrado, por mais que o trabalho exista e tenha evidência pr
 - `scenes` vazio é aceito pela v1. Exigir uma cena mínima seria evolução de requisito.
 - Os casos estruturais do corpus comparam os dois motores. Vínculos entre documentos, IDs de cena duplicados e overflow da soma permanecem verificações semânticas do core.
 - A segunda configuração do núcleo ainda é uma fixture genérica. A Multitrack Hub já tem fluxos próprios no repositório, mas ainda não é um exemplo real do ProjectManifest nesse núcleo.
+
+## BeatPlan v1 interno
+
+- Status: **integrado tecnicamente na main** pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, a partir da reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` da branch `codex/reconcilia-beat-plan-v1`.
+- Natureza: tradução **temporal** declarativa de uma Composition válida em beats ordenados. Não é roteiro, não é Composition e não é renderização; não gera beats automaticamente, não contém comando de ferramenta, não contém provider de mídia e não cria arquivos.
+- Autorização editorial: **não concedida**. A integração é técnica; `validationStatus: "validated"` e `metadata.status: "validated"` registram apenas revisão técnica.
+- Referência: [README da platform](../../platform/README.md), seção *BeatPlan v1 (fatia interna)*.
+
+### Componentes integrados
+
+| Peça | Onde |
+| --- | --- |
+| BeatPlan v1 e contrato TypeScript | [`platform/src/beat-plan-contract.ts`](../../platform/src/beat-plan-contract.ts) — `BeatPlan`, `Beat`, enums neutros e limites documentados de texto e tags |
+| Schema JSON draft-07 | [`platform/schemas/beat-plan.schema.json`](../../platform/schemas/beat-plan.schema.json), `additionalProperties: false`, executado por `ajv` |
+| Relatório | `BeatPlanValidationReport` em [`platform/src/validation-report.ts`](../../platform/src/validation-report.ts), aditivo e com a mesma política de determinismo dos demais |
+| Validador | [`validateBeatPlan(beatPlan, composition, project)`](../../platform/src/validate-beat-plan.ts) |
+| Delegação de projeto | chama `validateProjectManifest`; manifesto inválido produz `BEAT_PLAN_PROJECT_MANIFEST_INVALID` |
+| Delegação de composição | chama `validateComposition(composition, project)`; composição inválida produz `BEAT_PLAN_COMPOSITION_INVALID` |
+| CLI | [`platform/src/validate-beat-plan-cli.ts`](../../platform/src/validate-beat-plan-cli.ts), script `content:validate-beat-plan` |
+| Dois exemplos técnicos | [`marca-salao-pilot.beat-plan.json`](../../platform/examples/beat-plans/marca-salao-pilot.beat-plan.json) (4 beats, 10000 ms) e [`fixture-project-pilot.beat-plan.json`](../../platform/examples/beat-plans/fixture-project-pilot.beat-plan.json) (2 beats, 5000 ms, `en-US`) |
+| Teste AJV | [`platform/tests/contracts/beat-plan-schema.test.ts`](../../platform/tests/contracts/beat-plan-schema.test.ts) |
+| Teste do validador | [`platform/tests/beat-plan-validation.test.ts`](../../platform/tests/beat-plan-validation.test.ts) |
+| Teste da CLI | [`platform/tests/beat-plan-cli-process.test.ts`](../../platform/tests/beat-plan-cli-process.test.ts) |
+| Teste dos exemplos e LF | [`platform/tests/beat-plan-examples.test.ts`](../../platform/tests/beat-plan-examples.test.ts) |
+
+A CLI recebe `--project`, `--composition` e `--beat-plan`, com `--json` opcional, sobre o mesmo `cli-input.ts` das CLIs de saída: exit `0` quando os três documentos são válidos entre si, `1` quando o JSON é legível mas o plano, o projeto ou a composição são inválidos (relatório no stdout) e `2` em erro de uso, arquivo ausente ou JSON malformado (stderr, stdout vazio).
+
+### Regras principais
+
+- a timeline começa em zero: o primeiro beat tem `startMs: 0`;
+- beats contíguos, sem lacuna (`BEAT_PLAN_TIMELINE_GAP`) e sem sobreposição (`BEAT_PLAN_TIMELINE_OVERLAP`);
+- o término do último beat é igual à duração total da Composition (`BEAT_PLAN_TIMELINE_END_MISMATCH` fora disso);
+- todo `sceneId` precisa existir na Composition (`BEAT_PLAN_SCENE_NOT_FOUND`); cena e beat não têm relação um para um — um beat pode atravessar duas cenas e uma cena pode aparecer em mais de um beat;
+- cena não referenciada gera **warning** (`BEAT_PLAN_SCENE_UNREFERENCED`), não erro;
+- `order` é único, contínuo a partir de 1 e igual à posição no array; `projectId`, `compositionId` e `locale` devem igualar os documentos informados;
+- núcleo determinístico: ordem de emissão fixa (`project` → `composition` → estrutura do plano → vínculo entre os três → relação com as cenas → timeline), sem timestamp, sem caminho absoluto, sem identificador aleatório e sem stack trace;
+- sem I/O no validador, sem rede, sem relógio, sem aleatoriedade e sem mutação das entradas;
+- o validador não corrige o que recebe: não gera beats, não reordena o array, não preenche lacuna, não corta beat e não altera a Composition;
+- `narration` é somente `{ text }`: sem voz, provider, arquivo ou configuração de TTS; `motionIntent` e as transições descrevem intenção e não executam movimento nem animação;
+- os warnings de comprimento e de tempo de leitura são heurísticas técnicas: não tornam o plano inválido, não substituem leitura humana cronometrada e não concedem aprovação editorial.
+
+### Fronteiras públicas
+
+- BeatPlan permanece **interno** à `platform`;
+- nenhum export no entrypoint raiz: [`composition-validation-api.ts`](../../platform/src/composition-validation-api.ts) continua exportando apenas `validateComposition`;
+- nenhum subpath público: o mapa `exports` de [`platform/package.json`](../../platform/package.json) expõe somente `"."`, e `marcasalao-marketing-platform/dist/src/beat-plan-contract.js` responde `ERR_PACKAGE_PATH_NOT_EXPORTED`;
+- a API runtime continua somente `validateComposition(composition, project)`, Composition primeiro;
+- os tipos públicos permanecem `Composition`, `ProjectManifest` e `CompositionValidationReport`;
+- a CLI fica fora do tarball: `files` é `["dist/src", "!dist/src/*-cli.*"]`;
+- módulos internos podem existir fisicamente no pacote, mas permanecem bloqueados pelo mapa `exports`.
+
+### Evidências
+
+- **626 testes aprovados**, zero falhas e zero skips, conforme registrado no [README da platform](../../platform/README.md) integrado em `d5761b1`;
+- matriz de quatro ambientes: Ubuntu Node 22, Ubuntu Node 24, Windows Node 22 e Windows Node 24;
+- CI da branch `codex/reconcilia-beat-plan-v1`: run [43034990448](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43034990448), `headSha: 7d919fc208ac4dfeebe5b0b65a959171e5f093f2`, quatro jobs `completed/success`;
+- CI da main: run [43099977731](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43099977731), `headSha: d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, quatro jobs `completed/success`;
+- exemplos em **LF**, zero CR e exatamente uma newline final, conferidos nos bytes dos blobs em `d5761b1`, com a regra `examples/beat-plans/*.json text eol=lf` em [`platform/.gitattributes`](../../platform/.gitattributes);
+- tarball com 38 entradas, sem CLI, fonte TypeScript, teste, exemplo ou schema: contagem informada no pedido desta atualização e **não reexecutada** aqui; a fronteira de empacotamento observável é a declarada em `files` e exercitada pelo teste de consumo externo em [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts);
+- gate da platform: [`.github/workflows/platform-validation.yml`](../../.github/workflows/platform-validation.yml), inalterado por esta fatia.
+
+Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a um commit documental posterior. Nesta atualização os quatro jobs de cada run foram observados como `completed/success` pela API pública do GitHub; os logs por job exigem autenticação e não foram relidos, e nenhum teste foi executado localmente.
+
+### Limites
+
+- BeatPlan **não se combina com OutputPlan**: nenhuma peça do catálogo de saída ou do resolvedor lê um plano de beats;
+- BeatPlan **não se integra ao Temporal**: nada em `orchestration/temporal/` foi tocado e não existe import de `@temporalio/*` na `platform`;
+- nenhuma renderização, nenhum áudio ou TTS, nenhuma mídia, nenhum fornecedor e nenhum deploy;
+- `VisualStyle`, `VisualAnchor`, `AssetManifest`, `AudioPlan` e `RenderPlan` continuam fatias futuras;
+- estado técnico não concede autorização editorial, de gravação ou de publicação;
+- a integração técnica não autoriza produção, mídia, publicação nem nova fatia de TEMPORAL-02, e não antecipa TEMPORAL-04, que continua reservado.
 
 ## TEMPORAL-01
 
@@ -263,7 +340,7 @@ A ratificação abrange exclusivamente:
 
 Nada fora dessa lista está ratificado. Permanecem bloqueados, sem autorização: Worker de produção dedicado à composição, cliente Temporal de validação, `workflow.start` da aplicação, Workflow ID de composição, `WorkflowIdReusePolicy`, `WorkflowIdConflictPolicy`, colisão de Workflow ID, `contentHash`, replay formal, gate Elephant–Goldfish de TEMPORAL-02, integração final completa de TEMPORAL-02, combinação de OutputPlan ou BeatPlan com Temporal, TEMPORAL-04, mídia, fornecedores e deploy.
 
-- Commit técnico: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, ancestral da main consultada em `e86f3c9`.
+- Commit técnico: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, ancestral da main e anterior a `e86f3c9` e a `d5761b1`.
 - Workflow: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), recebendo `CompositionValidationWorkflowInput` e chamando a Activity já integrada `validateCompositionActivity` por `proxyActivities` tipado.
 - Resultado: [`CompositionValidationWorkflowResult`](../../orchestration/temporal/src/workflows/composition-validation-result.ts), com `schemaVersion: 1`, `requestId`, `projectId`, `compositionId`, `status`, `validation`, `completedSteps` e `failureCode`.
 - Falhas: [`classifyCompositionActivityFailure`](../../orchestration/temporal/src/workflows/composition-validation-failure-classifier.ts), com classificação por tipo e cadeia de causas, sem copiar a exceção bruta para o resultado.
@@ -384,9 +461,11 @@ O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPO
 | Trabalho | Branch | Checkpoint | Evidência consultada | Classificação |
 | --- | --- | --- | --- | --- |
 | R001 | `codex/reconcilia-r001-formatos-sociais` | `8e17785a5634167f8abdaebacb8388276b909cab` | `merge-base --is-ancestor` contra `origin/main` com saída 0 em 11/11/2026; merge `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52` | **integrado**: OutputProfiles, OutputPlan interno, CLIs e cinco exemplos de planos em LF |
-| BeatPlan | `codex/core-beat-plan-v1` | `bade62e3a720a853e6f3d18b52aa46bf544979a4` | `merge-base --is-ancestor` contra `origin/main` em `e86f3c9` com saída 1 em 11/11/2026; evidência histórica de CI: run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284), completed/success nesse checkpoint | **branch-only**, sem nova homologação nesta atualização |
+| BeatPlan | `codex/reconcilia-beat-plan-v1` (origem histórica: `codex/core-beat-plan-v1`) | reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`; merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` | `merge-base --is-ancestor` de `d5761b1` e de `7d919fc` contra `origin/main`, ambos com saída 0 em 11/11/2026; cinco commits temáticos preservados; CI da main run [43099977731](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43099977731), quatro jobs completed/success | **integrado**: BeatPlan v1 interno, contrato, schema, relatório, validador, CLI, dois exemplos e testes; API pública preservada |
 
-O antigo checkpoint `55aeecccfa38da06dfada875e75d81b265626abc` da branch `codex/catalogo-formatos-sociais` permanece registro histórico, não a referência da integração atual do R001. A reconciliação integrada inclui catálogo, contrato interno, schema, resolvedor, validadores, CLIs `content:profiles` e `content:plan-output` e exemplos LF; não amplia o export público da platform. Nenhuma branch foi integrada e nenhum teste do R001 ou BeatPlan foi executado nesta atualização documental. A presença do R001 na main não autoriza seu consumo por TEMPORAL-02 nem a integração de BeatPlan.
+O antigo checkpoint `55aeecccfa38da06dfada875e75d81b265626abc` da branch `codex/catalogo-formatos-sociais` permanece registro histórico, não a referência da integração atual do R001. A reconciliação integrada do R001 inclui catálogo, contrato interno, schema, resolvedor, validadores, CLIs `content:profiles` e `content:plan-output` e exemplos LF; não amplia o export público da platform.
+
+O BeatPlan foi reconciliado sobre a main que já contém R001 e integrado pelo merge `d5761b1`, preservando os cinco commits temáticos da branch: `9c872a6` (contrato, schema e relatório), `d46ea5a` (validador vinculado a Composition e ProjectManifest), `4230eba` (CLI compartilhada), `559d22c` (exemplos e portabilidade) e `7d919fc` (README da platform). O checkpoint histórico `bade62e3a720a853e6f3d18b52aa46bf544979a4` de `codex/core-beat-plan-v1` e o run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) permanecem como registro da origem do trabalho, não como estado atual, e nenhuma das duas branches foi excluída. A integração não amplia o export público da platform, não combina BeatPlan com OutputPlan e não o leva ao Temporal. Nenhum teste do R001 ou do BeatPlan foi executado nesta atualização documental. A presença do R001 e do BeatPlan na main não autoriza seu consumo por TEMPORAL-02.
 
 ## Histórico da correção de contratos
 
@@ -417,8 +496,10 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 ## Próximo passo
 
 > Deliberar se o projeto permanece bloqueado ou se uma próxima fatia específica de TEMPORAL-02 será autorizada, com escopo delimitado pelo titular. A ratificação da fatia Workflow, registrada em 2026-11-11, não autoriza nenhuma fatia posterior.
+>
+> Deliberar separadamente, antes de qualquer nova implementação, se haverá uma futura combinação entre Composition, BeatPlan, OutputPlan ou Temporal. A integração técnica do BeatPlan v1 em `d5761b1` não autoriza essa combinação.
 
-O Workflow já está integrado, homologado tecnicamente e ratificado no escopo dessa fatia; não deve ser reimplementado como próxima tarefa. Permanecem **bloqueados até autorização específica**:
+O Workflow já está integrado, homologado tecnicamente e ratificado no escopo dessa fatia; não deve ser reimplementado como próxima tarefa. O BeatPlan v1 já está integrado como fatia interna da `platform`; não deve ser reimplementado nem tratado como branch-only. Permanecem **bloqueados até autorização específica**:
 
 - Worker de produção dedicado à composição;
 - cliente Temporal de validação e `workflow.start` da aplicação;
@@ -426,8 +507,9 @@ O Workflow já está integrado, homologado tecnicamente e ratificado no escopo d
 - `contentHash` e qualquer canonicalização de entrada;
 - replay formal e gate Elephant–Goldfish de TEMPORAL-02;
 - integração final completa de TEMPORAL-02;
-- integração de BeatPlan e combinação de planos no Temporal;
+- combinação de BeatPlan × OutputPlan e BeatPlan no Temporal;
 - TEMPORAL-04;
+- renderização, adaptadores, `VisualStyle`, `VisualAnchor`, `AssetManifest` completo, `AudioPlan` e `RenderPlan`;
 - mídia, fornecedores e deploy.
 
 Pré-condições técnicas já cumpridas, sem abrir autorização futura:
@@ -443,9 +525,9 @@ A ratificação da fatia Workflow foi registrada pelo titular em 2026-11-11 e en
 
 Tarefas secundárias de consulta:
 
-1. revisar a branch de BeatPlan frente à main que já contém R001, sem integrar ou escrever código;
-2. decidir se branches já integradas podem ser arquivadas, sem exclusão automática;
-3. reconferir periodicamente a ancestralidade de BeatPlan e o estado da main antes de planejar qualquer integração.
+1. decidir se branches já integradas podem ser arquivadas, sem exclusão automática — inclui `codex/core-beat-plan-v1` e `codex/reconcilia-beat-plan-v1`, cujo trabalho já está na main;
+2. reconferir periodicamente o estado da main e as PRs abertas antes de planejar qualquer integração;
+3. revisar a coerência entre o BeatPlan integrado e os conceitos futuros de [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md), sem escrever código nem escolher renderizador.
 
 ## O que não fazer agora
 
@@ -455,7 +537,7 @@ Tarefas secundárias de consulta:
 - não tratar o PRD de TEMPORAL-02 como aprovado sem decisão explícita;
 - não executar replay formal ou gate Elephant–Goldfish de TEMPORAL-02 sem autorização;
 - não iniciar TEMPORAL-04;
-- não integrar BeatPlan nem combinar o OutputPlan já integrado com Temporal por consequência;
+- não combinar BeatPlan × OutputPlan nem levar BeatPlan ou o OutputPlan já integrado ao Temporal por consequência da integração;
 - não gerar prévia;
 - não exportar;
 - não gerar mídia;
@@ -467,7 +549,9 @@ Tarefas secundárias de consulta:
 
 ## O que esta atualização não verificou
 
-Esta atualização é exclusivamente documental e registra a ratificação da fatia Workflow comunicada pelo titular em 2026-11-11: não executou instalação de dependências, build, typecheck ou testes e não alterou código, CI, campanhas ou mídia. As evidências de 162 testes e repetibilidade 7/7 foram obtidas na homologação anterior de `f584210`, não no HEAD posterior `e86f3c9`; a integração de R001 foi conferida por ancestralidade e conteúdo, sem nova homologação técnica. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
+Esta atualização é exclusivamente documental e registra a integração do BeatPlan v1 interno na main pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`: não executou instalação de dependências, build, typecheck ou testes e não alterou código, `platform/`, `orchestration/`, CI, PRDs, decisões arquiteturais, campanhas ou mídia. A integração foi conferida por ancestralidade (`merge-base --is-ancestor` de `d5761b1` e de `7d919fc` contra `origin/main`, ambos com saída 0) e pelo conteúdo do merge: 15 arquivos, 10 adicionados e 5 modificados, zero exclusões, nenhum arquivo em `orchestration/temporal/`, em `docs/contexto/` ou em `.github/`, e nenhuma mídia. Os quatro jobs de cada run de CI foram observados como `completed/success` pela API pública do GitHub; os logs por job exigem autenticação e não foram relidos, de modo que a contagem de 626 testes, zero falhas e zero skips permanece evidência documental do README da platform integrado em `d5761b1`, não medição desta atualização. A contagem de 38 entradas do tarball foi informada no pedido desta atualização e não reexecutada. Os bytes LF dos dois exemplos foram conferidos diretamente nos blobs do commit. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
+
+Preserva-se a evidência histórica da fatia Workflow: 162 testes e repetibilidade 7/7 obtidos na homologação de `f584210`, não nos HEADs posteriores `e86f3c9` e `d5761b1`. A ratificação da fatia Workflow registrada pelo titular em 2026-11-11 permanece restrita àquele escopo e não é ampliada pela integração do BeatPlan.
 
 Preserva-se a evidência histórica de TEMPORAL-02-03: suíte local Windows com Node 22, 145 testes aprovados em 52s, e CI Ubuntu/Windows no commit `db84270ad3e51eecb0b562fcdf3a7e36941288ab` (runs [42902255503](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902255503) e [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737)). Não é execução desta atualização.
 
