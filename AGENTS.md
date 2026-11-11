@@ -4,6 +4,82 @@
 
 Ao retomar trabalho técnico, leia [docs/contexto/README.md](docs/contexto/README.md), depois o estado atual, os próximos passos e o handoff indicados no índice. Confira branch, commit e PRs no Git antes de propor implementação: alterações em uma branch não estão automaticamente integradas na main. Use o contexto como registro de fatos, preservando as regras e o escopo autorizado desta tarefa.
 
+## Armazenamento obrigatório na raiz do projeto — 11/11/2026
+
+Regra permanente estabelecida pelo titular: o projeto precisa ser portátil entre computadores e a raiz oficial e única é `C:/Marketing`. Nenhum arquivo ou diretório relacionado ao projeto pode ser criado, salvo, baixado, movido ou mantido fora dessa raiz.
+
+A exigência vale para código, documentação, clones auxiliares, worktrees, branches de revisão, patches, logs, relatórios, handoffs, manifestos, fixtures temporárias, downloads, ferramentas portáteis (incluindo versões portáteis de Node, npm ou GitHub CLI), resultados de testes, tarballs, arquivos de comparação, arquivos de baseline, caches necessários à tarefa e qualquer outro artefato relacionado ao projeto.
+
+É expressamente proibido criar ou utilizar conteúdo do projeto em `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews`, `C:/Repos`, `C:/Temp`, `D:/Temp`, `%TEMP%`, `%TMP%`, `/tmp`, pasta pessoal do usuário, diretórios de anexos do aplicativo ou qualquer diretório irmão, pai ou externo a `C:/Marketing`.
+
+### Estrutura autorizada
+
+Para isolamento e arquivos auxiliares, utilizar exclusivamente `C:/Marketing/.workspace/`, com subdiretórios por tarefa:
+
+| Categoria | Caminho |
+| --- | --- |
+| Worktrees Git | `.workspace/worktrees/<nome-da-tarefa>` |
+| Clones auxiliares | `.workspace/clones/<nome-da-tarefa>` |
+| Logs e relatórios | `.workspace/logs/<nome-da-tarefa>` |
+| Patches, baselines, fixtures e temporários | `.workspace/tmp/<nome-da-tarefa>` |
+| Ferramentas portáteis | `.workspace/tools/<nome-da-ferramenta>` |
+| Arquivos históricos ou evidências preservadas | `.workspace/archives/<nome-da-tarefa>` |
+
+Não criar novas estruturas externas quando essas pastas internas forem suficientes.
+
+### Validação obrigatória antes de criar arquivos
+
+1. Executar `git rev-parse --show-toplevel` e confirmar que a raiz retornada é `C:/Marketing`.
+2. Resolver o caminho absoluto do destino e confirmar que começa exatamente com `C:/Marketing/`.
+3. Recusar a operação se o caminho resolver para fora da raiz, inclusive por `..`, symlink, junction, variável de ambiente, caminho relativo enganoso, redirecionamento, ferramenta que use temp externo ou configuração automática de cache.
+
+Se uma ferramenta tentar usar `%TEMP%`, `%TMP%`, `/tmp` ou pasta de usuário, redefinir o diretório temporário somente para o processo da tarefa, apontando para `C:/Marketing/.workspace/tmp/<nome-da-tarefa>`. Não alterar permanentemente variáveis globais do sistema.
+
+### Git e portabilidade
+
+- Arquivos permanentes necessários em outros computadores ficam dentro da árvore normal do projeto, são adicionados ao Git e commitados e enviados à branch autorizada.
+- Arquivos temporários ou de execução ficam dentro de `.workspace/`, não são adicionados ao Git, não aparecem em `git status` e são removidos ao final quando não precisarem ser preservados.
+- Não alterar o `.gitignore` versionado apenas para acomodar arquivos de uma tarefa.
+- `.workspace/` continua ignorada localmente por `C:/Marketing/.git/info/exclude`, com a regra `.workspace/`.
+- Não presumir que arquivos dentro de `.workspace/` serão enviados ao Git. Se um arquivo for necessário em outros computadores, ele não pode permanecer somente em `.workspace/`: deve ser movido para o diretório versionado correto do projeto e incluído no commit autorizado.
+
+### Checkouts e worktrees
+
+Não trocar a branch do checkout principal quando outro agente puder estar usando o mesmo repositório. Para isolamento, criar worktree somente dentro de `C:/Marketing/.workspace/worktrees/`:
+
+```bash
+git worktree add --detach \
+  C:/Marketing/.workspace/worktrees/<nome-da-tarefa> \
+  origin/<branch>
+```
+
+Nunca criar worktree em pasta externa. Para clone auxiliar, usar somente `C:/Marketing/.workspace/clones/<nome-da-tarefa>`; nunca criar clone em `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews` ou outro diretório externo.
+
+### Downloads e ferramentas portáteis
+
+Se Node, GitHub CLI ou outra ferramenta portátil for indispensável, baixar somente para `C:/Marketing/.workspace/tools/<nome-da-ferramenta>`. Não baixar para `%TEMP%`, não instalar globalmente, não alterar o PATH permanentemente, não salvar credenciais junto da ferramenta, registrar a origem e a versão e remover ao final, salvo autorização expressa para preservar. Downloads transitórios usam `C:/Marketing/.workspace/tmp/downloads/`.
+
+### Logs, handoffs e evidências
+
+Não salvar handoffs ou evidências apenas em diretórios temporários do aplicativo, por exemplo `C:/Users/<usuario>/.qoder/tmp/` ou `C:/Users/<usuario>/AppData/Local/Temp/`. Se um handoff ou evidência precisar ser preservado, salvar em `C:/Marketing/.workspace/logs/<tarefa>/`. Se o arquivo for parte permanente da documentação do projeto, salvar no diretório versionado correto e adicionar ao commit autorizado; não deixar a única cópia em `.workspace/`.
+
+### Limpeza obrigatória ao final da tarefa
+
+1. Remover worktrees temporárias concluídas: `git worktree remove C:/Marketing/.workspace/worktrees/<nome-da-tarefa> --force`.
+2. Executar `git worktree prune`.
+3. Remover, quando descartáveis: `node_modules`, `dist`, patches, downloads, tarballs, fixtures temporárias, logs transitórios, ferramentas portáteis e caches da tarefa.
+4. Preservar apenas evidências explicitamente necessárias.
+5. Executar `git status --short --branch` e `git worktree list --porcelain`.
+6. Confirmar: nenhum arquivo rastreado inesperado; nenhuma pasta auxiliar fora de `C:/Marketing`; nenhuma worktree externa; nenhuma operação Git pendente; nenhum arquivo necessário deixado apenas em pasta temporária externa.
+
+### Bloqueio obrigatório
+
+Se não for possível realizar a tarefa sem criar arquivo fora de `C:/Marketing`: interromper; não criar o arquivo; não usar caminho alternativo externo; informar exatamente qual ferramenta exige o caminho externo; propor uma solução que permaneça dentro da raiz; aguardar nova autorização. Não é permitido contornar esta regra por conveniência.
+
+### Handoff obrigatório
+
+No retorno final, incluir: raiz do projeto usada; diretórios auxiliares criados; confirmação de que todos estão sob `C:/Marketing`; arquivos permanentes adicionados ao Git; arquivos mantidos somente em `.workspace/`; worktrees criadas e removidas; ferramentas portáteis usadas; temporários removidos; resultado de `git status --short`; e a confirmação textual “Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de C:/Marketing.” Qualquer exceção deve ser declarada como bloqueio, nunca omitida.
+
 ## Referências recentes de qualidade — 31/10/2026
 
 Para Marca Salão e Multitrack Hub, consultar primeiro o histórico e a fila reais no Postiz. Usar as DUAS CAMPANHAS distintas aprovadas e publicadas mais recentes de cada marca como referência principal de arte e texto; Facebook/Instagram da mesma campanha contam como uma referência. Conferir visualmente as artes e ler as legendas atuais. Atualizar essa seleção quando houver novas publicações aprovadas.
