@@ -7,7 +7,8 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 
 1. **Primeira fatia** — Manifesto de projeto → validação → relatório estruturado → testes com dois projetos diferentes.
 2. **Segunda fatia** — Composition v1 → vínculo entre projeto e composição → validação → relatório estruturado → CLI → testes com dois projetos.
-3. **Fronteira pública mínima (`TEMPORAL-02-01`)** — Entrypoint público compilado (`dist/src/composition-validation-api.js` + `.d.ts`) para consumo externo de `validateComposition(composition, project)` sem importar `platform/src` nem caminhos internos de `dist/`.
+3. **Terceira fatia (R001)** — catálogo declarativo de perfis de saída sociais → regras oficiais com escopo por contexto e pendências de fonte → `OutputPlan` canônico → compatibilidade Composition × OutputPlan → CLIs `content:profiles` e `content:plan-output`.
+4. **Fronteira pública mínima (`TEMPORAL-02-01`)** — Entrypoint público compilado (`dist/src/composition-validation-api.js` + `.d.ts`) para consumo externo de `validateComposition(composition, project)` sem importar `platform/src` nem caminhos internos de `dist/`.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -219,6 +220,92 @@ e reporta `totalDurationMs: null` — nunca um número impreciso.
 `totalDurationMs` é a soma dos `durationMs` inteiros positivos das cenas. Determinístico:
 sem timestamp, sem caminhos absolutos, sem IDs aleatórios, sem stack traces.
 
+## Catálogo de perfis de saída e OutputPlan (R001)
+
+Terceira fatia executável da plataforma: **declarar** os formatos sociais que as ferramentas
+desta caixa já exportam e **resolver** o plano canônico de um perfil para um projeto. Nada
+aqui gera mídia, renderiza, publica ou acessa rede. A origem normativa de cada limite, as
+pendências de fonte e as escolhas de desenho estão em
+[`docs/planejamento/R001-formatos-sociais.md`](../docs/planejamento/R001-formatos-sociais.md).
+
+| Peça | Onde | Papel |
+|---|---|---|
+| `CATALOG_VERSION` (`"1"`, 12 perfis) | `src/output-profiles/catalog.ts` | geometria, `fps` **só em vídeo**, `revision` declarada no perfil e capacidade de exportação observada (`preset-only` → `canvas-template-mapped` → `tool-export-observed`) com a evidência de cada estado |
+| `CATALOG_RULES` | `src/output-profiles/rules.ts` | regras oficiais (`R-*`), defaults internos (`D-LOCAL-*`) e pendências de fonte (`P-*`); cada regra oficial declara **`contexts`** — a lista de contextos de publicação em que aquele texto vale |
+| `resolveOutputPlan` | `src/resolve-output-profile.ts` | manifesto + perfil + filtros → `OutputPlan` canônico ou erro estável |
+| `validateCompositionForOutputPlan` | `src/validate-composition-output.ts` | três camadas independentes: plano, composição, compatibilidade |
+| `schemas/output-plan.schema.json` | draft-07 | espelho normativo do plano, executado por `ajv` nos testes |
+
+Não existe tabela paralela de limites: o allowlist é lido do manifesto do projeto pelas
+mesmas funções do resolvedor, `revision` pertence ao perfil, e um limite cujos `contexts`
+não incluem o contexto declarado produz `OUTPUT_PLAN_RULE_NOT_APPLIED` em vez de uma
+verificação silenciosa.
+
+### Contrato de `content:profiles`
+
+Flags: `--network instagram|facebook|youtube` · `--publication feed|stories|reels|shorts|video` ·
+`--media image|video` · `--project <caminho>` · `--json`. Exit codes: `0` listagem produzida
+(lista vazia é resultado válido) · `1` o JSON do projeto é legível mas o manifesto foi
+rejeitado · `2` erro de uso, arquivo ausente ou JSON malformado.
+
+**Sem `--project` a permissão de cada perfil é `not-consulted` — nunca "permitida".** Com
+`--project`, a disponibilidade vem do allowlist do manifesto:
+
+| `availability` | Quando | Campos auxiliares |
+|---|---|---|
+| `allowed` | o `id` está em `outputProfiles` do projeto | `blockCode` e `blockReason` são `null` |
+| `blocked` | o `id` não está no allowlist (`OUTPUT_PROFILE_NOT_ALLOWED`) ou o manifesto foi rejeitado (`OUTPUT_PROJECT_INVALID`) | `blockCode` + `blockReason` explicam o bloqueio |
+| `not-consulted` | nenhum projeto informado | `blockCode` e `blockReason` são `null` |
+
+O documento `--json` tem exatamente estas chaves, em ordem estável:
+
+```json
+{
+  "catalogVersion": "1",
+  "filters": { "network": "youtube", "publication": null, "mediaKind": null },
+  "project": { "consulted": true, "valid": true, "id": "marca-salao" },
+  "counts": { "listed": 2, "allowed": 2, "blocked": 0, "notConsulted": 0 },
+  "profiles": [
+    {
+      "id": "youtube-shorts", "name": "Shorts do YouTube", "revision": 3,
+      "network": "youtube", "publication": "shorts", "mediaKind": "video",
+      "width": 1080, "height": 1920, "aspectRatio": "9:16", "fps": 30,
+      "exportState": "canvas-template-mapped",
+      "exportEvidence": ["templates/story_reel_vertical/index.html:5"],
+      "pendingRuleIds": ["P-YT-03"],
+      "availability": "allowed", "blockCode": null, "blockReason": null
+    }
+  ],
+  "diagnostics": [],
+  "summary": "Catalogo v1: 2 perfil(es) listado(s); permissao consultada no allowlist do projeto \"marca-salao\" (2 habilitado(s), 0 bloqueado(s))."
+}
+```
+
+`fps` é `null` em perfil de imagem. `diagnostics` traz os issues do validador de manifesto
+quando `project.valid` é `false`; a listagem bloqueada continua sendo impressa antes do
+diagnóstico, e o processo termina com exit `1`.
+
+### Contrato de `content:plan-output`
+
+Flags: `--project <caminho>` e `--profile <id>` **obrigatórios**; `--network`, `--publication`,
+`--media` (restrição cruzada de seleção), `--rule-context in-app|api-publishing|ads|studio-upload`,
+`--composition <caminho>` (verificação opcional) e `--json`. Exit codes: `0` plano resolvido e,
+se a composição foi informada, compatível · `1` plano, seleção ou compatibilidade inválidos ·
+`2` erro de uso, arquivo inexistente ou JSON malformado.
+
+Em `--json` o stdout é **exatamente** `resolution.plan` (indentação de dois espaços, newline
+final), então os bytes emitidos são re-leríveis pelo schema e por `validateOutputPlan` sem
+nenhuma edição. A verificação de Composition acontece **antes** de emitir, para nunca imprimir
+um plano cuja composição já se sabe que não casa. Todo o resto — avisos, códigos por camada,
+`pendencias de fonte:` e `requer inspecao:` — sai em stderr **inclusive no sucesso**, porque
+"o que ainda não pode ser certificado" não é erro. No modo humano (sem `--json`) o plano é
+impresso no stdout junto dessas duas linhas, e os avisos continuam em stderr. Na falha o
+stdout fica vazio nos dois modos.
+
+Ordem canônica das chaves do plano: `schemaVersion, projectId, catalogVersion, profileId,
+profileRevision, mediaKind` e, então, `ruleContext` (se declarado) mais `image` **ou** `video`
+— nunca os dois, e `fps` só existe no ramo de vídeo.
+
 ## Fronteira pública mínima (`TEMPORAL-02-01`)
 
 Para permitir consumo por outro pacote sem acoplamento à estrutura interna de `platform/src`
@@ -269,6 +356,17 @@ npm run content:validate-project -- --project examples/projects/fixture-project.
 # CLI de composicao (exit 0 válida · 1 inválida · 2 uso/JSON malformado)
 npm run content:validate-composition -- --project examples/projects/marca-salao.project.json --composition examples/compositions/marca-salao-pilot.composition.json --json
 npm run content:validate-composition -- --project examples/projects/fixture-project.project.json --composition examples/compositions/fixture-project-pilot.composition.json
+
+# listagem do catalogo de saida (exit 0 · 1 manifesto rejeitado · 2 uso)
+npm run --silent content:profiles -- --network youtube --media video
+npm run --silent content:profiles -- --project examples/projects/marca-salao-social.project.json --json
+
+# plano de saida canonico (exit 0 · 1 plano/selecao/compatibilidade invalidos · 2 uso)
+npm run --silent content:plan-output -- --project examples/projects/marca-salao-social.project.json --profile instagram-reels-video --composition examples/compositions/marca-salao-social-reel.composition.json --json
+npm run --silent content:plan-output -- --project examples/projects/marca-salao-social.project.json --profile youtube-shorts --rule-context studio-upload
+
+# o mesmo stdout regravado sobre o fixture é byte a byte igual (tests/output-plan-examples.test.ts)
+npm run --silent content:plan-output -- --project examples/projects/marca-salao-social.project.json --profile youtube-shorts --rule-context studio-upload --json > examples/output-plans/youtube-shorts-studio-upload.output-plan.json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -278,6 +376,20 @@ relação ao diretório atual de execução.
 
 Exit codes da CLI: `0` válido · `1` manifesto inválido (relatório emitido) · `2` erro de
 uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trace).
+
+### Exemplos que executam
+
+| Arquivo | O que prova |
+|---|---|
+| `examples/projects/marca-salao.project.json` | manifesto oficial do consumidor (allowlist mínimo) |
+| `examples/projects/marca-salao-social.project.json` | manifesto **técnico** de demonstração: reusa o `id` `marca-salao` e amplia o allowlist para imagem quadrada, Reels de cada rede, vídeo horizontal e Shorts |
+| `examples/compositions/marca-salao-pilot.composition.json` | composição antiga do piloto, aceita sobre `vertical-social` — é ela que demonstra `OUTPUT_COMPAT_PROFILE_MISMATCH` |
+| `examples/compositions/marca-salao-social-reel.composition.json` | composição positiva em `instagram-reels-video` (14 s, sem áudio) |
+| `examples/output-plans/*.output-plan.json` | 5 planos canônicos gerados pelo stdout da CLI, comparados byte a byte e relidos por `ajv` + `validateOutputPlan` |
+
+Nenhum desses arquivos autoriza publicação: são fixtures de contrato. A demonstração da
+divergência exige que a composição antiga **primeiro** passe em `validateComposition` — há
+teste que prova isso antes do teste de compatibilidade.
 
 ## Gate automático (GitHub Actions)
 
@@ -571,6 +683,17 @@ resolução de caminho é feita — nunca.
   com esta correção: o primeiro é um adaptador ainda não escolhido (e produz apenas
   `COMPOSITION_RENDERER_UNDECIDED`), o segundo é estado técnico. Nenhum dos dois significa
   prontidão de produção nem autorização editorial;
+- **O catálogo de saída não certifica mídia**: nenhum arquivo de imagem ou vídeo é aberto,
+  medido ou comparado; `requiresInspection` (`media-file`, `codec`, `bytes`,
+  `audio-streams`/`image-format`, `publication`) nomeia justamente o que continua fora do
+  escopo destas fatias;
+- **Regra sem fonte confirmada é pendência, nunca limite inventado**: `P-*` aparece em
+  `pendingRuleIds` e no diagnóstico `pendencias de fonte:` inclusive no sucesso, e uma regra
+  oficial cujos `contexts` não cobrem o contexto declarado produz
+  `OUTPUT_PLAN_RULE_NOT_APPLIED` em vez de verificar silenciosamente;
+- **A capacidade declarada é observada nesta caixa** (`preset-only` → `canvas-template-mapped`
+  → `tool-export-observed`), não é promessa das redes sociais: nenhum perfil afirma o que a
+  ferramenta local não exportou ou não tem template;
 - Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não
