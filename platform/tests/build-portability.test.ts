@@ -124,3 +124,19 @@ test('os scripts das CLIs de saida rodam sobre o build silencioso', () => {
         )
     }
 })
+
+test('o script content:validate-beat-plan roda sobre o build silencioso', () => {
+    const pkg = JSON.parse(readFileSync(path.join(moduleRoot, 'package.json'), 'utf8')) as {
+        scripts?: Record<string, string>
+    }
+
+    // Mesmo contrato dos scripts de saida: a CLI e JavaScript compilado em dist/
+    // e o build interno precisa ser silencioso para nao sujar o stdout do relatorio.
+    const value = pkg.scripts?.['content:validate-beat-plan'] ?? ''
+    assert.ok(value.includes('node dist/src/validate-beat-plan-cli.js'), 'o script precisa executar a CLI do beat plan')
+    assert.match(value, /^npm run build --silent && /, 'o script precisa compilar antes de executar, em modo silencioso')
+    assert.ok(
+        existsSync(path.join(moduleRoot, 'dist', 'src', 'validate-beat-plan-cli.js')),
+        'dist/src/validate-beat-plan-cli.js nao existe em dist/',
+    )
+})
