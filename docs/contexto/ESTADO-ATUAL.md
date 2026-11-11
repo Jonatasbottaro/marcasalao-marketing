@@ -4,10 +4,10 @@
 
 - Data da atualização: 2026-11-10
 - Branch de referência: main
-- Commit da main: [285e5a7c7f956a9628bbbd6055d270844f195a8e](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/285e5a7c7f956a9628bbbd6055d270844f195a8e) — HEAD real da main no momento desta atualização (integração documental anterior do contexto), tendo como ancestral direto o commit técnico [29b40783320360350e59a13e39f49a60d2308507](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/29b40783320360350e59a13e39f49a60d2308507) que implementou TEMPORAL-02-02
+- Commit da main: [db84270ad3e51eecb0b562fcdf3a7e36941288ab](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/db84270ad3e51eecb0b562fcdf3a7e36941288ab) — HEAD real da main integrando TEMPORAL-02-03 (Activity real `validateCompositionActivity` consumindo o pacote público `marcasalao-marketing-platform`), integrado e ratificado em 10/11/2026
 - Fonte: Git, documentação integrada e GitHub Actions
 
-`285e5a7` é a referência corrente da main (avanço documental sobre o commit técnico `29b4078`), integrando exclusivamente **TEMPORAL-02-02** (contrato de solicitação `CompositionValidationWorkflowInput`, códigos de rejeição de preflight da Via A e função pura `preflightCompositionValidationInput` / `startAfterCompositionPreflight` em [`orchestration/temporal/src/composition-validation/`](../../orchestration/temporal/src/composition-validation/)). A integração não cria Activity nem Workflow, não consome ainda em runtime o pacote `marcasalao-marketing-platform` e não altera `platform/`.
+`db84270` é a referência técnica corrente da main, integrando exclusivamente **TEMPORAL-02-03** (Activity `validateCompositionActivity` em [`orchestration/temporal/src/activities/composition-validation-activity.ts`](../../orchestration/temporal/src/activities/composition-validation-activity.ts), dependência local `marcasalao-marketing-platform` via `file:../../platform`, chamada direta `validateComposition(composition, project)`, retorno de `CompositionValidationReport`, tratamento sanitizado de falhas inesperadas e coordenação de build no CI). A ratificação pelo titular reconhece exclusivamente essa Activity homologada; Workflow, Worker, cliente Temporal, `workflow.start` e demais componentes continuam não implementados e bloqueados.
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -19,9 +19,10 @@ Os marcos permanecem distintos e não se substituem:
 - integração técnica de TEMPORAL-02-01 (fronteira pública mínima da `platform`): `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - fechamento documental e de higiene de TEMPORAL-02-01: `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`;
 - integração técnica de TEMPORAL-02-02 (contrato de entrada versionado e preflight local em `orchestration/temporal/`): `29b40783320360350e59a13e39f49a60d2308507`;
-- atualização documental anterior do contexto: `285e5a7c7f956a9628bbbd6055d270844f195a8e`.
+- atualização documental do contexto pós-TEMPORAL-02-02: `285e5a7c7f956a9628bbbd6055d270844f195a8e` / `8a0a13250c38ee7512bd0bd85d4495179927e8fb`;
+- integração técnica e ratificação de TEMPORAL-02-03 (Activity real `validateCompositionActivity`): `db84270ad3e51eecb0b562fcdf3a7e36941288ab`.
 
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Nem `29b4078` nem `285e5a7` representam implementação completa de TEMPORAL-02.
+O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. `db84270` não representa implementação completa de TEMPORAL-02.
 
 ## Núcleo reutilizável
 
@@ -55,7 +56,7 @@ Nada acima está integrado, por mais que o trabalho exista e tenha evidência pr
 - **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main: `platform/src` contém somente os contratos de projeto e composição, os validadores, o entrypoint público da validação de composição, os dois CLIs, o relatório e a regra de caminhos.
 - **Qwen3.8**: família indicada para um futuro executor de texto, registrada no §15 do planejamento do TEMPORAL-01. Nada instalado, baixado, inferido ou acoplado.
 - **Higgsfield**: nenhuma ocorrência em código ou documentação da main. É referência externa de conversa, não ferramenta adotada.
-- **TEMPORAL-02-01**, **TEMPORAL-02-02**, **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo.
+- **TEMPORAL-02-01**, **TEMPORAL-02-02**, **TEMPORAL-02-03**, **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo.
 
 ## Limites do núcleo
 
@@ -217,30 +218,52 @@ A remoção da linha em branco excedente no EOF de [`platform/tests/composition-
 - nenhum binário alternativo foi copiado;
 - a limitação não afeta os módulos locais de TEMPORAL-02-02, que são funções puras em TypeScript compilado.
 
+## TEMPORAL-02-03
+
+- Status: integrado tecnicamente na main em `db84270ad3e51eecb0b562fcdf3a7e36941288ab` e ratificado pelo titular exclusivamente para a Activity e suas fronteiras públicas;
+- commit técnico: `db84270ad3e51eecb0b562fcdf3a7e36941288ab`;
+- componente implementado: `validateCompositionActivity` em [`orchestration/temporal/src/activities/composition-validation-activity.ts`](../../orchestration/temporal/src/activities/composition-validation-activity.ts);
+- pacote público consumido: `marcasalao-marketing-platform` (versão `0.1.0`) adicionado via dependência local `file:../../platform` em [`orchestration/temporal/package.json`](../../orchestration/temporal/package.json);
+- contrato dedicado da Activity: `CompositionValidationActivityInput` contendo exclusivamente `project: unknown` e `composition: unknown` (desacoplado de `requestId` e do envelope de Workflow);
+- ordem estrita dos argumentos: chama diretamente `validateComposition(composition, project)` (Composition primeiro, ProjectManifest depois);
+- retorno de domínio: entrega diretamente o `CompositionValidationReport` emitido pela `platform` sem remapeamento;
+- resultado inválido de domínio: relatórios com `valid: false` são retornos normais de domínio e **não lançam exceção**;
+- tratamento de falhas inesperadas: exceções anômalas na fronteira são capturadas e convertidas em `ApplicationFailure` não-retryable com código `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, mensagem fixa sanitizada (`Composition validation activity failed unexpectedly.`), sem vazamento de stack trace, sem erro original e sem payload bruto;
+- pureza e isolamento: zero I/O de disco, zero rede, zero subprocessos, zero mutação dos inputs e zero duplicação de regras do validador;
+- coordenação no CI: [temporal-pilot-ci.yml](../../.github/workflows/temporal-pilot-ci.yml) compila a `platform` antes da instalação e build do pacote Temporal, eliminando dependência de `dist/` residual e comprovado em checkout limpo;
+- suíte de testes dedicada: 8 novos testes em [`composition-validation-activity.test.ts`](../../orchestration/temporal/tests/activities/composition-validation-activity.test.ts) (paridade exata sobre corpus de 11 casos, ordem de argumentos, imutabilidade com `deepFreeze`, idempotência, erro inesperado e pureza);
+- testes totais do pacote Temporal: **145 testes aprovados** (120 de TEMPORAL-01 + 17 de TEMPORAL-02-02 + 8 de TEMPORAL-02-03), zero falhas, zero ignorados;
+- CI do commit: aprovado com sucesso no GitHub Actions em `ubuntu-latest · Node 22` e `windows-latest · Node 22` (run [42902255503](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902255503) na branch e run [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737) na main);
+- ratificação e governança: TEMPORAL-02-03 foi implementado e integrado tecnicamente antes de a autorização explícita correspondente ser registrada no fluxo de continuidade. A ratificação concedida pelo titular abrange estritamente a Activity homologada e não aprova automaticamente o PRD completo nem autoriza qualquer fatia posterior.
+- limites preservados: Workflow (`validateCompositionWorkflow`), Worker, cliente Temporal de validação, `workflow.start`, retries e timeouts reais continuam **ausentes e estritamente bloqueados**;
+- deploy: nenhum.
+
 ## TEMPORAL-02
 
-- **PRD de TEMPORAL-02 integrado e em revisão; somente TEMPORAL-02-01 e TEMPORAL-02-02 foram executados e integrados; implementação global e TEMPORAL-02-03 continuam não autorizados.**
+- **PRD de TEMPORAL-02 integrado e formalmente em revisão; TEMPORAL-02-01, TEMPORAL-02-02 e TEMPORAL-02-03 estão integrados tecnicamente; implementação global e fatias posteriores continuam não autorizadas.**
 - Arquivo: [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md), integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
 - Status do documento: **PRD em revisão**.
 - Aprovação do PRD: **não concedida**, salvo decisão explícita posterior.
 - Implementação global de TEMPORAL-02: **não autorizada**.
-- Fatias executadas:
-  - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac` (fechamento documental em `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`);
-  - **TEMPORAL-02-02**: contrato de entrada versionado e preflight local anterior ao `start` em [`orchestration/temporal/src/composition-validation/`](../../orchestration/temporal/src/composition-validation/), integrado em `29b40783320360350e59a13e39f49a60d2308507`.
-- **TEMPORAL-02-03**: **ainda não autorizado** e **não iniciado** (restrito futuramente à Activity real `validateCompositionActivity` consumindo o pacote público `marcasalao-marketing-platform`, mantendo o Workflow fora até etapa posterior).
-- Activity (`validateCompositionActivity`): **ausente / não iniciada**.
-- Workflow (`validateCompositionWorkflow`): **ausente / não iniciado**.
-- Dependências de runtime novas: **nenhuma**. Temporal executado para TEMPORAL-02: **nenhum**. Deploy: **nenhum**.
+- Fatias executadas e integradas na main:
+  - **TEMPORAL-02-01**: fronteira pública mínima da `platform` (`marcasalao-marketing-platform@0.1.0`, entrypoint `composition-validation-api`), integrada em `f202377fac721aff1d4143a2598f76c03062f0ac` (fechamento documental em `f1da1f9d0b62bf94be44779b8db4e00610dd7ee5`);
+  - **TEMPORAL-02-02**: contrato de entrada versionado e preflight local anterior ao `start` em [`orchestration/temporal/src/composition-validation/`](../../orchestration/temporal/src/composition-validation/), integrado em `29b40783320360350e59a13e39f49a60d2308507`;
+  - **TEMPORAL-02-03**: Activity real `validateCompositionActivity` em [`orchestration/temporal/src/activities/composition-validation-activity.ts`](../../orchestration/temporal/src/activities/composition-validation-activity.ts), integrada em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`.
+- **Fatias posteriores (Workflow, Worker, cliente, retries, timeout, replay)**: **não autorizadas** e **bloqueadas**.
+- Activity (`validateCompositionActivity`): **integrada e ratificada no escopo estrito**.
+- Workflow (`validateCompositionWorkflow`): **ausente / não iniciado / bloqueado**.
+- Worker e cliente de validação de composição: **ausentes / não iniciados / bloqueados**.
+- Dependências de runtime externas novas: **nenhuma** (apenas dependência local compilada `marcasalao-marketing-platform`). Temporal executado para TEMPORAL-02: **nenhum**. Deploy: **nenhum**.
 
-Integrar o PRD **não** é aprová-lo, e integrar `TEMPORAL-02-01` e `TEMPORAL-02-02` **não** autoriza automaticamente `TEMPORAL-02-03`, a Activity ou o Workflow: cada fatia depende de decisão explícita do titular.
+Integrar o PRD **não** é aprová-lo, e ratificar as fatias técnicas `TEMPORAL-02-01`, `TEMPORAL-02-02` e `TEMPORAL-02-03` **não** autoriza automaticamente o Workflow ou qualquer fatia posterior: cada incremento depende de decisão explícita do titular.
 
 ### Passo real planejado
 
 - Operação: `validate-composition` — **um único** passo.
 - Objetivo: validar uma Composition v1 contra um ProjectManifest válido.
 - Função existente do núcleo: `validateComposition(composition, project)` — agora reexportada pela fronteira pública mínima `marcasalao-marketing-platform` (`0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts)) integrada em `TEMPORAL-02-01` (`f202377fac721aff1d4143a2598f76c03062f0ac`). A ordem permanece Composition primeiro, ProjectManifest depois.
-- Componentes **conceituais**, ainda não implementados: Workflow `validateCompositionWorkflow`, Activity `validateCompositionActivity` e resultado `CompositionValidationWorkflowResult`.
-- Nenhum desses componentes de orquestração existe em código na main.
+- Componentes implementados: Activity `validateCompositionActivity` (integrada e ratificada tecnicamente em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`).
+- Componentes conceituais ainda não implementados e bloqueados: Workflow `validateCompositionWorkflow` e resultado estruturado de Workflow `CompositionValidationWorkflowResult`.
 
 ### Quatro vias planejadas
 
@@ -272,6 +295,7 @@ Nada disso foi executado: não há Activity, Worker nem execução de Temporal p
 
 - **Gate de fronteira pública (`TEMPORAL-02-01`)** — **concluído e integrado** na main em `f202377fac721aff1d4143a2598f76c03062f0ac`: entrypoint público mínimo da `platform` (`composition-validation-api`), pacote compilado consumível (`marcasalao-marketing-platform@0.1.0`), tipos públicos (`Composition`, `ProjectManifest`, `CompositionValidationReport`), subpaths internos bloqueados por `exports`, zero dependências de runtime, 315 testes aprovados e CI verde em Ubuntu e Windows, Node 22 e 24 (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)).
 - **Fatia de contrato e preflight local (`TEMPORAL-02-02`)** — **concluída e integrada** na main em `29b40783320360350e59a13e39f49a60d2308507`: envelope fechado (`schemaVersion: 1`, `requestId`, `project`, `composition`), três códigos da Via A, inspeção JSON sem perda, política estreita contra conteúdo sensível, limites UTF-8 de 64/256/384 KiB, prova de zero invocação do callback de `start` nas rejeições, 17 novos testes locais verdes e suíte integral de 137 testes verde no CI Ubuntu e Windows, Node 22 (run [42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305)).
+- **Fatia de Activity real (`TEMPORAL-02-03`)** — **concluída, integrada e ratificada** na main em `db84270ad3e51eecb0b562fcdf3a7e36941288ab`: Activity pura `validateCompositionActivity`, consumo da dependência pública `marcasalao-marketing-platform`, contrato dedicado `CompositionValidationActivityInput`, chamada exata `validateComposition(composition, project)`, retorno de relatório sem remapeamento, `valid: false` normal, conversão sanitizada para `TEMPORAL_COMPOSITION_ACTIVITY_FAILED`, 8 novos testes dedicados, 145 testes integrais do pacote Temporal e CI verde em Ubuntu e Windows, Node 22 (run [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737)).
 - **Gate Elephant–Goldfish de TEMPORAL-02** — **não executado**; permanece obrigatório **após** a futura implementação e **antes** da integração de TEMPORAL-02 na main. Revisões mínimas: fronteira pública, ordem dos argumentos, paridade, history, payload, quatro vias, `invalid` versus `failed`, retries, replay, isolamento do núcleo e ausência de mídia e fornecedores.
 
 O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPORAL-01** e não cobre TEMPORAL-02.
@@ -324,54 +348,33 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 ## Próximo passo
 
-> Decidir se TEMPORAL-02-03 está autorizado.
+> Deliberação do titular sobre manter o projeto bloqueado ou autorizar uma próxima fatia de TEMPORAL-02.
 
-`TEMPORAL-02-03` ainda **não está autorizado**. Caso venha a ser autorizado, `TEMPORAL-02-03` deve ser restrito exclusivamente a:
-
-- Activity real (`validateCompositionActivity`);
-- consumo do pacote público `marcasalao-marketing-platform`;
-- chamada de: `validateComposition(composition, project)`;
-- retorno de `CompositionValidationReport`;
-- testes de paridade;
-- nenhuma rede;
-- nenhuma escrita;
-- nenhuma mutação.
-
-Registrar que continuam fora de TEMPORAL-02-03:
+Com a integração e ratificação de **TEMPORAL-02-03** restrita à Activity, todas as etapas técnicas subsequentes permanecem **estritamente bloqueadas**:
 
 - Workflow (`validateCompositionWorkflow`);
-- Worker;
-- cliente Temporal real;
-- workflow.start;
-- retries reais;
-- timeout real;
+- Worker dedicado;
+- cliente Temporal de validação e `workflow.start`;
+- retries reais e timeouts reais;
 - colisão de Workflow ID;
 - replay;
-- gate Elephant–Goldfish;
-- OutputPlan;
-- BeatPlan;
+- gate Elephant–Goldfish de TEMPORAL-02;
+- OutputPlan, BeatPlan e R001;
 - TEMPORAL-04;
-- mídia;
-- fornecedores;
-- deploy.
-
-Não escrever o prompt de implementação de TEMPORAL-02-03 nesta tarefa.
+- mídia, fornecedores e deploy.
 
 Pré-condições cumpridas:
 
-- fronteira pública da platform integrada (`marcasalao-marketing-platform@0.1.0`, `composition-validation-api`);
-- contrato de entrada integrado (`CompositionValidationWorkflowInput`);
-- preflight integrado (`preflightCompositionValidationInput`);
-- limites definidos (64/256/384 KiB UTF-8);
-- segurança da history anterior ao start;
-- CI Ubuntu e Windows verde na `platform` (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)) e em `orchestration/temporal/` (run [42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305), 137 testes aprovados);
+- fronteira pública da platform integrada (`marcasalao-marketing-platform@0.1.0`, entrypoint [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts));
+- contrato de entrada versionado e preflight local integrados (`TEMPORAL-02-02`, `CompositionValidationWorkflowInput`);
+- Activity real integrada e ratificada (`TEMPORAL-02-03`, `validateCompositionActivity`);
+- coordenação de build da platform validada no CI Temporal;
+- CI Ubuntu e Windows verde na `platform` (run [42738388930](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42738388930)) e em `orchestration/temporal/` (run [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737), 145 testes aprovados);
 - zero dependência Temporal na `platform`.
 
-Pré-condição ainda necessária:
+Pré-condição obrigatória para qualquer continuidade:
 
-- autorização explícita do titular.
-
-A autorização concedida para TEMPORAL-02-02 foi consumida e não vale automaticamente para TEMPORAL-02-03.
+- decisão e autorização explícita do titular delimitando o escopo da próxima fatia. A ratificação de TEMPORAL-02-03 não concede autorização automática para nenhuma implementação futura.
 
 Tarefas secundárias permitidas:
 
@@ -381,8 +384,8 @@ Tarefas secundárias permitidas:
 
 ## O que não fazer agora
 
-- não implementar TEMPORAL-02-03 sem autorização explícita;
-- não criar Activity ou Workflow sem autorização explícita;
+- não implementar Workflow ou Worker sem autorização explícita;
+- não criar cliente Temporal ou invocar `workflow.start` sem autorização explícita;
 - não tratar o PRD de TEMPORAL-02 como aprovado sem decisão explícita;
 - não iniciar TEMPORAL-04;
 - não integrar OutputPlan e BeatPlan;
@@ -397,4 +400,4 @@ Tarefas secundárias permitidas:
 
 ## O que esta atualização não verificou
 
-Estado remoto de publicações e rascunhos no Postiz, execução de ComfyUI, implantação das integrações no servidor e novas jornadas do Salao02 não foram consultados nem executados. Na máquina Windows local, após `npm ci`, o Controle Inteligente de Aplicativos (Code Integrity) bloqueou o carregamento do addon nativo `@temporalio/core-bridge` (`ERR_DLOPEN_FAILED`) nos testes de `TEMPORAL-01` que iniciam Worker ou Test Server local; os 17 novos testes de `TEMPORAL-02-02` e os 114 testes puros sem addon nativo foram executados e aprovados localmente em Node 22, e a suíte integral de 137 testes foi comprovada no CI Ubuntu e Windows (runs [42747565768](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42747565768) e [42748899305](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42748899305)).
+Estado remoto de publicações e rascunhos no Postiz, execução de ComfyUI, implantação das integrações no servidor e novas jornadas do Salao02 não foram consultados nem executados. Na máquina Windows local com Node 22, a suíte completa de `npm test` do pacote Temporal (145 testes) executou com 100% de sucesso (52s), e o CI em `ubuntu-latest` e `windows-latest` confirmou aprovação integral no commit `db84270ad3e51eecb0b562fcdf3a7e36941288ab` (runs [42902255503](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902255503) e [42902338737](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42902338737)).
