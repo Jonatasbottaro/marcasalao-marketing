@@ -1,3 +1,7 @@
 # Os scripts de shell do gate rodam tambem no windows-latest, onde o checkout padrao do
 # runner converte texto em CRLF e o bash passa a falhar. LF neles e obrigatorio.
 *.sh text eol=lf
+
+# Exemplos de planos de saida comparados byte a byte contra o stdout da CLI:
+# checkout no Windows nao pode converter para CRLF.
+examples/output-plans/*.json text eol=lf

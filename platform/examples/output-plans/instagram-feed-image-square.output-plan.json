@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "projectId": "marca-salao",
+  "catalogVersion": "1",
+  "profileId": "instagram-feed-image-square",
+  "profileRevision": 2,
+  "mediaKind": "image",
+  "image": {
+    "width": 1080,
+    "height": 1080,
+    "aspectRatio": "1:1"
+  }
+}
