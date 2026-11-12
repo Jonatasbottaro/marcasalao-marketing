@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "multitrack-hub-pipeline-pilot",
+  "project": "../projects/multitrack-hub-social.project.json",
+  "composition": "../compositions/multitrack-hub-social-reel.composition.json",
+  "outputPlan": "../output-plans/multitrack-hub-instagram-reels-video.output-plan.json",
+  "beatPlan": "./multitrack-hub-social-reel.beat-plan.json"
+}

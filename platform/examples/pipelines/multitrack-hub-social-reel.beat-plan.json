@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "projectId": "multitrack-hub",
+  "compositionId": "multitrack-social-reel-example",
+  "id": "multitrack-social-reel-beat-plan",
+  "locale": "pt-BR",
+  "beats": [
+    {
+      "id": "opening-hook",
+      "order": 1,
+      "sceneIds": [
+        "opening"
+      ],
+      "narrativeFunction": "hook",
+      "startMs": 0,
+      "durationMs": 3000,
+      "narration": {
+        "text": "Abertura tecnica do segundo consumidor."
+      },
+      "onScreenText": "Multitracks, playbacks e rateios em um so lugar.",
+      "visualIntent": "Apresentar a declaracao de abertura em turquesa sobre fundo quase preto.",
+      "motionIntent": "none",
+      "transitionIn": "none",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "exemplo-tecnico-multitrack-reels"
+      ],
+      "validationStatus": "validated"
+    },
+    {
+      "id": "demonstration-body",
+      "order": 2,
+      "sceneIds": [
+        "demo-frame"
+      ],
+      "narrativeFunction": "demonstration",
+      "startMs": 3000,
+      "durationMs": 5000,
+      "narration": {
+        "text": "Demonstracao tecnica do painel de pistas."
+      },
+      "onScreenText": "Quadro tecnico do painel de pistas.",
+      "visualIntent": "Exibir o asset tecnico do painel de pistas em destaque.",
+      "motionIntent": "slow-zoom",
+      "transitionIn": "cut",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "exemplo-tecnico-multitrack-reels"
+      ],
+      "validationStatus": "validated"
+    },
+    {
+      "id": "explanation-body",
+      "order": 3,
+      "sceneIds": [
+        "explanation"
+      ],
+      "narrativeFunction": "explanation",
+      "startMs": 8000,
+      "durationMs": 4000,
+      "narration": {
+        "text": "Explicacao tecnica das pistas nomeadas."
+      },
+      "onScreenText": "Cada instrumento em uma pista, com nome claro.",
+      "visualIntent": "Destacar a organizacao das pistas com texto editavel sobre fundo escuro.",
+      "motionIntent": "none",
+      "transitionIn": "cut",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "exemplo-tecnico-multitrack-reels"
+      ],
+      "validationStatus": "validated"
+    },
+    {
+      "id": "closing-cta",
+      "order": 4,
+      "sceneIds": [
+        "closing"
+      ],
+      "narrativeFunction": "cta",
+      "startMs": 12000,
+      "durationMs": 3000,
+      "narration": {
+        "text": "Chamada tecnica final para conhecer o sistema."
+      },
+      "onScreenText": "Conheca a Multitrack Hub.",
+      "visualIntent": "Exibir a chamada final para acao com o simbolo da marca.",
+      "motionIntent": "none",
+      "transitionIn": "cut",
+      "transitionOut": "fade",
+      "editorialEvidence": [
+        "exemplo-tecnico-multitrack-reels"
+      ],
+      "validationStatus": "validated"
+    }
+  ],
+  "metadata": {
+    "status": "draft",
+    "description": "BeatPlan de exemplo integrado para o pipeline social reel do segundo consumidor.",
+    "tags": [
+      "exemplo",
+      "pipeline",
+      "reels"
+    ]
+  }
+}

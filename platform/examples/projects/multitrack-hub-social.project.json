@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "multitrack-hub",
+  "name": "Multitrack Hub (manifesto tecnico de consumidor social)",
+  "locale": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "brandTheme": "multitrack-hub",
+  "assetRoot": "projects/multitrack-hub/assets",
+  "contentPolicies": {
+    "requireApprovedBriefing": true,
+    "requireApprovedScript": true,
+    "prohibitPersonalData": true,
+    "requireFunctionalEvidence": true
+  },
+  "outputProfiles": [
+    "instagram-feed-image-square",
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ]
+}

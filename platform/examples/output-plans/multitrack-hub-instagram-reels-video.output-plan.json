@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "projectId": "multitrack-hub",
+  "catalogVersion": "1",
+  "profileId": "instagram-reels-video",
+  "profileRevision": 2,
+  "mediaKind": "video",
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "aspectRatio": "9:16",
+    "fps": 30
+  }
+}

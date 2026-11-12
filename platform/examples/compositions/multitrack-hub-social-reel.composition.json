@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "projectId": "multitrack-hub",
+  "id": "multitrack-social-reel-example",
+  "title": "Exemplo tecnico de Reels vertical do segundo consumidor",
+  "locale": "pt-BR",
+  "format": {
+    "profile": "instagram-reels-video",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "scenes": [
+    {
+      "id": "opening",
+      "type": "text",
+      "durationMs": 3000,
+      "content": {
+        "text": "Multitracks, playbacks e rateios em um so lugar."
+      }
+    },
+    {
+      "id": "demo-frame",
+      "type": "image",
+      "durationMs": 5000,
+      "content": {
+        "asset": {
+          "id": "painel-multitrack-01",
+          "path": "projects/multitrack-hub/assets/painel-multitrack-01.png"
+        },
+        "alt": "Quadro tecnico do painel de pistas."
+      }
+    },
+    {
+      "id": "explanation",
+      "type": "text",
+      "durationMs": 4000,
+      "content": {
+        "text": "Cada instrumento em uma pista, com nome claro."
+      }
+    },
+    {
+      "id": "closing",
+      "type": "cta",
+      "durationMs": 3000,
+      "content": {
+        "text": "Conheca a Multitrack Hub.",
+        "href": "https://multitrackhub.com.br"
+      }
+    }
+  ],
+  "renderer": {
+    "adapter": "undecided"
+  },
+  "metadata": {
+    "status": "draft",
+    "description": "Exemplo tecnico do perfil instagram-reels-video para o segundo consumidor; nao e peca aprovada nem campanha publicada.",
+    "tags": [
+      "exemplo",
+      "contrato",
+      "reels"
+    ]
+  }
+}
