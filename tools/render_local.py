@@ -278,10 +278,14 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         if not contained(root, absolute) or not os.path.isfile(absolute):
             raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
         # Inspecao previa: com -loop 1 um asset ilegivel faria a ferramenta de
-        # video girar sem falhar; o probe rejeita antes do render.
+        # video girar sem falhar. O exit code do ffprobe nao basta (pode ser 0
+        # com streams vazios para lixo binario); exige stream de video real.
         try:
-            build_video.probe_media(absolute)
+            info = build_video.probe_media(absolute)
         except build_video.DeliveryError:
+            raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {relative}')
+        video_streams = [s for s in info.get('streams', []) if s.get('codec_type') == 'video']
+        if not video_streams or not video_streams[0].get('width') or not video_streams[0].get('height'):
             raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {relative}')
         asset_paths.append(absolute)
 
