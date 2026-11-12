@@ -10,7 +10,20 @@ import build_video
 import r002_pilot
 
 WORKTREE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MAIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(WORKTREE)))
+
+
+def _main_root(start):
+    # sobe ate o checkout principal: em worktree o .git e arquivo, nao diretorio
+    root = start
+    while not os.path.isdir(os.path.join(root, ".git")):
+        parent = os.path.dirname(root)
+        if parent == root:
+            return start
+        root = parent
+    return root
+
+
+MAIN_ROOT = _main_root(WORKTREE)
 TMP_BASE = os.path.join(MAIN_ROOT, ".workspace", "tmp", "r002-video-local")
 CAPTURE_REL = "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png"
 SRT_REL = "04-legendas/roteiro_r002_agenda_ficticia.srt"

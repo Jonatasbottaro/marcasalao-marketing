@@ -66,7 +66,13 @@ class TransactionalExportTest(unittest.TestCase):
     def setUp(self):
         import tempfile
         worktree = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        main_root = os.path.dirname(os.path.dirname(os.path.dirname(worktree)))
+        # sobe ate o checkout principal: em worktree o .git e arquivo, nao diretorio
+        main_root = worktree
+        while not os.path.isdir(os.path.join(main_root, ".git")):
+            parent = os.path.dirname(main_root)
+            if parent == main_root:
+                break
+            main_root = parent
         tmp_base = os.path.join(main_root, ".workspace", "tmp", "r002-video-local")
         os.makedirs(tmp_base, exist_ok=True)
         self.base = tempfile.mkdtemp(dir=tmp_base)
