@@ -12,6 +12,7 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 5. **BeatPlan v1 (fatia interna)** — tradução **temporal** declarativa de uma Composition válida: beats ordenados com `startMs`/`durationMs`, função narrativa, texto e intenções → schema draft-07 → validador vinculado a ProjectManifest e Composition → CLI `content:validate-beat-plan` → dois exemplos versionados. Sem export público, sem `OutputPlan`, sem Temporal, sem render e sem mídia.
 6. **Validação consolidada do pipeline** — `validateContentPipeline` unifica ProjectManifest → Composition → OutputPlan → compatibilidade Composition × OutputPlan → BeatPlan em uma execução pura e determinística, com CLI `content:validate-pipeline`.
 7. **Casos de pipeline e segundo consumidor real (fatia interna)** — `ContentPipelineCaseManifest` amarra os quatro documentos por caminhos relativos, com resolvedor seguro confinado a uma raiz declarada, validação de um caso, agregação multiprojeto e CLI `content:validate-cases`. A Multitrack Hub entra como segundo consumidor real ao lado da Marca Salão, sobre o mesmo núcleo, sem condicional de marca. Sem export público, sem Temporal, sem render e sem mídia.
+8. **CreativeExecutionPackage v1 (fatia interna)** — especificação técnica imutável da execução futura, gerada **somente depois de um pipeline válido**: contrato, schema draft-07, gerador puro, validador puro, serialização canônica, packageId determinístico, artefatos esperados lógicos, geração multicase e CLI transacional `content:build-execution-packages`. Nenhum renderizador, Worker ou adaptador é implementado; o pacote não executa nada.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -437,6 +438,9 @@ npm run --silent content:validate-pipeline -- --project examples/projects/marca-
 # CLI multiprojeto de casos (exit 0 valido(s) · 1 invalido(s) de dominio · 2 uso/ilegivel/descoberta vazia)
 npm run --silent content:validate-cases -- --case examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json --root examples --json
 npm run --silent content:validate-cases -- --cases-root examples --json
+
+# CLI de geracao de pacotes de execucao (exit 0 gerados · 1 caso invalido · 2 uso/path/manifesto · 3 geracao/validacao do pacote · 4 escrita/promocao)
+npm run --silent content:build-execution-packages -- --manifest <cases-manifest.json> --output-dir <diretorio> --json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -462,6 +466,7 @@ uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trac
 | `examples/compositions/multitrack-hub-social-reel.composition.json` | composição positiva do segundo consumidor em `instagram-reels-video` (15 s, sem áudio, CTA para o site oficial documentado) |
 | `examples/output-plans/multitrack-hub-instagram-reels-video.output-plan.json` | plano canônico do segundo consumidor, gerado pelo stdout de `content:plan-output` e comparado byte a byte |
 | `examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json` | manifesto de caso que amarra os quatro documentos da Multitrack Hub; validado junto com o caso da Marca Salão pela CLI multiprojeto |
+| `examples/execution-packages/*.execution-package.json` | pacotes técnicos canônicos dos dois consumidores, gerados pela CLI `content:build-execution-packages` e comparados byte a byte (gerador em memória, serialização, fixture e CLI); não são render nem job executado |
 
 Nenhum desses arquivos autoriza publicação: são fixtures de contrato. A demonstração da
 divergência exige que a composição antiga **primeiro** passe em `validateComposition` — há
@@ -686,7 +691,7 @@ Rodam em `tests/contracts/`:
   aceita, para que a ausência de regra fique registrada e ninguém confunda "o motor não
   reclamou" com equivalência.
 
-`npm test` executa tudo (709 testes com o segundo consumidor multiprojeto); `npm run
+`npm test` executa tudo (755 testes com o CreativeExecutionPackage v1); `npm run
 test:contracts` executa especificamente a verificação de contrato (305 testes) — ambas
 sobre o JavaScript compilado em `dist/`.
 
@@ -862,6 +867,113 @@ foi tocado; nenhum import de `@temporalio/*` existe; nenhuma renderização, mí
 de independência de marca em `tests/beat-plan-validation.test.ts` foram estendidos
 para cobrir os arquivos novos e proibir também referências à Multitrack Hub no núcleo.
 
+## CreativeExecutionPackage v1 (pacote técnico de execução)
+
+**Finalidade.** A validação consolidada responde "os documentos são válidos e
+compatíveis?"; o `CreativeExecutionPackage` responde "qual é o pacote determinístico
+que um executor futuro deverá consumir?". Ele é gerado **somente depois de um
+`ContentPipelineValidationReport` válido** e é uma especificação técnica imutável da
+execução futura: etapas, cenas, beats, perfil de saída e artefatos esperados.
+**Validação não é execução**: nenhum renderizador, Worker ou adaptador existe nesta
+fatia, e o pacote não executa nada — não renderiza, não gera vídeo/imagem/áudio, não
+cria arquivos físicos de mídia, não acessa rede, não usa fornecedor, não entra no
+Temporal e não publica.
+
+| Peça | Onde | Papel |
+|---|---|---|
+| Contrato TypeScript v1 | `src/creative-execution-package-contract.ts` | `CreativeExecutionPackage`, `CreativeExecutionOutput`, `CreativeExecutionStep`, `ExpectedArtifact`, `CreativeExecutionSourceReferences`, códigos de falha e derivação do `packageId` |
+| Espelho draft-07 | `schemas/creative-execution-package.schema.json` | forma estrutural, `additionalProperties: false`, executado por `ajv` nos testes |
+| Gerador puro | `src/create-creative-execution-package.ts` — `createCreativeExecutionPackage(input, report)` | resultado discriminado `ok: true/package` ou `ok: false/failureCode`; só gera com pipeline válido; não revalida regras duplicadas; não muta entradas |
+| Validador puro | `src/validate-creative-execution-package.ts` — `validateCreativeExecutionPackage(pkg)` | estrutura, IDs, output, timeline (ordem, `startMs`, `endMs`, contiguidade), duração consolidada, artefatos, unicidade, source references, propriedades extras |
+| Serialização canônica | `src/serialize-creative-execution-package.ts` — `serializeCreativeExecutionPackage(pkg)` | ordem de campos explícita, indentação de 2 espaços, LF, uma newline final, UTF-8 sem BOM, round trip estável |
+| Aplicação por caso e multicase | `src/creative-execution-packages.ts` | carrega o caso pelo loader, executa o pipeline, cria e valida o pacote; `createCreativeExecutionPackagesFromCases` com falha isolada e ordem estável |
+| CLI interna | `src/creative-execution-package-cli.ts`, script `content:build-execution-packages` | manifesto de casos + output-dir confinado + geração transacional |
+| Fixtures canônicas | `examples/execution-packages/*.execution-package.json` | um pacote por consumidor real, gerados pela própria CLI, comparados byte a byte |
+
+**Contrato.** `schemaVersion: 1`; `packageId`; os quatro identificadores
+(`projectId`, `compositionId`, `outputPlanId`, `beatPlanId`); `output`; `timeline`;
+`expectedArtifacts`; `source`. Campos desconhecidos são proibidos em todos os níveis.
+
+**Output.** Consolida somente dados já validados: `profileId`, `mediaKind` (`video`
+na v1 — a compatibilidade Composition × OutputPlan compara planos de vídeo),
+`width`, `height`, `aspectRatio`, `fps`, `rendererAdapter` (ecoado da Composition) e
+`durationMs` (duração total da Composition). `plannedContainer` só existe quando o
+perfil do catálogo o declara (`mp4`/`webm`); **codec, bitrate e fornecedor não existem
+no contrato e não são inventados**.
+
+**Timeline.** Cada etapa traduz um beat validado, sem conteúdo novo: `order`,
+`beatId`, `sceneIds` (a relação muitos-para-muitos beat/cena é preservada),
+`startMs`, `durationMs`, `endMs` derivado (`startMs + durationMs`),
+`narrativeFunction`, `motionIntent`, `transitionIn`, `transitionOut` e, quando
+existem no beat, `onScreenText` e `narrationText` — textos nunca alterados. A
+timeline é contígua, começa em zero e termina exatamente em `output.durationMs`.
+Nenhum asset, prompt ou mídia é inferido.
+
+**Artefatos esperados.** Somente artefatos lógicos, em ordem fixa:
+`primary-output`, `captions`, `narration-script`, `execution-report`. Cada um tem
+`id`, `kind`, `required`, `logicalName` (nome lógico derivado do `packageId`, sem
+caminho absoluto) e `contentType` lógico (`video`, `text/srt`, `text/plain`,
+`application/json`). Nenhum arquivo físico é criado nesta etapa; os nomes apenas
+declaram o que a execução futura deverá produzir.
+
+**Source references.** Somente IDs e versões de schema dos quatro documentos de
+origem — nunca os documentos completos. O validador exige igualdade com os IDs de
+topo e versões inteiras positivas.
+
+**packageId determinístico.** Forma legível
+`execution-<projectId>-<compositionId>-<outputPlanId>-<beatPlanId>` enquanto couber
+em 128 caracteres; acima do limite, canonicalização explícita (JSON com chaves em
+ordem fixa, sem espaços) + SHA-256 (`node:crypto`) com prefixo versionado
+`execution-v1-`. Sem timestamp, sem aleatoriedade, sem caminho, sem depender da
+ordem de propriedades do objeto original. **Este é o packageId do pacote, nunca um
+Workflow ID, e não reutiliza o `contentHash` do Temporal** (que permanece fora
+desta fatia). O validador rederiva o identificador e rejeita inconsistência
+(`EXECUTION_PACKAGE_ID_MISMATCH`).
+
+**Códigos de falha da geração (estáveis).** `PIPELINE_INVALID`,
+`PIPELINE_STAGE_BLOCKED`, `REQUIRED_ID_UNAVAILABLE`,
+`UNSUPPORTED_OUTPUT_CONFIGURATION`, `DURATION_MISMATCH`,
+`INTERNAL_INVARIANT_FAILED`. Nenhum pacote parcial é devolvido em falha.
+
+**Serialização canônica.** A ordem dos campos é implementada explicitamente pelo
+contrato (nunca herdada do objeto original); arrays preservam a ordem semântica;
+o mesmo pacote produz bytes idênticos e parse + serialização produz os mesmos
+bytes. Nenhuma dependência externa de canonical JSON. As fixtures versionadas são
+comparadas byte a byte com o gerador em memória, a serialização e a CLI
+(`tests/creative-execution-package-e2e.test.ts`), com hashes SHA-256 conferidos.
+
+**Geração transacional da CLI.** Fluxo: carregar todos os casos → validar → criar
+pacotes em memória → validar pacotes → serializar → escrever em staging interno →
+validar os bytes escritos → promover com rename → preservar a saída anterior em
+qualquer falha (backup dos alvos existentes e reversão dos já promovidos). O
+output-dir é obrigatório, relativo, estritamente dentro da raiz de confinamento
+(lexical e após realpath; symlink externo rejeitado) e só é criado depois de todas
+as validações. Nenhum pacote parcial é promovido.
+
+**Contrato da CLI `content:build-execution-packages`.** Flags: `--manifest
+<cases-manifest.json>` e `--output-dir <diretorio>` obrigatórios; `--root <raiz>`
+opcional (padrão: diretório do manifesto); `--json` opcional. O manifesto de casos
+declara `{ schemaVersion: 1, id?, cases: [...] }` com caminhos relativos ao
+diretório do manifesto. Exit codes: `0` todos os pacotes gerados · `1` um ou mais
+casos inválidos · `2` uso, path, manifesto, arquivo ou JSON inválido · `3` falha de
+geração ou validação do pacote · `4` falha de escrita ou promoção. stdout contém
+somente o relatório; stderr somente erro sanitizado; zero stack trace e zero
+caminho absoluto da máquina.
+
+**Exemplos.** Os dois consumidores reais geram pacotes independentes:
+`execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan`
+(14000 ms, 3 etapas) e
+`execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan`
+(15000 ms, 4 etapas). As fixtures são técnicas: não constituem render, job
+executado, campanha aprovada nem autorização de publicação.
+
+**Fronteiras desta fatia.** Tudo interno: o entrypoint público continua exportando
+apenas `validateComposition`; subpaths do pacote respondem
+`ERR_PACKAGE_PATH_NOT_EXPORTED` (teste de consumidor externo estendido); a CLI fica
+fora do tarball; `node:crypto` aparece somente no contrato, para o fallback do
+packageId. Nenhum import de `@temporalio/*`, nenhuma regra de marca no núcleo,
+nenhum caminho de fixture no domínio, filesystem somente no loader/CLI.
+
 ## Limites atuais (expressos)
 
 - **Composition v1 implementada apenas como contrato declarativo** (sem áudio, prompts,
@@ -931,7 +1043,11 @@ para cobrir os arquivos novos e proibir também referências à Multitrack Hub n
   ferramenta local não exportou ou não tem template;
 - **Os exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
   as fixtures da Multitrack Hub são técnicas e fictícias, coerentes com a identidade
-  documentada da marca, e não reutilizam campanha publicada nem dados reais;
+  documentada da marca, e não reutilizam campanha publicada nem dados reais; os
+  pacotes de execução são especificações técnicas, não peças renderizadas;
+- **O CreativeExecutionPackage não executa nada** — nenhum renderizador, Worker ou
+  adaptador foi implementado; o pacote não gera mídia, não cria arquivos físicos de
+  saída, não acessa rede e não entra no Temporal; `packageId` não é Workflow ID;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão e Multitrack Hub são consumidores, não núcleo** — `platform/src` e
   `platform/schemas` não contêm referência a nenhuma das duas marcas (há teste
