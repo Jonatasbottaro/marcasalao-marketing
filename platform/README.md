@@ -10,6 +10,8 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 3. **Terceira fatia (R001)** — catálogo declarativo de perfis de saída sociais → regras oficiais com escopo por contexto e pendências de fonte → `OutputPlan` canônico → compatibilidade Composition × OutputPlan → CLIs `content:profiles` e `content:plan-output`.
 4. **Fronteira pública mínima (`TEMPORAL-02-01`)** — Entrypoint público compilado (`dist/src/composition-validation-api.js` + `.d.ts`) para consumo externo de `validateComposition(composition, project)` sem importar `platform/src` nem caminhos internos de `dist/`.
 5. **BeatPlan v1 (fatia interna)** — tradução **temporal** declarativa de uma Composition válida: beats ordenados com `startMs`/`durationMs`, função narrativa, texto e intenções → schema draft-07 → validador vinculado a ProjectManifest e Composition → CLI `content:validate-beat-plan` → dois exemplos versionados. Sem export público, sem `OutputPlan`, sem Temporal, sem render e sem mídia.
+6. **Validação consolidada do pipeline** — `validateContentPipeline` unifica ProjectManifest → Composition → OutputPlan → compatibilidade Composition × OutputPlan → BeatPlan em uma execução pura e determinística, com CLI `content:validate-pipeline`.
+7. **Casos de pipeline e segundo consumidor real (fatia interna)** — `ContentPipelineCaseManifest` amarra os quatro documentos por caminhos relativos, com resolvedor seguro confinado a uma raiz declarada, validação de um caso, agregação multiprojeto e CLI `content:validate-cases`. A Multitrack Hub entra como segundo consumidor real ao lado da Marca Salão, sobre o mesmo núcleo, sem condicional de marca. Sem export público, sem Temporal, sem render e sem mídia.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -431,6 +433,10 @@ npm run --silent content:validate-beat-plan -- --project examples/projects/fixtu
 
 # CLI de validacao consolidada do pipeline (exit 0 valido · 1 invalido · 2 uso/arquivo ausente/JSON malformado)
 npm run --silent content:validate-pipeline -- --project examples/projects/marca-salao-social.project.json --composition examples/compositions/marca-salao-social-reel.composition.json --output-plan examples/output-plans/instagram-reels-video.output-plan.json --beat-plan examples/pipelines/marca-salao-social-reel.beat-plan.json --json
+
+# CLI multiprojeto de casos (exit 0 valido(s) · 1 invalido(s) de dominio · 2 uso/ilegivel/descoberta vazia)
+npm run --silent content:validate-cases -- --case examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json --root examples --json
+npm run --silent content:validate-cases -- --cases-root examples --json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -452,6 +458,10 @@ uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trac
 | `examples/output-plans/*.output-plan.json` | 5 planos canônicos gerados pelo stdout da CLI, comparados byte a byte e relidos por `ajv` + `validateOutputPlan` |
 | `examples/beat-plans/marca-salao-pilot.beat-plan.json` | plano de 4 beats (10000 ms) sobre a composição do piloto: um beat atravessa `demo-frame` e `closing`, e o plano fecha exatamente com a composição — zero erro e zero aviso |
 | `examples/beat-plans/fixture-project-pilot.beat-plan.json` | plano de 2 beats (5000 ms) em `en-US` sobre a composição do fixture: um beat sem `narration` é aceito, porque narração é opcional por design |
+| `examples/projects/multitrack-hub-social.project.json` | manifesto técnico do segundo consumidor real (Multitrack Hub), com allowlist próprio e políticas explícitas |
+| `examples/compositions/multitrack-hub-social-reel.composition.json` | composição positiva do segundo consumidor em `instagram-reels-video` (15 s, sem áudio, CTA para o site oficial documentado) |
+| `examples/output-plans/multitrack-hub-instagram-reels-video.output-plan.json` | plano canônico do segundo consumidor, gerado pelo stdout de `content:plan-output` e comparado byte a byte |
+| `examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json` | manifesto de caso que amarra os quatro documentos da Multitrack Hub; validado junto com o caso da Marca Salão pela CLI multiprojeto |
 
 Nenhum desses arquivos autoriza publicação: são fixtures de contrato. A demonstração da
 divergência exige que a composição antiga **primeiro** passe em `validateComposition` — há
@@ -676,9 +686,9 @@ Rodam em `tests/contracts/`:
   aceita, para que a ausência de regra fique registrada e ninguém confunda "o motor não
   reclamou" com equivalência.
 
-`npm test` executa tudo (626 testes com o BeatPlan); `npm run test:contracts` executa
-especificamente a verificação de contrato (305 testes) — ambas sobre o JavaScript
-compilado em `dist/`.
+`npm test` executa tudo (709 testes com o segundo consumidor multiprojeto); `npm run
+test:contracts` executa especificamente a verificação de contrato (305 testes) — ambas
+sobre o JavaScript compilado em `dist/`.
 
 ## Regras textuais e de URL
 
@@ -791,6 +801,67 @@ A CLI consome as flags `--project`, `--composition`, `--output-plan` e `--beat-p
 - `1` — pipeline inválido de domínio (relatório estruturado emitido em stdout);
 - `2` — erro de uso, flag inválida, arquivo ausente ou JSON malformado (stderr com stdout vazio).
 
+## Casos de pipeline e CLI multiprojeto (segundo consumidor)
+
+A validação consolidada recebe os quatro documentos em memória; o **caso de pipeline**
+é a fatia que amarra esses documentos em disco, por manifesto, e prova que o mesmo
+núcleo serve a mais de um consumidor real. Nesta fatia a **Multitrack Hub** entra como
+segundo consumidor, ao lado da Marca Salão, sem nenhuma condicional de marca no núcleo.
+
+| Peça | Onde | Papel |
+|---|---|---|
+| Contrato de caso | `src/content-pipeline-case-contract.ts` | `ContentPipelineCaseManifest` (`schemaVersion`, `id`, `project`, `composition`, `outputPlan`, `beatPlan`), validação estrutural pura e códigos estáveis `CASE_*` |
+| Resolvedor seguro | `src/resolve-content-pipeline-case.ts` | lê o manifesto, resolve cada caminho relativo ao diretório do manifesto e exige confinamento estrito na raiz declarada, inclusive após resolver symlinks |
+| Validação de um caso | `src/validate-content-pipeline-case.ts` | `validateContentPipelineCase` (puro) e `aggregateContentPipelineCases` (multiprojeto, ids únicos, ordem preservada) |
+| Carga em disco | `src/content-pipeline-case-loader.ts` | descoberta determinística de `*.pipeline.json` (symlinks ignorados) e leitura dos quatro documentos via `cli-input.ts` |
+| CLI interna | `src/content-pipeline-cases-cli.ts`, script `content:validate-cases` | modos `--case` e `--cases-root`, sobre o mesmo helper das demais CLIs |
+| Fixtures do segundo consumidor | `examples/projects/multitrack-hub-social.project.json`, `examples/compositions/multitrack-hub-social-reel.composition.json`, `examples/output-plans/multitrack-hub-instagram-reels-video.output-plan.json`, `examples/pipelines/multitrack-hub-*` | caso técnico fictício coerente com a identidade documentada da Multitrack Hub; não é campanha aprovada |
+
+**Modelo de segurança dos caminhos.** O contrato rejeita caminho absoluto, URL,
+caractere de controle e referência sensível (mesma função lexical compartilhada
+`relative-path.ts`). O segmento `..` é permitido no contrato porque os manifestos
+referenciam diretórios irmãos (`../projects/…`); quem decide é o **confinamento**:
+cada documento precisa resolver estritamente dentro da raiz declarada, e um symlink
+que aponta para fora é rejeitado (`CASE_RESOLUTION_ESCAPE`). Documento ausente é
+`CASE_DOCUMENT_MISSING`; manifesto ausente/malformado é
+`CASE_MANIFEST_UNREADABLE`/`CASE_MANIFEST_MALFORMED`. Mensagens nunca ecoam caminho
+absoluto da máquina.
+
+**Estados do caso.** `valid` (manifesto e pipeline válidos), `invalid` (manifesto
+válido, pipeline inválido — relatório consolidado preservado por inteiro),
+`manifest-invalid` (estrutura do manifesto rejeitada) e `unreadable` (falha de
+leitura, reportada pela camada de I/O). A agregação multiprojeto preserva a ordem
+dos casos, rejeita ids duplicados (`CASE_DUPLICATE_ID`) e nunca considera válida
+uma lista vazia (`CASES_EMPTY`).
+
+**Contrato da CLI `content:validate-cases`.** Flags: `--case <manifesto>` com
+`--root <raiz>` opcional (sem `--root`, a raiz de confinamento é o próprio diretório
+do manifesto) **ou** `--cases-root <diretorio>` (descobre todos os `*.pipeline.json`
+sob a raiz, em ordem determinística, e usa essa raiz como confinamento de todos os
+casos); `--json` opcional. Exit codes: `0` caso(s) válido(s) · `1` caso(s) inválido(s)
+de domínio ou manifesto estruturalmente inválido (relatório em stdout) · `2` erro de
+uso, caso ilegível ou descoberta vazia (stderr com stdout vazio). O modo
+`--cases-root examples` valida os dois consumidores reais em uma única execução.
+
+**Comparação estrutural dos dois consumidores.** O teste de integração
+`tests/content-pipeline-multiconsumer-examples.test.ts` executa os dois casos pelo
+mesmo agregador e compara os relatórios: mesmos estágios na mesma ordem, mesmos
+status, mesmos códigos de warning (`COMPOSITION_RENDERER_UNDECIDED`,
+`OUTPUT_PLAN_CONTEXT_NOT_DECLARED`), zero erros; `projectId`, `compositionId` e
+`beatPlanId` distintos; o OutputPlan da Multitrack Hub é byte a byte igual ao stdout
+do resolvedor `content:plan-output`. As fixtures novas são técnicas e fictícias:
+não reutilizam campanha publicada, não carregam credenciais, ids externos privados
+nem dados pessoais, e não concedem autorização editorial.
+
+**Fronteiras desta fatia.** O contrato de caso, o resolvedor, a agregação e a CLI
+são **internos**: não entram no entrypoint público (`composition-validation-api.ts`
+continua exportando apenas `validateComposition`), não ganham subpath em `exports`
+e a CLI fica fora do tarball por `!dist/src/*-cli.*`. Nada em `orchestration/temporal/`
+foi tocado; nenhum import de `@temporalio/*` existe; nenhuma renderização, mídia,
+áudio, publicação ou deploy. O inventário fechado de `src/` e `schemas/` e a varredura
+de independência de marca em `tests/beat-plan-validation.test.ts` foram estendidos
+para cobrir os arquivos novos e proibir também referências à Multitrack Hub no núcleo.
+
 ## Limites atuais (expressos)
 
 - **Composition v1 implementada apenas como contrato declarativo** (sem áudio, prompts,
@@ -858,10 +929,14 @@ A CLI consome as flags `--project`, `--composition`, `--output-plan` e `--beat-p
 - **A capacidade declarada é observada nesta caixa** (`preset-only` → `canvas-template-mapped`
   → `tool-export-observed`), não é promessa das redes sociais: nenhum perfil afirma o que a
   ferramenta local não exportou ou não tem template;
-- Os **exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
+- **Os exemplos não autorizam publicação** — são fixtures de contrato, não campanhas;
+  as fixtures da Multitrack Hub são técnicas e fictícias, coerentes com a identidade
+  documentada da marca, e não reutilizam campanha publicada nem dados reais;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
-- **Marca Salão é consumidor, não núcleo** — `platform/src` e `platform/schemas` não
-  contêm referência a ele (há teste estrutural que garante isso a cada execução).
+- **Marca Salão e Multitrack Hub são consumidores, não núcleo** — `platform/src` e
+  `platform/schemas` não contêm referência a nenhuma das duas marcas (há teste
+  estrutural que garante isso a cada execução, com varredura de independência de
+  marca estendida ao segundo consumidor).
 
 ## Próximos incrementos possíveis (não compromissos)
 
