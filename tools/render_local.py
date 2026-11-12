@@ -6,6 +6,13 @@ TXT e relatorio JSON do render real, inspeciona com FFprobe antes de
 concluir e promove a entrega de forma transacional: qualquer falha de
 render, inspecao ou promocao preserva a entrega anterior completa.
 
+O relatorio registra os caminhos relativos FINAIS dos artefatos promovidos,
+com hashes e tamanhos calculados pelos bytes preparados em staging. O
+staging e exclusivo por execucao, validado antes de qualquer escrita, e a
+limpeza recursiva alcanca somente a pasta criada pelo proprio render. A
+promocao para um mesmo destino e exclusiva por lock, com diagnostico claro
+em disputa; se a restauracao falhar, o backup permanece para diagnostico.
+
 A validacao do pacote e da associacao reutiliza o nucleo puro da platform
 (validateLocalRenderInput) atraves da ponte tools/render_bridge.mjs; a
 execucao da ferramenta de video acontece somente nesta camada de ferramentas.
@@ -25,6 +32,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,6 +43,10 @@ import srt_validate
 ADAPTER_ID = 'local-proof-render'
 FADE_OUT_SECONDS = 0.5
 RENDER_TIMEOUT_SECONDS = 300
+BRIDGE_TIMEOUT_SECONDS = 60
+PROBE_TIMEOUT_SECONDS = 30
+VERSION_TIMEOUT_SECONDS = 15
+PROMOTION_LOCK_NAME = '.local-render-promotion.lock'
 SUBTITLE_STYLE = (
     'Fontname=Arial,Fontsize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,'
     'BackColour=&H80000000,Bold=1,Outline=2,Shadow=1,Alignment=2,MarginV=60'
@@ -67,6 +79,13 @@ def rel(root, path):
     return os.path.relpath(path, root).replace(os.sep, '/')
 
 
+def overlaps(a, b):
+    """True quando um caminho e o outro ou esta dentro dele (realpath)."""
+    a_real = os.path.realpath(a)
+    b_real = os.path.realpath(b)
+    return a_real == b_real or a_real.startswith(b_real + os.sep) or b_real.startswith(a_real + os.sep)
+
+
 def ensure_video_tools(root):
     """PATH do processo apenas: usa o PATH atual ou .workspace/tools/ffmpeg."""
     if shutil.which('ffmpeg') and shutil.which('ffprobe'):
@@ -82,7 +101,11 @@ def ensure_video_tools(root):
 
 
 def tool_version(binary):
-    res = subprocess.run([binary, '-version'], capture_output=True, text=True)
+    try:
+        res = subprocess.run([binary, '-version'], capture_output=True, text=True,
+                             timeout=VERSION_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        return 'desconhecida'
     if res.returncode != 0:
         return 'desconhecida'
     return res.stdout.splitlines()[0].strip()
@@ -96,8 +119,12 @@ def run_bridge(root, package_path, assets_path):
     if not os.path.isfile(dist_module):
         raise InputFileError('build da platform ausente; execute npm run build em platform/')
     bridge = os.path.join(root, 'tools', 'render_bridge.mjs')
-    res = subprocess.run([node, bridge, package_path, assets_path],
-                         capture_output=True, text=True)
+    try:
+        res = subprocess.run([node, bridge, package_path, assets_path],
+                             capture_output=True, text=True,
+                             timeout=BRIDGE_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        raise build_video.DeliveryError('ponte de validacao excedeu o tempo limite')
     if res.returncode == 2:
         raise InputFileError('arquivo de entrada ilegivel ou JSON invalido')
     if res.returncode not in (0, 3):
@@ -106,6 +133,78 @@ def run_bridge(root, package_path, assets_path):
         return json.loads(res.stdout)
     except ValueError:
         raise build_video.DeliveryError('veredito da ponte ilegivel')
+
+
+def probe_asset(root, path):
+    """Sondagem FFprobe com timeout; exige stream de video decodificavel.
+
+    O exit code do ffprobe nao prova legibilidade (pode ser 0 com streams
+    vazios para lixo binario); com -loop 1 um asset ilegivel faria o render
+    girar sem falhar.
+    """
+    try:
+        res = subprocess.run(
+            [build_video.get_ffprobe(), '-v', 'error', '-show_streams', '-show_format',
+             '-of', 'json', str(path)],
+            capture_output=True, text=True, timeout=PROBE_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        raise build_video.DeliveryError(
+            f'inspecao previa excedeu o tempo limite: {rel(root, path)}')
+    if res.returncode != 0:
+        raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {rel(root, path)}')
+    try:
+        info = json.loads(res.stdout)
+    except ValueError:
+        raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {rel(root, path)}')
+    video_streams = [s for s in info.get('streams', []) if s.get('codec_type') == 'video']
+    if not video_streams or not video_streams[0].get('width') or not video_streams[0].get('height'):
+        raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {rel(root, path)}')
+    return info
+
+
+def prepare_staging(root, output_dir, package_path, assets_path, staging_arg):
+    """Staging exclusivo da execucao, validado antes de qualquer escrita.
+
+    Devolve (staging_dir, created_by_us). Rejeita sobreposicao com a raiz,
+    com os arquivos de entrada e com a pasta de entrega. Sem --staging, cria
+    pasta unica em .workspace/tmp; com --staging, exige pasta nova ou vazia.
+    """
+    if staging_arg:
+        staging = os.path.realpath(staging_arg)
+        if not contained(root, staging):
+            raise InputFileError('caminho de staging fora da raiz do projeto')
+        if staging == os.path.realpath(root):
+            raise InputFileError('staging nao pode ser a raiz do projeto')
+        if os.path.realpath(root).startswith(staging + os.sep):
+            raise InputFileError('staging nao pode conter a raiz do projeto')
+        for label, path in (('package', package_path), ('assets', assets_path),
+                            ('output', output_dir)):
+            if overlaps(staging, path):
+                raise InputFileError(f'staging sobrepoe {label} da execucao')
+        if os.path.exists(staging):
+            if not os.path.isdir(staging) or os.listdir(staging):
+                raise InputFileError('staging informado ja existe e nao esta vazio')
+            return staging, False
+        os.makedirs(staging)
+        return staging, True
+    parent = os.path.join(root, '.workspace', 'tmp')
+    os.makedirs(parent, exist_ok=True)
+    staging = tempfile.mkdtemp(prefix='local-render-staging-', dir=parent)
+    return staging, True
+
+
+def acquire_promotion_lock(output_dir):
+    """Exclusao de promocao por destino; disputa recebe diagnostico claro."""
+    os.makedirs(output_dir, exist_ok=True)
+    lock = os.path.join(output_dir, PROMOTION_LOCK_NAME)
+    try:
+        handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        raise build_video.DeliveryError(
+            f'promocao concorrente para o mesmo destino; lock presente: {PROMOTION_LOCK_NAME}')
+    with os.fdopen(handle, 'w') as stream:
+        stream.write('local-render-promotion\n')
+    return lock
 
 
 def srt_timestamp(ms):
@@ -229,7 +328,11 @@ def write_text(path, text):
 
 
 def promote_with_backup(staging_paths, dests, backup_dir):
-    """Promove tudo ou restaura a entrega anterior completa em qualquer falha."""
+    """Promove tudo ou restaura a entrega anterior completa em qualquer falha.
+
+    Se a propria restauracao falhar, o backup permanece intacto para
+    diagnostico e o erro informa onde ele esta.
+    """
     os.makedirs(backup_dir, exist_ok=True)
     backups = {}
     for name, dest in dests.items():
@@ -244,23 +347,30 @@ def promote_with_backup(staging_paths, dests, backup_dir):
             os.replace(staging_paths[name], dest)
             promoted.append(name)
     except OSError:
-        for name in promoted:
-            if name in backups:
-                os.replace(backups[name], dests[name])
-            else:
-                os.remove(dests[name])
+        try:
+            for name in promoted:
+                if name in backups:
+                    os.replace(backups[name], dests[name])
+                else:
+                    os.remove(dests[name])
+        except OSError:
+            raise build_video.DeliveryError(
+                f'restauracao falhou; backup preservado para diagnostico em {backup_dir}')
         raise build_video.DeliveryError('promocao falhou; entrega anterior preservada')
 
 
 def run_render(package_path, assets_path, output_dir, root, staging_dir, preset='veryfast'):
     root = os.path.realpath(root)
     for label, path in (('package', package_path), ('assets', assets_path),
-                        ('output', output_dir), ('staging', staging_dir)):
+                        ('output', output_dir)):
         if not contained(root, path):
             raise InputFileError(f'caminho de {label} fora da raiz do projeto')
     for label, path in (('package', package_path), ('assets', assets_path)):
         if not os.path.isfile(path):
             raise InputFileError(f'arquivo de {label} ausente')
+
+    staging, staging_created = prepare_staging(
+        root, output_dir, package_path, assets_path, staging_dir)
 
     ensure_video_tools(root)
     verdict = run_bridge(root, package_path, assets_path)
@@ -277,21 +387,11 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         absolute = os.path.join(root, relative)
         if not contained(root, absolute) or not os.path.isfile(absolute):
             raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
-        # Inspecao previa: com -loop 1 um asset ilegivel faria a ferramenta de
-        # video girar sem falhar. O exit code do ffprobe nao basta (pode ser 0
-        # com streams vazios para lixo binario); exige stream de video real.
-        try:
-            info = build_video.probe_media(absolute)
-        except build_video.DeliveryError:
-            raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {relative}')
-        video_streams = [s for s in info.get('streams', []) if s.get('codec_type') == 'video']
-        if not video_streams or not video_streams[0].get('width') or not video_streams[0].get('height'):
-            raise build_video.DeliveryError(f'asset ilegivel pela inspecao previa: {relative}')
+        probe_asset(root, absolute)
         asset_paths.append(absolute)
 
     names = artifact_names(package)
-    os.makedirs(staging_dir, exist_ok=True)
-    staging_paths = {key: os.path.join(staging_dir, names[key]) for key in names}
+    staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
     write_text(staging_paths['srt'], build_srt(package))
     write_text(staging_paths['narration'], build_narration(package))
@@ -313,7 +413,8 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     output = package['output']
     duration_s = output['durationMs'] / 1000.0
     inspection = build_video.validate_mp4(
-        staging_paths['video'], output['width'], output['height'], output['fps'], duration_s)
+        staging_paths['video'], output['width'], output['height'], output['fps'], duration_s,
+        timeout=PROBE_TIMEOUT_SECONDS)
     srt_errors = srt_validate.validate_srt_file(staging_paths['srt'], duration_s)
     if srt_errors:
         raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
@@ -322,6 +423,7 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     if not narration_bytes.decode('utf-8').strip():
         raise build_video.DeliveryError('narracao vazia ou nao UTF-8')
 
+    dests = {key: os.path.join(output_dir, names[key]) for key in names}
     command = (
         'python tools/render_local.py'
         f' --package {rel(root, package_path)}'
@@ -357,7 +459,7 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
             {
                 'id': key,
                 'kind': kind,
-                'path': rel(root, staging_paths[key]),
+                'path': rel(root, dests[key]),
                 'sha256': sha256_file(staging_paths[key]),
                 'bytes': os.path.getsize(staging_paths[key]),
             }
@@ -372,9 +474,15 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     }
     write_text(staging_paths['report'], json.dumps(report, ensure_ascii=False, indent=2) + '\n')
 
-    dests = {key: os.path.join(output_dir, names[key]) for key in names}
-    promote_with_backup(staging_paths, dests, os.path.join(staging_dir, '.backup'))
-    shutil.rmtree(staging_dir, ignore_errors=True)
+    backup_dir = os.path.join(staging, '.backup')
+    lock = acquire_promotion_lock(output_dir)
+    try:
+        promote_with_backup(staging_paths, dests, backup_dir)
+    finally:
+        os.remove(lock)
+    shutil.rmtree(backup_dir, ignore_errors=True)
+    if staging_created:
+        shutil.rmtree(staging, ignore_errors=True)
 
     return {
         'adapter': ADAPTER_ID,
@@ -397,10 +505,9 @@ def main(argv=None):
     parser.add_argument('--preset', default='veryfast')
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
-    staging = args.staging or args.output_dir + '.staging'
     try:
         summary = run_render(args.package, args.assets, args.output_dir, args.root,
-                             staging, preset=args.preset)
+                             args.staging, preset=args.preset)
     except RenderInputError as exc:
         subject = f': {exc.subject}' if exc.subject else ''
         print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)
