@@ -1,0 +1,6 @@
+# Artefatos textuais da entrega R002: bytes estaveis entre checkouts (LF).
+# Precedente: platform/.gitattributes (exemplos e scripts de gate).
+04-legendas/*.srt text eol=lf
+04-legendas/*_narracao.txt text eol=lf
+tools/r002/*.json text eol=lf
+02-reels-shorts/r002-agenda-ficticia/manifest.json text eol=lf

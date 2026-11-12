@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "runs": {
+    "v1": {
+      "config": "tools/r002/agenda-ficticia.pilot.json",
+      "command": "python tools/r002_pilot.py --config tools/r002/agenda-ficticia.pilot.json --staging .workspace/tmp/r002-video-local/v1 --archive .workspace/archives/r002-video-local --manifest 02-reels-shorts/r002-agenda-ficticia/manifest.json --tag v1",
+      "artifacts": {
+        "video": {
+          "path": ".workspace/archives/r002-video-local/r002-agenda-ficticia.mp4",
+          "sha256": "3870ef5efb8007d2735db2b62a01c31ddd0d4bd5303a1bd3fc4dbc2206d21037",
+          "bytes": 122213,
+          "ffprobe": {
+            "videoStreams": 1,
+            "audioStreams": 0,
+            "codec": "h264",
+            "width": 1080,
+            "height": 1920,
+            "fps": 30.0,
+            "pixFmt": "yuv420p",
+            "duration": 12.0
+          },
+          "versioned": false,
+          "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash e comando reproduzivel"
+        },
+        "srt": {
+          "path": "04-legendas/roteiro_r002_agenda_ficticia.srt",
+          "sha256": "9e668dba5ad705fb3db1b9151a4536d5c02ebe152c621500d5f9386819636e98",
+          "bytes": 250,
+          "versioned": true
+        },
+        "narration": {
+          "path": "04-legendas/roteiro_r002_agenda_ficticia_narracao.txt",
+          "sha256": "45445de0a8596cd9488408fd9a0523073f79f00add2030efd19bc824cfd9bd76",
+          "bytes": 861,
+          "versioned": true
+        },
+        "capture": {
+          "path": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+          "sha256": "8d8e2dba357989ccc521f34c244d8970815cb58f6c51e2215f55718fba8978d9",
+          "bytes": 86128,
+          "width": 1440,
+          "height": 900,
+          "versioned": true
+        }
+      },
+      "unchanged": {
+        "capture": true,
+        "srt": true,
+        "narration": true
+      }
+    },
+    "revisao": {
+      "config": "tools/r002/agenda-ficticia-revisao.pilot.json",
+      "command": "python tools/r002_pilot.py --config tools/r002/agenda-ficticia-revisao.pilot.json --staging .workspace/tmp/r002-video-local/revisao --archive .workspace/archives/r002-video-local --manifest 02-reels-shorts/r002-agenda-ficticia/manifest.json --tag revisao",
+      "artifacts": {
+        "video": {
+          "path": ".workspace/archives/r002-video-local/r002-agenda-ficticia-revisao.mp4",
+          "sha256": "05bd7ee895bbb92e12434a4eaf30be502cc3cff71ca06b120b4e971367510807",
+          "bytes": 123897,
+          "ffprobe": {
+            "videoStreams": 1,
+            "audioStreams": 0,
+            "codec": "h264",
+            "width": 1080,
+            "height": 1920,
+            "fps": 30.0,
+            "pixFmt": "yuv420p",
+            "duration": 12.0
+          },
+          "versioned": false,
+          "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash e comando reproduzivel"
+        },
+        "srt": {
+          "path": "04-legendas/roteiro_r002_agenda_ficticia.srt",
+          "sha256": "9e668dba5ad705fb3db1b9151a4536d5c02ebe152c621500d5f9386819636e98",
+          "bytes": 250,
+          "versioned": true
+        },
+        "narration": {
+          "path": "04-legendas/roteiro_r002_agenda_ficticia_narracao.txt",
+          "sha256": "45445de0a8596cd9488408fd9a0523073f79f00add2030efd19bc824cfd9bd76",
+          "bytes": 861,
+          "versioned": true
+        },
+        "capture": {
+          "path": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+          "sha256": "8d8e2dba357989ccc521f34c244d8970815cb58f6c51e2215f55718fba8978d9",
+          "bytes": 86128,
+          "width": 1440,
+          "height": 900,
+          "versioned": true
+        }
+      },
+      "unchanged": {
+        "capture": true,
+        "srt": true,
+        "narration": true
+      }
+    }
+  }
+}
