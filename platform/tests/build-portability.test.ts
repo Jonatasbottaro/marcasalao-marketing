@@ -184,3 +184,17 @@ test('o script content:build-execution-packages roda sobre o build silencioso', 
         'dist/src/creative-execution-package-cli.js nao existe em dist/',
     )
 })
+
+test('o script content:simulate-execution roda sobre o build silencioso', () => {
+    const pkg = JSON.parse(readFileSync(path.join(moduleRoot, 'package.json'), 'utf8')) as {
+        scripts?: Record<string, string>
+    }
+
+    const value = pkg.scripts?.['content:simulate-execution'] ?? ''
+    assert.ok(value.includes('node dist/src/simulated-execution-cli.js'), 'o script precisa executar a CLI do executor simulado')
+    assert.match(value, /^npm run build --silent && /, 'o script precisa compilar antes de executar, em modo silencioso')
+    assert.ok(
+        existsSync(path.join(moduleRoot, 'dist', 'src', 'simulated-execution-cli.js')),
+        'dist/src/simulated-execution-cli.js nao existe em dist/',
+    )
+})

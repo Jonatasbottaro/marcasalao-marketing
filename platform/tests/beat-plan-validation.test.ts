@@ -925,8 +925,12 @@ const EXECUTION_PACKAGE_SCHEMA_FILES = ['creative-execution-package.schema.json'
 const SIMULATED_EXECUTION_SOURCE_FILES = [
     'create-simulated-execution-plan.ts',
     'serialize-simulated-execution.ts',
+    'simulated-execution-cli.ts',
+    'simulated-execution-multicase.ts',
     'simulated-execution-plan-contract.ts',
     'simulated-execution-report-contract.ts',
+    'simulated-execution-runner.ts',
+    'simulated-execution-writer.ts',
     'validate-simulated-execution-plan.ts',
     'validate-simulated-execution-report.ts',
 ]
