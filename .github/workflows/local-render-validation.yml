@@ -1,0 +1,107 @@
+name: Validar render local de prova
+
+# Gate dedicado do adaptador de render local: render REAL com FFmpeg/FFprobe
+# nos dois sistemas, usando a suite Python e os dois pacotes versionados.
+# A matriz Node 22/24 da platform continua no workflow platform-validation.yml.
+# O job falha se faltar ferramenta, se a ponte estiver indisponivel ou se os
+# testes obrigatorios de render forem pulados (REQUIRE_RENDER=1).
+
+on:
+  push:
+    paths:
+      - 'tools/**'
+      - 'platform/**'
+      - '.github/workflows/local-render-validation.yml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - 'platform/**'
+      - '.github/workflows/local-render-validation.yml'
+  workflow_dispatch:
+
+# So le o repositorio: o gate nao publica, nao faz deploy e nao usa segredos.
+permissions:
+  contents: read
+
+jobs:
+  render-real:
+    name: ${{ matrix.os }} · render real
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Um ambiente quebrado nao deve esconder o veredito do outro.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (ponte TypeScript)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: FFmpeg e FFprobe (builds verificaveis BtbN via acao oficial)
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
+      - name: Versoes registradas das ferramentas
+        run: |
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+          node --version
+          python --version
+
+      - name: Ferramentas obrigatorias presentes
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          command -v node
+          command -v python
+
+      - name: Instalar e compilar a ponte TypeScript
+        working-directory: platform
+        run: |
+          npm ci
+          npm run build
+          test -f dist/src/validate-local-render-input.js
+
+      - name: Suite Python com render obrigatorio (sem skips permitidos)
+        env:
+          REQUIRE_RENDER: '1'
+        run: python -m unittest discover -s tools/tests -v
+
+      - name: Prova dos dois pacotes versionados (fixtures dentro da raiz)
+        run: |
+          python tools/make_proof_assets.py \
+            --package platform/examples/execution-packages/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan.execution-package.json \
+            --output-dir .workspace/tmp/local-render-adapter-v1/assets/marca-salao
+          python tools/make_proof_assets.py \
+            --package platform/examples/execution-packages/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan.execution-package.json \
+            --output-dir .workspace/tmp/local-render-adapter-v1/assets/multitrack-hub
+          python tools/render_local.py \
+            --package platform/examples/execution-packages/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan.execution-package.json \
+            --assets tools/render/marca-salao.assets.json \
+            --output-dir .workspace/archives/ci-render/marca-salao --json
+          python tools/render_local.py \
+            --package platform/examples/execution-packages/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan.execution-package.json \
+            --assets tools/render/multitrack-hub.assets.json \
+            --output-dir .workspace/archives/ci-render/multitrack-hub --json
+
+      - name: Inspecao FFprobe dos videos promovidos
+        run: |
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/ci-render/marca-salao/*-primary-output.mp4
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/ci-render/multitrack-hub/*-primary-output.mp4
