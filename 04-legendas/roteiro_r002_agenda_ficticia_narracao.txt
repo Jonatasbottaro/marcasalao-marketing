@@ -1,0 +1,14 @@
+Narração — R002 agenda fictícia (texto separado, sem geração de áudio)
+Vídeo: r002-agenda-ficticia.mp4 (12 s, 1080x1920, 30 fps, sem faixa de áudio)
+Legendas visíveis no vídeo: roteiro_r002_agenda_ficticia.srt (mesmos textos e tempos)
+
+Cena 1 — visao-inicial (00:00–00:04)
+A agenda do dia reúne todos os atendimentos em uma única tela, por período, profissional e status.
+
+Cena 2 — horario-ocupado (00:04–00:09)
+O horário das nove às dez da manhã está ocupado. O contorno destaca o bloco na agenda sem alterar a captura original.
+
+Cena 3 — fechamento (00:09–00:12)
+Demonstração técnica do pipeline local, com dados inteiramente fictícios. Nenhuma publicação ou produção real.
+
+Observação: este texto existe para geração de áudio em ferramenta externa, fora do editor de vídeo. O vídeo entregue não contém áudio.

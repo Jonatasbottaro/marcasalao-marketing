@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "r002-agenda-ficticia-revisao",
+  "capture": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "format": { "width": 1080, "height": 1920, "fps": 30 },
+  "duration": 12.0,
+  "preset": "veryfast",
+  "subtitleStyle": "Fontname=Arial,Fontsize=9,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=1,Shadow=0,Alignment=2,MarginV=18",
+  "scenes": [
+    { "id": "visao-inicial", "start": 0.0, "end": 4.0 },
+    { "id": "horario-ocupado", "start": 4.0, "end": 9.0 },
+    { "id": "fechamento", "start": 9.0, "end": 12.0 }
+  ],
+  "outline": {
+    "x": 425,
+    "y": 608,
+    "w": 910,
+    "h": 82,
+    "thickness": 10,
+    "color": [233, 30, 99, 255],
+    "radius": 10,
+    "start": 4.0,
+    "end": 9.0,
+    "fadeIn": 0.5,
+    "fadeOut": 0.5
+  },
+  "srt": "04-legendas/roteiro_r002_agenda_ficticia.srt",
+  "narration": "04-legendas/roteiro_r002_agenda_ficticia_narracao.txt",
+  "videoName": "r002-agenda-ficticia-revisao.mp4"
+}
