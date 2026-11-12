@@ -912,8 +912,11 @@ const CASE_SOURCE_FILES = [
 
 /** Arquivos do CreativeExecutionPackage v1 (pacote tecnico de execucao). */
 const EXECUTION_PACKAGE_SOURCE_FILES = [
+    'creative-execution-package-cli.ts',
     'creative-execution-package-contract.ts',
+    'creative-execution-packages.ts',
     'create-creative-execution-package.ts',
+    'serialize-creative-execution-package.ts',
     'validate-creative-execution-package.ts',
 ]
 const EXECUTION_PACKAGE_SCHEMA_FILES = ['creative-execution-package.schema.json']
