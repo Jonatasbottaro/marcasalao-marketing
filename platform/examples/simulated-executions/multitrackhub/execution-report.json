@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 1,
+  "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+  "packageId": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+  "status": "completed",
+  "resumedFromStatus": null,
+  "completedSteps": [
+    "opening-hook-prepare-scene",
+    "opening-hook-apply-text",
+    "opening-hook-apply-motion",
+    "opening-hook-finalize-scene",
+    "demonstration-body-prepare-scene",
+    "demonstration-body-apply-text",
+    "demonstration-body-apply-motion",
+    "demonstration-body-finalize-scene",
+    "explanation-body-prepare-scene",
+    "explanation-body-apply-text",
+    "explanation-body-apply-motion",
+    "explanation-body-finalize-scene",
+    "closing-cta-prepare-scene",
+    "closing-cta-apply-text",
+    "closing-cta-apply-motion",
+    "closing-cta-finalize-scene"
+  ],
+  "failedStepId": null,
+  "failureCode": null,
+  "artifactCount": 4,
+  "artifacts": [
+    {
+      "id": "primary-output",
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-primary-output",
+      "contentType": "video",
+      "sha256": "5c6560bd748fee4f00c094656435c1829f642bd30215ce7cc4bc8f3bd68448bb"
+    },
+    {
+      "id": "captions",
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-captions.srt",
+      "contentType": "text/srt",
+      "sha256": "9de9c0bd1f2fc721cf23a909bc6f4423de4a02414c594102921f97c21ab01855"
+    },
+    {
+      "id": "narration-script",
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-narration-script.txt",
+      "contentType": "text/plain",
+      "sha256": "6df0c6ec327bf34a58155d839fadc6dfeeec4ef194ac3326b92014dc88d3c7fa"
+    },
+    {
+      "id": "execution-report",
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-execution-report.json",
+      "contentType": "application/json",
+      "sha256": "1494b31bd084149ada58bc8e6ef972ceb58e9f40492acb2ff1d817005d7b5348"
+    }
+  ],
+  "events": [
+    {
+      "sequence": 1,
+      "type": "execution-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan"
+    },
+    {
+      "sequence": 2,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-prepare-scene"
+    },
+    {
+      "sequence": 3,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-prepare-scene"
+    },
+    {
+      "sequence": 4,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text"
+    },
+    {
+      "sequence": 5,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text",
+      "artifactId": "captions"
+    },
+    {
+      "sequence": 6,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text",
+      "artifactId": "narration-script"
+    },
+    {
+      "sequence": 7,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text"
+    },
+    {
+      "sequence": 8,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-motion"
+    },
+    {
+      "sequence": 9,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-motion"
+    },
+    {
+      "sequence": 10,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene"
+    },
+    {
+      "sequence": 11,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene",
+      "artifactId": "primary-output"
+    },
+    {
+      "sequence": 12,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene"
+    },
+    {
+      "sequence": 13,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-prepare-scene"
+    },
+    {
+      "sequence": 14,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-prepare-scene"
+    },
+    {
+      "sequence": 15,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-text"
+    },
+    {
+      "sequence": 16,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-text"
+    },
+    {
+      "sequence": 17,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-motion"
+    },
+    {
+      "sequence": 18,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-motion"
+    },
+    {
+      "sequence": 19,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-finalize-scene"
+    },
+    {
+      "sequence": 20,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "demonstration-body-finalize-scene"
+    },
+    {
+      "sequence": 21,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-prepare-scene"
+    },
+    {
+      "sequence": 22,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-prepare-scene"
+    },
+    {
+      "sequence": 23,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-apply-text"
+    },
+    {
+      "sequence": 24,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-apply-text"
+    },
+    {
+      "sequence": 25,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-apply-motion"
+    },
+    {
+      "sequence": 26,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-apply-motion"
+    },
+    {
+      "sequence": 27,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-finalize-scene"
+    },
+    {
+      "sequence": 28,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "explanation-body-finalize-scene"
+    },
+    {
+      "sequence": 29,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-prepare-scene"
+    },
+    {
+      "sequence": 30,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-prepare-scene"
+    },
+    {
+      "sequence": 31,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-text"
+    },
+    {
+      "sequence": 32,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-text"
+    },
+    {
+      "sequence": 33,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-motion"
+    },
+    {
+      "sequence": 34,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-motion"
+    },
+    {
+      "sequence": 35,
+      "type": "step-started",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene"
+    },
+    {
+      "sequence": 36,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene",
+      "artifactId": "execution-report"
+    },
+    {
+      "sequence": 37,
+      "type": "step-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene"
+    },
+    {
+      "sequence": 38,
+      "type": "execution-completed",
+      "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan"
+    }
+  ],
+  "summary": "Simulated execution completed."
+}

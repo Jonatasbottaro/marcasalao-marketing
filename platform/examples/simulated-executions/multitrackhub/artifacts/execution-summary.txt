@@ -1,0 +1,10 @@
+executionId: simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan
+packageId: execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan
+adapter: simulation
+profile: instagram-reels-video
+mediaKind: video
+geometry: 1080x1920 9:16 fps 30
+durationMs: 15000
+steps: 16
+beats: 4
+simulated: true

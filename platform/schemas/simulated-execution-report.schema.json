@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SimulatedExecutionReport",
+  "description": "Contrato interno SimulatedExecutionReport v1: relatorio imutavel da execucao local simulada. Deterministico: sem timestamp real, sem caminho absoluto, sem stack trace, sem payload completo de documentos. Cancelado nao e falho; falho exige failureCode; concluido exige failedStepId/failureCode nulos. Campos desconhecidos sao proibidos (additionalProperties=false). Regras semanticas (sequencia contigua de eventos, coerencia entre status e eventos, unicidade de steps/artefatos, rederivacao de hashes) vivem em platform/src/validate-simulated-execution-report.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "executionId",
+    "packageId",
+    "status",
+    "resumedFromStatus",
+    "completedSteps",
+    "failedStepId",
+    "failureCode",
+    "artifactCount",
+    "artifacts",
+    "events",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "executionId": {
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^simulation-[a-z0-9]+(-[a-z0-9]+)*$" },
+        { "pattern": "^simulation-v1-[0-9a-f]{64}$" }
+      ]
+    },
+    "packageId": { "$ref": "#/definitions/kebabId" },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed", "failed", "cancelled"]
+    },
+    "resumedFromStatus": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "enum": ["failed", "cancelled"] }
+      ]
+    },
+    "completedSteps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/kebabId" }
+    },
+    "failedStepId": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/kebabId" }
+      ]
+    },
+    "failureCode": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/nonEmptyString" }
+      ]
+    },
+    "artifactCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/artifactReport" }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/event" }
+    },
+    "summary": { "$ref": "#/definitions/nonEmptyString" }
+  },
+  "definitions": {
+    "kebabId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "artifactReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "logicalName", "contentType", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabId" },
+        "logicalName": { "type": "string", "pattern": "\\S" },
+        "contentType": { "$ref": "#/definitions/nonEmptyString" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "type", "executionId"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "execution-started",
+            "step-started",
+            "artifact-created",
+            "step-completed",
+            "step-failed",
+            "execution-cancelled",
+            "execution-completed",
+            "execution-failed"
+          ]
+        },
+        "executionId": { "type": "string", "pattern": "\\S" },
+        "stepId": { "$ref": "#/definitions/nonEmptyString" },
+        "artifactId": { "$ref": "#/definitions/nonEmptyString" },
+        "failureCode": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    }
+  }
+}

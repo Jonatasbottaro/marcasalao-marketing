@@ -1,0 +1,10 @@
+executionId: simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan
+packageId: execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan
+adapter: simulation
+profile: instagram-reels-video
+mediaKind: video
+geometry: 1080x1920 9:16 fps 30
+durationMs: 14000
+steps: 12
+beats: 3
+simulated: true

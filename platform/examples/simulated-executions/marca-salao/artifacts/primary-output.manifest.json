@@ -1,0 +1,11 @@
+{
+  "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-primary-output",
+  "mediaKind": "video",
+  "width": 1080,
+  "height": 1920,
+  "aspectRatio": "9:16",
+  "fps": 30,
+  "durationMs": 14000,
+  "profileId": "instagram-reels-video",
+  "simulated": true
+}

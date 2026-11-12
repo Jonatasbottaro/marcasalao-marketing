@@ -1,0 +1,3 @@
+[0-4000] Texto tecnico de abertura do reel.
+[4000-10000] Demonstracao tecnica do quadro central.
+[10000-14000] Chamada tecnica final para conhecer o sistema.

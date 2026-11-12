@@ -1,0 +1,9 @@
+{
+  "artifacts/captions.txt": "21e92ca2ffcc79642e2f15b9573c8d56589f127156d173e83b6ca9c062f2ceaa",
+  "artifacts/execution-summary.txt": "a146a9ccdb59014bcdb86587b29257ced6eacaee5fd08dced1ceb28b0baf89e0",
+  "artifacts/narration-script.txt": "65a3d1576b76897a4c646948175c096d956bc7049370289f1c6b9657eb01cbb7",
+  "artifacts/primary-output.manifest.json": "355849b331f2748b8ea488dbad3c611af0058859ac0b0e968efb86d7c339844b",
+  "events.json": "9dff29b01842938c6ffbe822bf8d4f91d026e73bbecab92aa10d6e1560892884",
+  "execution-plan.json": "f4ea5f9b51cfa24bb3db615deef5e511dd0a0cb4a21d86661f9d3c2224567675",
+  "execution-report.json": "d630b2f0ecded4a4ed404087e7e619161aa676cf51201ff3a19a3ba35535b514"
+}

@@ -1,0 +1,4 @@
+[0-3000] Multitracks, playbacks e rateios em um so lugar.
+[3000-8000] Quadro tecnico do painel de pistas.
+[8000-12000] Cada instrumento em uma pista, com nome claro.
+[12000-15000] Conheca a Multitrack Hub.

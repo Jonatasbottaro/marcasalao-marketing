@@ -18,3 +18,7 @@ examples/pipelines/*.json text eol=lf
 # pode converter para CRLF.
 examples/execution-packages/*.json text eol=lf
 
+# Execucoes simuladas canonicas (plano, relatorio, eventos, hashes e
+# artefatos textuais): mesma razao; comparacao byte a byte com a memoria e a CLI.
+examples/simulated-executions/** text eol=lf
+
