@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "projectId": "marca-salao",
+  "compositionId": "social-reel-example",
+  "id": "social-reel-beat-plan",
+  "locale": "pt-BR",
+  "beats": [
+    {
+      "id": "opening-hook",
+      "order": 1,
+      "sceneIds": [
+        "opening"
+      ],
+      "narrativeFunction": "hook",
+      "startMs": 0,
+      "durationMs": 4000,
+      "narration": {
+        "text": "Texto tecnico de abertura do reel."
+      },
+      "onScreenText": "Contrato de saida em tres cenas.",
+      "visualIntent": "Apresentar a declaracao de abertura sobre fundo escuro.",
+      "motionIntent": "none",
+      "transitionIn": "none",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "exemplo-tecnico-reels"
+      ],
+      "validationStatus": "validated"
+    },
+    {
+      "id": "demonstration-body",
+      "order": 2,
+      "sceneIds": [
+        "demo-frame"
+      ],
+      "narrativeFunction": "demonstration",
+      "startMs": 4000,
+      "durationMs": 6000,
+      "narration": {
+        "text": "Demonstracao tecnica do quadro central."
+      },
+      "onScreenText": "Quadro tecnico de demonstracao.",
+      "visualIntent": "Exibir o asset tecnico em destaque.",
+      "motionIntent": "slow-zoom",
+      "transitionIn": "cut",
+      "transitionOut": "cut",
+      "editorialEvidence": [
+        "exemplo-tecnico-reels"
+      ],
+      "validationStatus": "validated"
+    },
+    {
+      "id": "closing-cta",
+      "order": 3,
+      "sceneIds": [
+        "closing"
+      ],
+      "narrativeFunction": "cta",
+      "startMs": 10000,
+      "durationMs": 4000,
+      "narration": {
+        "text": "Chamada tecnica final para conhecer o sistema."
+      },
+      "onScreenText": "Conheca o sistema.",
+      "visualIntent": "Exibir a chamada final para acao.",
+      "motionIntent": "none",
+      "transitionIn": "cut",
+      "transitionOut": "fade",
+      "editorialEvidence": [
+        "exemplo-tecnico-reels"
+      ],
+      "validationStatus": "validated"
+    }
+  ],
+  "metadata": {
+    "status": "draft",
+    "description": "BeatPlan de exemplo integrado para o pipeline social reel.",
+    "tags": [
+      "exemplo",
+      "pipeline",
+      "reels"
+    ]
+  }
+}
+

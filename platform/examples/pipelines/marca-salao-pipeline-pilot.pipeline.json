@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-pipeline-pilot",
+  "project": "../projects/marca-salao-social.project.json",
+  "composition": "../compositions/marca-salao-social-reel.composition.json",
+  "outputPlan": "../output-plans/instagram-reels-video.output-plan.json",
+  "beatPlan": "./marca-salao-social-reel.beat-plan.json"
+}
