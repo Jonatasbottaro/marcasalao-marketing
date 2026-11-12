@@ -8,7 +8,7 @@ A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é norma
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
-A main consultada em 11/11/2026 é `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`, contendo as fatias técnicas de validação de composição, a integração do R001, o BeatPlan v1 interno e, por último, três commits exclusivamente documentais e de governança: `c50dc86` (contexto com BeatPlan), `9908f3b` (regra permanente de armazenamento) e `79fd5da` (segurança de worktrees). Nenhum deles altera código, `platform/`, `orchestration/` ou CI. Marcos preservados:
+A base da main consultada em 11/11/2026 é `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e`, contendo as fatias técnicas de validação de composição, a integração do R001, o BeatPlan v1 interno e quatro commits exclusivamente documentais e de governança: `c50dc86` (contexto com BeatPlan), `9908f3b` (regra permanente de armazenamento), `79fd5da` (segurança de worktrees) e `ed7e8f1` (contexto com a regra e a auditoria). Nenhum deles altera código, `platform/`, `orchestration/` ou CI. Sobre essa base foi executada a **limpeza de 14 branches remotas** autorizada pelo titular, restando 7 branches; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`). Marcos preservados:
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
@@ -54,7 +54,7 @@ As pré-condições técnicas já cumpridas — fronteira pública, input/prefli
 
 > Deliberar separadamente, antes de qualquer nova implementação, se haverá uma futura combinação entre Composition, BeatPlan, OutputPlan ou Temporal.
 
-A revisão da branch de BeatPlan frente ao R001 **foi concluída e a integração também**: o R001 está integrado desde `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52` (reconciliação `8e17785a5634167f8abdaebacb8388276b909cab`) e o BeatPlan v1 foi reconciliado em `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` e integrado pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`. Não há branch de BeatPlan pendente de integração nem segunda implementação paralela a iniciar. As branches `codex/core-beat-plan-v1` e `codex/reconcilia-beat-plan-v1` permanecem apenas como histórico e não foram excluídas.
+A revisão da branch de BeatPlan frente ao R001 **foi concluída e a integração também**: o R001 está integrado desde `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52` (reconciliação `8e17785a5634167f8abdaebacb8388276b909cab`) e o BeatPlan v1 foi reconciliado em `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` e integrado pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`. Não há branch de BeatPlan pendente de integração nem segunda implementação paralela a iniciar. `codex/reconcilia-beat-plan-v1` continua existindo apenas como histórico; `codex/core-beat-plan-v1` foi **excluída do remoto** na limpeza de 11/11/2026, por ser superseded, com o checkpoint preservado em ref local de arquivo.
 
 O que já está integrado e não deve ser refeito:
 
@@ -107,10 +107,10 @@ Na próxima validação funcional, registrar o commit executado, alterações lo
 
 ## Tarefas secundárias permitidas
 
-1. Reconferir a main e as PRs abertas antes de propor qualquer integração; R001, BeatPlan v1, a regra permanente de armazenamento e a orientação de segurança de worktrees já estão integrados na referência consultada `79fd5da`, e nenhuma combinação entre planos está autorizada.
-2. Decidir o arquivamento das 13 branches classificadas como superseded na auditoria de 11/11/2026 (ver [ESTADO-ATUAL.md](ESTADO-ATUAL.md)). Esta lista não autoriza exclusão de branch nem de conteúdo. Quatro delas produzem merge neutro; mesclar `core-beat-plan-v1` ou `historico-apresentacoes-salao02` regrediria conteúdo já mais novo na main.
-3. Não mesclar `codex/registra-areas-de-trabalho-isoladas`: contradiz a regra permanente ao propor `.worktrees/` e alterar o `.gitignore` versionado, e registra fatos hoje falsos. A orientação de segurança aproveitável já foi reescrita sob `.workspace/` e integrada por `79fd5da`.
-4. Decidir o destino da PR #1 (`ai-memory-integration`) como tarefa própria: é a única branch com trabalho real pendente (19 arquivos ausentes da main, incluindo um workflow de CI novo), conflita em `.ai-memory.toml`, `.gitignore` e `AGENTS.md` e está 82 commits atrás. Exige reconciliação com o `AGENTS.md` atual e autorização específica do CI.
+1. Reconferir a main e as PRs abertas antes de propor qualquer integração; R001, BeatPlan v1, a regra permanente de armazenamento, a orientação de segurança de worktrees e o contexto atualizado já estão integrados, e nenhuma combinação entre planos está autorizada.
+2. Decidir se as cinco branches documentais já integradas podem ser arquivadas, sem exclusão automática: `atualiza-contexto-beat-plan-v1`, `atualiza-contexto-regra-armazenamento`, `reconcilia-beat-plan-v1`, `regra-armazenamento-workspace` e `seguranca-worktrees-workspace`. A limpeza de 11/11/2026 já removeu as 13 superseded e a obsoleta `.worktrees`; o detalhe e os SHA de recuperação estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md).
+3. Decidir o destino da PR #1 (`ai-memory-integration`) como tarefa própria: é a única branch com trabalho real pendente (19 arquivos ausentes da main, incluindo um workflow de CI novo), conflita em `.ai-memory.toml`, `.gitignore` e `AGENTS.md` e está 82 commits atrás. Exige reconciliação com o `AGENTS.md` atual e autorização específica do CI.
+4. Não reintroduzir a convenção `.worktrees/`: a branch que a propunha foi excluída por contradizer a regra permanente, e a orientação de segurança aproveitável já está integrada sob `.workspace/` por `79fd5da`.
 
 Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md); não repeti-los aqui.
 

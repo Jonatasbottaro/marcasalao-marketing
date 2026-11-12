@@ -4,16 +4,17 @@
 
 - Data da atualização: 2026-11-11
 - Branch de referência: main
-- Commit da main consultada: [79fd5dae1db5450960d4cebe922ea26b71d8b6c5](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/79fd5dae1db5450960d4cebe922ea26b71d8b6c5) — reforça a segurança de worktrees na regra permanente de armazenamento, posterior ao BeatPlan v1 e à própria regra
+- Commit da main consultada: [ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e) — contexto com a regra de armazenamento e a auditoria de branches; base sobre a qual esta atualização foi commitada
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
 - Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
 - Merge de integração do BeatPlan v1: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`
 - HEAD técnico reconciliado do BeatPlan: `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`, da branch `codex/reconcilia-beat-plan-v1`
 - Regra permanente de armazenamento na raiz do projeto: `9908f3b6424a196464ed0557294a8efb0445774a`, normativa em [AGENTS.md](../../AGENTS.md)
 - Orientação de segurança de worktrees sob a convenção `.workspace/`: `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`
+- Limpeza de branches remotas: 14 branches excluídas em 11/11/2026 por autorização explícita do titular; 7 branches remotas restantes. Detalhe na seção Limpeza de branches remotas
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-`79fd5da` é o HEAD da main consultada; os três commits posteriores ao BeatPlan (`c50dc86`, `9908f3b`, `79fd5da`) são **exclusivamente documentais e de governança** e não alteram código, `platform/`, `orchestration/` nem CI. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** agora é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho.
+`ed7e8f1` é a base da main consultada; os quatro commits posteriores ao BeatPlan (`c50dc86`, `9908f3b`, `79fd5da`, `ed7e8f1`) são **exclusivamente documentais e de governança** e não alteram código, `platform/`, `orchestration/` nem CI. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -34,9 +35,11 @@ Os marcos permanecem distintos e não se substituem:
 - merge de integração do BeatPlan v1 interno: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`;
 - atualização documental do contexto com o BeatPlan v1 integrado: `c50dc86fb430861b3e8f3f4f89f0f95df54330fd`;
 - registro da regra permanente de armazenamento na raiz do projeto: `9908f3b6424a196464ed0557294a8efb0445774a`;
-- reforço da segurança de worktrees na regra de armazenamento e HEAD da main consultada: `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`.
+- reforço da segurança de worktrees na regra de armazenamento: `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`;
+- atualização documental do contexto com a regra de armazenamento e a auditoria de branches: `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e`;
+- limpeza de 14 branches remotas autorizada pelo titular em 11/11/2026, posterior a `ed7e8f1` e registrada por esta atualização (exclusão de refs remotas, sem commit de código).
 
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Os 162 testes e os runs da fatia Workflow referem-se exclusivamente a `f584210`, não aos HEADs posteriores `e86f3c9`, `d5761b1`, `c50dc86`, `9908f3b` e `79fd5da`; os 626 testes e os runs do BeatPlan referem-se a `7d919fc` e `d5761b1`. Nenhum desses marcos representa implementação completa de TEMPORAL-02.
+O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Os 162 testes e os runs da fatia Workflow referem-se exclusivamente a `f584210`, não aos HEADs posteriores `e86f3c9`, `d5761b1`, `c50dc86`, `9908f3b`, `79fd5da` e `ed7e8f1`; os 626 testes e os runs do BeatPlan referem-se a `7d919fc` e `d5761b1`. Nenhum desses marcos representa implementação completa de TEMPORAL-02.
 
 ## Núcleo reutilizável
 
@@ -63,7 +66,7 @@ Registrar aqui apenas o que continua fora da main, conforme o Git real:
 
 Nada acima está integrado, por mais que o trabalho exista e tenha evidência própria.
 
-O BeatPlan **saiu desta lista**: a reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` foi integrada pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` e está na main. A branch histórica `codex/core-beat-plan-v1` (checkpoint `bade62e3a720a853e6f3d18b52aa46bf544979a4`) permanece apenas como registro da origem do trabalho, não como pendência de integração; `codex/reconcilia-beat-plan-v1` também não representa trabalho pendente. Nenhuma das duas branches foi excluída.
+O BeatPlan **saiu desta lista**: a reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` foi integrada pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` e está na main. A branch histórica `codex/core-beat-plan-v1` (checkpoint `bade62e3a720a853e6f3d18b52aa46bf544979a4`) foi **excluída do remoto** na limpeza de 11/11/2026, por autorização do titular, depois de confirmada como superseded; o checkpoint permanece como registro da origem do trabalho e como ref local de arquivo. `codex/reconcilia-beat-plan-v1` continua existindo e não representa trabalho pendente.
 
 ### Planejado ou documentado
 
@@ -468,13 +471,13 @@ O gate Elephant–Goldfish registrado na seção própria acima foi o de **TEMPO
 | R001 | `codex/reconcilia-r001-formatos-sociais` | `8e17785a5634167f8abdaebacb8388276b909cab` | `merge-base --is-ancestor` contra `origin/main` com saída 0 em 11/11/2026; merge `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52` | **integrado**: OutputProfiles, OutputPlan interno, CLIs e cinco exemplos de planos em LF |
 | BeatPlan | `codex/reconcilia-beat-plan-v1` (origem histórica: `codex/core-beat-plan-v1`) | reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`; merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` | `merge-base --is-ancestor` de `d5761b1` e de `7d919fc` contra `origin/main`, ambos com saída 0 em 11/11/2026; cinco commits temáticos preservados; CI da main run [43099977731](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43099977731), quatro jobs completed/success | **integrado**: BeatPlan v1 interno, contrato, schema, relatório, validador, CLI, dois exemplos e testes; API pública preservada |
 
-O antigo checkpoint `55aeecccfa38da06dfada875e75d81b265626abc` da branch `codex/catalogo-formatos-sociais` permanece registro histórico, não a referência da integração atual do R001. A reconciliação integrada do R001 inclui catálogo, contrato interno, schema, resolvedor, validadores, CLIs `content:profiles` e `content:plan-output` e exemplos LF; não amplia o export público da platform.
+O antigo checkpoint `55aeecccfa38da06dfada875e75d81b265626abc` da branch `codex/catalogo-formatos-sociais` permanece registro histórico, não a referência da integração atual do R001. Essa branch foi **excluída do remoto** na limpeza de 11/11/2026, por autorização do titular, depois de confirmada como superseded. A reconciliação integrada do R001 inclui catálogo, contrato interno, schema, resolvedor, validadores, CLIs `content:profiles` e `content:plan-output` e exemplos LF; não amplia o export público da platform.
 
-O BeatPlan foi reconciliado sobre a main que já contém R001 e integrado pelo merge `d5761b1`, preservando os cinco commits temáticos da branch: `9c872a6` (contrato, schema e relatório), `d46ea5a` (validador vinculado a Composition e ProjectManifest), `4230eba` (CLI compartilhada), `559d22c` (exemplos e portabilidade) e `7d919fc` (README da platform). O checkpoint histórico `bade62e3a720a853e6f3d18b52aa46bf544979a4` de `codex/core-beat-plan-v1` e o run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) permanecem como registro da origem do trabalho, não como estado atual, e nenhuma das duas branches foi excluída. A integração não amplia o export público da platform, não combina BeatPlan com OutputPlan e não o leva ao Temporal. Nenhum teste do R001 ou do BeatPlan foi executado nesta atualização documental. A presença do R001 e do BeatPlan na main não autoriza seu consumo por TEMPORAL-02.
+O BeatPlan foi reconciliado sobre a main que já contém R001 e integrado pelo merge `d5761b1`, preservando os cinco commits temáticos da branch: `9c872a6` (contrato, schema e relatório), `d46ea5a` (validador vinculado a Composition e ProjectManifest), `4230eba` (CLI compartilhada), `559d22c` (exemplos e portabilidade) e `7d919fc` (README da platform). O checkpoint histórico `bade62e3a720a853e6f3d18b52aa46bf544979a4` de `codex/core-beat-plan-v1` e o run [42321831284](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42321831284) permanecem como registro da origem do trabalho, não como estado atual; a branch `codex/core-beat-plan-v1` foi **excluída do remoto** na limpeza de 11/11/2026, enquanto `codex/reconcilia-beat-plan-v1` continua existindo. A integração não amplia o export público da platform, não combina BeatPlan com OutputPlan e não o leva ao Temporal. Nenhum teste do R001 ou do BeatPlan foi executado nesta atualização documental. A presença do R001 e do BeatPlan na main não autoriza seu consumo por TEMPORAL-02.
 
 ## Auditoria das branches não integradas
 
-Auditoria de consulta realizada em 11/11/2026 sobre as 15 branches remotas não contidas em `origin/main`, sem mesclar, commitar ou excluir nada. Método: `git cherry` (equivalência de patch-id), `git merge-tree --write-tree` (dry-run do efeito líquido e dos conflitos, sem alterar refs nem working tree), comparação de conjuntos com `git ls-tree` (arquivos realmente ausentes da main) e comparação de conteúdo por arquivo-chave.
+Auditoria de consulta realizada em 11/11/2026 sobre as 15 branches remotas então não contidas em `origin/main`, sem mesclar, commitar ou excluir nada. **Registro histórico:** 14 dessas 15 branches foram excluídas do remoto na limpeza posterior, autorizada pelo titular (ver a seção Limpeza de branches remotas); apenas `ai-memory-integration` permanece. A classificação abaixo descreve o que foi apurado na auditoria e continua válida como justificativa da limpeza. Método: `git cherry` (equivalência de patch-id), `git merge-tree --write-tree` (dry-run do efeito líquido e dos conflitos, sem alterar refs nem working tree), comparação de conjuntos com `git ls-tree` (arquivos realmente ausentes da main) e comparação de conteúdo por arquivo-chave.
 
 | Classificação | Qtd | Branches |
 | --- | --- | --- |
@@ -488,10 +491,58 @@ Fatos determinantes:
 - `catalogo-formatos-sociais` é o trabalho original do R001, superseded pela reconciliação `8e17785`. Todos os 25 arquivos que toca existem na main, com conteúdo idêntico nos arquivos-chave (`output-profiles/catalog.ts` 279 linhas nos dois, `resolve-output-profile.ts` 329, `R001-changelog.md` 28). Os patch-ids diferem porque a reconciliação reescreveu ajustes, não porque falte conteúdo.
 - `core-beat-plan-v1` é o trabalho original do BeatPlan, superseded pela reconciliação `7d919fc`. Mesclar **regrediria** o projeto: a main tem a CLI refactorada (100 vs 145 linhas), os testes de validação refactorados (1050 vs 1187) e dois arquivos de teste que só existem na main (`beat-plan-examples.test.ts` e `contracts/beat-plan-schema.test.ts`).
 - `historico-apresentacoes-salao02` traz o briefing NS-001 com 237 linhas; a main tem 327 linhas, versão editorial 0.3. Mesclar regrediria o editorial.
-- `registra-areas-de-trabalho-isoladas` (`636e5c434c6bc0c990b4451946c56853b309a8b1`) tem merge limpo, mas adicionaria `.worktrees/` ao `.gitignore` versionado e tornaria essa convenção normativa no `HANDOFF.md`, contradizendo a regra permanente de armazenamento. Registra ainda fatos hoje falsos (afirma que `main` segue `616fd24` e que `7d919fc` não está integrada) e descreve áreas de trabalho de outro computador. **Não deve ser mesclada.** A orientação de segurança aproveitável foi reescrita sob a convenção `.workspace/` e integrada por `79fd5da`, sem mesclar a branch, que permanece intacta.
+- `registra-areas-de-trabalho-isoladas` (`636e5c434c6bc0c990b4451946c56853b309a8b1`) tinha merge limpo, mas adicionaria `.worktrees/` ao `.gitignore` versionado e tornaria essa convenção normativa no `HANDOFF.md`, contradizendo a regra permanente de armazenamento. Registrava ainda fatos hoje falsos (afirmava que `main` seguia `616fd24` e que `7d919fc` não estava integrada) e descrevia áreas de trabalho de outro computador. **Não foi mesclada.** A orientação de segurança aproveitável foi reescrita sob a convenção `.workspace/` e integrada por `79fd5da`, sem mesclar a branch; ela foi **excluída do remoto** na limpeza de 11/11/2026.
 - `ai-memory-integration` (`ed43716`, PR #1 aberta desde 01/11/2026) é a única com trabalho real: 19 arquivos ausentes da main, incluindo `tools/memory_sync.py`, `tools/tests/test_memory_sync.py`, seeds de memória das duas marcas e um workflow de CI novo (`memory-check.yml`). Conflita em `.ai-memory.toml`, `.gitignore` e `AGENTS.md`, está 82 commits atrás e não conhece R001, BeatPlan, TEMPORAL-02 nem a regra de armazenamento. Requer decisão própria do titular, reconciliação com o `AGENTS.md` atual e autorização específica do CI novo.
 
-Nenhuma branch foi mesclada ou excluída pela auditoria. Ressalva de método: `git cat-file -e origin/main:<caminho iniciado por ponto>` falha por conversão de caminho do MSYS no Git Bash, gerando falsos "ausente"; todos os resultados de ausência foram reconferidos por comparação de conjuntos com `git ls-tree`.
+Nenhuma branch foi mesclada ou excluída **pela auditoria**, que foi somente de consulta. Ressalva de método: `git cat-file -e origin/main:<caminho iniciado por ponto>` falha por conversão de caminho do MSYS no Git Bash, gerando falsos "ausente"; todos os resultados de ausência foram reconferidos por comparação de conjuntos com `git ls-tree`. A validação de links também exige incluir diretórios (`git ls-tree -r -d`), pois links com barra final não aparecem na listagem só de arquivos.
+
+## Limpeza de branches remotas — 11/11/2026
+
+Por autorização explícita do titular ("exclui as 13 e a obsoleta .worktrees"), foram excluídas do remoto **14 branches**: as 13 classificadas como superseded e a obsoleta da convenção `.worktrees`. Nenhuma outra branch foi tocada.
+
+Pré-condições verificadas antes da exclusão: classificação reconferida contra a main então em `ed7e8f1`; única PR aberta era a #1 (`ai-memory-integration`), fora do conjunto; nenhuma das 14 existia como branch local nem estava checked out no checkout principal, em worktree ou nos clones auxiliares; checkout limpo, sem travas nem operação pendente.
+
+Rede de recuperação criada **antes** da exclusão:
+
+- registro com SHA completo, data e subject de cada uma das 14, em `.workspace/archives/limpeza-branches-2026-11-11/registro-pre-exclusao.txt` (SHA-256 do registro `2ffff7be8af5e86116d09deb092f46f27ed3602772190fdf6e85e133902d559e`);
+- 14 refs locais de arquivo em `refs/archive/limpeza-2026-11-11/<nome-da-branch>`, mantendo os commits alcançáveis e protegidos contra garbage collection. Restauração de uma branch no remoto: `git push origin refs/archive/limpeza-2026-11-11/<nome>:refs/heads/codex/<nome>`.
+
+Esses dois artefatos são **locais e não versionados**: existem apenas neste computador. Em outro clone, a recuperação depende dos SHA registrados acima e da retenção de commits pelo GitHub.
+
+Exclusão executada com `git push origin --delete` em comando único: 14 confirmações `- [deleted]`, exit 0. Nenhum reset, clean, stash ou rewrite de história; nenhum commit apagado do objeto Git local.
+
+Branches excluídas (nome e SHA):
+
+| Branch | SHA |
+| --- | --- |
+| `codex/alinha-regra-notificacoes-marketing` | `08a39698af55b1821837dce3dcdc5751a235e8f3` |
+| `codex/core-composition-v1` | `1515b06e4a785d814b0a0116d942b09f19135065` |
+| `codex/core-project-manifest` | `eda7c8e2c1a09ee1e008c8d8d233547a86489423` |
+| `codex/documenta-pipeline-criativo-modular` | `a4f5de428a3a06951c69294607bebae6d782cf2c` |
+| `codex/documenta-plataforma-modular-marketing` | `c6933d8c1e0d06b842e87d4ee4457356bf088ce4` |
+| `codex/ns-001-consolida-validacao-executada` | `10cca3e1f2dc09b66d6568c59b87705a059d1ef5` |
+| `codex/ns-001-hooks` | `c58c6e9f878c84c039cc317ac0846e6a866a2da4` |
+| `codex/ns-001-roteiro-001` | `3df83f314447e823ef89525c92a5c2005c8d9b8d` |
+| `codex/ns-001-validacao-agenda` | `2772da7ab1616ba4235e356b83df921e15578a8b` |
+| `codex/temporal-01-piloto-orquestracao` | `a5a96f475fc34e410857952c6f7c3e0e4646ce59` |
+| `codex/catalogo-formatos-sociais` | `061c2e5b5de980a1b7ff3b6da3d0e3f009aa3cf9` |
+| `codex/core-beat-plan-v1` | `bade62e3a720a853e6f3d18b52aa46bf544979a4` |
+| `codex/historico-apresentacoes-salao02` | `22a31ab7da56e8c35d9a27404e431a18680d75e6` |
+| `codex/registra-areas-de-trabalho-isoladas` | `636e5c434c6bc0c990b4451946c56853b309a8b1` |
+
+Estado remoto após a limpeza: **7 branches**, confirmadas por `git ls-remote --heads origin` (21 antes − 14 = 7), com cada exclusão reconferida individualmente:
+
+| Branch restante | Situação |
+| --- | --- |
+| `main` | `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e` no momento da limpeza; inalterada pela exclusão |
+| `codex/ai-memory-integration` | PR #1 aberta (draft), tip `ed43716fef011b3a16341ee2625e78dd6f5c1694`; **única pendência real de branch** |
+| `codex/atualiza-contexto-beat-plan-v1` | já integrada na main |
+| `codex/atualiza-contexto-regra-armazenamento` | já integrada na main |
+| `codex/reconcilia-beat-plan-v1` | já integrada na main |
+| `codex/regra-armazenamento-workspace` | já integrada na main |
+| `codex/seguranca-worktrees-workspace` | já integrada na main |
+
+As cinco branches documentais já integradas foram **preservadas**: a autorização de limpeza cobria somente as 14 listadas. A PR #1 não foi afetada. Nenhum conteúdo de trabalho foi perdido: as 13 superseded já tinham o conteúdo na main, e a obsoleta teve sua orientação aproveitável reescrita e integrada por `79fd5da` antes da exclusão.
 
 ## Histórico da correção de contratos
 
@@ -534,7 +585,7 @@ Consolidação realizada em 11/11/2026: as pastas auxiliares externas `C:/Market
 
 Exceção declarada e não resolvida: o aplicativo grava anexos do usuário e saídas grandes de ferramenta em diretório temporário próprio, fora da raiz, e outro processo deixou um dump de segurança de rebase em `/tmp`. Cópias desses arquivos foram preservadas dentro de `.workspace/archives/` com SHA-256 conferido idêntico ao original; os originais externos foram mantidos por decisão do titular. Eliminar essa exceção na origem exige configuração do aplicativo, não desta tarefa.
 
-A convenção `.worktrees/` proposta pela branch `codex/registra-areas-de-trabalho-isoladas` **não está em vigor** e não deve ser seguida: contradiz a regra permanente. Ver a seção Auditoria das branches não integradas.
+A convenção `.worktrees/` proposta pela branch `codex/registra-areas-de-trabalho-isoladas` **não está em vigor** e não deve ser seguida: contradizia a regra permanente. A branch foi excluída do remoto na limpeza de 11/11/2026 e sua orientação de segurança aproveitável já está integrada sob `.workspace/`. Ver as seções Auditoria das branches não integradas e Limpeza de branches remotas.
 
 ## Próximo passo
 
@@ -568,8 +619,8 @@ A ratificação da fatia Workflow foi registrada pelo titular em 2026-11-11 e en
 
 Tarefas secundárias de consulta:
 
-1. decidir o arquivamento das 13 branches superseded identificadas na auditoria, sem exclusão automática — inclui `codex/core-beat-plan-v1`, `codex/reconcilia-beat-plan-v1` e `codex/catalogo-formatos-sociais`, cujo trabalho já está na main;
-2. decidir o destino da PR #1 (`ai-memory-integration`) como tarefa própria de reconciliação com o `AGENTS.md` atual, com autorização específica para o workflow de CI novo;
+1. decidir se as cinco branches documentais já integradas (`atualiza-contexto-beat-plan-v1`, `atualiza-contexto-regra-armazenamento`, `reconcilia-beat-plan-v1`, `regra-armazenamento-workspace`, `seguranca-worktrees-workspace`) podem ser arquivadas, sem exclusão automática — a limpeza de 11/11/2026 já removeu as 13 superseded e a obsoleta;
+2. decidir o destino da PR #1 (`ai-memory-integration`) como tarefa própria de reconciliação com o `AGENTS.md` atual, com autorização específica para o workflow de CI novo — é a única branch com trabalho real pendente;
 3. reconferir periodicamente o estado da main e as PRs abertas antes de planejar qualquer integração;
 4. revisar a coerência entre o BeatPlan integrado e os conceitos futuros de [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md), sem escrever código nem escolher renderizador.
 
@@ -593,7 +644,9 @@ Tarefas secundárias de consulta:
 
 ## O que esta atualização não verificou
 
-Esta atualização é exclusivamente documental e registra a integração da regra permanente de armazenamento (`9908f3b`) e do reforço da segurança de worktrees (`79fd5da`), além da auditoria de consulta das 15 branches não integradas: não executou instalação de dependências, build, typecheck ou testes e não alterou código, `platform/`, `orchestration/`, CI, PRDs, decisões arquiteturais, campanhas ou mídia. Os dois commits foram conferidos por ancestralidade contra `origin/main` (saída 0) e pelo conteúdo: cada um altera somente `AGENTS.md`, com 76 e 4 inserções respectivamente, zero exclusões, blob em LF puro e `git diff --check` limpo. Nenhum workflow foi disparado por esses commits — a API pública do GitHub confirma zero runs para `9908f3b` e para `79fd5da`, coerente com os filtros de path dos três workflows, que não incluem `AGENTS.md`. A auditoria usou apenas dry-run (`git merge-tree --write-tree`) e consultas de leitura; nenhum merge, commit, push ou exclusão de branch foi executado por ela. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
+Esta atualização é exclusivamente documental e registra a **limpeza de 14 branches remotas** autorizada pelo titular em 11/11/2026: não executou instalação de dependências, build, typecheck ou testes e não alterou código, `platform/`, `orchestration/`, CI, PRDs, decisões arquiteturais, campanhas ou mídia. A exclusão foi conferida por `git ls-remote --heads origin` (7 branches restantes, 21 antes menos 14) e por verificação individual de ausência de cada uma das 14. A `main` não foi alterada pela exclusão: `origin/main` permaneceu em `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e` durante o processo, e esta atualização documental foi commitada sobre essa base. A PR #1 (`ai-memory-integration`) foi confirmada como ainda aberta e não afetada. Nenhum workflow foi disparado pela exclusão de branches nem por este commit documental — `docs/contexto/` não está nos filtros de path dos três workflows. Não foram executados replay formal, Elephant–Goldfish de TEMPORAL-02 ou deploy.
+
+Preserva-se a evidência histórica da regra de armazenamento e da segurança de worktrees: os commits `9908f3b` e `79fd5da` alteram somente `AGENTS.md`, com 76 e 4 inserções, zero exclusões, blob em LF puro e `git diff --check` limpo; a API pública do GitHub confirmou zero runs para ambos. A auditoria que justificou a limpeza usou apenas dry-run (`git merge-tree --write-tree`) e consultas de leitura, sem mesclar, commitar ou excluir nada por si mesma.
 
 Preserva-se a evidência histórica do BeatPlan v1: 626 testes, zero falhas e zero skips nos quatro ambientes, vinculados a `7d919fc` e `d5761b1` (runs [43034990448](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43034990448) e [43099977731](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43099977731)), conforme registrado no README da platform. Não são medições dos commits documentais posteriores nem foram repetidos nesta atualização; os logs por job exigem autenticação e não foram relidos. A contagem de 38 entradas do tarball permanece informada no pedido original, não reexecutada.
 
