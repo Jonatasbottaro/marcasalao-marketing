@@ -6,6 +6,7 @@
 - Branch de referência: main
 - Commit da main consultada: [2c409676e58e4e118d865821b9a0cbdd93a22364](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/2c409676e58e4e118d865821b9a0cbdd93a22364) — revisão mais recente de `AGENTS.md`, com a raiz oficial `C:/Repos/marcasalao-marketing` e `.workspace/` dentro do checkout; base sobre a qual a integração do R002 foi commitada
 - Merge de integração do piloto local R002: `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9`, a partir da branch técnica `codex/r002-video-local-agenda` (HEAD `b59076918eea6a2eaecda90bf2ec3c8cb4ac6c60`), com commit corretivo único `0ac4bde8e5096ecdf4913a48ad453e066346b213`
+- Merge de integração da execução local de TEMPORAL-02: `5376890974d4baf49b341297a9b7b0071a680dc6`, a partir da branch `codex/temporal-02-execucao-local` (HEAD `63d04d5e4476e13a34f4636b19a08e642627b70b`), por pedido explícito do titular em 12/11/2026 de atualização completa do remoto
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
 - Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
 - Merge de integração do BeatPlan v1: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`
@@ -15,7 +16,7 @@
 - Limpeza de branches remotas: 14 branches excluídas em 11/11/2026 por autorização explícita do titular; 7 branches remotas restantes. Detalhe na seção Limpeza de branches remotas
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-O último commit técnico da main é o merge `b7ed1d9` do piloto local R002 (ferramentas de vídeo em `tools/`, fora do núcleo `platform/`); o último commit técnico do núcleo permanece `d5761b1`. Os commits entre `d5761b1` e `2c40967` atualizam a documentação e a governança, incluindo a limpeza de branches e a nova raiz de armazenamento. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
+O último commit técnico da main é o merge `5376890` da execução local de TEMPORAL-02 (cliente, Worker, CLIs e replay em `orchestration/temporal/`); o anterior é o merge `b7ed1d9` do piloto local R002 (ferramentas de vídeo em `tools/`, fora do núcleo `platform/`); o último commit técnico do núcleo permanece `d5761b1`. Os commits entre `d5761b1` e `2c40967` atualizam a documentação e a governança, incluindo a limpeza de branches e a nova raiz de armazenamento. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. O cliente de validação, `workflow.start` da aplicação, Workflow ID determinístico, políticas de reuso e conflito, colisão sanitizada, Worker local, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 estão **integrados em escopo estritamente local** pelo merge `5376890` (12/11/2026); Worker de produção, servidor Temporal remoto, namespace de produção, `contentHash` e deploy continuam ausentes e bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -41,7 +42,8 @@ Os marcos permanecem distintos e não se substituem:
 - limpeza de 14 branches remotas autorizada pelo titular em 11/11/2026, posterior a `ed7e8f1` e registrada por esta atualização (exclusão de refs remotas, sem commit de código).
 - registro documental da limpeza de branches em `3c44ae4408cdc1a03dad61d659e0dde0c502f829`;
 - atualização da raiz oficial de armazenamento no `AGENTS.md` em `2c409676e58e4e118d865821b9a0cbdd93a22364`;
-- integração do piloto técnico local R002 (vídeo sem áudio): merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com os três commits originais `2e663e3`, `040e290`, `b590769` preservados, mais o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; detalhe na seção R002 — piloto técnico local de vídeo sem áudio.
+- integração do piloto técnico local R002 (vídeo sem áudio): merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com os três commits originais `2e663e3`, `040e290`, `b590769` preservados, mais o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; detalhe na seção R002 — piloto técnico local de vídeo sem áudio;
+- integração da execução local de TEMPORAL-02: merge `5376890974d4baf49b341297a9b7b0071a680dc6` com os três commits da branch `codex/temporal-02-execucao-local` (`f69fb08`, `91721a3`, `63d04d5`) preservados; detalhe na seção TEMPORAL-02 — Execução local integrada.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -350,7 +352,7 @@ A ratificação abrange exclusivamente:
 - o Worker efêmero usado exclusivamente nos testes;
 - o CI verde em Ubuntu e Windows, Node 22.
 
-Nada fora dessa lista está ratificado. Permanecem bloqueados, sem autorização: Worker de produção dedicado à composição, cliente Temporal de validação, `workflow.start` da aplicação, Workflow ID de composição, `WorkflowIdReusePolicy`, `WorkflowIdConflictPolicy`, colisão de Workflow ID, `contentHash`, replay formal, gate Elephant–Goldfish de TEMPORAL-02, integração final completa de TEMPORAL-02, combinação de OutputPlan ou BeatPlan com Temporal, TEMPORAL-04, mídia, fornecedores e deploy.
+Nada fora dessa lista foi ratificado em 11/11/2026. Em 12/11/2026 o titular autorizou especificamente a **execução local** (cliente, `workflow.start`, Workflow ID, políticas, colisão, Worker local, CLIs, replay formal e gate Elephant–Goldfish), integrada pelo merge `5376890`; essa autorização não abrange produção. Permanecem bloqueados, sem autorização: Worker de produção dedicado à composição, servidor Temporal remoto, namespace de produção, `contentHash`, combinação de OutputPlan ou BeatPlan com Temporal, TEMPORAL-04, mídia, fornecedores e deploy.
 
 - Commit técnico: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, ancestral da main e anterior a `e86f3c9` e a `d5761b1`.
 - Workflow: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), recebendo `CompositionValidationWorkflowInput` e chamando a Activity já integrada `validateCompositionActivity` por `proxyActivities` tipado.
@@ -411,9 +413,21 @@ Os sete testes de Workflow exercitaram `valid` e `invalid` com Activity real, fa
 - Elephant–Goldfish de TEMPORAL-02: **pendente**; o gate aprovado de TEMPORAL-01 não o substitui.
 - Nenhum deploy e nenhuma implementação posterior autorizada.
 
+## TEMPORAL-02 — Execução local integrada
+
+- Status: **integrado na main** pelo merge `5376890974d4baf49b341297a9b7b0071a680dc6` (12/11/2026), a partir da branch `codex/temporal-02-execucao-local` (HEAD `63d04d5e4476e13a34f4636b19a08e642627b70b`, commits `f69fb08`, `91721a3`, `63d04d5`), por pedido explícito do titular de atualização completa do remoto. Escopo **estritamente local**: sem deploy, sem servidor remoto, sem namespace de produção, sem Worker persistente.
+- Cadeia conectada: preflight → cliente (`startCompositionValidation` / `executeCompositionValidation`) → `workflow.start` → Worker local (`composition-validation-v1`) → `validateCompositionWorkflow` → `validateCompositionActivity` → `CompositionValidationWorkflowResult`.
+- Workflow ID `composition-validation-<requestId>` (função pura no cliente); políticas `REJECT_DUPLICATE` + `FAIL`; colisão sanitizada `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT` sem nova execução e fora da Retry Policy; Retry Policy ratificada intacta.
+- CLIs: `composition:worker`, `composition:validate` (exit 0 valid / 1 invalid / 2 uso-preflight / 3 failed / 4 colisão / 5 conexão), `composition:validate:local` (createLocal com valid, invalid e colisão medidos), `composition:replay`.
+- Replay formal: `Worker.runReplayHistory` com fixture versionado normalizado (`tests/replay/fixtures/composition-validation-valid.history.json`, 11 eventos, sha256 `5895a2508cfb647ca66489e21f1dc31247acc1e11b48ec5099aba4ccc812b089`), replay de história fresca e gate de sensibilidade (`[TMPRL1100]` com workflow divergente de mesmo nome).
+- Evidência: 198 testes do pacote (zero falhas/skips) e 626 da platform em Node 22.23.2, repetidos em worktree limpa com instalação offline; CI `temporal-pilot-ci.yml` verde em Ubuntu e Windows Node 22 no SHA da branch (run 43160048966).
+- Gate Elephant–Goldfish de TEMPORAL-02 executado e registrado em [`orchestration/temporal/docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md`](../../orchestration/temporal/docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md); nenhum bloqueador aberto; backlog cosmético de 3 itens.
+- Limitações: `createTimeSkipping` menos fiel que `createLocal`; replay não prova compatibilidade com versões futuras; entrega de SIGINT/SIGTERM pelo SO no Windows não comprovada (shutdown programático e finally medidos); binário do servidor de teste em cache de processo, não versionado.
+- Referências: [README do Temporal](../../orchestration/temporal/README.md), seções TEMPORAL-02 — Execução local completa e Replay formal.
+
 ## TEMPORAL-02
 
-- **PRD de TEMPORAL-02 integrado e formalmente em revisão; TEMPORAL-02-01, TEMPORAL-02-02, TEMPORAL-02-03 e a fatia Workflow estão integrados tecnicamente. A fatia Workflow foi ratificada pelo titular em 2026-11-11, em escopo estrito; a implementação global, a aprovação do PRD e qualquer fatia posterior continuam não autorizadas.**
+- **PRD de TEMPORAL-02 integrado e formalmente em revisão; TEMPORAL-02-01, TEMPORAL-02-02, TEMPORAL-02-03, a fatia Workflow e a execução local estão integrados tecnicamente. A fatia Workflow foi ratificada pelo titular em 2026-11-11, em escopo estrito; a execução local foi autorizada e integrada em 12/11/2026 (`5376890`); a aprovação do PRD, produção remota e qualquer fatia posterior continuam não autorizadas.**
 - Arquivo: [`docs/planejamento/TEMPORAL-02-validacao-de-composition.md`](../planejamento/TEMPORAL-02-validacao-de-composition.md), integrado à main em `33b46ce54649fc60340c2e85b15d0b39ad112cff`.
 - Status do documento: **PRD em revisão**.
 - Aprovação do PRD: **não concedida**.
@@ -614,11 +628,9 @@ A convenção `.worktrees/` proposta pela branch `codex/registra-areas-de-trabal
 O Workflow já está integrado, homologado tecnicamente e ratificado no escopo dessa fatia; não deve ser reimplementado como próxima tarefa. O BeatPlan v1 já está integrado como fatia interna da `platform`; não deve ser reimplementado nem tratado como branch-only. Permanecem **bloqueados até autorização específica**:
 
 - Worker de produção dedicado à composição;
-- cliente Temporal de validação e `workflow.start` da aplicação;
-- Workflow ID, `WorkflowIdReusePolicy`, `WorkflowIdConflictPolicy` e colisão de Workflow ID de composição;
+- servidor Temporal remoto, namespace de produção e Worker persistente;
 - `contentHash` e qualquer canonicalização de entrada;
-- replay formal e gate Elephant–Goldfish de TEMPORAL-02;
-- integração final completa de TEMPORAL-02;
+- integração de TEMPORAL-02 em produção (a execução local já está integrada em `5376890`);
 - combinação de BeatPlan × OutputPlan e BeatPlan no Temporal;
 - TEMPORAL-04;
 - renderização, adaptadores, `VisualStyle`, `VisualAnchor`, `AssetManifest` completo, `AudioPlan` e `RenderPlan`;
@@ -631,6 +643,7 @@ Pré-condições técnicas já cumpridas, sem abrir autorização futura:
 - Activity real integrada e ratificada (`TEMPORAL-02-03`), com coordenação de build no CI;
 - Workflow, contrato de resultado, classificador e Retry Policy integrados e homologados tecnicamente em `f584210` e ratificados em escopo estrito pelo titular;
 - evidência de 162 testes e CI Ubuntu/Windows, Node 22, exclusivamente em `f584210`, detalhada na seção da fatia Workflow;
+- execução local completa (cliente, Worker, CLIs, replay e gate Elephant–Goldfish) integrada em `5376890`, com 198 testes do pacote e CI Ubuntu/Windows, Node 22, no SHA `63d04d5`;
 - núcleo sem dependência Temporal.
 
 A ratificação da fatia Workflow foi registrada pelo titular em 2026-11-11 e encerra estritamente o escopo homologado de `f584210`, sem aprovar o PRD completo. Ela não autoriza a próxima fatia: qualquer implementação posterior exige decisão específica que delimite seu escopo, e o PRD permanece em revisão.

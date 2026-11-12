@@ -10,7 +10,7 @@ Para as próximas rodadas, o titular prefere agrupar código, integração, test
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
-A main conferida em 11/11/2026 está em `2c409676e58e4e118d865821b9a0cbdd93a22364`. O último commit técnico do núcleo é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, com R001 e BeatPlan v1 integrados. Os seis commits posteriores atualizam documentação e governança. A limpeza de 14 branches remotas autorizada pelo titular ficou registrada em `3c44ae4`. A PR #1 (`codex/ai-memory-integration`) é a única aberta na leitura. Em 12/11/2026 o piloto técnico local R002 (vídeo sem áudio, fora do núcleo) foi integrado pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; não altera `platform/`, `orchestration/` nem os bloqueios abaixo.
+A main conferida em 11/11/2026 está em `2c409676e58e4e118d865821b9a0cbdd93a22364`. O último commit técnico do núcleo é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, com R001 e BeatPlan v1 integrados. Os seis commits posteriores atualizam documentação e governança. A limpeza de 14 branches remotas autorizada pelo titular ficou registrada em `3c44ae4`. A PR #1 (`codex/ai-memory-integration`) é a única aberta na leitura. Em 12/11/2026 o piloto técnico local R002 (vídeo sem áudio, fora do núcleo) foi integrado pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; não altera `platform/`, `orchestration/` nem os bloqueios abaixo. Também em 12/11/2026 a **execução local de TEMPORAL-02** (cliente, Worker local, CLIs, replay formal e gate Elephant–Goldfish, em `orchestration/temporal/`) foi integrada pelo merge `5376890974d4baf49b341297a9b7b0071a680dc6` a partir de `codex/temporal-02-execucao-local` (`63d04d5`), por pedido explícito do titular; escopo estritamente local, sem alterar os bloqueios de produção abaixo.
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
@@ -107,11 +107,11 @@ Para a NS-001, tratar as pendências apontadas nos documentos da própria campan
 
 Na próxima validação funcional, registrar o commit executado, alterações locais, ambiente, fixture, comandos, resultados e evidências. Não atribuir retroativamente um commit à execução antiga.
 
-## 6. Preparar a proposta de autorização para execução real da validação de Composition no Temporal
+## 6. Preparar a proposta de autorização para execução real em produção da validação de Composition no Temporal
 
-> Próxima entrega recomendada após o fechamento do R002 (12/11/2026): **preparar a proposta completa de autorização para execução real da validação de Composition no Temporal, sem iniciar implementação automaticamente.**
+> Próxima entrega recomendada após a integração da execução local de TEMPORAL-02 (12/11/2026, merge `5376890`): **preparar a proposta completa de autorização para execução real (produção/remota) da validação de Composition no Temporal, sem iniciar implementação automaticamente.**
 
-A proposta deve delimitar escopo, componentes, riscos, evidências exigidas e critérios de ratificação, reaproveitando o que já está integrado e ratificado (fronteira pública, input/preflight, Activity, Workflow em escopo estrito, Retry Policy) e o precedente de gates do R002 (reprodução limpa, inspeção técnica real, prova transacional, hashes e documentação no mesmo marco). É trabalho de proposta: nenhum Worker de produção, cliente, `workflow.start`, Workflow ID, replay ou gate deixa de estar bloqueado por esta recomendação; a execução real depende de decisão explícita e separada do titular.
+A proposta deve delimitar escopo, componentes, riscos, evidências exigidas e critérios de ratificação, reaproveitando o que já está integrado e ratificado (fronteira pública, input/preflight, Activity, Workflow em escopo estrito, Retry Policy, execução local completa com replay e gate Elephant–Goldfish) e o precedente de gates do R002 e da execução local (reprodução limpa, inspeção técnica real, prova transacional, hashes e documentação no mesmo marco). É trabalho de proposta: Worker de produção, servidor remoto, namespace de produção e deploy continuam bloqueados; a execução real depende de decisão explícita e separada do titular.
 
 ## Tarefas secundárias permitidas
 
