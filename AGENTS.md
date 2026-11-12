@@ -55,6 +55,10 @@ git worktree add --detach \
 
 Nunca criar worktree em pasta externa. Para clone auxiliar, usar somente `C:/Marketing/.workspace/clones/<nome-da-tarefa>`; nunca criar clone em `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews` ou outro diretório externo.
 
+Antes de mover ou remover uma área de trabalho já existente, conferir `git worktree list --porcelain` e se há sessão ou agente ativo sobre ela. Realocar com `git worktree move` e remover com `git worktree remove`; nunca usar `rm -rf` em worktree registrada, porque a branch e os commits vivem no `.git` do repositório principal e apagar o diretório manualmente deixa o registro órfão. Mover ou remover área existente exige autorização do titular.
+
+Pastas irmãs do repositório ficam fora da raiz oficial e fora desse controle; em outro computador podem cair dentro de uma raiz de sincronização em nuvem, que passa a propagar `node_modules`, `dist` e caches. Realocar uma área para dentro de `.workspace/` não altera branch, HEAD, índice nem conteúdo: conferir esses quatro antes e depois, e remover a origem somente depois de validar o destino.
+
 ### Downloads e ferramentas portáteis
 
 Se Node, GitHub CLI ou outra ferramenta portátil for indispensável, baixar somente para `C:/Marketing/.workspace/tools/<nome-da-ferramenta>`. Não baixar para `%TEMP%`, não instalar globalmente, não alterar o PATH permanentemente, não salvar credenciais junto da ferramenta, registrar a origem e a versão e remover ao final, salvo autorização expressa para preservar. Downloads transitórios usam `C:/Marketing/.workspace/tmp/downloads/`.
