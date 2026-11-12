@@ -1,0 +1,214 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CreativeExecutionPackage",
+  "description": "Contrato interno CreativeExecutionPackage v1: especificacao tecnica imutavel da execucao futura, derivada somente de um pipeline criativo valido. Nao executa nada: sem renderizacao, sem midia, sem arquivos fisicos, sem rede, sem fornecedor, sem Temporal. O packageId e identificador tecnico do pacote (nunca Workflow ID). Campos desconhecidos sao proibidos (additionalProperties=false). Regras semanticas entre campos (contiguidade da timeline, igualdade de duracoes, derivacao deterministica do packageId, consistencia de source references, unicidade de ids) NAO sao expressaveis neste schema: a implementacao de referencia esta em platform/src/validate-creative-execution-package.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packageId",
+    "projectId",
+    "compositionId",
+    "outputPlanId",
+    "beatPlanId",
+    "output",
+    "timeline",
+    "expectedArtifacts",
+    "source"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "packageId": {
+      "type": "string",
+      "maxLength": 128,
+      "anyOf": [
+        { "pattern": "^execution-[a-z0-9]+(-[a-z0-9]+)*$" },
+        { "pattern": "^execution-v1-[0-9a-f]{64}$" }
+      ],
+      "description": "Identificador deterministico: forma legivel execution-<ids> ou forma canonica execution-v1-<sha256> acima do limite."
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "compositionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "outputPlanId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "beatPlanId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "output": { "$ref": "#/definitions/output" },
+    "timeline": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/step" }
+    },
+    "expectedArtifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/artifact" }
+    },
+    "source": { "$ref": "#/definitions/source" }
+  },
+  "definitions": {
+    "kebabId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profileId",
+        "mediaKind",
+        "width",
+        "height",
+        "aspectRatio",
+        "fps",
+        "rendererAdapter",
+        "durationMs"
+      ],
+      "properties": {
+        "profileId": { "$ref": "#/definitions/kebabId" },
+        "mediaKind": {
+          "type": "string",
+          "const": "video",
+          "description": "v1 deriva somente de planos de video; a compatibilidade Composition x OutputPlan rejeita planos de imagem."
+        },
+        "width": { "$ref": "#/definitions/positiveSafeInteger" },
+        "height": { "$ref": "#/definitions/positiveSafeInteger" },
+        "aspectRatio": {
+          "type": "string",
+          "pattern": "^[0-9]+:[0-9]+$"
+        },
+        "fps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "plannedContainer": {
+          "type": "string",
+          "enum": ["mp4", "webm"],
+          "description": "Somente quando o perfil do catalogo declara container planejado; codec e bitrate nao existem no contrato."
+        },
+        "rendererAdapter": { "$ref": "#/definitions/kebabId" },
+        "durationMs": { "$ref": "#/definitions/positiveSafeInteger" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order",
+        "beatId",
+        "sceneIds",
+        "startMs",
+        "durationMs",
+        "endMs",
+        "narrativeFunction",
+        "motionIntent",
+        "transitionIn",
+        "transitionOut"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "beatId": { "$ref": "#/definitions/kebabId" },
+        "sceneIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/kebabId" }
+        },
+        "startMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "durationMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "endMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "narrativeFunction": {
+          "type": "string",
+          "enum": ["hook", "context", "problem", "demonstration", "explanation", "proof", "transition", "cta", "closing"]
+        },
+        "motionIntent": {
+          "type": "string",
+          "enum": ["none", "slow-zoom", "parallax-depth", "camera-orbit", "pan", "tilt", "hold"]
+        },
+        "transitionIn": {
+          "type": "string",
+          "enum": ["none", "cut", "fade", "dissolve", "slide", "material-dissolve"]
+        },
+        "transitionOut": {
+          "type": "string",
+          "enum": ["none", "cut", "fade", "dissolve", "slide", "material-dissolve"]
+        },
+        "onScreenText": { "$ref": "#/definitions/nonEmptyString" },
+        "narrationText": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "required", "logicalName", "contentType"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabId" },
+        "kind": {
+          "type": "string",
+          "enum": ["primary-output", "captions", "narration-script", "execution-report"]
+        },
+        "required": { "type": "boolean" },
+        "logicalName": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Nome logico do artefato esperado; sem caminho absoluto, sem separadores e sem traversal. Nenhum arquivo fisico e criado nesta fatia."
+        },
+        "contentType": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "compositionId",
+        "outputPlanId",
+        "beatPlanId",
+        "projectSchemaVersion",
+        "compositionSchemaVersion",
+        "outputPlanSchemaVersion",
+        "beatPlanSchemaVersion"
+      ],
+      "properties": {
+        "projectId": { "$ref": "#/definitions/kebabId" },
+        "compositionId": { "$ref": "#/definitions/kebabId" },
+        "outputPlanId": { "$ref": "#/definitions/kebabId" },
+        "beatPlanId": { "$ref": "#/definitions/kebabId" },
+        "projectSchemaVersion": { "$ref": "#/definitions/positiveSafeInteger" },
+        "compositionSchemaVersion": { "$ref": "#/definitions/positiveSafeInteger" },
+        "outputPlanSchemaVersion": { "$ref": "#/definitions/positiveSafeInteger" },
+        "beatPlanSchemaVersion": { "$ref": "#/definitions/positiveSafeInteger" }
+      }
+    }
+  }
+}

@@ -910,6 +910,14 @@ const CASE_SOURCE_FILES = [
     'validate-content-pipeline-case.ts',
 ]
 
+/** Arquivos do CreativeExecutionPackage v1 (pacote tecnico de execucao). */
+const EXECUTION_PACKAGE_SOURCE_FILES = [
+    'creative-execution-package-contract.ts',
+    'create-creative-execution-package.ts',
+    'validate-creative-execution-package.ts',
+]
+const EXECUTION_PACKAGE_SCHEMA_FILES = ['creative-execution-package.schema.json']
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1037,6 +1045,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['schemas', PREEXISTING_SCHEMA_FILES],
         ['src', PIPELINE_SOURCE_FILES],
         ['src', CASE_SOURCE_FILES],
+        ['src', EXECUTION_PACKAGE_SOURCE_FILES],
+        ['schemas', EXECUTION_PACKAGE_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1048,12 +1058,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 
