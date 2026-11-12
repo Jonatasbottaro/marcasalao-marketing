@@ -8,13 +8,15 @@ Camadas:
   video e falha de promocao preservam a entrega anterior por SHA-256.
 
 Testes reais sao ignorados quando FFmpeg ou o build da platform nao existem;
-a matriz de CI da platform cobre o nucleo, e o render real e registrado como
-evidencia local separada.
+a matriz de CI da platform cobre o nucleo, e o workflow dedicado de render
+exige REQUIRE_RENDER=1: nesse modo, ferramenta ou ponte ausente viram erro,
+nunca skip, e os testes obrigatorios de render nao podem ser pulados.
 """
 
 import json
 import os
 import shutil
+import subprocess
 import sys
 import unittest
 from unittest import mock
@@ -56,6 +58,7 @@ HAS_FFMPEG = bool(shutil.which("ffmpeg") and shutil.which("ffprobe")) or all(
 )
 HAS_BRIDGE = bool(shutil.which("node")) and os.path.isfile(
     os.path.join(WORKTREE, "platform", "dist", "src", "validate-local-render-input.js"))
+REQUIRE_RENDER = os.environ.get("REQUIRE_RENDER") == "1"
 
 
 def read_json(path):
@@ -70,10 +73,12 @@ def write_json(path, value):
 
 
 def delivery_hashes(output_dir):
+    # O lock de promocao e arquivo de controle, nao artefato da entrega.
     return {
         name: render_local.sha256_file(os.path.join(output_dir, name))
         for name in sorted(os.listdir(output_dir))
         if os.path.isfile(os.path.join(output_dir, name))
+        and name != render_local.PROMOTION_LOCK_NAME
     }
 
 
@@ -137,6 +142,8 @@ class BridgeTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if REQUIRE_RENDER and not HAS_BRIDGE:
+            raise RuntimeError("REQUIRE_RENDER: ponte indisponivel; teste obrigatorio nao pode ser pulado")
         os.makedirs(TMP_BASE, exist_ok=True)
         import tempfile
         cls.base = tempfile.mkdtemp(dir=TMP_BASE)
@@ -215,6 +222,8 @@ class RenderEndToEndTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if REQUIRE_RENDER and not (HAS_FFMPEG and HAS_BRIDGE):
+            raise RuntimeError("REQUIRE_RENDER: FFmpeg ou ponte ausente; teste obrigatorio nao pode ser pulado")
         if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
             os.environ["PATH"] = FFMPEG_DIR + os.pathsep + os.environ.get("PATH", "")
         os.makedirs(TMP_BASE, exist_ok=True)
@@ -231,14 +240,17 @@ class RenderEndToEndTest(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.base, ignore_errors=True)
 
-    def run_cli(self, package_rel, assoc_rel, output_dir, extra=()):
-        return render_local.main([
+    def run_cli(self, package_rel, assoc_rel, output_dir, extra=(), staging=None):
+        argv = [
             "--package", os.path.join(WORKTREE, package_rel),
             "--assets", os.path.join(WORKTREE, assoc_rel),
             "--output-dir", output_dir,
             "--root", WORKTREE,
             *extra,
-        ])
+        ]
+        if staging is not None:
+            argv += ["--staging", staging]
+        return render_local.main(argv)
 
     def test_01_marca_salao_14s_no_audio(self):
         output_dir = os.path.join(self.base, "ms")
@@ -259,6 +271,27 @@ class RenderEndToEndTest(unittest.TestCase):
         for artifact in report["artifacts"]:
             promoted = os.path.join(output_dir, os.path.basename(artifact["path"]))
             self.assertEqual(render_local.sha256_file(promoted), artifact["sha256"])
+
+    def test_01b_report_points_to_final_promoted_files(self):
+        output_dir = os.path.join(self.base, "report-final")
+        self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
+        names = render_local.artifact_names(read_json(os.path.join(WORKTREE, PKG_MS_REL)))
+        report = read_json(os.path.join(output_dir, names["report"]))
+        self.assertEqual(len(report["artifacts"]), 3)
+        for artifact in report["artifacts"]:
+            expected_rel = os.path.relpath(
+                os.path.join(output_dir, os.path.basename(artifact["path"])),
+                WORKTREE).replace(os.sep, "/")
+            self.assertEqual(artifact["path"], expected_rel)
+            self.assertNotIn(".staging", artifact["path"])
+            self.assertNotIn("local-render-staging-", artifact["path"])
+            pointed = os.path.join(WORKTREE, artifact["path"])
+            self.assertTrue(os.path.isfile(pointed))
+            with open(pointed, "rb") as handle:
+                data = handle.read()
+            self.assertEqual(len(data), artifact["bytes"])
+            import hashlib
+            self.assertEqual(hashlib.sha256(data).hexdigest(), artifact["sha256"])
 
     def test_02_multitrack_hub_15s_no_audio(self):
         output_dir = os.path.join(self.base, "mh")
@@ -376,7 +409,7 @@ class RenderEndToEndTest(unittest.TestCase):
         output_dir = os.path.join(self.base, "preserve-promote")
         self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
         before = delivery_hashes(output_dir)
-        staging = output_dir + ".staging"
+        staging = os.path.join(self.base, "staging-08")
         real_replace = os.replace
         promotion_calls = {"count": 0}
 
@@ -389,10 +422,111 @@ class RenderEndToEndTest(unittest.TestCase):
             return real_replace(src, dst)
 
         with mock.patch.object(render_local.os, "replace", side_effect=flaky_replace):
-            code = self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir)
+            code = self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir, staging=staging)
         self.assertEqual(code, 1)
         self.assertEqual(delivery_hashes(output_dir), before)
         self.assertTrue(os.path.isdir(staging))
+        self.assertFalse(os.path.exists(
+            os.path.join(output_dir, render_local.PROMOTION_LOCK_NAME)))
+
+    def test_08b_restore_failure_preserves_backup_for_diagnosis(self):
+        output_dir = os.path.join(self.base, "preserve-restore")
+        self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
+        staging = os.path.join(self.base, "staging-08b")
+        real_replace = os.replace
+        promotion_calls = {"count": 0}
+
+        def broken_replace(src, dst):
+            src_text = str(src)
+            if ".backup" in src_text:
+                raise OSError("falha simulada de restauracao")
+            if src_text.startswith(staging):
+                promotion_calls["count"] += 1
+                if promotion_calls["count"] == 2:
+                    raise OSError("falha simulada de promocao")
+            return real_replace(src, dst)
+
+        import io
+        import contextlib
+        stderr = io.StringIO()
+        with mock.patch.object(render_local.os, "replace", side_effect=broken_replace):
+            with contextlib.redirect_stderr(stderr):
+                code = self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir, staging=staging)
+        self.assertEqual(code, 1)
+        self.assertIn("backup preservado para diagnostico", stderr.getvalue())
+        backup_dir = os.path.join(staging, ".backup")
+        self.assertTrue(os.path.isdir(backup_dir))
+        self.assertTrue(os.listdir(backup_dir))
+        self.assertFalse(os.path.exists(
+            os.path.join(output_dir, render_local.PROMOTION_LOCK_NAME)))
+
+    def test_08c_promotion_lock_dispute_has_clear_diagnostic(self):
+        output_dir = os.path.join(self.base, "lock-dispute")
+        self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
+        before = delivery_hashes(output_dir)
+        lock = os.path.join(output_dir, render_local.PROMOTION_LOCK_NAME)
+        with open(lock, "w", encoding="utf-8") as handle:
+            handle.write("ocupado por outra execucao\n")
+        import io
+        import contextlib
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir)
+        self.assertEqual(code, 1)
+        self.assertIn("promocao concorrente", stderr.getvalue())
+        self.assertEqual(delivery_hashes(output_dir), before)
+        self.assertTrue(os.path.exists(lock))
+        os.remove(lock)
+        self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
+        self.assertFalse(os.path.exists(lock))
+
+    def test_08d_staging_overlap_rejected_before_any_write(self):
+        package_path = os.path.join(WORKTREE, PKG_MS_REL)
+        assets_path = os.path.join(WORKTREE, ASSOC_MS_REL)
+        output_dir = os.path.join(self.base, "staging-reject-out")
+        candidates = [
+            WORKTREE,
+            os.path.join(output_dir, "inner"),
+            self.base,
+            package_path,
+            os.path.dirname(package_path),
+        ]
+        for staging in candidates:
+            code = render_local.main([
+                "--package", package_path,
+                "--assets", assets_path,
+                "--output-dir", output_dir,
+                "--root", WORKTREE,
+                "--staging", staging,
+            ])
+            self.assertEqual(code, 2, f"staging deveria ser rejeitado: {staging}")
+        self.assertFalse(os.path.exists(output_dir))
+        occupied = os.path.join(self.base, "staging-occupied")
+        os.makedirs(occupied, exist_ok=True)
+        with open(os.path.join(occupied, "sentinel.txt"), "w", encoding="utf-8") as handle:
+            handle.write("nao tocar\n")
+        code = render_local.main([
+            "--package", package_path,
+            "--assets", assets_path,
+            "--output-dir", output_dir,
+            "--root", WORKTREE,
+            "--staging", occupied,
+        ])
+        self.assertEqual(code, 2)
+        self.assertTrue(os.path.isfile(os.path.join(occupied, "sentinel.txt")))
+        self.assertFalse(os.path.exists(output_dir))
+
+    def test_08e_provided_empty_staging_survives_recursive_cleanup(self):
+        output_dir = os.path.join(self.base, "staging-kept-out")
+        staging = os.path.join(self.base, "staging-kept")
+        os.makedirs(staging, exist_ok=True)
+        self.assertEqual(
+            self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir, staging=staging), 0)
+        self.assertTrue(os.path.isdir(staging))
+        self.assertFalse(os.path.exists(os.path.join(staging, ".backup")))
+        self.assertEqual(os.listdir(staging), [])
+        self.assertFalse(os.path.exists(
+            os.path.join(output_dir, render_local.PROMOTION_LOCK_NAME)))
 
     def test_09_unsupported_configuration_preserves_previous_delivery(self):
         output_dir = os.path.join(self.base, "preserve-config")
@@ -410,6 +544,90 @@ class RenderEndToEndTest(unittest.TestCase):
         ])
         self.assertEqual(code, 3)
         self.assertEqual(delivery_hashes(output_dir), before)
+
+
+class TimeoutAndInspectionTest(unittest.TestCase):
+    """Timeouts e erro de inspecao simulados: nenhum teste espera o limite real."""
+
+    def test_bridge_timeout_short_diagnostic(self):
+        def raise_timeout(cmd, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
+
+        with mock.patch.object(render_local.shutil, "which", return_value="node"), \
+                mock.patch.object(render_local.os.path, "isfile", return_value=True), \
+                mock.patch.object(render_local.subprocess, "run", side_effect=raise_timeout):
+            with self.assertRaises(build_video.DeliveryError) as ctx:
+                render_local.run_bridge(WORKTREE, "p.json", "a.json")
+        self.assertIn("ponte de validacao excedeu o tempo limite", str(ctx.exception))
+
+    def test_probe_timeout_short_diagnostic(self):
+        def raise_timeout(cmd, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=render_local.PROBE_TIMEOUT_SECONDS)
+
+        with mock.patch.object(render_local.build_video, "get_ffprobe", return_value="ffprobe"), \
+                mock.patch.object(render_local.subprocess, "run", side_effect=raise_timeout):
+            with self.assertRaises(build_video.DeliveryError) as ctx:
+                render_local.probe_asset(WORKTREE, os.path.join(WORKTREE, "asset.png"))
+        self.assertIn("inspecao previa excedeu o tempo limite", str(ctx.exception))
+
+    def test_probe_empty_streams_rejected(self):
+        class Result:
+            returncode = 0
+            stdout = '{"streams": [], "format": {}}'
+
+        with mock.patch.object(render_local.build_video, "get_ffprobe", return_value="ffprobe"), \
+                mock.patch.object(render_local.subprocess, "run", return_value=Result()):
+            with self.assertRaises(build_video.DeliveryError) as ctx:
+                render_local.probe_asset(WORKTREE, os.path.join(WORKTREE, "asset.png"))
+        self.assertIn("asset ilegivel pela inspecao previa", str(ctx.exception))
+
+    def test_probe_nonzero_exit_rejected(self):
+        class Result:
+            returncode = 1
+            stdout = ""
+
+        with mock.patch.object(render_local.build_video, "get_ffprobe", return_value="ffprobe"), \
+                mock.patch.object(render_local.subprocess, "run", return_value=Result()):
+            with self.assertRaises(build_video.DeliveryError):
+                render_local.probe_asset(WORKTREE, os.path.join(WORKTREE, "asset.png"))
+
+    def test_version_timeout_returns_unknown(self):
+        def raise_timeout(cmd, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=render_local.VERSION_TIMEOUT_SECONDS)
+
+        with mock.patch.object(render_local.subprocess, "run", side_effect=raise_timeout):
+            self.assertEqual(render_local.tool_version("ffmpeg"), "desconhecida")
+
+    def test_render_timeout_preserves_delivery(self):
+        output_dir = os.path.join(self.base, "preserve-render-timeout")
+        os.makedirs(output_dir, exist_ok=True)
+        sentinel = os.path.join(output_dir, "sentinel.txt")
+        with open(sentinel, "w", encoding="utf-8") as handle:
+            handle.write("entrega anterior\n")
+        before = render_local.sha256_file(sentinel)
+
+        def raise_timeout(cmd, **kwargs):
+            raise subprocess.TimeoutExpired(cmd=cmd, timeout=render_local.RENDER_TIMEOUT_SECONDS)
+
+        with mock.patch.object(render_local.subprocess, "run", side_effect=raise_timeout):
+            code = render_local.main([
+                "--package", os.path.join(WORKTREE, PKG_MS_REL),
+                "--assets", os.path.join(WORKTREE, ASSOC_MS_REL),
+                "--output-dir", output_dir,
+                "--root", WORKTREE,
+            ])
+        self.assertEqual(code, 1)
+        self.assertEqual(render_local.sha256_file(sentinel), before)
+
+    @classmethod
+    def setUpClass(cls):
+        os.makedirs(TMP_BASE, exist_ok=True)
+        import tempfile
+        cls.base = tempfile.mkdtemp(dir=TMP_BASE)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.base, ignore_errors=True)
 
 
 if __name__ == "__main__":
