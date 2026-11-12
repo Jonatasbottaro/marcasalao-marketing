@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "packageId": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+  "assets": [
+    {
+      "beatId": "opening-hook",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/marca-salao/opening-hook.png"
+    },
+    {
+      "beatId": "demonstration-body",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/marca-salao/demonstration-body.png"
+    },
+    {
+      "beatId": "closing-cta",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/marca-salao/closing-cta.png"
+    }
+  ]
+}

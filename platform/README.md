@@ -1089,6 +1089,35 @@ e na CLI; `node:crypto` somente para hashes e para o fallback do `executionId`;
 nenhum import de `@temporalio/*`, nenhuma regra de marca no núcleo, nenhum timer,
 nenhuma rede, nenhum fornecedor, nenhuma mídia.
 
+## Ponte interna de entrada do render local de prova
+
+O primeiro adaptador de renderização local (ferramenta de prova em `tools/`,
+fora do núcleo) consome o `CreativeExecutionPackage` v1 por meio de uma ponte
+interna e estritamente pura:
+
+- `src/local-render-input-contract.ts` — contrato da associação explícita
+  `beatId → path` (uma ligação por beat, eco do `packageId`), extensões aceitas
+  e o recorte inicial de configuração (vertical 9:16 a 30 fps, dimensões pares,
+  `none`/`slow-zoom`, entrada `none`/`cut`, saída `cut`/`fade` com fade apenas
+  no último beat);
+- `src/validate-local-render-input.ts` — `validateLocalRenderInput(package,
+  association)` reutiliza `validateCreativeExecutionPackage` e devolve
+  `{ ok: true, package, association }` ou `{ ok: false, failureCode, subject }`
+  com códigos estáveis (`PACKAGE_INVALID`, `ASSOCIATION_INVALID`,
+  `PACKAGE_ID_MISMATCH`, `BEAT_ASSET_MISSING`, `BEAT_ASSET_DUPLICATE`,
+  `UNKNOWN_BEAT_REFERENCE`, `ASSET_PATH_INVALID`, `ASSET_EXTENSION_UNSUPPORTED`,
+  `RENDER_CONFIGURATION_UNSUPPORTED`). A verificação de caminho é apenas
+  léxica (`inspectRelativePath`); existência física e contenção real ficam com
+  a camada de ferramentas.
+
+A ponte não renderiza, não lê arquivos e não conhece a ferramenta de vídeo:
+`tools/render_bridge.mjs` apenas imprime o veredito JSON, e toda a execução de
+FFmpeg/FFprobe vive em `tools/render_local.py`. A API pública permanece
+`["validateComposition"]`, sem subpaths novos; os dois módulos entram no
+inventário fechado e na varredura de independência de marca como qualquer
+outro módulo interno. Documentação de uso, comandos e limites do adaptador:
+`tools/render/README.md`.
+
 ## Limites atuais (expressos)
 
 - **Composition v1 implementada apenas como contrato declarativo** (sem áudio, prompts,

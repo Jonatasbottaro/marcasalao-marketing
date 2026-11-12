@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "packageId": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+  "assets": [
+    {
+      "beatId": "opening-hook",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/multitrack-hub/opening-hook.png"
+    },
+    {
+      "beatId": "demonstration-body",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/multitrack-hub/demonstration-body.png"
+    },
+    {
+      "beatId": "explanation-body",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/multitrack-hub/explanation-body.png"
+    },
+    {
+      "beatId": "closing-cta",
+      "path": ".workspace/tmp/local-render-adapter-v1/assets/multitrack-hub/closing-cta.png"
+    }
+  ]
+}

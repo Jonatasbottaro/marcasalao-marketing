@@ -104,21 +104,28 @@ def build_video(bg_path, audio_path=None, overlay_path=None, subtitles_path=None
         print(f"\nVideo rendered successfully: {output_path}")
     return success
 
-def probe_media(path):
-    """Inspecao real via ffprobe; devolve dict com streams/format ou lanca DeliveryError."""
+def probe_media(path, timeout=None):
+    """Inspecao real via ffprobe; devolve dict com streams/format ou lanca DeliveryError.
+
+    timeout=None preserva o comportamento historico (piloto R002); com valor
+    em segundos, uma sondagem travada vira falha controlada e curta.
+    """
     ffprobe = get_ffprobe()
-    res = subprocess.run(
-        [ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
-        capture_output=True, text=True,
-    )
+    try:
+        res = subprocess.run(
+            [ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        raise DeliveryError(f"ffprobe excedeu o tempo limite ao inspecionar: {os.path.basename(str(path))}")
     if res.returncode != 0:
         raise DeliveryError(f"ffprobe falhou ao inspecionar o artefato: {os.path.basename(str(path))}")
     return json.loads(res.stdout)
 
 
-def validate_mp4(path, width, height, fps, duration, duration_tolerance=0.2):
+def validate_mp4(path, width, height, fps, duration, duration_tolerance=0.2, timeout=None):
     """Exige 1 stream de video, 0 de audio, geometria/fps/duracao/pix_fmt esperados."""
-    info = probe_media(path)
+    info = probe_media(path, timeout=timeout)
     streams = info.get("streams", [])
     video = [s for s in streams if s.get("codec_type") == "video"]
     audio = [s for s in streams if s.get("codec_type") == "audio"]
