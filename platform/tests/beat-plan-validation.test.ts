@@ -921,6 +921,20 @@ const EXECUTION_PACKAGE_SOURCE_FILES = [
 ]
 const EXECUTION_PACKAGE_SCHEMA_FILES = ['creative-execution-package.schema.json']
 
+/** Arquivos do executor local simulado v1 (verificacao de contrato, nao renderer). */
+const SIMULATED_EXECUTION_SOURCE_FILES = [
+    'create-simulated-execution-plan.ts',
+    'serialize-simulated-execution.ts',
+    'simulated-execution-plan-contract.ts',
+    'simulated-execution-report-contract.ts',
+    'validate-simulated-execution-plan.ts',
+    'validate-simulated-execution-report.ts',
+]
+const SIMULATED_EXECUTION_SCHEMA_FILES = [
+    'simulated-execution-plan.schema.json',
+    'simulated-execution-report.schema.json',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1050,6 +1064,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['src', CASE_SOURCE_FILES],
         ['src', EXECUTION_PACKAGE_SOURCE_FILES],
         ['schemas', EXECUTION_PACKAGE_SCHEMA_FILES],
+        ['src', SIMULATED_EXECUTION_SOURCE_FILES],
+        ['schemas', SIMULATED_EXECUTION_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1061,12 +1077,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 

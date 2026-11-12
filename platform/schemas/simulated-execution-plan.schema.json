@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SimulatedExecutionPlan",
+  "description": "Contrato interno SimulatedExecutionPlan v1: plano executavel simulado compilado de um CreativeExecutionPackage v1 valido. Nao e renderizacao: nenhuma operacao gera midia, nenhum comando de ferramenta, nenhum fornecedor, nenhum prompt generativo. O adaptador simulation e verificacao de contrato, nunca um renderer. Campos desconhecidos sao proibidos (additionalProperties=false). Regras semanticas (rederivacao do executionId, agrupamento de operacoes por beat, contiguidade da timeline, referencias de artefatos) NAO sao expressaveis neste schema: a implementacao de referencia esta em platform/src/validate-simulated-execution-plan.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "executionId",
+    "packageId",
+    "caseId",
+    "adapter",
+    "output",
+    "steps",
+    "expectedArtifacts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "executionId": {
+      "type": "string",
+      "maxLength": 128,
+      "anyOf": [
+        { "pattern": "^simulation-[a-z0-9]+(-[a-z0-9]+)*$" },
+        { "pattern": "^simulation-v1-[0-9a-f]{64}$" }
+      ]
+    },
+    "packageId": { "$ref": "#/definitions/kebabId" },
+    "caseId": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/kebabId" }
+      ]
+    },
+    "adapter": {
+      "type": "string",
+      "const": "simulation"
+    },
+    "output": { "$ref": "#/definitions/output" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/step" }
+    },
+    "expectedArtifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/artifact" }
+    }
+  },
+  "definitions": {
+    "kebabId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "positiveSafeInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profileId", "mediaKind", "width", "height", "aspectRatio", "fps", "durationMs"],
+      "properties": {
+        "profileId": { "$ref": "#/definitions/kebabId" },
+        "mediaKind": { "type": "string", "const": "video" },
+        "width": { "$ref": "#/definitions/positiveSafeInteger" },
+        "height": { "$ref": "#/definitions/positiveSafeInteger" },
+        "aspectRatio": { "type": "string", "pattern": "^[0-9]+:[0-9]+$" },
+        "fps": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "durationMs": { "$ref": "#/definitions/positiveSafeInteger" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stepId",
+        "order",
+        "beatId",
+        "sceneId",
+        "startMs",
+        "durationMs",
+        "endMs",
+        "operation",
+        "inputs",
+        "expectedArtifactIds"
+      ],
+      "properties": {
+        "stepId": { "$ref": "#/definitions/kebabId" },
+        "order": { "type": "integer", "minimum": 1 },
+        "beatId": { "$ref": "#/definitions/kebabId" },
+        "sceneId": { "$ref": "#/definitions/kebabId" },
+        "startMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "durationMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "endMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "operation": {
+          "type": "string",
+          "enum": ["prepare-scene", "apply-text", "apply-motion", "finalize-scene"]
+        },
+        "inputs": { "$ref": "#/definitions/inputs" },
+        "expectedArtifactIds": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/kebabId" }
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sceneId": { "$ref": "#/definitions/kebabId" },
+        "startMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "durationMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "endMs": { "$ref": "#/definitions/positiveSafeInteger" },
+        "onScreenText": { "$ref": "#/definitions/nonEmptyString" },
+        "narrationText": { "$ref": "#/definitions/nonEmptyString" },
+        "motionIntent": { "$ref": "#/definitions/nonEmptyString" },
+        "transitionIn": { "$ref": "#/definitions/nonEmptyString" },
+        "transitionOut": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "required", "logicalName", "contentType"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabId" },
+        "kind": {
+          "type": "string",
+          "enum": ["primary-output", "captions", "narration-script", "execution-report"]
+        },
+        "required": { "type": "boolean" },
+        "logicalName": { "type": "string", "pattern": "\\S" },
+        "contentType": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    }
+  }
+}
