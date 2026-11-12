@@ -4,7 +4,8 @@
  *
  * O plano descreve a execucao futura simulada: etapas ordenadas por beat da
  * timeline, operacoes neutras e artefatos esperados. NAO e renderizacao:
- * nenhuma operacao gera midia, nenhuma instrucao de FFmpeg, nenhum fornecedor,
+ * nenhuma operacao gera midia, nenhuma instrucao de ferramenta de video,
+ * nenhum fornecedor,
  * nenhum prompt generativo. O adaptador `simulation` e uma ferramenta de
  * verificacao do contrato, nunca um renderer.
  *

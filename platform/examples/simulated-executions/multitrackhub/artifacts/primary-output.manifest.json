@@ -1,0 +1,11 @@
+{
+  "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-primary-output",
+  "mediaKind": "video",
+  "width": 1080,
+  "height": 1920,
+  "aspectRatio": "9:16",
+  "fps": 30,
+  "durationMs": 15000,
+  "profileId": "instagram-reels-video",
+  "simulated": true
+}

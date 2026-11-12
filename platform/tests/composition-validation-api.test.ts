@@ -631,7 +631,14 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             "    executionPackageSubpathBlocked = (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED')",
             '}',
             '',
-            'process.stdout.write(JSON.stringify({ marcaReport, fixtureReport, invertedReport, subpathBlocked, executionPackageSubpathBlocked }))',
+            'let simulatedExecutionSubpathBlocked = false',
+            'try {',
+            "    await import('marcasalao-marketing-platform/dist/src/simulated-execution-plan-contract.js')",
+            '} catch (err) {',
+            "    simulatedExecutionSubpathBlocked = (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED')",
+            '}',
+            '',
+            'process.stdout.write(JSON.stringify({ marcaReport, fixtureReport, invertedReport, subpathBlocked, executionPackageSubpathBlocked, simulatedExecutionSubpathBlocked }))',
         ].join('\n')
         writeFileSync(consumerJsPath, runtimeScript, 'utf8')
 
@@ -651,6 +658,7 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             invertedReport: CompositionValidationReport
             subpathBlocked: boolean
             executionPackageSubpathBlocked: boolean
+            simulatedExecutionSubpathBlocked: boolean
         }
 
         assert.deepEqual(
@@ -675,6 +683,11 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             output.executionPackageSubpathBlocked,
             true,
             'subpaths do CreativeExecutionPackage devem responder ERR_PACKAGE_PATH_NOT_EXPORTED',
+        )
+        assert.equal(
+            output.simulatedExecutionSubpathBlocked,
+            true,
+            'subpaths do executor simulado devem responder ERR_PACKAGE_PATH_NOT_EXPORTED',
         )
         void consumerDir
     } finally {

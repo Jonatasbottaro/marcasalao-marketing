@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+  "packageId": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+  "status": "completed",
+  "resumedFromStatus": null,
+  "completedSteps": [
+    "opening-hook-prepare-scene",
+    "opening-hook-apply-text",
+    "opening-hook-apply-motion",
+    "opening-hook-finalize-scene",
+    "demonstration-body-prepare-scene",
+    "demonstration-body-apply-text",
+    "demonstration-body-apply-motion",
+    "demonstration-body-finalize-scene",
+    "closing-cta-prepare-scene",
+    "closing-cta-apply-text",
+    "closing-cta-apply-motion",
+    "closing-cta-finalize-scene"
+  ],
+  "failedStepId": null,
+  "failureCode": null,
+  "artifactCount": 4,
+  "artifacts": [
+    {
+      "id": "primary-output",
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-primary-output",
+      "contentType": "video",
+      "sha256": "355849b331f2748b8ea488dbad3c611af0058859ac0b0e968efb86d7c339844b"
+    },
+    {
+      "id": "captions",
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-captions.srt",
+      "contentType": "text/srt",
+      "sha256": "21e92ca2ffcc79642e2f15b9573c8d56589f127156d173e83b6ca9c062f2ceaa"
+    },
+    {
+      "id": "narration-script",
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-narration-script.txt",
+      "contentType": "text/plain",
+      "sha256": "65a3d1576b76897a4c646948175c096d956bc7049370289f1c6b9657eb01cbb7"
+    },
+    {
+      "id": "execution-report",
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-execution-report.json",
+      "contentType": "application/json",
+      "sha256": "a146a9ccdb59014bcdb86587b29257ced6eacaee5fd08dced1ceb28b0baf89e0"
+    }
+  ],
+  "events": [
+    {
+      "sequence": 1,
+      "type": "execution-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan"
+    },
+    {
+      "sequence": 2,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-prepare-scene"
+    },
+    {
+      "sequence": 3,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-prepare-scene"
+    },
+    {
+      "sequence": 4,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text"
+    },
+    {
+      "sequence": 5,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text",
+      "artifactId": "captions"
+    },
+    {
+      "sequence": 6,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text",
+      "artifactId": "narration-script"
+    },
+    {
+      "sequence": 7,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-text"
+    },
+    {
+      "sequence": 8,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-motion"
+    },
+    {
+      "sequence": 9,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-apply-motion"
+    },
+    {
+      "sequence": 10,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene"
+    },
+    {
+      "sequence": 11,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene",
+      "artifactId": "primary-output"
+    },
+    {
+      "sequence": 12,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "opening-hook-finalize-scene"
+    },
+    {
+      "sequence": 13,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-prepare-scene"
+    },
+    {
+      "sequence": 14,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-prepare-scene"
+    },
+    {
+      "sequence": 15,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-text"
+    },
+    {
+      "sequence": 16,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-text"
+    },
+    {
+      "sequence": 17,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-motion"
+    },
+    {
+      "sequence": 18,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-apply-motion"
+    },
+    {
+      "sequence": 19,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-finalize-scene"
+    },
+    {
+      "sequence": 20,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "demonstration-body-finalize-scene"
+    },
+    {
+      "sequence": 21,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-prepare-scene"
+    },
+    {
+      "sequence": 22,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-prepare-scene"
+    },
+    {
+      "sequence": 23,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-text"
+    },
+    {
+      "sequence": 24,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-text"
+    },
+    {
+      "sequence": 25,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-motion"
+    },
+    {
+      "sequence": 26,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-apply-motion"
+    },
+    {
+      "sequence": 27,
+      "type": "step-started",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene"
+    },
+    {
+      "sequence": 28,
+      "type": "artifact-created",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene",
+      "artifactId": "execution-report"
+    },
+    {
+      "sequence": 29,
+      "type": "step-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+      "stepId": "closing-cta-finalize-scene"
+    },
+    {
+      "sequence": 30,
+      "type": "execution-completed",
+      "executionId": "simulation-execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan"
+    }
+  ],
+  "summary": "Simulated execution completed."
+}

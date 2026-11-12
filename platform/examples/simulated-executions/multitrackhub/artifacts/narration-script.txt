@@ -1,0 +1,4 @@
+[0-3000] Abertura tecnica do segundo consumidor.
+[3000-8000] Demonstracao tecnica do painel de pistas.
+[8000-12000] Explicacao tecnica das pistas nomeadas.
+[12000-15000] Chamada tecnica final para conhecer o sistema.

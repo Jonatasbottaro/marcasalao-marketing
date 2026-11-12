@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "executionId": "simulation-execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+  "packageId": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan",
+  "caseId": null,
+  "adapter": "simulation",
+  "output": {
+    "profileId": "instagram-reels-video",
+    "mediaKind": "video",
+    "width": 1080,
+    "height": 1920,
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "durationMs": 15000
+  },
+  "steps": [
+    {
+      "stepId": "opening-hook-prepare-scene",
+      "order": 1,
+      "beatId": "opening-hook",
+      "sceneId": "opening",
+      "startMs": 0,
+      "durationMs": 3000,
+      "endMs": 3000,
+      "operation": "prepare-scene",
+      "inputs": {
+        "sceneId": "opening",
+        "startMs": 0,
+        "durationMs": 3000,
+        "endMs": 3000
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "opening-hook-apply-text",
+      "order": 2,
+      "beatId": "opening-hook",
+      "sceneId": "opening",
+      "startMs": 0,
+      "durationMs": 3000,
+      "endMs": 3000,
+      "operation": "apply-text",
+      "inputs": {
+        "onScreenText": "Multitracks, playbacks e rateios em um so lugar.",
+        "narrationText": "Abertura tecnica do segundo consumidor."
+      },
+      "expectedArtifactIds": [
+        "captions",
+        "narration-script"
+      ]
+    },
+    {
+      "stepId": "opening-hook-apply-motion",
+      "order": 3,
+      "beatId": "opening-hook",
+      "sceneId": "opening",
+      "startMs": 0,
+      "durationMs": 3000,
+      "endMs": 3000,
+      "operation": "apply-motion",
+      "inputs": {
+        "motionIntent": "none",
+        "transitionIn": "none",
+        "transitionOut": "cut"
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "opening-hook-finalize-scene",
+      "order": 4,
+      "beatId": "opening-hook",
+      "sceneId": "opening",
+      "startMs": 0,
+      "durationMs": 3000,
+      "endMs": 3000,
+      "operation": "finalize-scene",
+      "inputs": {},
+      "expectedArtifactIds": [
+        "primary-output"
+      ]
+    },
+    {
+      "stepId": "demonstration-body-prepare-scene",
+      "order": 5,
+      "beatId": "demonstration-body",
+      "sceneId": "demo-frame",
+      "startMs": 3000,
+      "durationMs": 5000,
+      "endMs": 8000,
+      "operation": "prepare-scene",
+      "inputs": {
+        "sceneId": "demo-frame",
+        "startMs": 3000,
+        "durationMs": 5000,
+        "endMs": 8000
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "demonstration-body-apply-text",
+      "order": 6,
+      "beatId": "demonstration-body",
+      "sceneId": "demo-frame",
+      "startMs": 3000,
+      "durationMs": 5000,
+      "endMs": 8000,
+      "operation": "apply-text",
+      "inputs": {
+        "onScreenText": "Quadro tecnico do painel de pistas.",
+        "narrationText": "Demonstracao tecnica do painel de pistas."
+      },
+      "expectedArtifactIds": [
+        "captions",
+        "narration-script"
+      ]
+    },
+    {
+      "stepId": "demonstration-body-apply-motion",
+      "order": 7,
+      "beatId": "demonstration-body",
+      "sceneId": "demo-frame",
+      "startMs": 3000,
+      "durationMs": 5000,
+      "endMs": 8000,
+      "operation": "apply-motion",
+      "inputs": {
+        "motionIntent": "slow-zoom",
+        "transitionIn": "cut",
+        "transitionOut": "cut"
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "demonstration-body-finalize-scene",
+      "order": 8,
+      "beatId": "demonstration-body",
+      "sceneId": "demo-frame",
+      "startMs": 3000,
+      "durationMs": 5000,
+      "endMs": 8000,
+      "operation": "finalize-scene",
+      "inputs": {},
+      "expectedArtifactIds": [
+        "primary-output"
+      ]
+    },
+    {
+      "stepId": "explanation-body-prepare-scene",
+      "order": 9,
+      "beatId": "explanation-body",
+      "sceneId": "explanation",
+      "startMs": 8000,
+      "durationMs": 4000,
+      "endMs": 12000,
+      "operation": "prepare-scene",
+      "inputs": {
+        "sceneId": "explanation",
+        "startMs": 8000,
+        "durationMs": 4000,
+        "endMs": 12000
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "explanation-body-apply-text",
+      "order": 10,
+      "beatId": "explanation-body",
+      "sceneId": "explanation",
+      "startMs": 8000,
+      "durationMs": 4000,
+      "endMs": 12000,
+      "operation": "apply-text",
+      "inputs": {
+        "onScreenText": "Cada instrumento em uma pista, com nome claro.",
+        "narrationText": "Explicacao tecnica das pistas nomeadas."
+      },
+      "expectedArtifactIds": [
+        "captions",
+        "narration-script"
+      ]
+    },
+    {
+      "stepId": "explanation-body-apply-motion",
+      "order": 11,
+      "beatId": "explanation-body",
+      "sceneId": "explanation",
+      "startMs": 8000,
+      "durationMs": 4000,
+      "endMs": 12000,
+      "operation": "apply-motion",
+      "inputs": {
+        "motionIntent": "none",
+        "transitionIn": "cut",
+        "transitionOut": "cut"
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "explanation-body-finalize-scene",
+      "order": 12,
+      "beatId": "explanation-body",
+      "sceneId": "explanation",
+      "startMs": 8000,
+      "durationMs": 4000,
+      "endMs": 12000,
+      "operation": "finalize-scene",
+      "inputs": {},
+      "expectedArtifactIds": [
+        "primary-output"
+      ]
+    },
+    {
+      "stepId": "closing-cta-prepare-scene",
+      "order": 13,
+      "beatId": "closing-cta",
+      "sceneId": "closing",
+      "startMs": 12000,
+      "durationMs": 3000,
+      "endMs": 15000,
+      "operation": "prepare-scene",
+      "inputs": {
+        "sceneId": "closing",
+        "startMs": 12000,
+        "durationMs": 3000,
+        "endMs": 15000
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "closing-cta-apply-text",
+      "order": 14,
+      "beatId": "closing-cta",
+      "sceneId": "closing",
+      "startMs": 12000,
+      "durationMs": 3000,
+      "endMs": 15000,
+      "operation": "apply-text",
+      "inputs": {
+        "onScreenText": "Conheca a Multitrack Hub.",
+        "narrationText": "Chamada tecnica final para conhecer o sistema."
+      },
+      "expectedArtifactIds": [
+        "captions",
+        "narration-script"
+      ]
+    },
+    {
+      "stepId": "closing-cta-apply-motion",
+      "order": 15,
+      "beatId": "closing-cta",
+      "sceneId": "closing",
+      "startMs": 12000,
+      "durationMs": 3000,
+      "endMs": 15000,
+      "operation": "apply-motion",
+      "inputs": {
+        "motionIntent": "none",
+        "transitionIn": "cut",
+        "transitionOut": "fade"
+      },
+      "expectedArtifactIds": []
+    },
+    {
+      "stepId": "closing-cta-finalize-scene",
+      "order": 16,
+      "beatId": "closing-cta",
+      "sceneId": "closing",
+      "startMs": 12000,
+      "durationMs": 3000,
+      "endMs": 15000,
+      "operation": "finalize-scene",
+      "inputs": {},
+      "expectedArtifactIds": [
+        "primary-output",
+        "execution-report"
+      ]
+    }
+  ],
+  "expectedArtifacts": [
+    {
+      "id": "primary-output",
+      "kind": "primary-output",
+      "required": true,
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-primary-output",
+      "contentType": "video"
+    },
+    {
+      "id": "captions",
+      "kind": "captions",
+      "required": true,
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-captions.srt",
+      "contentType": "text/srt"
+    },
+    {
+      "id": "narration-script",
+      "kind": "narration-script",
+      "required": true,
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-narration-script.txt",
+      "contentType": "text/plain"
+    },
+    {
+      "id": "execution-report",
+      "kind": "execution-report",
+      "required": true,
+      "logicalName": "execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-execution-report.json",
+      "contentType": "application/json"
+    }
+  ]
+}

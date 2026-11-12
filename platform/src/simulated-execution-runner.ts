@@ -4,7 +4,7 @@
  * Percorre os steps em ordem, produz eventos deterministicos, materializa
  * artefatos TEXTUAIS simulados (nunca midia) e devolve relatorio imutavel.
  * O adaptador `simulation` e uma ferramenta de verificacao do contrato:
- * nao renderiza, nao gera video/imagem/audio, nao usa FFmpeg, TTS, fornecedor,
+ * nao renderiza, nao gera video/imagem/audio, nao usa ferramenta de video, TTS, fornecedor,
  * rede, Temporal, timers, sleep, paralelismo ou processos filhos.
  *
  * Falha controlada (`failAtStepId`) e cancelamento (`cancelAfterSequence`)
