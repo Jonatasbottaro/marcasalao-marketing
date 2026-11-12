@@ -894,6 +894,13 @@ function listModuleFiles(relativeRoot: string): string[] {
 const BEAT_PLAN_SOURCE_FILES = ['beat-plan-contract.ts', 'validate-beat-plan.ts', 'validate-beat-plan-cli.ts']
 const BEAT_PLAN_SCHEMA_FILES = ['beat-plan.schema.json']
 
+/** Arquivos da validacao consolidada do pipeline. */
+const PIPELINE_SOURCE_FILES = [
+    'content-pipeline-validation-cli.ts',
+    'content-pipeline-validation-contract.ts',
+    'validate-content-pipeline.ts',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1028,7 +1035,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(

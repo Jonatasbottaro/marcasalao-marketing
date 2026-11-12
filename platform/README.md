@@ -428,6 +428,9 @@ npm run --silent content:plan-output -- --project examples/projects/marca-salao-
 # CLI de beat plan (exit 0 valido · 1 plano/projeto/composicao invalidos · 2 uso/JSON malformado)
 npm run --silent content:validate-beat-plan -- --project examples/projects/marca-salao.project.json --composition examples/compositions/marca-salao-pilot.composition.json --beat-plan examples/beat-plans/marca-salao-pilot.beat-plan.json --json
 npm run --silent content:validate-beat-plan -- --project examples/projects/fixture-project.project.json --composition examples/compositions/fixture-project-pilot.composition.json --beat-plan examples/beat-plans/fixture-project-pilot.beat-plan.json
+
+# CLI de validacao consolidada do pipeline (exit 0 valido · 1 invalido · 2 uso/arquivo ausente/JSON malformado)
+npm run --silent content:validate-pipeline -- --project examples/projects/marca-salao-social.project.json --composition examples/compositions/marca-salao-social-reel.composition.json --output-plan examples/output-plans/instagram-reels-video.output-plan.json --beat-plan examples/pipelines/marca-salao-social-reel.beat-plan.json --json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -725,6 +728,68 @@ resolução de caminho é feita — nunca.
 - O gate de CI (`platform-validation.yml`) usa **exatamente essas devDependencies** —
   `npm ci` não instala runtime algum, porque não há o que instalar — e os quatro ambientes
   da matriz executam os mesmos scripts deste `package.json`, sem passo específico de CI.
+
+## Validação consolidada do pipeline
+
+A validação consolidada do pipeline criativo (`validateContentPipeline` em
+`platform/src/validate-content-pipeline.ts`) unifica em uma única execução pura e
+determinística a validação combinada de todos os contratos existentes:
+
+1. **`project`** (`validateProjectManifest`) — integridade estrutural e políticas;
+2. **`composition`** (`validateComposition`) — formato, cenas e vínculo com o projeto;
+3. **`output-plan`** (`validateOutputPlan`) — preset, regras e catálogo de saída;
+4. **`output-compatibility`** (`validateCompositionForOutputPlan`) — compatibilidade entre Composition e OutputPlan;
+5. **`beat-plan`** (`validateBeatPlan`) — beats, timeline e função narrativa vinculados à Composition e ao projeto.
+
+### Matriz de bloqueio (DAG de dependências)
+
+Os validadores são chamados apenas quando suas pré-condições são satisfeitas, evitando diagnósticos ruidosos ou chamadas com dados incompatíveis:
+
+- **Project inválido**: `project: invalid`; estágios dependentes (`composition`, `output-plan`, `output-compatibility`, `beat-plan`) ficam com `status: "blocked"` e `blockedBy: "project"`.
+- **Composition inválida (com Project válido)**: `composition: invalid`; `output-plan` é avaliado de forma independente (depende apenas do Project); `output-compatibility` e `beat-plan` ficam `blocked` com `blockedBy: "composition"`.
+- **OutputPlan inválido**: `output-plan: invalid`; `output-compatibility` fica `blocked` com `blockedBy: "output-plan"`; `beat-plan` é executado normalmente (depende apenas de Project e Composition válidos).
+- **Compatibilidade inválida**: `output-compatibility: invalid`; `beat-plan` é executado normalmente; relatório consolidado é `invalid`.
+- **BeatPlan inválido**: estágios anteriores permanecem preservados; `beat-plan: invalid`.
+
+### Validade global e agregação
+
+- `report.valid = true` se, e somente se, todos os estágios tiverem `status: "valid"` e `errors.length === 0`.
+- **Warnings não invalidam o pipeline**: avisos legítimos (como cenas não referenciadas no BeatPlan) são preservados sem rebaixamento para erro nem descarte.
+- Erros e warnings preservam código original, caminho lógico (`path`) e mensagem, prefixados pelo estágio de origem e ordenados deterministiscamente.
+- O relatório consolidado (`ContentPipelineValidationReport`) preserva os relatórios originais de cada estágio em `stages` e ecoa `projectId`, `compositionId`, `outputPlanId` e `beatPlanId`.
+
+### Exemplo resumido de relatório
+
+```json
+{
+  "schemaVersion": 1,
+  "valid": true,
+  "summary": "Content pipeline is valid.",
+  "projectId": "marca-salao",
+  "compositionId": "social-reel-example",
+  "outputPlanId": "instagram-reels-video",
+  "beatPlanId": "social-reel-beat-plan",
+  "stages": [
+    { "stage": "project", "status": "valid", "report": { ... }, "blockedBy": null },
+    { "stage": "composition", "status": "valid", "report": { ... }, "blockedBy": null },
+    { "stage": "output-plan", "status": "valid", "report": { ... }, "blockedBy": null },
+    { "stage": "output-compatibility", "status": "valid", "report": { ... }, "blockedBy": null },
+    { "stage": "beat-plan", "status": "valid", "report": { ... }, "blockedBy": null }
+  ],
+  "errors": [],
+  "warnings": [],
+  "completedStages": ["project", "composition", "output-plan", "output-compatibility", "beat-plan"],
+  "blockedStages": []
+}
+```
+
+### CLI `content:validate-pipeline`
+
+A CLI consome as flags `--project`, `--composition`, `--output-plan` e `--beat-plan`, com suporte opcional a `--json`:
+
+- `0` — pipeline completo válido (`valid: true`);
+- `1` — pipeline inválido de domínio (relatório estruturado emitido em stdout);
+- `2` — erro de uso, flag inválida, arquivo ausente ou JSON malformado (stderr com stdout vazio).
 
 ## Limites atuais (expressos)
 

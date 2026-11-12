@@ -140,3 +140,17 @@ test('o script content:validate-beat-plan roda sobre o build silencioso', () => 
         'dist/src/validate-beat-plan-cli.js nao existe em dist/',
     )
 })
+
+test('o script content:validate-pipeline roda sobre o build silencioso', () => {
+    const pkg = JSON.parse(readFileSync(path.join(moduleRoot, 'package.json'), 'utf8')) as {
+        scripts?: Record<string, string>
+    }
+
+    const value = pkg.scripts?.['content:validate-pipeline'] ?? ''
+    assert.ok(value.includes('node dist/src/content-pipeline-validation-cli.js'), 'o script precisa executar a CLI do pipeline')
+    assert.match(value, /^npm run build --silent && /, 'o script precisa compilar antes de executar, em modo silencioso')
+    assert.ok(
+        existsSync(path.join(moduleRoot, 'dist', 'src', 'content-pipeline-validation-cli.js')),
+        'dist/src/content-pipeline-validation-cli.js nao existe em dist/',
+    )
+})
