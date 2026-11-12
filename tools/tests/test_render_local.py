@@ -119,7 +119,8 @@ class BuildersTest(unittest.TestCase):
     def test_filter_graph_respects_motion_transitions_and_audio_policy(self):
         graph = render_local.build_filter_graph(self.package, "staging/captions.srt")
         self.assertIn("concat=n=3:v=1:a=0", graph)
-        self.assertIn("zoompan=", graph)
+        self.assertIn("scale=w='1080*(1+0.10*t/6.000)'", graph)
+        self.assertIn("eval=frame", graph)
         self.assertIn("fade=t=out:st=13.500:d=0.500", graph)
         self.assertTrue(graph.endswith("[vfinal]"))
         self.assertIn("subtitles=", graph)
@@ -339,19 +340,28 @@ class RenderEndToEndTest(unittest.TestCase):
         output_dir = os.path.join(self.base, "preserve-render")
         self.assertEqual(self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir), 0)
         before = delivery_hashes(output_dir)
-        asset = os.path.join(WORKTREE, ".workspace", "tmp", "local-render-adapter-v1",
-                             "assets", "marca-salao", "opening-hook.png")
-        with open(asset, "rb") as handle:
-            original = handle.read()
-        try:
-            with open(asset, "wb") as handle:
-                handle.write(b"isto nao e um png")
-            code = self.run_cli(PKG_MS_REL, ASSOC_MS_REL, output_dir)
-            self.assertEqual(code, 1)
-            self.assertEqual(delivery_hashes(output_dir), before)
-        finally:
-            with open(asset, "wb") as handle:
-                handle.write(original)
+        # Copia por teste: o asset compartilhado nunca e mutado, para que uma
+        # rodada interrompida nao contamine as demais.
+        corrupt_dir = os.path.join(self.base, "corrupt-asset")
+        os.makedirs(corrupt_dir, exist_ok=True)
+        source = os.path.join(WORKTREE, ".workspace", "tmp", "local-render-adapter-v1",
+                              "assets", "marca-salao", "opening-hook.png")
+        corrupt = os.path.join(corrupt_dir, "opening-hook.png")
+        shutil.copyfile(source, corrupt)
+        with open(corrupt, "wb") as handle:
+            handle.write(b"isto nao e um png")
+        association = read_json(os.path.join(WORKTREE, ASSOC_MS_REL))
+        association["assets"][0]["path"] = os.path.relpath(corrupt, WORKTREE).replace(os.sep, "/")
+        association_path = os.path.join(self.base, "corrupt-assets.json")
+        write_json(association_path, association)
+        code = render_local.main([
+            "--package", os.path.join(WORKTREE, PKG_MS_REL),
+            "--assets", association_path,
+            "--output-dir", output_dir,
+            "--root", WORKTREE,
+        ])
+        self.assertEqual(code, 1)
+        self.assertEqual(delivery_hashes(output_dir), before)
 
     def test_07b_video_tool_failure_preserves_previous_delivery(self):
         output_dir = os.path.join(self.base, "preserve-ffmpeg")

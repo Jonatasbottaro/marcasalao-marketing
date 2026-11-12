@@ -161,15 +161,16 @@ def build_filter_graph(package, srt_path):
     labels = []
     for index, step in enumerate(package['timeline']):
         if step['motionIntent'] == 'slow-zoom':
-            frames = max(1, round(step['durationMs'] / 1000.0 * fps))
-            zoom_w = width + width // 10
-            zoom_h = height + height // 10
+            duration_s = step['durationMs'] / 1000.0
+            # Zoom central 1.00 -> 1.10: scale animado (eval=frame) + crop fixo.
+            # As expressoes w/h do crop nao aceitam t, e o zoompan custa minutos
+            # em 1080x1920; esta forma e valida e rapida.
             chains.append(
-                f"[{index}:v]scale={zoom_w}:{zoom_h}:force_original_aspect_ratio=increase,"
-                f"crop={zoom_w}:{zoom_h},fps={fps},"
-                f"zoompan=z='1+0.10*on/{max(frames - 1, 1)}':"
-                f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s={width}x{height}:fps={fps},"
-                f"setsar=1[v{index}]"
+                f"[{index}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},"
+                f"scale=w='{width}*(1+0.10*t/{duration_s:.3f})':"
+                f"h='{height}*(1+0.10*t/{duration_s:.3f})':eval=frame,"
+                f"crop={width}:{height}:(iw-{width})/2:(ih-{height})/2[v{index}]"
             )
         else:
             chains.append(
