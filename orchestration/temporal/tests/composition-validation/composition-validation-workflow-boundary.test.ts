@@ -9,7 +9,9 @@
  * - nao declaram, leem ou constroem workflowId, Reuse/Conflict policies, contentHash,
  *   SHA-256, workflow.start, OutputPlan ou BeatPlan;
  * - mantem o contrato de resultado livre de @temporalio/*;
- * - mantem src/worker/ e src/client/ intactos (sem registro de validateCompositionWorkflow).
+ * - mantem os pontos de entrada do piloto TEMPORAL-01 sem referencia ao novo Workflow;
+ * - mantem a camada de execucao de composition sem import direto da platform,
+ *   sem console.*, com Workflow ID e preflight exclusivos do cliente.
  */
 import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -146,22 +148,74 @@ test('composition-validation-workflow usa proxyActivities tipado e composition-v
     )
 })
 
-test('Worker e cliente de producao nao foram alterados nem referenciam o novo Workflow', () => {
-    for (const subDir of ['worker', 'client', 'local']) {
-        for (const file of listTsFiles(path.join(srcDir, subDir))) {
-            const raw = readFileSync(file, 'utf8')
+test('os pontos de entrada do piloto TEMPORAL-01 nao referenciam o Workflow de composition', () => {
+    const pilotFiles = [
+        path.join(srcDir, 'client', 'main.ts'),
+        path.join(srcDir, 'client', 'pilot-start.ts'),
+        path.join(srcDir, 'worker', 'main.ts'),
+        path.join(srcDir, 'local', 'main.ts'),
+    ]
+    for (const file of pilotFiles) {
+        const raw = readFileSync(file, 'utf8')
+        assert.equal(
+            raw.includes('validateCompositionWorkflow'),
+            false,
+            `${path.basename(file)} nao pode referenciar validateCompositionWorkflow`,
+        )
+        assert.equal(
+            raw.includes('composition-validation-workflow'),
+            false,
+            `${path.basename(file)} nao pode importar composition-validation-workflow`,
+        )
+    }
+})
+
+test('a camada de execucao de composition mantem as fronteiras de camada e de saida', () => {
+    const executionFiles = [
+        path.join(srcDir, 'client', 'composition-validation-start.ts'),
+        path.join(srcDir, 'client', 'composition-validation-main.ts'),
+        path.join(srcDir, 'worker', 'composition-validation-worker.ts'),
+        path.join(srcDir, 'worker', 'composition-validation-worker-lifecycle.ts'),
+        path.join(srcDir, 'worker', 'composition-validation-main.ts'),
+        path.join(srcDir, 'local', 'composition-validation-main.ts'),
+    ]
+    for (const file of executionFiles) {
+        assert.equal(existsSync(file), true, `${path.basename(file)} deve existir`)
+        const raw = readFileSync(file, 'utf8')
+        const code = stripComments(raw)
+        const imports = importLines(raw)
+
+        // A platform so entra pela Activity; cliente/worker nao a importam direto.
+        assert.equal(
+            imports.some((line) => /marcasalao-marketing-platform|platform\/src|platform\/dist/.test(line)),
+            false,
+            `${path.basename(file)} nao pode importar a platform diretamente`,
+        )
+        // Saida sanitizada: nada de console.* nem payload bruto em log.
+        assert.equal(/\bconsole\./.test(code), false, `${path.basename(file)} nao pode usar console.*`)
+        // Workflow ID e preflight pertencem ao cliente, nunca ao worker.
+        if (file.includes(`${path.sep}worker${path.sep}`)) {
             assert.equal(
-                raw.includes('validateCompositionWorkflow'),
+                /composition-validation-preflight/.test(raw),
                 false,
-                `${path.basename(file)} nao pode referenciar validateCompositionWorkflow`,
+                `${path.basename(file)} nao pode importar o preflight (camada do cliente)`,
             )
             assert.equal(
-                raw.includes('composition-validation-workflow'),
+                /composition-validation-\$\{/.test(code),
                 false,
-                `${path.basename(file)} nao pode importar composition-validation-workflow`,
+                `${path.basename(file)} nao pode construir Workflow ID`,
             )
         }
     }
+
+    // O literal de construcao do Workflow ID existe em um unico modulo de src/.
+    const builders = listTsFiles(srcDir).filter((file) =>
+        /composition-validation-\$\{/.test(stripComments(readFileSync(file, 'utf8'))),
+    )
+    assert.deepEqual(
+        builders.map((file) => path.basename(file)),
+        ['composition-validation-start.ts'],
+    )
 })
 
 test('codigo JS compilado do Workflow nao contem imports de platform nem de I/O', () => {
