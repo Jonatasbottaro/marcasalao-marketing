@@ -13,3 +13,8 @@ examples/beat-plans/*.json text eol=lf
 # Exemplos de pipeline: mesma razao dos planos de saida.
 examples/pipelines/*.json text eol=lf
 
+# Pacotes de execucao canonicos: comparados byte a byte entre gerador em
+# memoria, serializacao, fixture versionada e CLI; o checkout Windows nao
+# pode converter para CRLF.
+examples/execution-packages/*.json text eol=lf
+

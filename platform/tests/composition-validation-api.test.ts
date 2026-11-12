@@ -624,7 +624,14 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             "    subpathBlocked = (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED')",
             '}',
             '',
-            'process.stdout.write(JSON.stringify({ marcaReport, fixtureReport, invertedReport, subpathBlocked }))',
+            'let executionPackageSubpathBlocked = false',
+            'try {',
+            "    await import('marcasalao-marketing-platform/dist/src/creative-execution-package-contract.js')",
+            '} catch (err) {',
+            "    executionPackageSubpathBlocked = (err && typeof err === 'object' && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED')",
+            '}',
+            '',
+            'process.stdout.write(JSON.stringify({ marcaReport, fixtureReport, invertedReport, subpathBlocked, executionPackageSubpathBlocked }))',
         ].join('\n')
         writeFileSync(consumerJsPath, runtimeScript, 'utf8')
 
@@ -643,6 +650,7 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             fixtureReport: CompositionValidationReport
             invertedReport: CompositionValidationReport
             subpathBlocked: boolean
+            executionPackageSubpathBlocked: boolean
         }
 
         assert.deepEqual(
@@ -662,6 +670,11 @@ test('empacotamento e consumidor externo: npm pack gera pacote consumivel pelo n
             output.subpathBlocked,
             true,
             'imports de modulos internos por subpath devem ser bloqueados pelo campo exports',
+        )
+        assert.equal(
+            output.executionPackageSubpathBlocked,
+            true,
+            'subpaths do CreativeExecutionPackage devem responder ERR_PACKAGE_PATH_NOT_EXPORTED',
         )
         void consumerDir
     } finally {
