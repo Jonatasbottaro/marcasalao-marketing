@@ -7,6 +7,7 @@
 - Commit da main consultada: [2c409676e58e4e118d865821b9a0cbdd93a22364](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/2c409676e58e4e118d865821b9a0cbdd93a22364) — revisão mais recente de `AGENTS.md`, com a raiz oficial `C:/Repos/marcasalao-marketing` e `.workspace/` dentro do checkout; base sobre a qual a integração do R002 foi commitada
 - Merge de integração do piloto local R002: `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9`, a partir da branch técnica `codex/r002-video-local-agenda` (HEAD `b59076918eea6a2eaecda90bf2ec3c8cb4ac6c60`), com commit corretivo único `0ac4bde8e5096ecdf4913a48ad453e066346b213`
 - Merge de integração da execução local de TEMPORAL-02: `5376890974d4baf49b341297a9b7b0071a680dc6`, a partir da branch `codex/temporal-02-execucao-local` (HEAD `63d04d5e4476e13a34f4636b19a08e642627b70b`), por pedido explícito do titular em 12/11/2026 de atualização completa do remoto
+- Merge de integração da validação consolidada do pipeline criativo: `c461a3ca11e51ffe7082f7b11661632c0024def0`, a partir da branch técnica `codex/content-pipeline-validation` (HEAD `2fa8f04`), por autorização explícita do titular em 12/11/2026, com os três commits originais preservados (`3931993`, `3527a19`, `2fa8f04`)
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
 - Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
 - Merge de integração do BeatPlan v1: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`
@@ -16,7 +17,7 @@
 - Limpeza de branches remotas: 14 branches excluídas em 11/11/2026 por autorização explícita do titular; 7 branches remotas restantes. Detalhe na seção Limpeza de branches remotas
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-O último commit técnico da main é o merge `5376890` da execução local de TEMPORAL-02 (cliente, Worker, CLIs e replay em `orchestration/temporal/`); o anterior é o merge `b7ed1d9` do piloto local R002 (ferramentas de vídeo em `tools/`, fora do núcleo `platform/`); o último commit técnico do núcleo permanece `d5761b1`. Os commits entre `d5761b1` e `2c40967` atualizam a documentação e a governança, incluindo a limpeza de branches e a nova raiz de armazenamento. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. O cliente de validação, `workflow.start` da aplicação, Workflow ID determinístico, políticas de reuso e conflito, colisão sanitizada, Worker local, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 estão **integrados em escopo estritamente local** pelo merge `5376890` (12/11/2026); Worker de produção, servidor Temporal remoto, namespace de produção, `contentHash` e deploy continuam ausentes e bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
+O último commit técnico da main e do núcleo `platform/` é o merge `c461a3c` da validação consolidada do pipeline criativo (`validateContentPipeline`, CLI `content:validate-pipeline`, fixtures e suíte de 651 testes); o anterior é o merge `5376890` da execução local de TEMPORAL-02 (cliente, Worker, CLIs e replay em `orchestration/temporal/`); e o anterior a esse é o merge `b7ed1d9` do piloto local R002 (ferramentas de vídeo em `tools/`). A validação consolidada do pipeline é uma capacidade estritamente local e determinística interna à `platform`, sem alterar a API pública mínima (`composition-validation-api.ts`), sem subpaths públicos, sem entrar no Temporal e sem envolver renderização, mídia ou deploy. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. O cliente de validação, `workflow.start` da aplicação, Workflow ID determinístico, políticas de reuso e conflito, colisão sanitizada, Worker local, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 estão **integrados em escopo estritamente local** pelo merge `5376890` (12/11/2026); Worker de produção, servidor Temporal remoto, namespace de produção, `contentHash` e deploy continuam ausentes e bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -43,7 +44,8 @@ Os marcos permanecem distintos e não se substituem:
 - registro documental da limpeza de branches em `3c44ae4408cdc1a03dad61d659e0dde0c502f829`;
 - atualização da raiz oficial de armazenamento no `AGENTS.md` em `2c409676e58e4e118d865821b9a0cbdd93a22364`;
 - integração do piloto técnico local R002 (vídeo sem áudio): merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com os três commits originais `2e663e3`, `040e290`, `b590769` preservados, mais o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; detalhe na seção R002 — piloto técnico local de vídeo sem áudio;
-- integração da execução local de TEMPORAL-02: merge `5376890974d4baf49b341297a9b7b0071a680dc6` com os três commits da branch `codex/temporal-02-execucao-local` (`f69fb08`, `91721a3`, `63d04d5`) preservados; detalhe na seção TEMPORAL-02 — Execução local integrada.
+- integração da execução local de TEMPORAL-02: merge `5376890974d4baf49b341297a9b7b0071a680dc6` com os três commits da branch `codex/temporal-02-execucao-local` (`f69fb08`, `91721a3`, `63d04d5`) preservados; detalhe na seção TEMPORAL-02 — Execução local integrada;
+- integração da validação consolidada do pipeline criativo: merge `c461a3ca11e51ffe7082f7b11661632c0024def0` com os três commits da branch técnica `codex/content-pipeline-validation` (`3931993`, `3527a19`, `2fa8f04`) preservados; detalhe na seção Validação consolidada do pipeline criativo.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -57,7 +59,8 @@ O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as
 - **Fronteira pública mínima da `platform` (TEMPORAL-02-01)**: pacote `marcasalao-marketing-platform` (`0.1.0`) com entrypoint público [`platform/src/composition-validation-api.ts`](../../platform/src/composition-validation-api.ts), exportando em runtime exclusivamente `validateComposition(composition, project)` e em tipos `Composition`, `ProjectManifest` e `CompositionValidationReport`, com declarações TypeScript habilitadas em [`platform/tsconfig.json`](../../platform/tsconfig.json), subpaths internos bloqueados pelo mapa `exports` em [`platform/package.json`](../../platform/package.json) e suíte dedicada em [`platform/tests/composition-validation-api.test.ts`](../../platform/tests/composition-validation-api.test.ts).
 - **R001 — OutputProfiles e OutputPlan interno**: catálogo de perfis em [`platform/src/output-profiles/`](../../platform/src/output-profiles/), contrato [`output-plan-contract.ts`](../../platform/src/output-plan-contract.ts), schema, resolvedor e validadores integrados em `e86f3c9`, após reconciliação em `8e17785`. Os cinco [exemplos de OutputPlan](../../platform/examples/output-plans/) estão versionados em LF, com regra explícita em [`platform/.gitattributes`](../../platform/.gitattributes). OutputPlan continua interno: não amplia o entrypoint público de validação nem integra esses planos ao Temporal.
 - **BeatPlan v1 interno**: contrato [`beat-plan-contract.ts`](../../platform/src/beat-plan-contract.ts), espelho draft-07 [`beat-plan.schema.json`](../../platform/schemas/beat-plan.schema.json), relatório aditivo `BeatPlanValidationReport` em [`validation-report.ts`](../../platform/src/validation-report.ts), validador [`validate-beat-plan.ts`](../../platform/src/validate-beat-plan.ts), CLI [`validate-beat-plan-cli.ts`](../../platform/src/validate-beat-plan-cli.ts) e [dois exemplos versionados](../../platform/examples/beat-plans/), integrados pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957` a partir da reconciliação `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`. Fatia **interna ao pacote**: não amplia o entrypoint público, não ganha subpath, não se combina com OutputPlan e não entra no Temporal. Detalhe na seção **BeatPlan v1 interno**.
-- **CLIs existentes**: `content:validate-project`, `content:validate-composition`, `content:profiles`, `content:plan-output` e `content:validate-beat-plan`, além de `build`, `typecheck`, `test`, `test:contracts` e `clean` em [platform/package.json](../../platform/package.json).
+- **Validação consolidada do pipeline criativo (`validateContentPipeline`)**: função pura em [`validate-content-pipeline.ts`](../../platform/src/validate-content-pipeline.ts), contrato [`content-pipeline-validation-contract.ts`](../../platform/src/content-pipeline-validation-contract.ts), CLI `content:validate-pipeline` em [`content-pipeline-validation-cli.ts`](../../platform/src/content-pipeline-validation-cli.ts), fixtures integradas em [`platform/examples/pipelines/`](../../platform/examples/pipelines/) e suíte de 34 testes dedicados (totalizando 651 testes na suíte da platform), integrados pelo merge `c461a3ca11e51ffe7082f7b11661632c0024def0`. Capacidade **estritamente interna e local**: não altera o entrypoint público, não ganha subpath, não entra no Temporal e não envolve renderização ou mídia.
+- **CLIs existentes**: `content:validate-project`, `content:validate-composition`, `content:profiles`, `content:plan-output`, `content:validate-beat-plan` e `content:validate-pipeline`, além de `build`, `typecheck`, `test`, `test:contracts` e `clean` em [platform/package.json](../../platform/package.json).
 - **CI da plataforma**: [`.github/workflows/platform-validation.yml`](../../.github/workflows/platform-validation.yml), `Validar contratos da platform`, matriz Ubuntu e Windows × Node 22 e 24.
 - **Runtime do núcleo**: Node `>=22 <25`, TypeScript compilado para JavaScript, motor de schema apenas em desenvolvimento.
 - **Correção de contratos da PR #6**: integrada em 06/11/2026 pelo merge commit `0c97c2a`. A distinção entre "main anterior" e "correção pendente" que esta página mantinha foi retirada porque a main já contém o comportamento corrigido.
@@ -162,6 +165,54 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 - `VisualStyle`, `VisualAnchor`, `AssetManifest`, `AudioPlan` e `RenderPlan` continuam fatias futuras;
 - estado técnico não concede autorização editorial, de gravação ou de publicação;
 - a integração técnica não autoriza produção, mídia, publicação nem nova fatia de TEMPORAL-02, e não antecipa TEMPORAL-04, que continua reservado.
+
+## Validação consolidada do pipeline criativo
+
+- Status: **integrado tecnicamente na main** pelo merge `c461a3ca11e51ffe7082f7b11661632c0024def0`, a partir da branch técnica `codex/content-pipeline-validation` (commits `3931993`, `3527a19` e `2fa8f04`), por autorização explícita do titular em 12/11/2026.
+- Natureza: agregador puro, estático e determinístico que unifica, em uma única execução local, a validação de todo o pipeline criativo: `ProjectManifest` → `Composition` → `OutputPlan` → compatibilidade `Composition × OutputPlan` → `BeatPlan`.
+- Escopo: **estritamente local e interno à `platform`**. Não altera o entrypoint público (`composition-validation-api.ts`), não expõe subpaths públicos no `package.json`, não cria Activities ou Workflows no Temporal, e não envolve renderização, mídia, áudio ou deploy.
+
+### Componentes integrados
+
+| Peça | Onde |
+| --- | --- |
+| Contrato e união discriminada | [`platform/src/content-pipeline-validation-contract.ts`](../../platform/src/content-pipeline-validation-contract.ts) — `ContentPipelineValidationReport`, `ContentPipelineStageResult`, `ContentPipelineIssue` |
+| Agregador determinístico | [`platform/src/validate-content-pipeline.ts`](../../platform/src/validate-content-pipeline.ts) — `validateContentPipeline(input)` com DAG de dependências |
+| CLI interna | [`platform/src/content-pipeline-validation-cli.ts`](../../platform/src/content-pipeline-validation-cli.ts), script `content:validate-pipeline` |
+| Fixtures integradas | [`marca-salao-pipeline-pilot.pipeline.json`](../../platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json) e [`marca-salao-social-reel.beat-plan.json`](../../platform/examples/pipelines/marca-salao-social-reel.beat-plan.json) |
+| Testes unitários do agregador | [`platform/tests/content-pipeline-validation.test.ts`](../../platform/tests/content-pipeline-validation.test.ts) (10 testes) |
+| Testes de processo da CLI | [`platform/tests/content-pipeline-cli-process.test.ts`](../../platform/tests/content-pipeline-cli-process.test.ts) (12 testes) |
+| Testes de exemplos e fixtures | [`platform/tests/content-pipeline-examples.test.ts`](../../platform/tests/content-pipeline-examples.test.ts) (2 testes) |
+| Testes de build e portabilidade | [`platform/tests/build-portability.test.ts`](../../platform/tests/build-portability.test.ts) e [`platform/tests/beat-plan-validation.test.ts`](../../platform/tests/beat-plan-validation.test.ts) |
+
+### Regras do DAG e agregação
+
+- **Execução condicional (DAG)**:
+  - Se `project` for inválido: `project: invalid`; os estágios dependentes (`composition`, `output-plan`, `output-compatibility`, `beat-plan`) ficam `status: "blocked"` com `blockedBy: "project"`.
+  - Se `composition` for inválida (com `project` válido): `composition: invalid`; `output-plan` é avaliado de forma independente (depende apenas do projeto); `output-compatibility` e `beat-plan` ficam `blocked` com `blockedBy: "composition"`.
+  - Se `output-plan` for inválido: `output-plan: invalid`; `output-compatibility` fica `blocked` com `blockedBy: "output-plan"`; `beat-plan` é executado normalmente (depende apenas de `project` e `composition`).
+  - Se `output-compatibility` for inválida: `output-compatibility: invalid`; `beat-plan` é executado normalmente; relatório geral é `valid: false`.
+- **Validade global**: `valid: true` se, e somente se, todos os 5 estágios forem `status: "valid"` e `errors.length === 0`.
+- **Tratamento de warnings**: avisos legítimos (como ausência de contexto de regra ou cena não referenciada no BeatPlan) são preservados nos estágios e no consolidado, sem invalidação do pipeline e sem rebaixamento para erro.
+- **Pureza e determinismo**: função 100% síncrona, estática, sem I/O, sem rede, sem relógio (`Date.now`), sem números pseudoaleatórios, com congelamento profundo (`Object.freeze`) do relatório e ordenação estável de erros e warnings.
+- **CLI `content:validate-pipeline`**: consome `--project`, `--composition`, `--output-plan` e `--beat-plan`, com `--json` opcional:
+  - `0`: pipeline válido;
+  - `1`: pipeline inválido de domínio (relatório estruturado em stdout);
+  - `2`: erro de uso, flag inválida, arquivo ausente ou JSON malformado (diagnóstico em stderr, stdout vazio).
+
+### Evidências e CI
+
+- **651 testes na suíte da `platform`** (649 aprovados, 2 skipped de symlinks do Windows, 0 falhas);
+- **CI da branch `codex/content-pipeline-validation`**: run [43236412808](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43236412808), quatro jobs da matriz `completed/success`;
+- **CI da main pós-merge**: run [43237054530](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43237054530), `headSha: c461a3ca11e51ffe7082f7b11661632c0024def0`, quatro jobs da matriz `completed/success` (Ubuntu e Windows × Node 22 e 24);
+- Tarball com 42 entradas, sem CLIs, fontes TypeScript, testes, schemas ou exemplos;
+- Exemplo integrado em LF no `.gitattributes` (`platform/examples/pipelines/*.json text eol=lf`).
+
+### Limites
+
+- A validação consolidada **não é utilizada no Temporal**: nenhum Workflow, Activity ou Worker consome o pipeline completo;
+- Nenhuma renderização, geração de vídeo, imagem, áudio ou TTS;
+- Nenhuma API pública nova ou alteração no entrypoint `composition-validation-api.ts`.
 
 ## TEMPORAL-01
 

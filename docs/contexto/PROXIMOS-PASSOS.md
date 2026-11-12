@@ -52,29 +52,25 @@ Worker efêmero, cliente, `workflow.start` e IDs usados nos testes desta fatia n
 
 As pré-condições técnicas já cumpridas — fronteira pública, input/preflight, Activity ratificada, Workflow ratificado em escopo estrito, Retry Policy exercitada e núcleo sem dependência Temporal — não substituem a decisão de governança. A ratificação da fatia Workflow não abre autorização automática: qualquer próxima implementação exige decisão separada do titular, com escopo explícito.
 
-## 2. Deliberar sobre uma futura combinação entre Composition, BeatPlan, OutputPlan e Temporal
+## 2. Validação consolidada do pipeline criativo e combinação no Temporal
 
-> Deliberar separadamente, antes de qualquer nova implementação, se haverá uma futura combinação entre Composition, BeatPlan, OutputPlan ou Temporal.
+> A validação consolidada local do pipeline criativo foi autorizada, implementada e integrada na main pelo merge `c461a3ca11e51ffe7082f7b11661632c0024def0` em 12/11/2026. A combinação permanece estritamente local e interna à `platform`, sem integrar ao Temporal.
 
-A revisão da branch de BeatPlan frente ao R001 **foi concluída e a integração também**: o R001 está integrado desde `e86f3c9ef939ac7536ecf39a65cf4f6ee97e4b52` (reconciliação `8e17785a5634167f8abdaebacb8388276b909cab`) e o BeatPlan v1 foi reconciliado em `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` e integrado pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`. Não há branch de BeatPlan pendente de integração nem segunda implementação paralela a iniciar. `codex/reconcilia-beat-plan-v1` continua existindo apenas como histórico; `codex/core-beat-plan-v1` foi **excluída do remoto** na limpeza de 11/11/2026, por ser superseded, com o checkpoint preservado em ref local de arquivo.
+A combinação LOCAL e determinística entre os contratos foi concluída com sucesso:
 
-O que já está integrado e não deve ser refeito:
+- `validateContentPipeline(input)` unifica em uma única execução `ProjectManifest` → `Composition` → `OutputPlan` → compatibilidade `Composition × OutputPlan` → `BeatPlan`;
+- Contrato estruturado `ContentPipelineValidationReport` com discriminative union `ContentPipelineStageResult`, DAG de dependências estrito e tratamento aditivo de warnings;
+- CLI interna `content:validate-pipeline` com flags `--project`, `--composition`, `--output-plan`, `--beat-plan` e `--json`;
+- Fixtures integradas em `platform/examples/pipelines/`;
+- 651 testes na platform com CI verde em Ubuntu e Windows × Node 22 e 24.
 
-- OutputProfiles, OutputPlan interno, resolvedor, validadores e CLIs `content:profiles` e `content:plan-output`, com cinco exemplos de planos em LF;
-- BeatPlan v1 interno: contrato, schema draft-07, `BeatPlanValidationReport`, `validateBeatPlan(beatPlan, composition, project)` com delegação a `validateProjectManifest` e `validateComposition`, CLI `content:validate-beat-plan`, dois exemplos em LF e testes de schema, validador, CLI e exemplos;
-- a fronteira pública da `platform` continua restrita a `validateComposition` e aos tipos `Composition`, `ProjectManifest` e `CompositionValidationReport`; BeatPlan e OutputPlan não ganham export no entrypoint raiz nem subpath público.
+O que permanece bloqueado e requer deliberação explícita do titular:
 
-Critérios para qualquer deliberação futura:
-
-- tratar a combinação como decisão nova e explícita do titular, com escopo delimitado, e não como consequência da integração técnica;
-- distinguir estrutura de semântica e apontar verificações de schema necessárias antes de qualquer trabalho autorizado;
-- preservar exemplos de projetos, relatórios determinísticos e a política de LF;
-- apresentar achados e dependências, sem escolher ferramenta de geração ou renderização por consequência;
-- manter o núcleo sem dependência Temporal e sem regra de marca no core.
-
-Permanecem bloqueados até autorização específica: combinação BeatPlan × OutputPlan; BeatPlan no Temporal; TEMPORAL-04; renderização; adaptadores; `VisualStyle`; `VisualAnchor`; `AssetManifest` completo; `AudioPlan`; `RenderPlan`; mídia; fornecedores; deploy. Os bloqueios de TEMPORAL-02 listados no passo 1 continuam integralmente válidos e não são aliviados pela integração do BeatPlan. Nenhuma próxima fatia é escolhida automaticamente por esta lista.
-
-A integração técnica do BeatPlan não concede aprovação editorial, autorização de gravação nem de publicação, e não ratifica seu uso no Temporal.
+- Uso dessa combinação ou de qualquer outro agregador dentro do Temporal;
+- Criação de Workflow, Activity ou Worker Temporal para o pipeline consolidado;
+- TEMPORAL-04;
+- Renderização, adaptadores, geração de vídeo, imagem ou áudio;
+- Mídia, fornecedores e deploy.
 
 ## 3. Provar o segundo consumidor real
 
