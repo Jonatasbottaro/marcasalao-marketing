@@ -11,3 +11,5 @@ Registros históricos para consulta e continuidade. Os materiais de demonstraç�
 - [Continuidade do merge do PR #4 — 2026-11-02](2026-11-02-continuidade-merge-pr-4.md)
 
 - [Governança de armazenamento, auditoria e limpeza de branches — 11–12/11/2026](2026-11-12-governanca-armazenamento-limpeza-branches.md)
+
+- [Checklist de alinhamento entre estações — 12/11/2026](2026-11-12-alinhamento-entre-estacoes-checklist.md)
