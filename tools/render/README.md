@@ -8,8 +8,10 @@ locais por beat, e produz uma entrega real e inspecionada:
 - MP4 H.264 / yuv420p, **sem nenhuma faixa de áudio**;
 - SRT em UTF-8 (LF, newline final única) derivado dos textos e tempos do pacote;
 - narração em TXT separada, organizada por cena e tempos, sem geração de voz;
-- relatório JSON do render real com IDs, caminhos relativos, medições FFprobe e
-  SHA-256 dos artefatos.
+- relatório JSON do render real com IDs, **caminhos relativos finais** dos
+  artefatos promovidos, medições FFprobe e SHA-256/tamanhos calculados pelos
+  bytes preparados em staging (um teste abre cada arquivo apontado pelo
+  relatório e confere caminho, tamanho e hash).
 
 Não é campanha, não é produção real da NS-001, nada aqui é publicado. O
 adaptador é uma ferramenta de verificação da fronteira entre planejamento
@@ -115,25 +117,42 @@ assets: mesma CLI, mesmo código, zero regra por marca.
 
 ## Comportamento transacional
 
-1. Todos os artefatos nascem em staging (`<output-dir>.staging` por padrão);
+1. **Staging exclusivo da execução**, validado antes de qualquer escrita ou
+   render: sem `--staging`, uma pasta única é criada em `.workspace/tmp/`
+   (`local-render-staging-*`); com `--staging`, exige pasta nova ou vazia e
+   rejeita sobreposição com a raiz, com os arquivos de entrada (pacote/associação)
+   e com a pasta de entrega (exit 2, nada é escrito);
 2. inspeção prévia de cada asset com FFprobe exigindo stream de vídeo
    decodificável com dimensões (um asset ilegível com `-loop 1` faria a
    ferramenta de vídeo girar sem falhar, e o exit code do ffprobe sozinho não
    prova legibilidade: pode ser 0 com streams vazios para lixo binário);
    inspeção FFprobe do MP4 (1 stream de vídeo, **0 de áudio**, codec,
-   geometria, fps, pix_fmt, duração), validação do SRT e da narração; o render
-   tem tempo limite de 300 s, convertido em falha controlada;
-3. relatório JSON com hashes SHA-256 e medições;
-4. promoção com backup: destinos anteriores são copiados para
-   `.backup/` dentro do staging e só então substituídos; qualquer falha de
-   promoção restaura a entrega anterior completa;
-5. falha em qualquer etapa: exit ≠ 0, erro sanitizado em stderr, staging
+   geometria, fps, pix_fmt, duração), validação do SRT e da narração;
+3. **Limites de tempo com diagnóstico curto**: ponte Node 60 s, sondagens
+   FFprobe 30 s, coleta de versões 15 s, render 300 s; cada estouro vira falha
+   controlada (exit 1) sem stack e sem caminho absoluto;
+4. relatório JSON com caminhos finais, hashes SHA-256 e medições;
+5. **promoção exclusiva por destino**: lock `.local-render-promotion.lock`
+   criado com `O_EXCL` na pasta de entrega; disputa recebe diagnóstico claro
+   (exit 1) e o lock é removido ao final, inclusive em falha;
+6. promoção com backup: destinos anteriores são copiados para `.backup/`
+   dentro do staging e só então substituídos; falha de promoção restaura a
+   entrega anterior completa; **se a restauração falhar, o backup permanece
+   intacto para diagnóstico** e o erro informa onde ele está;
+7. **limpeza recursiva restrita**: somente a pasta de staging criada pelo
+   próprio render é removida ao final; staging informado pelo usuário e o
+   backup de uma restauração falha nunca são apagados recursivamente;
+8. falha em qualquer etapa: exit ≠ 0, erro sanitizado em stderr, staging
    preservado para diagnóstico, nenhum destino parcial.
 
 A prova reproduzível está em `tools/tests/test_render_local.py`
-(`test_04` a `test_09`, incluindo `test_07b`): pacote inválido, asset ausente,
-asset fora da raiz, asset ilegível, falha da ferramenta de video e falha de
-promoção comparam SHA-256 de todos os arquivos da entrega anterior antes/depois.
+(`test_04` a `test_09`, incluindo `test_07b`, `test_08b`–`test_08e` e
+`test_01b`): pacote inválido, asset ausente, asset fora da raiz, asset
+ilegível, falha da ferramenta de vídeo, falha de promoção, falha de
+restauração com backup preservado, disputa de lock, rejeição de staging
+antes de qualquer escrita e relatório apontando para os arquivos finais
+comparam SHA-256 de todos os arquivos da entrega anterior antes/depois.
+Timeouts e erro de inspeção são cobertos por mocks, sem esperar o limite real.
 
 ## Evidências
 
@@ -151,8 +170,18 @@ python -m unittest discover -s tools/tests -v   # inclui R002 e o render real
 cd platform && npm run typecheck && npm test    # núcleo, ponte e barreiras
 ```
 
-Testes que exigem FFmpeg ou o build da platform são ignorados quando ausentes;
-o resultado local com FFmpeg e o observado na matriz de CI são registrados
+Testes que exigem FFmpeg ou o build da platform são ignorados quando ausentes
+**apenas localmente**. No GitHub Actions, o workflow dedicado
+`.github/workflows/local-render-validation.yml` roda o render real em
+**Ubuntu e Windows** com `REQUIRE_RENDER=1`: nesse modo, ferramenta ou ponte
+ausente viram erro (nunca skip), e o job falha se os testes obrigatórios de
+render forem pulados. O workflow compila a ponte TypeScript, prepara Python e
+FFmpeg/FFprobe a partir de builds verificáveis (ação oficial
+`FedericoCarboni/setup-ffmpeg`, builds BtbN), registra as versões, executa a
+suíte Python e a prova dos dois pacotes versionados com fixtures geradas
+dentro da raiz, e inspeciona os vídeos promovidos com FFprobe. A matriz
+Node 22/24 da platform permanece no workflow `platform-validation.yml`.
+O resultado local com FFmpeg e o observado no CI são registrados
 separadamente no contexto e no handoff.
 
 ## Limites

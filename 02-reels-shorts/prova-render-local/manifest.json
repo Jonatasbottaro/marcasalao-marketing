@@ -20,8 +20,8 @@
         },
         "report": {
           "path": ".workspace/archives/local-render-adapter-v1/marca-salao/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-execution-report.json",
-          "sha256": "17455226ad52a6d604c505aab0aadf530fe5dece68ba7177ee1eaa10c267cd24",
-          "bytes": 3051,
+          "sha256": "2316f1c39b63c1b253b8e76ed498360e659c517e075be78189dce2e3553c508e",
+          "bytes": 3027,
           "versioned": false,
           "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
         },
@@ -69,8 +69,8 @@
         },
         "report": {
           "path": ".workspace/archives/local-render-adapter-v1/multitrack-hub/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-execution-report.json",
-          "sha256": "46d2cadf2d3471db58695a201c3f010d5338887c7c6b3e245687879a5028991c",
-          "bytes": 3456,
+          "sha256": "b0748ea34d8779ab78a8a357c1ca0f013a927abb718da25841ce1c0b871e12f6",
+          "bytes": 3432,
           "versioned": false,
           "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
         },
