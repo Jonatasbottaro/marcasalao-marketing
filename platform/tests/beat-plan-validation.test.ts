@@ -939,6 +939,12 @@ const SIMULATED_EXECUTION_SCHEMA_FILES = [
     'simulated-execution-report.schema.json',
 ]
 
+/** Ponte interna de entrada do adaptador de render local de prova (tools/). */
+const LOCAL_RENDER_INPUT_SOURCE_FILES = [
+    'local-render-input-contract.ts',
+    'validate-local-render-input.ts',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1070,6 +1076,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['schemas', EXECUTION_PACKAGE_SCHEMA_FILES],
         ['src', SIMULATED_EXECUTION_SOURCE_FILES],
         ['schemas', SIMULATED_EXECUTION_SCHEMA_FILES],
+        ['src', LOCAL_RENDER_INPUT_SOURCE_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1081,7 +1088,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
