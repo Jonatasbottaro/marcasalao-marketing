@@ -10,7 +10,7 @@ Para as próximas rodadas, o titular prefere agrupar código, integração, test
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
-A main conferida em 11/11/2026 está em `2c409676e58e4e118d865821b9a0cbdd93a22364`. O último commit técnico do núcleo é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, com R001 e BeatPlan v1 integrados. Os seis commits posteriores atualizam documentação e governança. A limpeza de 14 branches remotas autorizada pelo titular ficou registrada em `3c44ae4`. A PR #1 (`codex/ai-memory-integration`) é a única aberta na leitura. Em 12/11/2026 o piloto técnico local R002 (vídeo sem áudio, fora do núcleo) foi integrado pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; não altera `platform/`, `orchestration/` nem os bloqueios abaixo. Também em 12/11/2026 a **execução local de TEMPORAL-02** (cliente, Worker local, CLIs, replay formal e gate Elephant–Goldfish, em `orchestration/temporal/`) foi integrada pelo merge `5376890974d4baf49b341297a9b7b0071a680dc6` a partir de `codex/temporal-02-execucao-local` (`63d04d5`), por pedido explícito do titular; escopo estritamente local, sem alterar os bloqueios de produção abaixo.
+A main conferida em 11/11/2026 está em `2c409676e58e4e118d865821b9a0cbdd93a22364`. O último commit técnico do núcleo é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, com R001 e BeatPlan v1 integrados. Os seis commits posteriores atualizam documentação e governança. A limpeza de 14 branches remotas autorizada pelo titular ficou registrada em `3c44ae4`. A PR #1 (`codex/ai-memory-integration`) é a única aberta na leitura. Em 12/11/2026 o piloto técnico local R002 (vídeo sem áudio, fora do núcleo) foi integrado pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; não altera `platform/`, `orchestration/` nem os bloqueios abaixo. Também em 12/11/2026 a **execução local de TEMPORAL-02** (cliente, Worker local, CLIs, replay formal e gate Elephant–Goldfish, em `orchestration/temporal/`) foi integrada pelo merge `5376890974d4baf49b341297a9b7b0071a680dc6` a partir de `codex/temporal-02-execucao-local` (`63d04d5`), por pedido explícito do titular; escopo estritamente local, sem alterar os bloqueios de produção abaixo. Ainda em 12/11/2026, o **segundo consumidor real (Multitrack Hub) e os casos de pipeline** foram integrados pelo fast-forward `f8ad1ea..36551ded3e34520a4e7da3c07ee413b19020956b` a partir de `codex/multitrack-pipeline-consumer`, por autorização explícita do titular em entrega multiprojeto; escopo estritamente interno à `platform`, sem alterar os bloqueios abaixo.
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
@@ -72,16 +72,18 @@ O que permanece bloqueado e requer deliberação explícita do titular:
 - Renderização, adaptadores, geração de vídeo, imagem ou áudio;
 - Mídia, fornecedores e deploy.
 
-## 3. Provar o segundo consumidor real
+## 3. Provar o segundo consumidor real — concluído em 12/11/2026
 
-Preparar uma configuração da Multitrack Hub a partir das fontes existentes, mantendo a fixture genérica para testar variações de idioma e formato.
+> A prova do segundo consumidor real foi autorizada, implementada e integrada na main pelo fast-forward `f8ad1ea..36551ded3e34520a4e7da3c07ee413b19020956b` em 12/11/2026, a partir da branch `codex/multitrack-pipeline-consumer`. Detalhe e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Segundo consumidor real — Multitrack Hub e casos de pipeline.
 
-Critérios de conclusão:
+Critérios de conclusão atendidos:
 
-- o mesmo núcleo valida os consumidores sem condicionais de marca;
-- tema, domínio, assets, CTA e políticas são dados do projeto;
-- configurações não inventam funcionalidades nem importam autorizações de outra marca;
-- os fluxos de produção existentes continuam identificados como integrações separadas.
+- o mesmo núcleo valida os dois consumidores (Marca Salão e Multitrack Hub) sem condicionais de marca — a varredura de independência de marca do núcleo foi estendida e proíbe também referências à Multitrack Hub em `platform/src` e `platform/schemas`;
+- tema, domínio, assets, CTA e políticas são dados do projeto: as fixtures da Multitrack Hub declaram `brandTheme`, `assetRoot`, allowlist e políticas próprios, e o núcleo apenas os valida;
+- as configurações não inventam funcionalidades nem importam autorizações de outra marca: as fixtures são técnicas e fictícias, não reutilizam campanha publicada nem credenciais/ids externos, e `valid: true` não concede autorização editorial;
+- os fluxos de produção existentes da Multitrack Hub em `marcas/multitrackhub/` continuam identificados como integrações separadas e não foram alterados.
+
+A fixture genérica (`fixture-project`) permanece para testar variações de idioma e formato. Trabalho possível remanescente, não autorizado por esta integração: novos casos de pipeline para outros formatos/perfis, evolução do contrato de caso e qualquer consumo do agregador pelo Temporal (bloqueado).
 
 ## 4. Preparar um piloto mínimo de composição
 
