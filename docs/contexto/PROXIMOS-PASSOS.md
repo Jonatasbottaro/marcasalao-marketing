@@ -117,11 +117,15 @@ A proposta deve delimitar escopo, componentes, riscos, evidências exigidas e cr
 
 Critérios atendidos: consumo do pacote canônico com validação; estados e eventos determinísticos sem tempo real; artefatos somente textuais/JSON com hashes SHA-256; escrita transacional com confinamento e preservação da saída anterior; falha e cancelamento controlados; retomada segura baseada em relatório anterior; multicase com isolamento de falha; os dois consumidores reais executados; API pública preservada; CI verde nos quatro jobs.
 
-## 8. Próxima decisão recomendada: primeiro adaptador de renderização local
+## 8. Primeiro adaptador de renderização local — autorizado e implementado em branch técnica (12/11/2026)
 
-> Recomendada pelo titular no briefing do executor local simulado v1 (12/11/2026), **não autorizada por esta integração**: deliberar sobre autorização específica para um primeiro adaptador de renderização local, começando por um renderer de prova, sem fornecedor, publicação, serviço externo ou Temporal.
+> O titular autorizou explicitamente em 12/11/2026 a implementação e os testes do **primeiro adaptador de renderização local que consome o `CreativeExecutionPackage` v1**, com vídeos locais de prova e dados fictícios, documentação e publicação da branch técnica para acompanhar o CI. A autorização cobre render local de prova e CI da branch; **não cobre integração na main**, publicação, fornecedor, serviço externo ou Temporal.
 
-É trabalho de deliberação: nenhum renderer deve ser implementado por consequência da integração do executor simulado. A proposta deve delimitar escopo, contrato do adaptador, evidências exigidas e critérios de ratificação, reaproveitando o pacote canônico, a execução simulada e os precedentes de gates (worktree limpa, prova transacional, hashes, CI nos dois runtimes). Renderização real, mídia, fornecedores e publicação continuam bloqueados até decisão explícita.
+Estado: implementado na branch `codex/local-render-adapter-v1` (base `fbaf2b76943771bbc1a45c1768f39edbfcf67008`), com commit revisável, testes e documentação na mesma rodada. Detalhe, medições FFprobe, provas de preservação e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Adaptador de render local de prova, e em [tools/render/README.md](../../tools/render/README.md).
+
+O que a entrega prova: pacote validado pelo núcleo puro (`validateLocalRenderInput` reutilizando `validateCreativeExecutionPackage`); associação explícita beats → assets com contenção real; render FFmpeg local das duas fixtures verticais (14 s e 15 s, 1080×1920@30, H.264/yuv420p, zero áudio); legenda queimada + SRT UTF-8 + narração TXT derivados do pacote; inspeção FFprobe antes da promoção; staging/promoção transacional com backup e restauração da entrega anterior em falha de render, inspeção ou promoção; mesma CLI para as duas marcas, diferenças somente nos pacotes e assets.
+
+Continua bloqueado até decisão explícita: integração na main desta branch (revisão do titular), renderização de campanha real, mídia real, fornecedores, publicação, Temporal e qualquer ampliação do recorte inicial do adaptador. O executor `simulation` e a API pública da platform permanecem intactos.
 
 ## Tarefas secundárias permitidas
 

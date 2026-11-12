@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "adapter": "local-proof-render",
+  "runs": {
+    "marca-salao": {
+      "package": "platform/examples/execution-packages/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan.execution-package.json",
+      "association": "tools/render/marca-salao.assets.json",
+      "command": "python tools/render_local.py --package platform/examples/execution-packages/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan.execution-package.json --assets tools/render/marca-salao.assets.json --output-dir .workspace/archives/local-render-adapter-v1/marca-salao",
+      "tools": {
+        "ffmpeg": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+        "ffprobe": "ffprobe version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+      },
+      "artifacts": {
+        "srt": {
+          "path": ".workspace/archives/local-render-adapter-v1/marca-salao/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-captions.srt",
+          "sha256": "d1383c49b965b0bc6779294ecc78c19229481ba1cf77bf9d2a42c6d251e07238",
+          "bytes": 182,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "report": {
+          "path": ".workspace/archives/local-render-adapter-v1/marca-salao/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-execution-report.json",
+          "sha256": "17455226ad52a6d604c505aab0aadf530fe5dece68ba7177ee1eaa10c267cd24",
+          "bytes": 3051,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "narration": {
+          "path": ".workspace/archives/local-render-adapter-v1/marca-salao/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-narration-script.txt",
+          "sha256": "73501b1943939736b73027c083ab6135aaa1f48276309a394d8540fd554127b5",
+          "bytes": 451,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "video": {
+          "path": ".workspace/archives/local-render-adapter-v1/marca-salao/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-primary-output.mp4",
+          "sha256": "e7047624b09ff7541cbeb5df8ddc9e717d31ac0ad24c90d4b9e67e39350818be",
+          "bytes": 788403,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel",
+          "ffprobe": {
+            "videoStreams": 1,
+            "audioStreams": 0,
+            "codec": "h264",
+            "width": 1080,
+            "height": 1920,
+            "fps": 30.0,
+            "pixFmt": "yuv420p",
+            "duration": 14.0
+          }
+        }
+      }
+    },
+    "multitrack-hub": {
+      "package": "platform/examples/execution-packages/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan.execution-package.json",
+      "association": "tools/render/multitrack-hub.assets.json",
+      "command": "python tools/render_local.py --package platform/examples/execution-packages/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan.execution-package.json --assets tools/render/multitrack-hub.assets.json --output-dir .workspace/archives/local-render-adapter-v1/multitrack-hub",
+      "tools": {
+        "ffmpeg": "ffmpeg version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+        "ffprobe": "ffprobe version 9.0.2-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+      },
+      "artifacts": {
+        "srt": {
+          "path": ".workspace/archives/local-render-adapter-v1/multitrack-hub/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-captions.srt",
+          "sha256": "e7814bd95ebcaff5be732edc0cbd25e61d23e135fba3e48a8485605a3f43101c",
+          "bytes": 289,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "report": {
+          "path": ".workspace/archives/local-render-adapter-v1/multitrack-hub/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-execution-report.json",
+          "sha256": "46d2cadf2d3471db58695a201c3f010d5338887c7c6b3e245687879a5028991c",
+          "bytes": 3456,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "narration": {
+          "path": ".workspace/archives/local-render-adapter-v1/multitrack-hub/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-narration-script.txt",
+          "sha256": "f61b0fd1a726a5836081f45739af36a6090910977bee21b9a58e6b54dcb20743",
+          "bytes": 573,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel"
+        },
+        "video": {
+          "path": ".workspace/archives/local-render-adapter-v1/multitrack-hub/execution-multitrack-hub-multitrack-social-reel-example-instagram-reels-video-multitrack-social-reel-beat-plan-primary-output.mp4",
+          "sha256": "b071289314f3cc692080acc131137138acb688e48cdacbe34964ad17e6b91ac7",
+          "bytes": 821224,
+          "versioned": false,
+          "reasonNotVersioned": "saida local de prova em .workspace/; manifesto preserva hash, medicao e comando reproduzivel",
+          "ffprobe": {
+            "videoStreams": 1,
+            "audioStreams": 0,
+            "codec": "h264",
+            "width": 1080,
+            "height": 1920,
+            "fps": 30.0,
+            "pixFmt": "yuv420p",
+            "duration": 15.0
+          }
+        }
+      }
+    }
+  }
+}

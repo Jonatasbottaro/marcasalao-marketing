@@ -52,6 +52,7 @@ Os marcos permanecem distintos e não se substituem:
 - integração do segundo consumidor real (Multitrack Hub) e dos casos de pipeline: fast-forward `f8ad1ea..36551ded3e34520a4e7da3c07ee413b19020956b` com os três commits da branch técnica `codex/multitrack-pipeline-consumer` (`54bfd6f`, `8d1b131`, `36551de`) preservados; detalhe na seção Segundo consumidor real — Multitrack Hub e casos de pipeline.
 - integração do CreativeExecutionPackage v1: merge commit `dbf4d31c9f0882827f9fdf9bb79f18f00b3d092d` com os quatro commits da branch técnica `codex/creative-execution-package-v1` (`d43a9ec`, `b5bc7a0`, `df7fe90`, `d016218`) preservados, sem squash/rebase; detalhe na seção CreativeExecutionPackage v1 — pacote técnico de execução.
 - integração do executor local simulado v1: merge commit `2824728300f20c89fe02717e29130895996ae85b` com os quatro commits da branch técnica `codex/simulated-execution-runner-v1` (`87b1a33`, `1e17a71`, `d8cb07f`, `842322f`) preservados, sem squash/rebase; detalhe na seção Executor local simulado v1.
+- branch técnica do primeiro adaptador de render local de prova (autorizada em 12/11/2026, **não integrada**): `codex/local-render-adapter-v1`, a partir de `fbaf2b76943771bbc1a45c1768f39edbfcf67008`; detalhe na seção Adaptador de render local de prova — branch técnica em revisão.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -363,6 +364,45 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 - as fixtures não constituem job executado real, campanha aprovada ou autorização de publicação;
 - a integração não altera os bloqueios de TEMPORAL-02, não antecipa TEMPORAL-04 e não aprova o PRD;
 - **próximo passo recomendado, não autorizado por esta integração**: deliberar sobre autorização específica para um primeiro adaptador de renderização local (renderer de prova, sem fornecedor, publicação, serviço externo ou Temporal).
+
+## Adaptador de render local de prova — branch técnica em revisão
+
+- Status: **implementado na branch técnica `codex/local-render-adapter-v1`**, a partir da base `fbaf2b76943771bbc1a45c1768f39edbfcf67008`, por autorização explícita do titular em 12/11/2026 (implementar, testar, documentar e publicar a branch para acompanhar o CI, na mesma rodada). **Não integrado na main nesta rodada**: a autorização cobre render local de prova e CI da branch, não merge, publicação, fornecedor, serviço externo ou Temporal.
+- Natureza: primeiro adaptador de renderização local do projeto, **prova técnica com dados fictícios**. Consome o `CreativeExecutionPackage` v1 versionado e uma associação explícita `beatId → path` de assets locais; produz MP4 H.264/yuv420p **sem nenhuma faixa de áudio**, SRT UTF-8, narração TXT e relatório JSON do render real com IDs, caminhos relativos, medições FFprobe e SHA-256. Não é campanha nem produção real da NS-001; nada publicado.
+- Fronteira: a validação vive no núcleo puro da platform (`validateLocalRenderInput`, reutilizando `validateCreativeExecutionPackage`); a ponte `tools/render_bridge.mjs` apenas serializa o veredito; **toda execução de FFmpeg/FFprobe fica em `tools/render_local.py`**, fora do núcleo e fora do tarball. API pública inalterada (`validateComposition` apenas); executor `simulation` intacto; nenhuma dependência runtime nova.
+
+### Componentes da branch
+
+| Peça | Onde |
+| --- | --- |
+| Contrato da associação e recorte | [`local-render-input-contract.ts`](../../platform/src/local-render-input-contract.ts) — uma ligação por beat, eco do `packageId`, extensões aceitas, recorte 9:16@30 com dimensões pares, `none`/`slow-zoom`, entrada `none`/`cut`, saída `cut`/`fade` (fade só no último beat) |
+| Validador puro da entrada | [`validate-local-render-input.ts`](../../platform/src/validate-local-render-input.ts) — códigos estáveis `PACKAGE_INVALID`, `ASSOCIATION_INVALID`, `PACKAGE_ID_MISMATCH`, `BEAT_ASSET_MISSING`, `BEAT_ASSET_DUPLICATE`, `UNKNOWN_BEAT_REFERENCE`, `ASSET_PATH_INVALID`, `ASSET_EXTENSION_UNSUPPORTED`, `RENDER_CONFIGURATION_UNSUPPORTED`; caminho apenas léxico, contenção real na camada de ferramentas |
+| Ponte Node | [`render_bridge.mjs`](../../tools/render_bridge.mjs) — veredito JSON em stdout; exit 0/2/3 |
+| Adaptador/CLI | [`render_local.py`](../../tools/render_local.py) — staging, inspeção prévia dos assets por FFprobe, render com timeout de 300 s, inspeção FFprobe do MP4, SRT/narração derivados do pacote, relatório com hashes, promoção com backup e restauração; exit 0/1/2/3 |
+| Assets fictícios | [`make_proof_assets.py`](../../tools/make_proof_assets.py) — PNG determinístico por beat (stdlib), somente em `.workspace/` |
+| Associações versionadas | [`marca-salao.assets.json`](../../tools/render/marca-salao.assets.json), [`multitrack-hub.assets.json`](../../tools/render/multitrack-hub.assets.json) |
+| Testes | [`local-render-input.test.ts`](../../platform/tests/local-render-input.test.ts) (11 testes da ponte) e [`test_render_local.py`](../../tools/tests/test_render_local.py) (puros, ponte, render real e falhas com preservação por SHA-256); inventário fechado estendido |
+| Documentação e manifesto | [`tools/render/README.md`](../../tools/render/README.md), seção nova no [README da platform](../../platform/README.md), [`02-reels-shorts/prova-render-local/manifest.json`](../../02-reels-shorts/prova-render-local/manifest.json) |
+
+### Evidências locais (estação Windows, Node 24.19.0, FFmpeg 9.0.2 portátil)
+
+- **Render real dos dois pacotes versionados**: Marca Salão **14,0 s** e Multitrack Hub **15,0 s**, ambos **1080×1920 a 30 fps**, H.264, yuv420p, **1 stream de vídeo e 0 de áudio** (FFprobe completo em `.workspace/logs/local-render-adapter-v1/ffprobe-*.json`);
+- **Quadros de prova** conferidos visualmente: legenda queimada legível na faixa inferior, `slow-zoom` visível entre 4,5 s e 9,5 s, fade final escurecendo em 13,8 s, e legenda correta do segundo consumidor em 10 s (`frame-*.png` no mesmo diretório de logs);
+- **SRT e narração** derivados exclusivamente dos textos e tempos do pacote; SRT validado pelo validador do R002 (sequência, timestamps, ordem, duração, UTF-8, LF, newline final única); artefatos textuais byte idênticos entre duas execuções;
+- **Preservação da entrega anterior** provada por SHA-256 idêntico de todos os arquivos após: pacote inválido (exit 3), asset ausente (exit 1), asset fora da raiz/traversal (exit 3), asset ilegível (exit 1, inspeção prévia), falha real da ferramenta de vídeo com preset inexistente (exit 1) e falha de promoção simulada no segundo `os.replace` (exit 1, staging preservado);
+- **Suíte da platform na worktree**: 818 testes, 811 aprovados, 0 falhas, 7 skipped de symlink no Windows (807 anteriores + 11 da ponte); typecheck e build limpos;
+- **Testes Python preexistentes** (`test_build_video`, `test_srt_validate`, `test_r002_pilot`): 21 testes, OK — o piloto R002 e o exportador sem áudio continuam passando;
+- **Testes Python do adaptador** (`tools/tests/test_render_local.py`): 22 testes, OK, 191,6 s, exit 0 — inclui renders reais dos dois pacotes, determinismo textual e os seis cenários de falha com preservação por SHA-256 (log `tools-tests-render.tap`);
+- **Empacotamento**: `npm pack --dry-run --json` com 82 entradas (78 anteriores + 4 dos dois módulos novos), sem CLIs, sem `dist/tests`, sem schemas/fixtures, sem fontes TypeScript;
+- **Ferramenta portátil**: FFmpeg/FFprobe 9.0.2 (build essentials de gyan.dev) em `.workspace/tools/ffmpeg/`, origem e versão registradas em `.workspace/logs/local-render-adapter-v1/ferramenta-ffmpeg.txt`; acrescentada ao PATH apenas do processo;
+- **Correções de robustez encontradas pelos testes**: (1) com `-loop 1`, um asset ilegível fazia a ferramenta de vídeo girar sem falhar — o adaptador agora inspeciona cada asset com FFprobe antes do render, **exigindo stream de vídeo decodificável com dimensões** (o exit code do ffprobe sozinho não prova legibilidade: foi medido exit 0 com streams vazios para lixo binário), e impõe timeout de 300 s ao subprocesso, convertido em falha controlada; (2) o teste de asset ilegível passou a usar cópia corrompida por teste, nunca o asset compartilhado, para que uma rodada interrompida não contamine as demais; (3) o zoom central usa `scale` com `eval=frame` + `crop` fixo (válido e medido em segundos), após `zoompan` se mostrar caro (~4–5 min por render) e uma tentativa intermediária de `crop` com `w/h` animado ser inválida; renders completos medidos em 19 s (Marca Salão) e 18 s (Multitrack Hub).
+
+### Limites
+
+- recorte inicial fechado (tabela do README do adaptador); fora dele, diagnóstico estável e nenhum render;
+- nenhum áudio, TTS, fornecedor, rede, upload, publicação, Postiz, Temporal, banco ou deploy; nenhuma regra por marca no código;
+- os MP4 e demais saídas existem apenas neste computador enquanto permanecerem em `.workspace/`; o manifesto versionado preserva hashes, bytes, medições e comando reproduzível;
+- a integração na main desta branch depende de revisão e autorização separada do titular; os bloqueios de TEMPORAL-02/04 e de produção real permanecem.
 
 ## TEMPORAL-01
 
@@ -822,6 +862,8 @@ A convenção `.worktrees/` proposta pela branch `codex/registra-areas-de-trabal
 
 ## Próximo passo
 
+> Revisar e decidir a integração da branch técnica `codex/local-render-adapter-v1` (primeiro adaptador de render local de prova, autorizado em 12/11/2026 apenas para implementação, testes, documentação e CI da branch). O merge na main exige autorização separada do titular.
+>
 > Deliberar se o projeto permanece bloqueado ou se uma próxima fatia específica de TEMPORAL-02 será autorizada, com escopo delimitado pelo titular. A ratificação da fatia Workflow, registrada em 2026-11-11, não autoriza nenhuma fatia posterior.
 >
 > Deliberar separadamente, antes de qualquer nova implementação, se haverá uma futura combinação entre Composition, BeatPlan, OutputPlan ou Temporal. A integração técnica do BeatPlan v1 em `d5761b1` não autoriza essa combinação.
@@ -873,6 +915,13 @@ Tarefas secundárias de consulta:
 - não alterar campanhas;
 - não publicar conteúdo;
 - não executar deploy.
+
+Exceção estreita e vigente: o **render local de prova com dados fictícios** do
+`CreativeExecutionPackage` v1 está autorizado pelo titular em 12/11/2026
+somente no escopo da branch `codex/local-render-adapter-v1` (ferramenta local
+em `tools/`, sem fornecedor, publicação, serviço externo ou Temporal). Essa
+autorização não altera nenhum dos bloqueios acima para campanha real,
+produção da NS-001, mídia real ou publicação, e não autoriza o merge na main.
 
 ## O que esta atualização não verificou
 
