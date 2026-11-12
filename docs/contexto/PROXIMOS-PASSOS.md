@@ -2,11 +2,13 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
+A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: raiz única `C:/Marketing`, artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra.
+
 ## 1. Deliberar sobre a próxima fatia de TEMPORAL-02
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
-A main consultada em 11/11/2026 é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, contendo as fatias técnicas de validação de composição, a integração do R001 e o BeatPlan v1 interno. Marcos preservados:
+A main consultada em 11/11/2026 é `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`, contendo as fatias técnicas de validação de composição, a integração do R001, o BeatPlan v1 interno e, por último, três commits exclusivamente documentais e de governança: `c50dc86` (contexto com BeatPlan), `9908f3b` (regra permanente de armazenamento) e `79fd5da` (segurança de worktrees). Nenhum deles altera código, `platform/`, `orchestration/` ou CI. Marcos preservados:
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
@@ -14,7 +16,7 @@ A main consultada em 11/11/2026 é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, c
 - **Fatia Workflow**: [`validateCompositionWorkflow`](../../orchestration/temporal/src/workflows/composition-validation-workflow.ts), [`CompositionValidationWorkflowResult`](../../orchestration/temporal/src/workflows/composition-validation-result.ts), [classificador de falhas](../../orchestration/temporal/src/workflows/composition-validation-failure-classifier.ts) e Retry Policy canônica do PRD integrados e homologados tecnicamente em `f5842107a0f307b4cc208c15fc4509c6d7d31f72`, com ratificação do titular registrada em 11/11/2026;
 - **BeatPlan v1 interno**: [`beat-plan-contract.ts`](../../platform/src/beat-plan-contract.ts), [`beat-plan.schema.json`](../../platform/schemas/beat-plan.schema.json), `BeatPlanValidationReport` em [`validation-report.ts`](../../platform/src/validation-report.ts), [`validate-beat-plan.ts`](../../platform/src/validate-beat-plan.ts), [`validate-beat-plan-cli.ts`](../../platform/src/validate-beat-plan-cli.ts) e [dois exemplos](../../platform/examples/beat-plans/), reconciliados em `7d919fc208ac4dfeebe5b0b65a959171e5f093f2` e integrados pelo merge `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`. Integração **técnica e interna**: não amplia a API pública, não se combina com OutputPlan e não entra no Temporal.
 
-A evidência da fatia Workflow é de **17 testes novos, 162 testes aprovados, zero falhas, zero ignorados e repetibilidade 7/7**, exclusivamente em `f584210`. O CI da [branch técnica, run 42950735743](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42950735743), e da [main nesse SHA, run 42953193438](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42953193438), está verde em Ubuntu e Windows, Node 22. Não são testes dos HEADs posteriores `e86f3c9` e `d5761b1` nem foram repetidos nesta atualização documental. As evidências anteriores de cada fatia e os limites estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e no [README do Temporal](../../orchestration/temporal/README.md).
+A evidência da fatia Workflow é de **17 testes novos, 162 testes aprovados, zero falhas, zero ignorados e repetibilidade 7/7**, exclusivamente em `f584210`. O CI da [branch técnica, run 42950735743](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42950735743), e da [main nesse SHA, run 42953193438](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/42953193438), está verde em Ubuntu e Windows, Node 22. Não são testes dos HEADs posteriores `e86f3c9`, `d5761b1`, `c50dc86`, `9908f3b` e `79fd5da` nem foram repetidos nesta atualização documental. As evidências anteriores de cada fatia e os limites estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e no [README do Temporal](../../orchestration/temporal/README.md).
 
 A evidência do BeatPlan v1 é de **626 testes aprovados, zero falhas e zero skips** na matriz de quatro ambientes — Ubuntu Node 22, Ubuntu Node 24, Windows Node 22 e Windows Node 24 —, com CI da [branch reconciliada, run 43034990448](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43034990448), em `7d919fc`, e da [main, run 43099977731](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43099977731), em `d5761b1`. Esses números pertencem a esses commits e não devem ser atribuídos a um commit documental posterior. O detalhe por componente, as regras e as fronteiras estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e no [README da platform](../../platform/README.md).
 
@@ -105,11 +107,13 @@ Na próxima validação funcional, registrar o commit executado, alterações lo
 
 ## Tarefas secundárias permitidas
 
-1. Reconferir a main e as PRs abertas antes de propor qualquer integração; R001 e BeatPlan v1 já estão integrados na referência consultada `d5761b1`, e nenhuma combinação entre planos está autorizada.
-2. Decidir se branches já integradas podem ser arquivadas. Esta lista não autoriza exclusão de branch nem de conteúdo.
+1. Reconferir a main e as PRs abertas antes de propor qualquer integração; R001, BeatPlan v1, a regra permanente de armazenamento e a orientação de segurança de worktrees já estão integrados na referência consultada `79fd5da`, e nenhuma combinação entre planos está autorizada.
+2. Decidir o arquivamento das 13 branches classificadas como superseded na auditoria de 11/11/2026 (ver [ESTADO-ATUAL.md](ESTADO-ATUAL.md)). Esta lista não autoriza exclusão de branch nem de conteúdo. Quatro delas produzem merge neutro; mesclar `core-beat-plan-v1` ou `historico-apresentacoes-salao02` regrediria conteúdo já mais novo na main.
+3. Não mesclar `codex/registra-areas-de-trabalho-isoladas`: contradiz a regra permanente ao propor `.worktrees/` e alterar o `.gitignore` versionado, e registra fatos hoje falsos. A orientação de segurança aproveitável já foi reescrita sob `.workspace/` e integrada por `79fd5da`.
+4. Decidir o destino da PR #1 (`ai-memory-integration`) como tarefa própria: é a única branch com trabalho real pendente (19 arquivos ausentes da main, incluindo um workflow de CI novo), conflita em `.ai-memory.toml`, `.gitignore` e `AGENTS.md` e está 82 commits atrás. Exige reconciliação com o `AGENTS.md` atual e autorização específica do CI.
 
 Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md); não repeti-los aqui.
 
 ## Critério para encerrar uma tarefa
 
-Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches.
+Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches. Cumprir o handoff obrigatório da regra de armazenamento em [AGENTS.md](../../AGENTS.md), incluindo a confirmação textual de que nada foi criado ou mantido fora de `C:/Marketing` e a declaração de qualquer exceção como bloqueio.
