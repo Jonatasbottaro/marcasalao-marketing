@@ -901,6 +901,15 @@ const PIPELINE_SOURCE_FILES = [
     'validate-content-pipeline.ts',
 ]
 
+/** Arquivos do contrato de caso e da CLI multiprojeto (segundo consumidor). */
+const CASE_SOURCE_FILES = [
+    'content-pipeline-case-contract.ts',
+    'content-pipeline-case-loader.ts',
+    'content-pipeline-cases-cli.ts',
+    'resolve-content-pipeline-case.ts',
+    'validate-content-pipeline-case.ts',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -937,6 +946,8 @@ test('o nucleo de beat plan nao contem referencia a projetos nem a fornecedores'
         'ns-001',
         'marcasalao.com.br',
         'salao02',
+        'multitrack',
+        'multitrackhub.com.br',
         'google flow',
         'hyperframes',
         'elevenlabs',
@@ -1024,6 +1035,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['schemas', BEAT_PLAN_SCHEMA_FILES],
         ['src', PREEXISTING_SOURCE_FILES],
         ['schemas', PREEXISTING_SCHEMA_FILES],
+        ['src', PIPELINE_SOURCE_FILES],
+        ['src', CASE_SOURCE_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1035,7 +1048,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
