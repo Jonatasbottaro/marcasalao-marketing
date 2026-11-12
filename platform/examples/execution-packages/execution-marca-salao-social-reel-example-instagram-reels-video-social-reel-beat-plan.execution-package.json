@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "packageId": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan",
+  "projectId": "marca-salao",
+  "compositionId": "social-reel-example",
+  "outputPlanId": "instagram-reels-video",
+  "beatPlanId": "social-reel-beat-plan",
+  "output": {
+    "profileId": "instagram-reels-video",
+    "mediaKind": "video",
+    "width": 1080,
+    "height": 1920,
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "rendererAdapter": "undecided",
+    "durationMs": 14000
+  },
+  "timeline": [
+    {
+      "order": 1,
+      "beatId": "opening-hook",
+      "sceneIds": [
+        "opening"
+      ],
+      "startMs": 0,
+      "durationMs": 4000,
+      "endMs": 4000,
+      "narrativeFunction": "hook",
+      "motionIntent": "none",
+      "transitionIn": "none",
+      "transitionOut": "cut",
+      "onScreenText": "Contrato de saida em tres cenas.",
+      "narrationText": "Texto tecnico de abertura do reel."
+    },
+    {
+      "order": 2,
+      "beatId": "demonstration-body",
+      "sceneIds": [
+        "demo-frame"
+      ],
+      "startMs": 4000,
+      "durationMs": 6000,
+      "endMs": 10000,
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "transitionIn": "cut",
+      "transitionOut": "cut",
+      "onScreenText": "Quadro tecnico de demonstracao.",
+      "narrationText": "Demonstracao tecnica do quadro central."
+    },
+    {
+      "order": 3,
+      "beatId": "closing-cta",
+      "sceneIds": [
+        "closing"
+      ],
+      "startMs": 10000,
+      "durationMs": 4000,
+      "endMs": 14000,
+      "narrativeFunction": "cta",
+      "motionIntent": "none",
+      "transitionIn": "cut",
+      "transitionOut": "fade",
+      "onScreenText": "Conheca o sistema.",
+      "narrationText": "Chamada tecnica final para conhecer o sistema."
+    }
+  ],
+  "expectedArtifacts": [
+    {
+      "id": "primary-output",
+      "kind": "primary-output",
+      "required": true,
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-primary-output",
+      "contentType": "video"
+    },
+    {
+      "id": "captions",
+      "kind": "captions",
+      "required": true,
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-captions.srt",
+      "contentType": "text/srt"
+    },
+    {
+      "id": "narration-script",
+      "kind": "narration-script",
+      "required": true,
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-narration-script.txt",
+      "contentType": "text/plain"
+    },
+    {
+      "id": "execution-report",
+      "kind": "execution-report",
+      "required": true,
+      "logicalName": "execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan-execution-report.json",
+      "contentType": "application/json"
+    }
+  ],
+  "source": {
+    "projectId": "marca-salao",
+    "compositionId": "social-reel-example",
+    "outputPlanId": "instagram-reels-video",
+    "beatPlanId": "social-reel-beat-plan",
+    "projectSchemaVersion": 1,
+    "compositionSchemaVersion": 1,
+    "outputPlanSchemaVersion": 1,
+    "beatPlanSchemaVersion": 1
+  }
+}

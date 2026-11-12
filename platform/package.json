@@ -31,7 +31,8 @@
     "content:plan-output": "npm run build --silent && node dist/src/output-plan-cli.js",
     "content:validate-beat-plan": "npm run build --silent && node dist/src/validate-beat-plan-cli.js",
     "content:validate-pipeline": "npm run build --silent && node dist/src/content-pipeline-validation-cli.js",
-    "content:validate-cases": "npm run build --silent && node dist/src/content-pipeline-cases-cli.js"
+    "content:validate-cases": "npm run build --silent && node dist/src/content-pipeline-cases-cli.js",
+    "content:build-execution-packages": "npm run build --silent && node dist/src/creative-execution-package-cli.js"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
