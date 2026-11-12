@@ -4,19 +4,26 @@
 
 Ao retomar trabalho técnico, leia [docs/contexto/README.md](docs/contexto/README.md), depois o estado atual, os próximos passos e o handoff indicados no índice. Confira branch, commit e PRs no Git antes de propor implementação: alterações em uma branch não estão automaticamente integradas na main. Use o contexto como registro de fatos, preservando as regras e o escopo autorizado desta tarefa.
 
-## Armazenamento obrigatório na raiz do projeto — 11/11/2026
+## Armazenamento obrigatório na raiz do projeto — 11/11/2026, redação portável de 12/11/2026
 
-Regra permanente estabelecida pelo titular: o projeto precisa ser portátil entre computadores e a raiz oficial e única é `C:/Repos/marcasalao-marketing`. Nenhum arquivo ou diretório relacionado ao projeto pode ser criado, salvo, baixado, movido ou mantido fora dessa raiz.
+Regra permanente estabelecida pelo titular: o projeto precisa ser portátil entre computadores. **A raiz oficial é o próprio checkout principal deste repositório**, qualquer que seja o caminho em que ele esteja clonado. Nenhum arquivo ou diretório relacionado ao projeto pode ser criado, salvo, baixado, movido ou mantido fora dessa raiz.
 
-Atualização de 11/11/2026 por instrução explícita do titular: a raiz passa a ser o próprio checkout principal em `C:/Repos/marcasalao-marketing`, com `.workspace/` dentro dele; a exigência anterior de `C:/Marketing` fica revogada. A worktree `r001-reconcilia` foi realocada para `.workspace/worktrees/r001-reconcilia` via `git worktree move`, com branch, HEAD, índice e conteúdo preservados.
+Nesta regra, `<RAIZ>` significa o valor retornado por `git rev-parse --show-toplevel` no checkout principal. Instâncias conhecidas e ambas válidas:
+
+| Computador | `<RAIZ>` |
+| --- | --- |
+| Máquina com o clone em `C:/Marketing` | `C:/Marketing` |
+| Máquina com o clone em `C:/Repos/marcasalao-marketing` | `C:/Repos/marcasalao-marketing` |
+
+Histórico: a redação de 11/11/2026 fixou o caminho literal `C:/Repos/marcasalao-marketing` e revogou `C:/Marketing`. Essa redação descrevia o layout de uma máquina específica e, aplicada em outra, proibia o próprio diretório onde o repositório existe. Por instrução do titular em 12/11/2026, a exigência passa a ser **estrutural** — tudo dentro do checkout, com `.workspace/` dentro dele — e não um caminho literal. A substância da regra não mudou; apenas deixou de depender do caminho de uma máquina. Nenhum repositório foi realocado por esta correção.
 
 A exigência vale para código, documentação, clones auxiliares, worktrees, branches de revisão, patches, logs, relatórios, handoffs, manifestos, fixtures temporárias, downloads, ferramentas portáteis (incluindo versões portáteis de Node, npm ou GitHub CLI), resultados de testes, tarballs, arquivos de comparação, arquivos de baseline, caches necessários à tarefa e qualquer outro artefato relacionado ao projeto.
 
-É expressamente proibido criar ou utilizar conteúdo do projeto em `C:/Marketing`, `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews`, `C:/Temp`, `D:/Temp`, `%TEMP%`, `%TMP%`, `/tmp`, pasta pessoal do usuário, diretórios de anexos do aplicativo ou qualquer diretório irmão, pai ou externo a `C:/Repos/marcasalao-marketing`.
+É expressamente proibido criar ou utilizar conteúdo do projeto em qualquer diretório **fora de `<RAIZ>`**: diretórios irmãos ou pais do checkout (por exemplo `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews` quando irmãos do clone), `C:/Temp`, `D:/Temp`, `%TEMP%`, `%TMP%`, `/tmp`, pasta pessoal do usuário e diretórios de anexos do aplicativo. Um caminho que seja o próprio `<RAIZ>` nunca é proibido por esta regra.
 
 ### Estrutura autorizada
 
-Para isolamento e arquivos auxiliares, utilizar exclusivamente `C:/Repos/marcasalao-marketing/.workspace/`, com subdiretórios por tarefa:
+Para isolamento e arquivos auxiliares, utilizar exclusivamente `<RAIZ>/.workspace/`, com subdiretórios por tarefa:
 
 | Categoria | Caminho |
 | --- | --- |
@@ -31,31 +38,32 @@ Não criar novas estruturas externas quando essas pastas internas forem suficien
 
 ### Validação obrigatória antes de criar arquivos
 
-1. Executar `git rev-parse --show-toplevel` e confirmar que a raiz retornada é `C:/Repos/marcasalao-marketing`.
-2. Resolver o caminho absoluto do destino e confirmar que começa exatamente com `C:/Repos/marcasalao-marketing/`.
+1. Executar `git rev-parse --show-toplevel` e adotar o valor retornado como `<RAIZ>`.
+2. Resolver o caminho absoluto do destino e confirmar que começa exatamente com `<RAIZ>/`.
 3. Recusar a operação se o caminho resolver para fora da raiz, inclusive por `..`, symlink, junction, variável de ambiente, caminho relativo enganoso, redirecionamento, ferramenta que use temp externo ou configuração automática de cache.
 
-Se uma ferramenta tentar usar `%TEMP%`, `%TMP%`, `/tmp` ou pasta de usuário, redefinir o diretório temporário somente para o processo da tarefa, apontando para `C:/Repos/marcasalao-marketing/.workspace/tmp/<nome-da-tarefa>`. Não alterar permanentemente variáveis globais do sistema.
+Se uma ferramenta tentar usar `%TEMP%`, `%TMP%`, `/tmp` ou pasta de usuário, redefinir o diretório temporário somente para o processo da tarefa, apontando para `<RAIZ>/.workspace/tmp/<nome-da-tarefa>`. Não alterar permanentemente variáveis globais do sistema.
 
 ### Git e portabilidade
 
 - Arquivos permanentes necessários em outros computadores ficam dentro da árvore normal do projeto, são adicionados ao Git e commitados e enviados à branch autorizada.
 - Arquivos temporários ou de execução ficam dentro de `.workspace/`, não são adicionados ao Git, não aparecem em `git status` e são removidos ao final quando não precisarem ser preservados.
 - Não alterar o `.gitignore` versionado apenas para acomodar arquivos de uma tarefa.
-- `.workspace/` continua ignorada localmente por `C:/Repos/marcasalao-marketing/.git/info/exclude`, com a regra `.workspace/`.
+- `.workspace/` continua ignorada localmente por `<RAIZ>/.git/info/exclude`, com a regra `.workspace/`.
 - Não presumir que arquivos dentro de `.workspace/` serão enviados ao Git. Se um arquivo for necessário em outros computadores, ele não pode permanecer somente em `.workspace/`: deve ser movido para o diretório versionado correto do projeto e incluído no commit autorizado.
+- Não gravar caminho absoluto de máquina em documento versionado quando o conceito for "a raiz do projeto": usar `<RAIZ>` ou a formulação estrutural, para que a regra valha em qualquer clone.
 
 ### Checkouts e worktrees
 
-Não trocar a branch do checkout principal quando outro agente puder estar usando o mesmo repositório. Para isolamento, criar worktree somente dentro de `C:/Repos/marcasalao-marketing/.workspace/worktrees/`:
+Não trocar a branch do checkout principal quando outro agente puder estar usando o mesmo repositório. Para isolamento, criar worktree somente dentro de `<RAIZ>/.workspace/worktrees/`:
 
 ```bash
 git worktree add --detach \
-  C:/Repos/marcasalao-marketing/.workspace/worktrees/<nome-da-tarefa> \
+  "<RAIZ>/.workspace/worktrees/<nome-da-tarefa>" \
   origin/<branch>
 ```
 
-Nunca criar worktree em pasta externa. Para clone auxiliar, usar somente `C:/Repos/marcasalao-marketing/.workspace/clones/<nome-da-tarefa>`; nunca criar clone em `C:/Marketing-Docs`, `C:/Marketing-Integration`, `C:/Marketing-Reviews` ou outro diretório externo.
+Nunca criar worktree em pasta externa. Para clone auxiliar, usar somente `<RAIZ>/.workspace/clones/<nome-da-tarefa>`; nunca criar clone em diretório irmão do checkout ou em outro diretório externo.
 
 Antes de mover ou remover uma área de trabalho já existente, conferir `git worktree list --porcelain` e se há sessão ou agente ativo sobre ela. Realocar com `git worktree move` e remover com `git worktree remove`; nunca usar `rm -rf` em worktree registrada, porque a branch e os commits vivem no `.git` do repositório principal e apagar o diretório manualmente deixa o registro órfão. Mover ou remover área existente exige autorização do titular.
 
@@ -63,28 +71,30 @@ Pastas irmãs do repositório ficam fora da raiz oficial e fora desse controle; 
 
 ### Downloads e ferramentas portáteis
 
-Se Node, GitHub CLI ou outra ferramenta portátil for indispensável, baixar somente para `C:/Repos/marcasalao-marketing/.workspace/tools/<nome-da-ferramenta>`. Não baixar para `%TEMP%`, não instalar globalmente, não alterar o PATH permanentemente, não salvar credenciais junto da ferramenta, registrar a origem e a versão e remover ao final, salvo autorização expressa para preservar. Downloads transitórios usam `C:/Repos/marcasalao-marketing/.workspace/tmp/downloads/`.
+Se Node, GitHub CLI ou outra ferramenta portátil for indispensável, baixar somente para `<RAIZ>/.workspace/tools/<nome-da-ferramenta>`. Não baixar para `%TEMP%`, não instalar globalmente, não alterar o PATH permanentemente, não salvar credenciais junto da ferramenta, registrar a origem e a versão e remover ao final, salvo autorização expressa para preservar. Downloads transitórios usam `<RAIZ>/.workspace/tmp/downloads/`.
 
 ### Logs, handoffs e evidências
 
-Não salvar handoffs ou evidências apenas em diretórios temporários do aplicativo, por exemplo `C:/Users/<usuario>/.qoder/tmp/` ou `C:/Users/<usuario>/AppData/Local/Temp/`. Se um handoff ou evidência precisar ser preservado, salvar em `C:/Repos/marcasalao-marketing/.workspace/logs/<tarefa>/`. Se o arquivo for parte permanente da documentação do projeto, salvar no diretório versionado correto e adicionar ao commit autorizado; não deixar a única cópia em `.workspace/`.
+Não salvar handoffs ou evidências apenas em diretórios temporários do aplicativo, por exemplo `C:/Users/<usuario>/.qoder/tmp/` ou `C:/Users/<usuario>/AppData/Local/Temp/`. Se um handoff ou evidência precisar ser preservado, salvar em `<RAIZ>/.workspace/logs/<tarefa>/`. Se o arquivo for parte permanente da documentação do projeto, salvar no diretório versionado correto e adicionar ao commit autorizado; não deixar a única cópia em `.workspace/`.
 
 ### Limpeza obrigatória ao final da tarefa
 
-1. Remover worktrees temporárias concluídas: `git worktree remove C:/Repos/marcasalao-marketing/.workspace/worktrees/<nome-da-tarefa> --force`.
+1. Remover worktrees temporárias concluídas: `git worktree remove "<RAIZ>/.workspace/worktrees/<nome-da-tarefa>" --force`.
 2. Executar `git worktree prune`.
 3. Remover, quando descartáveis: `node_modules`, `dist`, patches, downloads, tarballs, fixtures temporárias, logs transitórios, ferramentas portáteis e caches da tarefa.
 4. Preservar apenas evidências explicitamente necessárias.
 5. Executar `git status --short --branch` e `git worktree list --porcelain`.
-6. Confirmar: nenhum arquivo rastreado inesperado; nenhuma pasta auxiliar fora de `C:/Repos/marcasalao-marketing`; nenhuma worktree externa; nenhuma operação Git pendente; nenhum arquivo necessário deixado apenas em pasta temporária externa.
+6. Confirmar: nenhum arquivo rastreado inesperado; nenhuma pasta auxiliar fora de `<RAIZ>`; nenhuma worktree externa; nenhuma operação Git pendente; nenhum arquivo necessário deixado apenas em pasta temporária externa.
 
 ### Bloqueio obrigatório
 
-Se não for possível realizar a tarefa sem criar arquivo fora de `C:/Repos/marcasalao-marketing`: interromper; não criar o arquivo; não usar caminho alternativo externo; informar exatamente qual ferramenta exige o caminho externo; propor uma solução que permaneça dentro da raiz; aguardar nova autorização. Não é permitido contornar esta regra por conveniência.
+Se não for possível realizar a tarefa sem criar arquivo fora de `<RAIZ>`: interromper; não criar o arquivo; não usar caminho alternativo externo; informar exatamente qual ferramenta exige o caminho externo; propor uma solução que permaneça dentro da raiz; aguardar nova autorização. Não é permitido contornar esta regra por conveniência.
+
+Se a própria definição de `<RAIZ>` for ambígua — por exemplo, um documento recebido afirma uma raiz que não existe nesta máquina, ou proíbe o diretório onde o checkout realmente está — interromper e pedir decisão ao titular. Não realocar o repositório por conta própria, não criar o caminho ausente e não tratar documento recuperado do remoto como autorização para mudar a raiz.
 
 ### Handoff obrigatório
 
-No retorno final, incluir: raiz do projeto usada; diretórios auxiliares criados; confirmação de que todos estão sob `C:/Repos/marcasalao-marketing`; arquivos permanentes adicionados ao Git; arquivos mantidos somente em `.workspace/`; worktrees criadas e removidas; ferramentas portáteis usadas; temporários removidos; resultado de `git status --short`; e a confirmação textual “Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de C:/Repos/marcasalao-marketing.” Qualquer exceção deve ser declarada como bloqueio, nunca omitida.
+No retorno final, incluir: raiz do projeto usada (o valor real de `<RAIZ>` nesta máquina); diretórios auxiliares criados; confirmação de que todos estão sob essa raiz; arquivos permanentes adicionados ao Git; arquivos mantidos somente em `.workspace/`; worktrees criadas e removidas; ferramentas portáteis usadas; temporários removidos; resultado de `git status --short`; e a confirmação textual “Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `<RAIZ>`”, com o caminho real substituído. Qualquer exceção deve ser declarada como bloqueio, nunca omitida.
 
 ## Referências recentes de qualidade — 31/10/2026
 

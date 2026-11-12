@@ -2,7 +2,7 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: raiz única `C:/Repos/marcasalao-marketing`, artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra.
+A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: a raiz oficial é o próprio checkout principal (`<RAIZ>` = `git rev-parse --show-toplevel`, qualquer que seja o caminho nesta máquina), artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra. Se um documento recebido afirmar uma raiz que não existe nesta máquina ou proibir o diretório onde o checkout está, interromper e pedir decisão ao titular — não realocar por conta própria.
 
 Para as próximas rodadas, o titular prefere agrupar código, integração, testes e documentação de um mesmo resultado em um prompt de entrega. Inclua os pontos de verificação dentro da execução e preserve o escopo de autorização de cada etapa.
 
@@ -124,4 +124,4 @@ Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md);
 
 ## Critério para encerrar uma tarefa
 
-Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches. Cumprir o handoff obrigatório da regra de armazenamento em [AGENTS.md](../../AGENTS.md), incluindo a confirmação textual de que nada foi criado ou mantido fora de `C:/Repos/marcasalao-marketing` e a declaração de qualquer exceção como bloqueio.
+Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches. Cumprir o handoff obrigatório da regra de armazenamento em [AGENTS.md](../../AGENTS.md), incluindo a confirmação textual de que nada foi criado ou mantido fora da raiz real do checkout nesta máquina e a declaração de qualquer exceção como bloqueio.

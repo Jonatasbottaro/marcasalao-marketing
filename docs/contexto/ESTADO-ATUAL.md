@@ -4,7 +4,7 @@
 
 - Data da atualização: 2026-11-12
 - Branch de referência: main
-- Commit da main consultada: [2c409676e58e4e118d865821b9a0cbdd93a22364](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/2c409676e58e4e118d865821b9a0cbdd93a22364) — revisão mais recente de `AGENTS.md`, com a raiz oficial `C:/Repos/marcasalao-marketing` e `.workspace/` dentro do checkout; base sobre a qual a integração do R002 foi commitada
+- Commit da main consultada: [2c409676e58e4e118d865821b9a0cbdd93a22364](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/2c409676e58e4e118d865821b9a0cbdd93a22364) — revisão de `AGENTS.md` que fixou a raiz oficial como o próprio checkout com `.workspace/` dentro dele; base sobre a qual a integração do R002 foi commitada. A redação portável de 12/11/2026 substituiu o caminho literal por `<RAIZ>` = `git rev-parse --show-toplevel`
 - Merge de integração do piloto local R002: `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9`, a partir da branch técnica `codex/r002-video-local-agenda` (HEAD `b59076918eea6a2eaecda90bf2ec3c8cb4ac6c60`), com commit corretivo único `0ac4bde8e5096ecdf4913a48ad453e066346b213`
 - Merge de integração da execução local de TEMPORAL-02: `5376890974d4baf49b341297a9b7b0071a680dc6`, a partir da branch `codex/temporal-02-execucao-local` (HEAD `63d04d5e4476e13a34f4636b19a08e642627b70b`), por pedido explícito do titular em 12/11/2026 de atualização completa do remoto
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
@@ -402,7 +402,9 @@ Política canônica do PRD implementada em `COMPOSITION_VALIDATION_ACTIVITY_OPTI
 
 Os sete testes de Workflow exercitaram `valid` e `invalid` com Activity real, falha inesperada não retryable, recuperação e esgotamento de falha transitória, timeout persistente e erro desconhecido. O ambiente usou `TestWorkflowEnvironment.createTimeSkipping()`; comprova os casos exercitados, não fidelidade universal ao servidor completo nem replay formal.
 
-### Limites atuais
+### Limites no recorte da fatia Workflow (`f584210`) — registro histórico
+
+Os itens abaixo descrevem o estado **no recorte da fatia Workflow em `f584210`**, antes da execução local. Foram superados pelo merge `5376890` (12/11/2026) no que toca a cliente, `workflow.start`, Workflow ID, políticas, colisão, Worker local, replay formal e gate Elephant–Goldfish, que passaram a existir em escopo estritamente local. O estado corrente está na seção **TEMPORAL-02 — Execução local integrada**; o gate Elephant–Goldfish de TEMPORAL-02 foi **executado e aprovado** para a execução local, conforme [`orchestration/temporal/docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md`](../../orchestration/temporal/docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md). Produção, servidor remoto, namespace de produção, `contentHash` e deploy continuam bloqueados. Preserva-se o recorte histórico abaixo sem alteração de conteúdo:
 
 - Worker efêmero, cliente do ambiente de teste, chamadas a `workflow.start` e IDs de execução existem **somente nos testes desta fatia**.
 - Worker de produção dedicado à composição: **ausente**.
@@ -606,7 +608,7 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 Em 11/11/2026 o titular estabeleceu uma **regra permanente de armazenamento**, registrada em [AGENTS.md](../../AGENTS.md) pelo commit `9908f3b6424a196464ed0557294a8efb0445774a` e reforçada pelo commit `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`. É normativa para qualquer clone e qualquer agente; este contexto apenas a registra e aponta para a fonte, que é o `AGENTS.md`.
 
-- A raiz oficial e única do projeto é `C:/Repos/marcasalao-marketing`, com `.workspace/` dentro do checkout. A revisão de `AGENTS.md` em `2c40967` registra a nova raiz e a realocação da worktree `r001-reconcilia` para `.workspace/worktrees/r001-reconcilia`.
+- A raiz oficial do projeto é o **próprio checkout principal**, qualquer que seja o caminho nesta máquina: `<RAIZ>` = `git rev-parse --show-toplevel`, com `.workspace/` dentro dele. A revisão de `AGENTS.md` em `2c40967` fixou o caminho literal `C:/Repos/marcasalao-marketing`, que descreve o layout de uma máquina; a redação portável de 12/11/2026 substituiu o literal por `<RAIZ>` e registra as duas instâncias conhecidas (`C:/Marketing` e `C:/Repos/marcasalao-marketing`), ambas válidas. A substância da regra não mudou e nenhum repositório foi realocado. A realocação da worktree `r001-reconcilia` para `.workspace/worktrees/r001-reconcilia` registrada em `2c40967` ocorreu na máquina daquela sessão; não é um fato deste checkout.
 - Isolamento e arquivos auxiliares usam exclusivamente `.workspace/`, com subdiretórios por tarefa: `worktrees/`, `clones/`, `archives/`, `logs/`, `tmp/` e `tools/`.
 - `.workspace/` é ignorada localmente por `.git/info/exclude`; o `.gitignore` versionado **não** deve ser alterado para acomodar arquivos de tarefa.
 - Arquivo necessário em outro computador não pode permanecer somente em `.workspace/`: precisa entrar na árvore versionada e ser commitado na branch autorizada.
