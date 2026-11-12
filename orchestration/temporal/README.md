@@ -97,17 +97,22 @@ antigo em `dist/`, e o glob continua executando-o. Rode `clean` antes de medir c
 | --- | --- |
 | `npm run build` | `tsc` para `dist/` (o bundle do Workflow é gerado pelo webpack na criação do worker) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | os 120 testes (unidades, integração, estáticos e de processo) — 44 s medidos |
-| `npm run test:unit` | 104 testes que não precisam de servidor (núcleo, Activities, cliente, endereço, fronteira e processo) — 13 s medidos |
-| `npm run test:integration` | 16 testes da camada de Workflow: 11 de integração com `TestWorkflowEnvironment` (inclui retry, timeout, replay e colisão de `workflowId`) + 5 de classificação de falha — 42 s medidos |
+| `npm test` | os 198 testes (unidades, integração, estáticos, processo, execução local e replay) — 47 s medidos em Node 22.23.2 |
+| `npm run test:unit` | 135 testes que não precisam de servidor (núcleo, Activities, cliente, worker, endereço, fronteira e processo) |
+| `npm run test:integration` | 29 testes da camada de Workflow com `TestWorkflowEnvironment` (retry, timeout, replay e colisão do piloto; colisão aberta/concluída, preflight zero-execução, espera de resultado e shutdown de TEMPORAL-02) |
 | `npm run pilot:local` | servidor efêmero do SDK, `requestId` de demonstração, resultado impresso, tudo derrubado no `finally` |
 | `npm run pilot:worker` | worker real contra `127.0.0.1:7233` (ou `--address <host:porta>` local) |
 | `npm run pilot:run` | cliente real: inicia o Workflow e imprime o `TemporalPilotResult` |
+| `npm run composition:worker` | Worker local dedicado à validação de Composition (Task Queue `composition-validation-v1`) |
+| `npm run composition:validate` | cliente real de validação: preflight → start → resultado JSON; exit codes na seção TEMPORAL-02 |
+| `npm run composition:validate:local` | execução local real completa (`createLocal`): valid, invalid e colisão medidos, tudo derrubado no `finally` |
+| `npm run composition:replay` | replay formal da história versionada + gate de não-determinismo + replay de história fresca (3 testes) |
+| `npm run test:local` | somente os testes de execução local real (`createLocal`, 3 testes) |
 
-Testes por arquivo: núcleo 59 (`pilot-input` 17, `pilot-plan` 12, `pilot-result` 11,
-`pilot-outcome` 8, `non-retryable-codes` 7, `failures` 4), `pilot-activities` 9,
-`pilot-start` 14, `local-address` 8, `pilot-boundary` 7, `entrypoints` 7,
-`pilot-failure-signal` 5, `content-pilot-workflow` 11.
+Testes por grupo (medidos em Node 22.23.2): `test:unit` 135; `test:integration` 29;
+`test:local` 3; `composition:replay` 3; suíte de `tests/composition-validation/`
+(contrato, preflight, processo, resultado e fronteiras) 28; total `npm test` 198,
+zero falhas e zero skips.
 
 ## Rodada local medida (dois processos)
 
@@ -184,11 +189,13 @@ abaixo.
   histórias de versões futuras do Workflow.
 - As Activities não produzem efeito real de negócio: são puras por contrato, e é isso que
   torna a idempotência estrutural e não uma promessa.
-- **Não resolvido:** entregar `SIGINT`/`Ctrl+C` a um `npm run pilot:worker` rodando solto
-  no Windows. O que está medido é outro caminho: `pilot:local` e a suíte de integração
-  derrubam worker e ambiente no próprio `finally`, e importar os pontos de entrada não
-  deixa handle ativo (os testes de processo veem o filho terminar sozinho). Nenhum teste
-  nem o CI dependem de sinal de sistema operacional.
+- **Não resolvido:** entregar `SIGINT`/`Ctrl+C` a um `npm run pilot:worker` ou
+  `npm run composition:worker` rodando solto no Windows. O que está medido é outro
+  caminho: `pilot:local`, `composition:validate:local` e a suíte de integração
+  derrubam worker e ambiente no próprio `finally`; os handlers de SIGINT/SIGTERM do
+  lifecycle são exercitados em processo filho isolado (emit), e importar os pontos
+  de entrada não deixa handle ativo (os testes de processo veem o filho terminar
+  sozinho). Nenhum teste nem o CI dependem de sinal de sistema operacional.
 
 ## TEMPORAL-02-02 — contrato de solicitação e preflight local
 
@@ -235,14 +242,103 @@ Regras e limites preservados nesta fatia (TEMPORAL-02 completo **não** está co
 
 - `valid` e `invalid` são retornos normais de domínio com `CompositionValidationReport` intacto, `projectId` e `compositionId` vindos do relatório e `completedSteps: ['validate-composition']`.
 - `failed` retorna resultado sanitizado com `validation: null`, `projectId: null`, `compositionId: null`, `completedSteps: []` e `failureCode` obrigatório.
-- `workflow.start`, o cliente Temporal de validação e o Worker de produção para validação **ainda estão ausentes** (testes executam apenas com `TestWorkflowEnvironment` e Worker efêmero).
-- `Workflow ID` (fora desta fatia) e `contentHash` (fora de `TEMPORAL-02`) não são implementados.
-- O replay formal de `TEMPORAL-02` **não foi executado nem aprovado**, e o gate **Elephant–Goldfish de TEMPORAL-02 permanece pendente** antes da integração final (distinto do gate já concluído para `TEMPORAL-01` abaixo).
+- `workflow.start`, o cliente Temporal de validação e o Worker local de validação
+  **foram implementados na fatia de execução local** (seção TEMPORAL-02 — Execução
+  local completa); continuam locais, sem produção e sem deploy.
+- `Workflow ID` determinístico e políticas de reuso/conflito pertencem ao cliente
+  (`composition-validation-<requestId>`); `contentHash` permanece fora de TEMPORAL-02.
+- O replay formal de TEMPORAL-02 **foi executado e aprovado** na fatia de execução
+  local, e o gate **Elephant–Goldfish de TEMPORAL-02 foi executado** nesta entrega
+  (registro em `docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md`), distinto do gate já
+  concluído para TEMPORAL-01 abaixo.
+
+## TEMPORAL-02 — Execução local completa (cliente, Worker, CLI e replay)
+
+Esta fatia conecta os componentes já integrados (preflight → cliente →
+`workflow.start` → Worker local → `validateCompositionWorkflow` →
+`validateCompositionActivity` → `CompositionValidationWorkflowResult`) em uma
+experiência **local, reproduzível e encerrável**. Não é produção: sem deploy, sem
+servidor remoto, sem namespace de produção, sem Worker persistente.
+
+Módulos novos:
+
+| Peça | Onde |
+| --- | --- |
+| Workflow ID, opções de start, políticas, colisão, start e execute | [`src/client/composition-validation-start.ts`](src/client/composition-validation-start.ts) |
+| CLI de validação (`--project`, `--composition`, `--request-id`, `--address`, `--namespace`, `--json`) | [`src/client/composition-validation-main.ts`](src/client/composition-validation-main.ts) |
+| Fábrica e runner do Worker local (localhost-only) | [`src/worker/composition-validation-worker.ts`](src/worker/composition-validation-worker.ts) |
+| Lifecycle de sinais (SIGINT/SIGTERM) com dispose | [`src/worker/composition-validation-worker-lifecycle.ts`](src/worker/composition-validation-worker-lifecycle.ts) |
+| CLI do Worker | [`src/worker/composition-validation-main.ts`](src/worker/composition-validation-main.ts) |
+| Execução local real (`createLocal`, três caminhos medidos) | [`src/local/composition-validation-main.ts`](src/local/composition-validation-main.ts) |
+| Captura do fixture de replay (método abaixo) | [`scripts/capture-composition-replay-history.mjs`](scripts/capture-composition-replay-history.mjs) |
+| Replay formal e gate de determinismo | [`tests/replay/composition-validation-replay.test.ts`](tests/replay/composition-validation-replay.test.ts) |
+
+Contratos de execução:
+
+- **Workflow ID**: `composition-validation-<requestId>` — função pura no cliente,
+  determinística, sem data, aleatoriedade, hash ou `contentHash`; o `requestId`
+  já vem validado pelo preflight. Barreira estática garante construtor único.
+- **Task Queue**: `composition-validation-v1` (dedicada; não reutiliza
+  `marketing-temporal-pilot-v1`). **Workflow Type**: `validateCompositionWorkflow`.
+  **Namespace**: `default` configurável por `--namespace`.
+- **Políticas**: `WorkflowIdReusePolicy.REJECT_DUPLICATE` +
+  `WorkflowIdConflictPolicy.FAIL` (PRD §20 e precedente TEMPORAL-01). Colisão
+  (execução aberta ou concluída) devolve `TEMPORAL_COMPOSITION_WORKFLOW_ID_CONFLICT`,
+  sem nova execução, sem Activity e sem `CompositionValidationWorkflowResult`.
+- **Preflight obrigatório**: nenhum start público acontece antes de
+  `startAfterCompositionPreflight`; o CLI ainda roda o preflight antes de
+  `Connection.connect`. Entrada inválida/sensível/grande = zero execução.
+- **Endereço**: somente localhost, pela guarda compartilhada `checkLocalAddress`;
+  endereço remoto é recusado antes de conectar.
+- **Retry/timeout**: os valores ratificados da fatia Workflow permanecem intactos
+  (`maximumAttempts: 2`, `startToCloseTimeout: '5 seconds'`); colisão e preflight
+  ficam fora da Retry Policy da Activity.
+
+Exit codes do `composition:validate` (stdout só resultado JSON, stderr só
+mensagens operacionais fixas, zero stack e zero payload):
+
+| Exit | Significado |
+| --- | --- |
+| 0 | `valid` |
+| 1 | `invalid` (domínio; decisão documentada: domínio inválido não é erro técnico) |
+| 2 | uso/argumento/arquivo/preflight (antes de qualquer conexão) |
+| 3 | `failed` (execução esgotada ou não retryable) |
+| 4 | colisão de Workflow ID |
+| 5 | conexão ou falha técnica de start sanitizada |
+
+O `composition:worker` usa exit 2 para uso inválido e exit 1 para falha técnica;
+anuncia somente Task Queue, namespace e endereço local.
+
+### Replay formal
+
+Método: `node scripts/capture-composition-replay-history.mjs` (após `npm run build`)
+sobe `createLocal`, executa o Workflow integrado com Worker e cliente reais sobre
+os exemplos fictícios da platform, grava a history e **normaliza apenas campos
+dependentes da máquina**: timestamps (`eventTime`) viram `2026-01-01T00:00:00.000Z`,
+runIds viram um UUID fixo e WKT de duração viram string (`"5s"`, inclusive campos
+zerados `{}` e `firstWorkflowTaskBackoff`). O fixture versionado
+[`tests/replay/fixtures/composition-validation-valid.history.json`](tests/replay/fixtures/composition-validation-valid.history.json)
+(11 eventos) não contém documentos sensíveis, caminhos locais nem relógio de
+computador. O teste replaya o fixture com `Worker.runReplayHistory`, replaya uma
+história fresca gerada na própria execução e prova sensibilidade: um Workflow de
+teste com o mesmo nome e duas chamadas de Activity rejeita o fixture com
+`[TMPRL1100] Nondeterminism error`. Não há alegação de compatibilidade com
+histórias de versões futuras do Workflow.
+
+### Gate Elephant–Goldfish
+
+Executado nesta entrega e registrado em
+[`docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md`](docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md):
+16 pontos adversariais verificados com evidência de teste, revisão de
+simplicidade/removibilidade e backlog cosmético. Nenhum bloqueador aberto.
 
 ## Próximo gate
 
 A revisão **Elephant–Goldfish** de TEMPORAL-01 foi executada fora deste pacote e as três
 ressalvas prioritárias dela estão fechadas aqui: colisão de `workflowId` medida na suíte
 de integração, conjunto não retryable com fonte única e CI específico do pacote. Entre
-TEMPORAL-01 e TEMPORAL-02 não há aprovação simulada. Menor passo seguinte: orquestrar um
-passo real do núcleo em TEMPORAL-02, somente quando houver autorização.
+TEMPORAL-01 e TEMPORAL-02 não há aprovação simulada. A revisão **Elephant–Goldfish de
+TEMPORAL-02** foi executada nesta entrega sobre a execução local (registro em
+[`docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md`](docs/TEMPORAL-02-ELEPHANT-GOLDFISH.md)).
+Menor passo seguinte: revisão e integração controlada desta execução local; produção
+remota e deploy continuam não autorizados.

@@ -2,7 +2,7 @@
   "name": "marcasalao-marketing-temporal-pilot",
   "private": true,
   "version": "0.1.0",
-  "description": "Piloto TEMPORAL-01: camada de orquestracao com Temporal separada do nucleo modular. Workflow deterministico, Activities idempotentes, retries e timeouts explicitos, erros estruturados, execucao local. Nao orquestra OutputPlan, BeatPlan, previa, exportacao, renderizacao, midia nem campanha.",
+  "description": "Orquestracao Temporal separada do nucleo modular: piloto TEMPORAL-01 e execucao local de TEMPORAL-02 (validacao de Composition). Workflow deterministico, Activities idempotentes, retries e timeouts explicitos, erros estruturados, cliente/Worker/CLI locais, replay formal. Nao orquestra OutputPlan, BeatPlan, previa, exportacao, renderizacao, midia nem campanha; sem deploy.",
   "type": "module",
   "engines": {
     "node": ">=22 <25"
@@ -12,11 +12,16 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test --test-reporter=tap \"dist/tests/**/*.test.js\"",
-    "test:unit": "npm run build && node --test --test-reporter=tap \"dist/tests/pilot-core/*.test.js\" \"dist/tests/activities/*.test.js\" \"dist/tests/client/*.test.js\" \"dist/tests/local-address.test.js\" \"dist/tests/boundary/*.test.js\" \"dist/tests/process/*.test.js\"",
+    "test:unit": "npm run build && node --test --test-reporter=tap \"dist/tests/pilot-core/*.test.js\" \"dist/tests/activities/*.test.js\" \"dist/tests/client/*.test.js\" \"dist/tests/worker/*.test.js\" \"dist/tests/local-address.test.js\" \"dist/tests/boundary/*.test.js\" \"dist/tests/process/*.test.js\"",
     "test:integration": "npm run build && node --test --test-reporter=tap \"dist/tests/workflow/*.test.js\"",
+    "test:local": "npm run build && node --test --test-reporter=tap \"dist/tests/local/*.test.js\"",
     "pilot:worker": "npm run build --silent && node dist/src/worker/main.js",
     "pilot:run": "npm run build --silent && node dist/src/client/main.js",
-    "pilot:local": "npm run build --silent && node dist/src/local/main.js"
+    "pilot:local": "npm run build --silent && node dist/src/local/main.js",
+    "composition:worker": "npm run build --silent && node dist/src/worker/composition-validation-main.js",
+    "composition:validate": "npm run build --silent && node dist/src/client/composition-validation-main.js",
+    "composition:validate:local": "npm run build --silent && node dist/src/local/composition-validation-main.js",
+    "composition:replay": "npm run build --silent && node --test --test-reporter=tap \"dist/tests/replay/*.test.js\""
   },
   "dependencies": {
     "@temporalio/client": "1.25.0",
