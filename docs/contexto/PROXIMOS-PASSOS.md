@@ -2,13 +2,15 @@
 
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
-A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: raiz única `C:/Marketing`, artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra.
+A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: raiz única `C:/Repos/marcasalao-marketing`, artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra.
+
+Para as próximas rodadas, o titular prefere agrupar código, integração, testes e documentação de um mesmo resultado em um prompt de entrega. Inclua os pontos de verificação dentro da execução e preserve o escopo de autorização de cada etapa.
 
 ## 1. Deliberar sobre a próxima fatia de TEMPORAL-02
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.
 
-A base da main consultada em 11/11/2026 é `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e`, contendo as fatias técnicas de validação de composição, a integração do R001, o BeatPlan v1 interno e quatro commits exclusivamente documentais e de governança: `c50dc86` (contexto com BeatPlan), `9908f3b` (regra permanente de armazenamento), `79fd5da` (segurança de worktrees) e `ed7e8f1` (contexto com a regra e a auditoria). Nenhum deles altera código, `platform/`, `orchestration/` ou CI. Sobre essa base foi executada a **limpeza de 14 branches remotas** autorizada pelo titular, restando 7 branches; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`). Marcos preservados:
+A main conferida em 11/11/2026 está em `2c409676e58e4e118d865821b9a0cbdd93a22364`. O último commit técnico do núcleo é `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`, com R001 e BeatPlan v1 integrados. Os seis commits posteriores atualizam documentação e governança. A limpeza de 14 branches remotas autorizada pelo titular ficou registrada em `3c44ae4`. A PR #1 (`codex/ai-memory-integration`) é a única aberta na leitura. Em 12/11/2026 o piloto técnico local R002 (vídeo sem áudio, fora do núcleo) foi integrado pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; não altera `platform/`, `orchestration/` nem os bloqueios abaixo.
 
 - **TEMPORAL-02-01**: fronteira pública mínima da `platform`, integrada em `f202377fac721aff1d4143a2598f76c03062f0ac`;
 - **TEMPORAL-02-02**: `CompositionValidationWorkflowInput` e preflight local, integrados em `29b40783320360350e59a13e39f49a60d2308507`;
@@ -105,6 +107,12 @@ Para a NS-001, tratar as pendências apontadas nos documentos da própria campan
 
 Na próxima validação funcional, registrar o commit executado, alterações locais, ambiente, fixture, comandos, resultados e evidências. Não atribuir retroativamente um commit à execução antiga.
 
+## 6. Preparar a proposta de autorização para execução real da validação de Composition no Temporal
+
+> Próxima entrega recomendada após o fechamento do R002 (12/11/2026): **preparar a proposta completa de autorização para execução real da validação de Composition no Temporal, sem iniciar implementação automaticamente.**
+
+A proposta deve delimitar escopo, componentes, riscos, evidências exigidas e critérios de ratificação, reaproveitando o que já está integrado e ratificado (fronteira pública, input/preflight, Activity, Workflow em escopo estrito, Retry Policy) e o precedente de gates do R002 (reprodução limpa, inspeção técnica real, prova transacional, hashes e documentação no mesmo marco). É trabalho de proposta: nenhum Worker de produção, cliente, `workflow.start`, Workflow ID, replay ou gate deixa de estar bloqueado por esta recomendação; a execução real depende de decisão explícita e separada do titular.
+
 ## Tarefas secundárias permitidas
 
 1. Reconferir a main e as PRs abertas antes de propor qualquer integração; R001, BeatPlan v1, a regra permanente de armazenamento, a orientação de segurança de worktrees e o contexto atualizado já estão integrados, e nenhuma combinação entre planos está autorizada.
@@ -116,4 +124,4 @@ Os limites do que não fazer agora estão em [ESTADO-ATUAL.md](ESTADO-ATUAL.md);
 
 ## Critério para encerrar uma tarefa
 
-Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches. Cumprir o handoff obrigatório da regra de armazenamento em [AGENTS.md](../../AGENTS.md), incluindo a confirmação textual de que nada foi criado ou mantido fora de `C:/Marketing` e a declaração de qualquer exceção como bloqueio.
+Entregar o comportamento ou documento alterado, a referência Git, as verificações realizadas e as limitações. Registrar a próxima ação concreta no contexto, preservando o histórico e o trabalho das outras branches. Cumprir o handoff obrigatório da regra de armazenamento em [AGENTS.md](../../AGENTS.md), incluindo a confirmação textual de que nada foi criado ou mantido fora de `C:/Repos/marcasalao-marketing` e a declaração de qualquer exceção como bloqueio.

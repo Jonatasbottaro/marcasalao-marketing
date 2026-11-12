@@ -2,19 +2,20 @@
 
 ## Referência
 
-- Data da atualização: 2026-11-11
+- Data da atualização: 2026-11-12
 - Branch de referência: main
-- Commit da main consultada: [ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e) — contexto com a regra de armazenamento e a auditoria de branches; base sobre a qual esta atualização foi commitada
+- Commit da main consultada: [2c409676e58e4e118d865821b9a0cbdd93a22364](https://github.com/Jonatasbottaro/marcasalao-marketing/commit/2c409676e58e4e118d865821b9a0cbdd93a22364) — revisão mais recente de `AGENTS.md`, com a raiz oficial `C:/Repos/marcasalao-marketing` e `.workspace/` dentro do checkout; base sobre a qual a integração do R002 foi commitada
+- Merge de integração do piloto local R002: `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9`, a partir da branch técnica `codex/r002-video-local-agenda` (HEAD `b59076918eea6a2eaecda90bf2ec3c8cb4ac6c60`), com commit corretivo único `0ac4bde8e5096ecdf4913a48ad453e066346b213`
 - Commit técnico da fatia Workflow: `f5842107a0f307b4cc208c15fc4509c6d7d31f72`
 - Ratificação da fatia Workflow: registrada pelo titular em 2026-11-11, restrita ao escopo homologado de `f584210`
 - Merge de integração do BeatPlan v1: `d5761b1f37d1a5b5e55e2f1b7422c969e6194957`
 - HEAD técnico reconciliado do BeatPlan: `7d919fc208ac4dfeebe5b0b65a959171e5f093f2`, da branch `codex/reconcilia-beat-plan-v1`
-- Regra permanente de armazenamento na raiz do projeto: `9908f3b6424a196464ed0557294a8efb0445774a`, normativa em [AGENTS.md](../../AGENTS.md)
+- Regra permanente de armazenamento na raiz do projeto: [AGENTS.md](../../AGENTS.md), com a raiz vigente registrada em `2c409676e58e4e118d865821b9a0cbdd93a22364`
 - Orientação de segurança de worktrees sob a convenção `.workspace/`: `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`
 - Limpeza de branches remotas: 14 branches excluídas em 11/11/2026 por autorização explícita do titular; 7 branches remotas restantes. Detalhe na seção Limpeza de branches remotas
 - Fonte: Git e documentos da main consultada; evidências da homologação técnica e do GitHub Actions vinculadas aos respectivos commits, sem nova execução de gates nesta atualização documental
 
-`ed7e8f1` é a base da main consultada; os quatro commits posteriores ao BeatPlan (`c50dc86`, `9908f3b`, `79fd5da`, `ed7e8f1`) são **exclusivamente documentais e de governança** e não alteram código, `platform/`, `orchestration/` nem CI. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
+O último commit técnico da main é o merge `b7ed1d9` do piloto local R002 (ferramentas de vídeo em `tools/`, fora do núcleo `platform/`); o último commit técnico do núcleo permanece `d5761b1`. Os commits entre `d5761b1` e `2c40967` atualizam a documentação e a governança, incluindo a limpeza de branches e a nova raiz de armazenamento. A Activity `validateCompositionActivity` permanece integrada e ratificada no escopo de **TEMPORAL-02-03**; o Workflow `validateCompositionWorkflow`, seu contrato de resultado, o classificador de falhas e a Retry Policy estão integrados e homologados tecnicamente em `f584210` e **ratificados pelo titular em 2026-11-11**, com escopo estrito detalhado na seção TEMPORAL-02 — Fatia Workflow. A ratificação não aprova o PRD completo nem autoriza qualquer fatia posterior. Worker de produção, cliente de validação, `workflow.start` da aplicação, Workflow ID e suas políticas de reuso e conflito, colisão de Workflow ID, `contentHash`, replay formal e o gate Elephant–Goldfish de TEMPORAL-02 continuam ausentes, não executados ou pendentes, todos bloqueados. O R001 está integrado no núcleo e o **BeatPlan v1 está integrado tecnicamente como fatia interna da `platform`**, sem ampliar a API pública; nenhum deles passa a compor TEMPORAL-02 por consequência, e o BeatPlan não se combina com OutputPlan nem entra no Temporal. A **regra permanente de armazenamento** é normativa em [AGENTS.md](../../AGENTS.md) e vale para qualquer clone; detalhe na seção Governança de armazenamento e áreas de trabalho. Após a auditoria, o titular autorizou e foi executada a **limpeza de 14 branches remotas**; a única pendência real de branch é a PR #1 (`codex/ai-memory-integration`).
 
 Os marcos permanecem distintos e não se substituem:
 
@@ -38,8 +39,11 @@ Os marcos permanecem distintos e não se substituem:
 - reforço da segurança de worktrees na regra de armazenamento: `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`;
 - atualização documental do contexto com a regra de armazenamento e a auditoria de branches: `ed7e8f1e7146b3c754b4c13b2d8ba87ebf316a0e`;
 - limpeza de 14 branches remotas autorizada pelo titular em 11/11/2026, posterior a `ed7e8f1` e registrada por esta atualização (exclusão de refs remotas, sem commit de código).
+- registro documental da limpeza de branches em `3c44ae4408cdc1a03dad61d659e0dde0c502f829`;
+- atualização da raiz oficial de armazenamento no `AGENTS.md` em `2c409676e58e4e118d865821b9a0cbdd93a22364`;
+- integração do piloto técnico local R002 (vídeo sem áudio): merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` com os três commits originais `2e663e3`, `040e290`, `b590769` preservados, mais o corretivo `0ac4bde8e5096ecdf4913a48ad453e066346b213`; detalhe na seção R002 — piloto técnico local de vídeo sem áudio.
 
-O hash identifica o ponto consultado, não uma promessa de permanência. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo efetivamente integrado antes de trabalhar; um commit apenas documental posterior não muda a referência do código analisado. Os 162 testes e os runs da fatia Workflow referem-se exclusivamente a `f584210`, não aos HEADs posteriores `e86f3c9`, `d5761b1`, `c50dc86`, `9908f3b`, `79fd5da` e `ed7e8f1`; os 626 testes e os runs do BeatPlan referem-se a `7d919fc` e `d5761b1`. Nenhum desses marcos representa implementação completa de TEMPORAL-02.
+O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
 ## Núcleo reutilizável
 
@@ -70,7 +74,7 @@ O BeatPlan **saiu desta lista**: a reconciliação `7d919fc208ac4dfeebe5b0b65a95
 
 ### Planejado ou documentado
 
-- **R002 e R003**: sem documento próprio no repositório. A única ocorrência na main é o §14 do planejamento do TEMPORAL-01, que os declara não iniciados e não integrados.
+- **R002**: integrado na main como piloto técnico local de vídeo sem áudio (merge `b7ed1d9`); detalhe na seção R002 — piloto técnico local de vídeo sem áudio. **R003**: sem documento próprio no repositório; a única ocorrência na main é o §14 do planejamento do TEMPORAL-01, que o declara não iniciado e não integrado.
 - **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main. O núcleo já contém projeto, composição, fronteira pública de validação, R001 (catálogo, OutputPlan interno, resolvedor, validadores e CLIs) e BeatPlan v1 interno; isso não implementa esses conceitos nem um renderizador. Os dois primeiros passos da ordem recomendada pela decisão (Composition → BeatPlan) estão cumpridos como contratos declarativos e não autorizam os seguintes.
 - **Qwen3.8**: família indicada para um futuro executor de texto, registrada no §15 do planejamento do TEMPORAL-01. Nada instalado, baixado, inferido ou acoplado.
 - **Higgsfield**: nenhuma ocorrência em código ou documentação da main. É referência externa de conversa, não ferramenta adotada.
@@ -554,6 +558,20 @@ Preservado como evidência do que entrou na main pela PR #6:
 - Casos de `@` fora da autoridade, autoridade vazia, barras extras e credenciais executados nos dois motores com os resultados esperados.
 - Limitação não diagnosticada, registrada na época: uma execução local antiga teve 286 testes aprovados e seis falhas sem nomes preservados. As correções de URL e de captura de logs não foram apresentadas como explicação dessa ocorrência.
 
+## R002 — piloto técnico local de vídeo sem áudio
+
+- Status: **integrado na main** pelo merge `b7ed1d9bbf397f5e9f14bfddc62c67aa0d4f5cf9` (12/11/2026), a partir da branch técnica `codex/r002-video-local-agenda` (HEAD `b59076918eea6a2eaecda90bf2ec3c8cb4ac6c60`, commits `2e663e3`, `040e290`, `b590769` preservados sem squash), com commit corretivo único `0ac4bde8e5096ecdf4913a48ad453e066346b213` (derivação da raiz principal nos testes, portável entre checkout e worktree).
+- Natureza: **demonstração técnica local reproduzível**, não campanha aprovada, não produção real da NS-001, nada publicado ou enviado a rede. Dados inteiramente fictícios (salão de teste E2E).
+- Exportador sem áudio: [`tools/build_video.py`](../../tools/build_video.py) recusa entrada de áudio, nunca usa `anullsrc` nem AAC silencioso, mapeia somente vídeo com `-an`; exportação transacional com staging em `.workspace/tmp/`, validação antes de `os.replace` e preservação integral da entrega anterior em falha (exit ≠ 0, stderr sanitizado).
+- Validador SRT puro: [`tools/srt_validate.py`](../../tools/srt_validate.py) — UTF-8, LF, uma newline final, sequência numérica, timestamps válidos, início < fim, ordem cronológica, sem sobreposição, dentro da duração, texto não vazio.
+- Piloto: [`tools/r002_pilot.py`](../../tools/r002_pilot.py) com três cenas de 12 s (0–4, 4–9, 9–12) reutilizando a captura sanitizada já versionada `00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png`; contorno editável sobre o horário ocupado 09:00–10:00 em camada PNG RGBA separada (stdlib), configurável por JSON ([`tools/r002/agenda-ficticia.pilot.json`](../../tools/r002/agenda-ficticia.pilot.json)); legenda visível queimada, SRT sincronizado ([`04-legendas/roteiro_r002_agenda_ficticia.srt`](../../04-legendas/roteiro_r002_agenda_ficticia.srt)) e narração em texto separado ([`04-legendas/roteiro_r002_agenda_ficticia_narracao.txt`](../../04-legendas/roteiro_r002_agenda_ficticia_narracao.txt)).
+- Revisão localizada: [`tools/r002/agenda-ficticia-revisao.pilot.json`](../../tools/r002/agenda-ficticia-revisao.pilot.json) altera somente `outline.color` e `outline.thickness` (e `id`/`videoName`); prova por SHA-256 de captura/SRT/narração idênticos e MP4 diferente.
+- Evidência medida na integração (12/11/2026, Python 3.14.7, FFmpeg/FFprobe 9.0.2): **21 testes unittest, zero falhas, zero skips**; reprodução v1 e revisão byte a byte idênticas à entrega original; FFprobe nos dois MP4: 1 stream de vídeo H.264 1080×1920@30 yuv420p, **0 streams de áudio**, duração 12.0 s; inspeção visual dos frames das três cenas e da cena revisada; caso de SRT inválido contra entrega existente com exit 1 e hashes anteriores idênticos.
+- MP4 **não versionados** (`.gitignore` ignora `*.mp4`): existem apenas em `.workspace/archives/r002-video-local/` neste computador; o manifesto versionado [`02-reels-shorts/r002-agenda-ficticia/manifest.json`](../../02-reels-shorts/r002-agenda-ficticia/manifest.json) preserva SHA-256, bytes, FFprobe e comando reproduzível. Evidências da integração (logs, frames, manifesto de hashes) em `.workspace/logs/r002-integration/`, não versionadas.
+- Comandos de reprodução (a partir da raiz do checkout; em worktree dentro de `.workspace/`, acrescentar `--project-root <raiz>`): `python tools/r002_pilot.py --config tools/r002/agenda-ficticia.pilot.json --staging .workspace/tmp/r002-video-local/v1 --archive .workspace/archives/r002-video-local --manifest 02-reels-shorts/r002-agenda-ficticia/manifest.json --tag v1` (e o análogo com `agenda-ficticia-revisao.pilot.json` / `--tag revisao`); testes: `python -m unittest discover -s tools/tests`. Detalhe em [`02-reels-shorts/r002-agenda-ficticia/README.md`](../../02-reels-shorts/r002-agenda-ficticia/README.md).
+- Sem workflow de CI aplicável por path a `tools/`, `04-legendas/` ou `02-reels-shorts/` (os workflows existentes cobrem `platform/` e `orchestration/temporal/`); ausência registrada, nenhum workflow criado nesta entrega.
+- Limites: demonstração técnica; sem aprovação editorial; sem produção real; sem publicação; sem fornecedor, TTS ou rede; sem deploy; nenhuma alteração em `platform/`, `orchestration/`, Temporal, R001, OutputPlan ou BeatPlan.
+
 ## NS-001
 
 Registro de estado apenas; os arquivos da campanha não foram alterados.
@@ -574,7 +592,7 @@ O resumo não substitui os registros de campanha nem amplia autorizações já e
 
 Em 11/11/2026 o titular estabeleceu uma **regra permanente de armazenamento**, registrada em [AGENTS.md](../../AGENTS.md) pelo commit `9908f3b6424a196464ed0557294a8efb0445774a` e reforçada pelo commit `79fd5dae1db5450960d4cebe922ea26b71d8b6c5`. É normativa para qualquer clone e qualquer agente; este contexto apenas a registra e aponta para a fonte, que é o `AGENTS.md`.
 
-- A raiz oficial e única do projeto é `C:/Marketing`. Nenhum artefato relacionado ao projeto pode ser criado, salvo, baixado, movido ou mantido fora dela.
+- A raiz oficial e única do projeto é `C:/Repos/marcasalao-marketing`, com `.workspace/` dentro do checkout. A revisão de `AGENTS.md` em `2c40967` registra a nova raiz e a realocação da worktree `r001-reconcilia` para `.workspace/worktrees/r001-reconcilia`.
 - Isolamento e arquivos auxiliares usam exclusivamente `.workspace/`, com subdiretórios por tarefa: `worktrees/`, `clones/`, `archives/`, `logs/`, `tmp/` e `tools/`.
 - `.workspace/` é ignorada localmente por `.git/info/exclude`; o `.gitignore` versionado **não** deve ser alterado para acomodar arquivos de tarefa.
 - Arquivo necessário em outro computador não pode permanecer somente em `.workspace/`: precisa entrar na árvore versionada e ser commitado na branch autorizada.
