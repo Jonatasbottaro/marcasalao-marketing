@@ -132,8 +132,8 @@ export function validateSimulatedExecutionReport(input: unknown): SimulatedExecu
         if (status === 'completed' && (failedStepId !== null || failureCode !== null)) {
             errors.push(issue('SIMULATED_REPORT_STATUS_INCOHERENT', 'status', 'completed requires failedStepId and failureCode to be null.'))
         }
-        if (status === 'failed' && (failedStepId === null || failureCode === null)) {
-            errors.push(issue('SIMULATED_REPORT_STATUS_INCOHERENT', 'status', 'failed requires failedStepId and failureCode.'))
+        if (status === 'failed' && failureCode === null) {
+            errors.push(issue('SIMULATED_REPORT_STATUS_INCOHERENT', 'status', 'failed requires failureCode.'))
         }
         if (status === 'failed' && isKebab(failedStepId) && completedSet.has(failedStepId)) {
             errors.push(issue('SIMULATED_REPORT_STATUS_INCOHERENT', 'failedStepId', 'the failed step cannot be listed as completed.'))

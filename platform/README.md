@@ -13,6 +13,7 @@ e [`docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md`](../docs/deciso
 6. **Validação consolidada do pipeline** — `validateContentPipeline` unifica ProjectManifest → Composition → OutputPlan → compatibilidade Composition × OutputPlan → BeatPlan em uma execução pura e determinística, com CLI `content:validate-pipeline`.
 7. **Casos de pipeline e segundo consumidor real (fatia interna)** — `ContentPipelineCaseManifest` amarra os quatro documentos por caminhos relativos, com resolvedor seguro confinado a uma raiz declarada, validação de um caso, agregação multiprojeto e CLI `content:validate-cases`. A Multitrack Hub entra como segundo consumidor real ao lado da Marca Salão, sobre o mesmo núcleo, sem condicional de marca. Sem export público, sem Temporal, sem render e sem mídia.
 8. **CreativeExecutionPackage v1 (fatia interna)** — especificação técnica imutável da execução futura, gerada **somente depois de um pipeline válido**: contrato, schema draft-07, gerador puro, validador puro, serialização canônica, packageId determinístico, artefatos esperados lógicos, geração multicase e CLI transacional `content:build-execution-packages`. Nenhum renderizador, Worker ou adaptador é implementado; o pacote não executa nada.
+9. **Executor local simulado v1 (fatia interna)** — consome o `CreativeExecutionPackage` e produz **somente** plano de execução, eventos determinísticos, relatório final, artefatos lógicos textuais simulados e manifesto de hashes: contratos `SimulatedExecutionPlan`/`SimulatedExecutionReport`, compilador puro, runner com falha/cancelamento controlados, retomada segura, writer transacional, multicase e CLI `content:simulate-execution`. O adaptador `simulation` é verificação de contrato — **não é renderer** e nenhuma mídia é produzida.
 
 > “Marca Salão será o primeiro consumidor da plataforma, não o núcleo da plataforma.”
 
@@ -441,6 +442,10 @@ npm run --silent content:validate-cases -- --cases-root examples --json
 
 # CLI de geracao de pacotes de execucao (exit 0 gerados · 1 caso invalido · 2 uso/path/manifesto · 3 geracao/validacao do pacote · 4 escrita/promocao)
 npm run --silent content:build-execution-packages -- --manifest <cases-manifest.json> --output-dir <diretorio> --json
+
+# CLI do executor local simulado (exit 0 concluidas · 1 falha/cancelamento · 2 uso/path/JSON · 3 pacote/plano · 4 escrita/hash · 5 retomada incompativel)
+npm run --silent content:simulate-execution -- --package examples/execution-packages/execution-marca-salao-social-reel-example-instagram-reels-video-social-reel-beat-plan.execution-package.json --output-dir <diretorio> --json
+npm run --silent content:simulate-execution -- --packages-dir examples/execution-packages --output-dir <diretorio> --json
 ```
 
 `dist/` é **artefato local** gerado pelo build e está ignorado pelo Git
@@ -467,6 +472,7 @@ uso, arquivo inexistente ou JSON malformado (mensagem sanitizada, sem stack trac
 | `examples/output-plans/multitrack-hub-instagram-reels-video.output-plan.json` | plano canônico do segundo consumidor, gerado pelo stdout de `content:plan-output` e comparado byte a byte |
 | `examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json` | manifesto de caso que amarra os quatro documentos da Multitrack Hub; validado junto com o caso da Marca Salão pela CLI multiprojeto |
 | `examples/execution-packages/*.execution-package.json` | pacotes técnicos canônicos dos dois consumidores, gerados pela CLI `content:build-execution-packages` e comparados byte a byte (gerador em memória, serialização, fixture e CLI); não são render nem job executado |
+| `examples/simulated-executions/marca-salao/`, `examples/simulated-executions/multitrackhub/` | execuções simuladas canônicas (plano, relatório, eventos, hashes e artefatos textuais), produzidas pelo próprio executor e comparadas byte a byte; não são render nem mídia |
 
 Nenhum desses arquivos autoriza publicação: são fixtures de contrato. A demonstração da
 divergência exige que a composição antiga **primeiro** passe em `validateComposition` — há
@@ -691,7 +697,7 @@ Rodam em `tests/contracts/`:
   aceita, para que a ausência de regra fique registrada e ninguém confunda "o motor não
   reclamou" com equivalência.
 
-`npm test` executa tudo (755 testes com o CreativeExecutionPackage v1); `npm run
+`npm test` executa tudo (807 testes com o executor local simulado v1); `npm run
 test:contracts` executa especificamente a verificação de contrato (305 testes) — ambas
 sobre o JavaScript compilado em `dist/`.
 
@@ -974,6 +980,115 @@ fora do tarball; `node:crypto` aparece somente no contrato, para o fallback do
 packageId. Nenhum import de `@temporalio/*`, nenhuma regra de marca no núcleo,
 nenhum caminho de fixture no domínio, filesystem somente no loader/CLI.
 
+## Executor local simulado v1
+
+**Finalidade.** O pacote técnico responde "o que um executor futuro deverá
+consumir?"; o executor local simulado comprova a fronteira entre planejamento e
+execução **sem renderização real**: percorre a timeline, valida as etapas,
+materializa artefatos textuais previsíveis, registra estados e produz relatório
+determinístico. **Pacote não é execução**: o `CreativeExecutionPackage` é a
+especificação imutável; a execução simulada é uma verificação do contrato, com
+eventos, estados, falha, cancelamento, retomada e hashes. O adaptador `simulation`
+**não é um renderer** e não deve ser apresentado como tal; nenhuma mídia é
+produzida, nenhum arquivo binário é criado.
+
+| Peça | Onde | Papel |
+|---|---|---|
+| Contrato do plano | `src/simulated-execution-plan-contract.ts` | `SimulatedExecutionPlan`, steps com operações neutras, `executionId` determinístico |
+| Contrato do relatório | `src/simulated-execution-report-contract.ts` | estados, eventos, `SimulatedExecutionReport`, códigos de retomada |
+| Compilador puro | `src/create-simulated-execution-plan.ts` | valida o pacote e compila a timeline em steps; resultado discriminado |
+| Validadores puros | `src/validate-simulated-execution-plan.ts`, `src/validate-simulated-execution-report.ts` | estrutura + semântica, códigos estáveis |
+| Espelhos draft-07 | `schemas/simulated-execution-plan.schema.json`, `schemas/simulated-execution-report.schema.json` | forma estrutural, executados por `ajv` |
+| Runner | `src/simulated-execution-runner.ts` | execução sequencial, eventos, artefatos textuais, falha/cancelamento controlados, retomada |
+| Serialização canônica | `src/serialize-simulated-execution.ts` | plano, relatório, eventos, manifesto do artefato primário, hashes |
+| Writer transacional | `src/simulated-execution-writer.ts` | confinamento, staging, releitura, hashes, backup, promoção com rename, reversão |
+| Multicase | `src/simulated-execution-multicase.ts` | agregação pura com contagens por estado e ordem estável |
+| CLI interna | `src/simulated-execution-cli.ts`, script `content:simulate-execution` | pacote único ou diretório de pacotes, flags de teste controlado |
+| Fixtures canônicas | `examples/simulated-executions/marca-salao/`, `examples/simulated-executions/multitrackhub/` | produzidas pelo próprio executor, comparadas byte a byte |
+
+**Plano.** `schemaVersion: 1`, `executionId`, `packageId`, `caseId`,
+`adapter: "simulation"`, `output`, `steps`, `expectedArtifacts`. Cada entrada da
+timeline gera quatro etapas na ordem fixa `prepare-scene → apply-text →
+apply-motion → finalize-scene`; textos, intenções e IDs são preservados sem
+alteração; nenhuma instrução de renderização, comando de ferramenta ou prompt
+generativo é criado. O `executionId` é `simulation-<packageId>` até 128 caracteres;
+acima do limite, canonicalização + SHA-256 com prefixo `simulation-v1-` (sem
+timestamp, random, caminho, máquina, usuário, PID ou variável de ambiente).
+
+**Estados e eventos.** Estados: `pending`, `running`, `completed`, `failed`,
+`cancelled`. Eventos: `execution-started`, `step-started`, `artifact-created`,
+`step-completed`, `step-failed`, `execution-cancelled`, `execution-completed`,
+`execution-failed`. Cada evento carrega somente `sequence` inteira, `type`,
+`executionId` e referências opcionais (`stepId`, `artifactId`, `failureCode`);
+**nenhum timestamp real** — a ordem vem da sequência e o tempo lógico vem da
+timeline do pacote. `cancelled` não é `failed`; `failed` exige `failureCode`;
+`completed` exige todos os steps.
+
+**Artefatos simulados.** Somente textuais/JSON, derivados exclusivamente do plano:
+`artifacts/primary-output.manifest.json` (descreve logicalName, mediaKind,
+dimensões, duração, profile e `simulated: true` — **não cria mídia**),
+`artifacts/captions.txt` (textos de tela por janela temporal),
+`artifacts/narration-script.txt` (narrações por janela),
+`artifacts/execution-summary.txt` (resumo determinístico), além de
+`execution-plan.json`, `execution-report.json`, `events.json` e `hashes.json`
+(SHA-256 de todos os arquivos gerados, exceto o próprio `hashes.json`). Sem data,
+hostname, usuário ou caminho absoluto. Em falha/cancelamento, artefatos cuja
+primeira etapa declarante não foi concluída não são materializados.
+
+**Falha e cancelamento controlados.** `failAtStepId` falha a etapa indicada
+(`SIMULATED_STEP_FAILURE`): etapas anteriores permanecem concluídas, a etapa falha
+não entra em `completedSteps`, etapas posteriores não executam. `cancelAfterSequence`
+cancela deterministicamente após N eventos, sem `failureCode` técnico. São opções
+explícitas de teste do executor simulado; não pertencem a contratos de produção
+futura. Nenhum sleep, timer real, paralelismo ou processo filho.
+
+**Retomada segura.** `checkSimulatedResume`/`resumeSimulatedExecution` retomam
+somente com `executionId` e `packageId` iguais, relatório anterior válido, status
+`failed` ou `cancelled`, steps concluídos como prefixo do plano e hashes dos
+artefatos conferidos. A retomada preserva steps e eventos anteriores (sem
+duplicação), executa apenas os steps restantes, continua a sequência de eventos e
+indica `resumedFromStatus`. Pacote/plano alterado, hash divergente, status
+`completed` ou relatório inválido são rejeitados com códigos próprios
+(`REPORT_INVALID`, `EXECUTION_ID_MISMATCH`, `PACKAGE_ID_MISMATCH`,
+`STATUS_NOT_RESUMABLE`, `ARTIFACT_HASH_MISMATCH`). Nenhum checkpoint complexo ou
+banco local.
+
+**Transação.** O writer serializa tudo em memória, cria staging interno ao destino,
+escreve, relê, valida bytes e hashes, faz backup dos alvos existentes, promove com
+rename e reverte em falha; o destino anterior fica intacto e o staging é preservado
+até o diagnóstico (removido pela CLI após o erro sanitizado). O output-dir é
+relativo, estritamente confinado à raiz declarada (lexical + realpath); caminho
+absoluto, escape por `..`, symlink externo e arquivo no lugar de diretório são
+rejeitados. Zero promoção parcial.
+
+**Multicase.** Pacotes executados sequencialmente, cada um em diretório separado
+por `executionId`; uma falha não impede os demais; relatório agregado com contagens
+`completed/failed/cancelled` e resumo; zero regra por marca.
+
+**Contrato da CLI `content:simulate-execution`.** Flags: `--package <arquivo>` ou
+`--packages-dir <dir>` (exatamente um), `--output-dir <dir>` obrigatório,
+`--root <raiz>` opcional (padrão: diretório do pacote ou o diretório de pacotes),
+`--json`; teste controlado: `--fail-step <stepId>`, `--cancel-after <sequence>`,
+`--resume-from <execution-report.json>` (somente com `--package`). Exit codes:
+`0` todas concluídas · `1` uma ou mais não concluídas (falha de step ou
+cancelamento) · `2` uso, path, arquivo ou JSON inválido · `3` pacote ou plano
+inválido · `4` escrita, promoção ou hash inválido · `5` retomada incompatível.
+stdout somente relatório; stderr somente erro sanitizado; zero stack e zero
+caminho absoluto.
+
+**Exemplos.** As fixtures canônicas dos dois consumidores (Marca Salão, 12 steps;
+Multitrack Hub, 16 steps) são geradas pelo próprio executor e comparadas byte a byte
+entre memória, serialização, CLI e fixture (`tests/simulated-execution-e2e.test.ts`),
+com hashes SHA-256 conferidos e reexecução com zero diff. Não constituem render,
+job executado, campanha aprovada nem autorização de publicação.
+
+**Fronteiras desta fatia.** Tudo interno: entrypoint público inalterado
+(`validateComposition` apenas); subpaths do executor simulado respondem
+`ERR_PACKAGE_PATH_NOT_EXPORTED`; CLI fora do tarball; filesystem somente no writer
+e na CLI; `node:crypto` somente para hashes e para o fallback do `executionId`;
+nenhum import de `@temporalio/*`, nenhuma regra de marca no núcleo, nenhum timer,
+nenhuma rede, nenhum fornecedor, nenhuma mídia.
+
 ## Limites atuais (expressos)
 
 - **Composition v1 implementada apenas como contrato declarativo** (sem áudio, prompts,
@@ -1048,6 +1163,9 @@ nenhum caminho de fixture no domínio, filesystem somente no loader/CLI.
 - **O CreativeExecutionPackage não executa nada** — nenhum renderizador, Worker ou
   adaptador foi implementado; o pacote não gera mídia, não cria arquivos físicos de
   saída, não acessa rede e não entra no Temporal; `packageId` não é Workflow ID;
+- **O executor local simulado não é renderer** — o adaptador `simulation` verifica o
+  contrato e produz somente texto/JSON determinístico; nenhuma mídia, renderização,
+  fornecedor, publicação ou Temporal; `executionId` não é Workflow ID;
 - **NS-001 não foi alterada** e nenhuma campanha/briefing/hook/roteiro foi tocado;
 - **Marca Salão e Multitrack Hub são consumidores, não núcleo** — `platform/src` e
   `platform/schemas` não contêm referência a nenhuma das duas marcas (há teste
