@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AssetManifest",
+  "description": "Contrato declarativo de AssetManifest v1: inventario versionado e rastreavel dos materiais de midia por pacote e caso.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "caseId",
+    "packageId",
+    "assets",
+    "bindings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "caseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador do caso de pipeline em kebab-case."
+    },
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador do pacote de execucao em kebab-case."
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Lista de materiais de midia cadastrados.",
+      "items": {
+        "$ref": "#/definitions/assetEntry"
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Vinculos entre beats da timeline e assets cadastrados.",
+      "items": {
+        "$ref": "#/definitions/assetBinding"
+      }
+    }
+  },
+  "definitions": {
+    "assetEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "path",
+        "bytes",
+        "sha256",
+        "origin",
+        "license"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Identificador unico do material em kebab-case."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video"
+          ],
+          "description": "Tipo de midia: image ou video."
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$",
+          "description": "Caminho relativo a raiz do projeto, sem caracteres de controle."
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "description": "Tamanho esperado do arquivo em bytes."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Resumo criptografico SHA-256 em hexadecimal minusculo."
+        },
+        "origin": {
+          "type": "string",
+          "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$",
+          "description": "Origem declarada do material."
+        },
+        "license": {
+          "type": "string",
+          "pattern": "^[^\\x00-\\x1f\\x7f]*\\S[^\\x00-\\x1f\\x7f]*$",
+          "description": "Licenca declarada ou pendente."
+        }
+      }
+    },
+    "assetBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beatId",
+        "assetId"
+      ],
+      "properties": {
+        "beatId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Identificador do beat consumidor."
+        },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Referencia a um asset cadastrado no inventario."
+        }
+      }
+    }
+  }
+}
