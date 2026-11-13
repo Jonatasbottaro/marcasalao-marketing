@@ -154,6 +154,21 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, publicação, Temporal e deploy. O painel produz arquivos locais para revisão; aprovação editorial e publicação seguem o processo vigente.
 
+## 4f. Aba Motion (contorno animado) no painel — concluído em 13/11/2026
+
+> O titular autorizou em 13/11/2026 entregar a aba Motion no painel existente: abrir um pedido de vídeo, marcar uma região da cena, configurar um contorno animado, conferir a prévia e exportar o MP4 pelo pipeline atual, com código, testes, prova no navegador, CI e documentação na mesma rodada. Comando do painel: `python tools/video_studio.py --port 8765` (aba **Motion**); CLI: `python tools/produce_video.py --input <pedido> --motion-plan <plano.json> --plan-only|--output-dir <entrega> [--profile <id>] --json`.
+
+Critérios de conclusão atendidos:
+- **Contrato** `MotionPlan v1` separado do pedido, com `requestId` e efeitos por `sceneId` (região relativa, cor, espessura, intervalo relativo à cena; um efeito por cena); schema draft-07 + paridade Ajv; tempos absolutos pela timeline canônica; valida referência/geometria/intervalo/compatibilidade (cena com zoom → incompatível);
+- **Comando** `--motion-plan` em `--plan-only --json` e na exportação (inclusive `--profile`); prévia informa cenas/regions/intervalos resolvidos sem FFmpeg; parâmetros do efeito independentes de fornecedor/LLM;
+- **Composição**: contorno sobre o quadro enquadrado antes de títulos/legenda, entrada/saida suaves na janela; recorte inicial = região fixa em cena sem zoom; MP4 sem áudio + SRT + TXT pelo adaptador local;
+- **Entrega**: plano canônico promovido com o vídeo, caminho/tamanho/SHA-256 no manifesto, intervalos/regiões no relatório; staging/lock/rollback/`lastValidDelivery` reutilizados;
+- **Aba Motion**: carrega rascunho/exemplo, escolhe cena, marca retângulo sobre a prévia enquadrada, ajusta intervalo/cor/espessura, mostra onde o contorno aparece, salva/reabre o plano, exporta um perfil e assiste; jobs com consultas simultâneas finalizando uma vez com o mesmo resultado; última entrega válida preservada em falha;
+- **Prova**: agenda fictícia, horário marcado no navegador, quadros antes/durante/depois conferidos; recoloração/posição reexportada com mudança na região esperada e hashes de mídia/SRT/TXT inalterados; Multitrack Hub pelo mesmo editor; região inválida/intervalo fora/referência inexistente/consulta simultânea/falha que preserva cobertos; FFprobe 1080×1920@30, zero áudio;
+- **Gates/CI**: platform + suíte Python verdes; prova do efeito no CI de render real em Ubuntu/Windows junto das regressões de vídeo e carrossel; README com caminho mais curto; resumo desatualizado do R003 em ESTADO-ATUAL corrigido.
+
+Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, publicação, Temporal e deploy. Aprovação editorial e publicação seguem o processo vigente.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

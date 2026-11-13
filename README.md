@@ -72,6 +72,19 @@ python tools/produce_carousel.py --input tools/produce/examples/marca-salao-caro
 
 A entrega traz JPEGs numerados (`01-capa.jpg`, …), `carousel.zip` na mesma ordem e `carousel-manifest.json` (id, dimensões, caminhos, tamanhos, SHA-256). Remover um card e reexportar reflete a nova ordem no conjunto e no ZIP; uma falha preserva a última entrega válida.
 
+### Motion (contorno animado)
+
+A aba **Motion** do painel destaca uma região da cena com um contorno animado. Caminho mais curto:
+
+```bash
+python tools/make_agenda_media.py --output .workspace/tmp/motion-demo/assets/marca-salao/agenda.png
+python tools/video_studio.py --port 8765   # aba Motion: carregar exemplo, marcar região, exportar
+# ou pela CLI:
+python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/motion --json
+```
+
+O plano (`MotionPlan v1`) define região relativa, cor, espessura e intervalo por cena; a prévia (`--plan-only`) resolve os tempos absolutos sem FFmpeg. O contorno é aplicado antes dos títulos/legenda, com entrada/saida suaves; o MP4 sai sem áudio, com SRT e narração. O plano canônico vai para o manifesto com hash.
+
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 
