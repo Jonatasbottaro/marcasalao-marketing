@@ -516,10 +516,12 @@ class StudioHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         studio = self.studio
-        if not self.check_write():
-            return
         try:
+            # Drena o corpo antes de qualquer resposta (evita reset de conexao
+            # quando a escrita e recusada por Host/Origin).
             body = self.read_body()
+            if not self.check_write():
+                return
             if path == '/api/draft/save':
                 rel = studio.save_draft(body.get('path', ''), body.get('request'))
                 self.send_json(200, {'ok': True, 'path': rel})
