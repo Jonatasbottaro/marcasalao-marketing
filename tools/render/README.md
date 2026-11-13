@@ -265,6 +265,49 @@ A CLI suporta opcionalmente um documento versionado `VisualStyle` v1 (`--visual-
 - **Render**: o adaptador traduz as cores hexadecimais para o formato ASS e injeta no filtro de vídeo. Chamadas sem `--visual-style` mantêm o estilo padrão (`#FFFFFF`, `#000000`, 42px, margem superior 160px);
 - **Rastreabilidade**: o arquivo de estilo canônico é promovido para a pasta de entrega como `*-visual-style.json` e registrado em `delivery-manifest.json` (`visualStyle`) com caminho final, tamanho e hash SHA-256 recalculado na leitura direta do arquivo promovido.
 
+### 5. Inventário de mídia de ponta a ponta (`prepare_asset_manifest.py`, `--asset-manifest`, `--check-assets`)
+
+O inventário `AssetManifest` v1 (`platform/src/asset-manifest-contract.ts`, `platform/schemas/asset-manifest.schema.json`) substitui opcionalmente `--assets` para registrar uma única vez cada imagem ou clipe de vídeo (`.png`, `.jpg`, `.jpeg`, `.webp`, `.mp4`, `.mov`) com `id`, `type`, `path` relativo à raiz, `bytes`, `sha256` em hexadecimal minúsculo, `origin` e `license` (padrão `pending`), permitindo reutilizar o mesmo arquivo em múltiplos beats.
+
+Fluxo completo por comandos copiáveis:
+
+```bash
+# 1. Montar inventário a partir de um caso e de uma associação existente
+python tools/prepare_asset_manifest.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --assets tools/render/marca-salao.assets.json \
+  --origin synthetic-proof \
+  --output .workspace/tmp/ms.asset-manifest.json \
+  --license owned-synthetic \
+  --json
+
+# 2. Prévia do plano e dos vínculos (sem ler mídias e sem FFmpeg)
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --asset-manifest .workspace/tmp/ms.asset-manifest.json \
+  --plan-only --json
+
+# 3. Verificação real de contenção, tamanho, SHA-256 e FFprobe (1x por asset único, sem criar destino)
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --asset-manifest .workspace/tmp/ms.asset-manifest.json \
+  --check-assets --json
+
+# 4. Render combinando --asset-manifest, --text-overlays e --visual-style
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --asset-manifest .workspace/tmp/ms.asset-manifest.json \
+  --text-overlays plano-titulos.json \
+  --visual-style estilo.json \
+  --output-dir .workspace/archives/local-pipeline-render/marca-salao-inventario --json
+```
+
+Garantias e diagnósticos do inventário:
+- **Reutilização e inspeção única**: arquivos referenciados em múltiplos beats são deduplicados no `prepare_asset_manifest.py` e sondados apenas uma vez no `--check-assets` e antes do render;
+- **Staging dos bytes verificados**: antes do render, cada asset único é copiado para `.workspace/tmp/.../verified-assets/`, revalidado por tamanho e SHA-256, e entregue ao FFmpeg exatamente a partir da cópia verificada;
+- **Rastreabilidade**: o inventário canônico é promovido como `*-asset-manifest.json` e registrado em `delivery-manifest.json` (`assetManifest`, `assetManifestSummary` e `artifacts.assetManifest`), enquanto `*-execution-report.json` registra `beatId`, `assetId` e as medições observadas no FFprobe;
+- **Diagnósticos antes do FFmpeg**: adulteração de bytes (`ASSET_HASH_MISMATCH` / `ASSET_SIZE_MISMATCH`), arquivo ausente (`ASSET_MISSING`), ilegível (`ASSET_UNREADABLE`), corrompido (`ASSET_CORRUPTED`), vídeo curto para o beat (`ASSET_VIDEO_TOO_SHORT`) ou referência inválida (`UNKNOWN_ASSET_REFERENCE`) abortam antes de codificar vídeo e preservam integralmente qualquer entrega anterior no destino.
+
 ### Exit codes
 
 | Código | Significado |
