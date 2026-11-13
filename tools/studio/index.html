@@ -13,6 +13,7 @@
     <nav id="mode-nav">
       <button id="mode-video-btn" class="mode-btn active">Vídeos</button>
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
+      <button id="mode-motion-btn" class="mode-btn">Motion</button>
     </nav>
   </header>
 
@@ -179,6 +180,52 @@
         <button id="c-btn-load-delivery">Abrir entrega</button>
       </div>
       <div id="c-delivery-output"></div>
+    </section>
+  </div>
+
+  <div id="mode-motion" hidden>
+    <section>
+      <h2>1. Pedido de vídeo e cena</h2>
+      <div class="row">
+        <label>Exemplo Motion <select id="m-example-select"></select></label>
+        <button id="m-btn-load-example">Carregar exemplo</button>
+        <label>Cena <select id="m-scene-select"></select></label>
+      </div>
+      <div class="row">
+        <label>Caminho do plano (.workspace/…) <input id="m-plan-path" type="text"></label>
+        <button id="m-btn-save-plan">Salvar plano</button>
+        <button id="m-btn-open-plan">Reabrir plano</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Marcar região sobre a prévia enquadrada</h2>
+      <p class="muted">Arraste sobre a imagem para marcar o retângulo do contorno (coordenadas relativas ao quadro final).</p>
+      <canvas id="m-canvas" width="270" height="480"></canvas>
+      <div class="row">
+        <label>Início (ms) <input id="m-start" type="number" min="0" value="500"></label>
+        <label>Fim (ms) <input id="m-end" type="number" min="1" value="3000"></label>
+        <label>Cor <input id="m-color" type="text" value="#FFD700"></label>
+        <label>Espessura <input id="m-thickness" type="number" min="1" max="40" value="6"></label>
+      </div>
+      <p id="m-region-info" class="muted"></p>
+    </section>
+
+    <section>
+      <h2>3. Prévia do plano (sem FFmpeg)</h2>
+      <button id="m-btn-preview">Gerar prévia</button>
+      <div id="m-preview-output"></div>
+    </section>
+
+    <section>
+      <h2>4. Exportar e assistir</h2>
+      <div class="row">
+        <label>Pasta de entrega (.workspace/…) <input id="m-output-dir" type="text"></label>
+        <label>Perfil <select id="m-profile-select"></select></label>
+        <button id="m-btn-export">Exportar com Motion</button>
+      </div>
+      <div id="m-export-status"></div>
+      <div id="m-delivery-output"></div>
     </section>
   </div>
   </main>

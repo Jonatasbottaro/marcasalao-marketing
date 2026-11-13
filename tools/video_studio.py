@@ -196,30 +196,39 @@ class Studio:
     def _tool_for(self, kind):
         return 'produce_carousel.py' if kind == 'carousel' else 'produce_video.py'
 
-    def preview(self, request, profile=None, kind='video'):
+    def preview(self, request, profile=None, kind='video', motion_plan=None):
         tmp = self._write_temp_request(request)
+        plan_tmp = None
         cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
                '--input', tmp, '--root', self.root, '--plan-only', '--json']
         if profile:
             cmd.extend(['--profile', profile])
+        if motion_plan is not None and kind == 'video':
+            plan_tmp = self._write_temp_request(motion_plan)
+            cmd.extend(['--motion-plan', plan_tmp])
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         finally:
-            if os.path.exists(tmp):
-                os.remove(tmp)
+            for p in (tmp, plan_tmp):
+                if p and os.path.exists(p):
+                    os.remove(p)
         try:
             payload = json.loads(res.stdout)
         except ValueError:
             payload = {'status': 'error', 'error': res.stderr.strip() or 'previa ilegivel'}
         return {'returncode': res.returncode, 'result': payload}
 
-    def start_export(self, request, output_dir_rel, profile=None, kind='video'):
+    def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None):
         output_abs = self.confine_workspace(output_dir_rel)
         tmp = self._write_temp_request(request)
+        plan_tmp = None
         cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
                '--input', tmp, '--root', self.root, '--output-dir', output_abs, '--json']
         if profile:
             cmd.extend(['--profile', profile])
+        if motion_plan is not None and kind == 'video':
+            plan_tmp = self._write_temp_request(motion_plan)
+            cmd.extend(['--motion-plan', plan_tmp])
         job_id = uuid.uuid4().hex[:12]
         out_path = os.path.join(self.drafts_dir, f'job-{job_id}.out.json')
         err_path = os.path.join(self.drafts_dir, f'job-{job_id}.err.log')
@@ -228,7 +237,8 @@ class Studio:
         proc = subprocess.Popen(cmd, stdout=out_handle, stderr=err_handle,
                                 stdin=subprocess.DEVNULL, text=True)
         with self.jobs_lock:
-            self.jobs[job_id] = {'proc': proc, 'tmp': tmp, 'outputDir': self.rel(output_abs),
+            self.jobs[job_id] = {'proc': proc, 'tmp': tmp, 'plan_tmp': plan_tmp,
+                                 'outputDir': self.rel(output_abs),
                                  'profile': profile, 'kind': kind, 'status': 'running', 'result': None,
                                  'returncode': None, 'out': out_path, 'err': err_path,
                                  'out_handle': out_handle, 'err_handle': err_handle}
@@ -261,7 +271,7 @@ class Studio:
             except OSError:
                 err = ''
             result = {'status': 'error', 'error': err or 'exportacao ilegivel'}
-        for key in ('tmp', 'out', 'err'):
+        for key in ('tmp', 'plan_tmp', 'out', 'err'):
             path = job.get(key)
             if path and os.path.exists(path):
                 os.remove(path)
@@ -342,6 +352,15 @@ class Studio:
         target = self.confine(path)
         if not os.path.isfile(target):
             raise ValueError('arquivo de artefato ausente')
+        return target
+
+    def source_media_path(self, path_rel):
+        """Caminho de midia de origem (imagem) confinado a raiz, para o editor."""
+        target = self.confine(path_rel)
+        if os.path.splitext(target)[1].lower() not in ('.png', '.jpg', '.jpeg', '.webp'):
+            raise ValueError('midia de origem deve ser imagem')
+        if not os.path.isfile(target):
+            raise ValueError('midia de origem ausente')
         return target
 
     def scan_media(self, folder_rel):
@@ -505,6 +524,20 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.read_carousel_delivery(query.get('dir', [''])[0])})
             elif path == '/media':
                 self.serve_artifact(query)
+            elif path == '/source-media':
+                try:
+                    target = studio.source_media_path(query.get('path', [''])[0])
+                except (ValueError, OSError) as exc:
+                    self.send_error_json(404, str(exc))
+                    return
+                ext = os.path.splitext(target)[1].lower()
+                with open(target, 'rb') as handle:
+                    body = handle.read()
+                self.send_response(200)
+                self.send_header('Content-Type', CONTENT_TYPES.get(ext, 'application/octet-stream'))
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
             else:
                 self.send_error_json(404, 'rota desconhecida')
         except (ValueError, OSError) as exc:
@@ -526,9 +559,9 @@ class StudioHandler(BaseHTTPRequestHandler):
                 rel = studio.save_draft(body.get('path', ''), body.get('request'))
                 self.send_json(200, {'ok': True, 'path': rel})
             elif path == '/api/preview':
-                self.send_json(200, {'ok': True, **studio.preview(body.get('request'), body.get('profile'), body.get('kind', 'video'))})
+                self.send_json(200, {'ok': True, **studio.preview(body.get('request'), body.get('profile'), body.get('kind', 'video'), body.get('motionPlan'))})
             elif path == '/api/export':
-                job_id = studio.start_export(body.get('request'), body.get('outputDir', ''), body.get('profile'), body.get('kind', 'video'))
+                job_id = studio.start_export(body.get('request'), body.get('outputDir', ''), body.get('profile'), body.get('kind', 'video'), body.get('motionPlan'))
                 self.send_json(200, {'ok': True, 'jobId': job_id})
             elif path == '/api/media/scan':
                 self.send_json(200, {'ok': True, 'media': studio.scan_media(body.get('folder', ''))})
