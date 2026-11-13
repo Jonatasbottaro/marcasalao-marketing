@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VideoRequest",
+  "description": "Contrato declarativo VideoRequest v1: entrada unica de producao de video (perfis, midia reutilizavel e cenas ordenadas).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "project",
+    "title",
+    "profiles",
+    "media",
+    "scenes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador unico do pedido em kebab-case."
+    },
+    "project": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Caminho relativo a raiz do ProjectManifest que autoriza os perfis."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Titulo do video."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Locale opcional; o compilador aplica pt-BR quando ausente."
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+      },
+      "description": "Perfis de saida desejados, resolvidos apenas pelo catalogo e pela allowlist do projeto."
+    },
+    "visualStyle": {
+      "type": "object",
+      "description": "Direcao visual reutilizavel opcional; validacao profunda fica no compilador."
+    },
+    "media": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/media"
+      },
+      "description": "Cadastro de midia: cada material e registrado uma vez e vinculavel a varias cenas."
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/scene"
+      },
+      "description": "Cenas ordenadas do video."
+    }
+  },
+  "definitions": {
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "type",
+        "origin"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video"
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "durationMs",
+        "mediaId",
+        "caption",
+        "narration"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mediaId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "narration": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "narrativeFunction": {
+          "type": "string",
+          "enum": [
+            "hook",
+            "context",
+            "problem",
+            "demonstration",
+            "explanation",
+            "proof",
+            "transition",
+            "cta",
+            "closing"
+          ]
+        },
+        "motionIntent": {
+          "type": "string",
+          "enum": [
+            "none",
+            "slow-zoom"
+          ]
+        }
+      }
+    }
+  }
+}
