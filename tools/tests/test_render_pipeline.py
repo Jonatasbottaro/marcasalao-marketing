@@ -145,6 +145,102 @@ class PlanOnlyTest(unittest.TestCase):
         self.assertIn("arquivo de case ausente", res.stderr)
         self.assertEqual(res.stdout, "")
 
+    def test_plan_only_with_text_overlays(self):
+        overlays_data = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {
+                    "beatId": "demonstration-body",
+                    "text": "Titulo de teste no plan-only"
+                }
+            ]
+        }
+        overlay_file = os.path.join(TMP_BASE, "plan_only_overlays.json")
+        os.makedirs(TMP_BASE, exist_ok=True)
+        write_json(overlay_file, overlays_data)
+        try:
+            plan = render_pipeline.run_plan_only(
+                os.path.join(WORKTREE, CASE_MS_REL), WORKTREE, text_overlays_path=overlay_file)
+            self.assertIn("textOverlays", plan)
+            self.assertEqual(len(plan["textOverlays"]), 1)
+            item = plan["textOverlays"][0]
+            self.assertEqual(item["beatId"], "demonstration-body")
+            self.assertEqual(item["text"], "Titulo de teste no plan-only")
+            self.assertEqual(item["startMs"], 4000)
+            self.assertEqual(item["endMs"], 10000)
+            self.assertEqual(item["durationMs"], 6000)
+        finally:
+            if os.path.exists(overlay_file):
+                os.remove(overlay_file)
+
+    def test_plan_only_cli_text_overlays_json_and_text(self):
+        overlays_data = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {
+                    "beatId": "demonstration-body",
+                    "text": "Chamada principal com acentuacao: facil e rapido!"
+                }
+            ]
+        }
+        overlay_file = os.path.join(TMP_BASE, "plan_cli_overlays.json")
+        os.makedirs(TMP_BASE, exist_ok=True)
+        write_json(overlay_file, overlays_data)
+        try:
+            res_json = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--text-overlays", overlay_file,
+                 "--plan-only", "--json"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res_json.returncode, 0)
+            data = json.loads(res_json.stdout)
+            self.assertEqual(data["caseId"], "marca-salao-pipeline-pilot")
+            self.assertEqual(len(data["textOverlays"]), 1)
+            self.assertEqual(data["textOverlays"][0]["text"], "Chamada principal com acentuacao: facil e rapido!")
+
+            res_text = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--text-overlays", overlay_file,
+                 "--plan-only"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res_text.returncode, 0)
+            self.assertIn("Titulos sobrepostos:", res_text.stdout)
+            self.assertIn("demonstration-body (4000ms -> 10000ms)", res_text.stdout)
+        finally:
+            if os.path.exists(overlay_file):
+                os.remove(overlay_file)
+
+    def test_plan_only_invalid_text_overlays_rejected(self):
+        bad_overlays = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {
+                    "beatId": "beat-inexistente",
+                    "text": "Texto"
+                }
+            ]
+        }
+        overlay_file = os.path.join(TMP_BASE, "bad_overlays.json")
+        os.makedirs(TMP_BASE, exist_ok=True)
+        write_json(overlay_file, bad_overlays)
+        try:
+            res = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--text-overlays", overlay_file,
+                 "--plan-only", "--json"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res.returncode, 3)
+            self.assertIn("UNKNOWN_BEAT_REFERENCE", res.stderr)
+        finally:
+            if os.path.exists(overlay_file):
+                os.remove(overlay_file)
+
 
 class PipelineBridgeTest(unittest.TestCase):
     """Ponte Node de carregamento de caso e validacao integrada."""
@@ -515,6 +611,241 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
         with self.assertRaises(render_local.InputFileError):
             render_pipeline.run_render_pipeline(
                 os.path.join(WORKTREE, CASE_MS_REL), assoc_ms, output_dir, WORKTREE, output_dir)
+
+    def test_12_text_overlay_revision_reuses_visual_and_differs_in_title_region(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        output_v1 = os.path.join(self.tmp, "delivery-v1")
+        output_v2 = os.path.join(self.tmp, "delivery-v2")
+
+        plan_v1_file = os.path.join(self.tmp, "title_v1.json")
+        plan_v2_file = os.path.join(self.tmp, "title_v2.json")
+
+        write_json(plan_v1_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {
+                    "beatId": "demonstration-body",
+                    "text": "TITULO ORIGINAL DE PROVA"
+                }
+            ]
+        })
+
+        write_json(plan_v2_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {
+                    "beatId": "demonstration-body",
+                    "text": "TITULO REVISADO COM NOVA CHAMADA"
+                }
+            ]
+        })
+
+        # Render V1
+        res_v1 = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_v1, WORKTREE, None,
+            text_overlays_path=plan_v1_file)
+        self.assertEqual(res_v1["status"], "completed")
+
+        # Render V2 (mesmo caso e mesmos assets, alterando apenas o titulo)
+        res_v2 = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_v2, WORKTREE, None,
+            text_overlays_path=plan_v2_file)
+        self.assertEqual(res_v2["status"], "completed")
+
+        manifest_v1 = read_json(os.path.join(WORKTREE, res_v1["manifest"]))
+        manifest_v2 = read_json(os.path.join(WORKTREE, res_v2["manifest"]))
+
+        # 1. Hashes identicos: pacote, SRT, narracao
+        self.assertEqual(
+            manifest_v1["artifacts"]["package"]["sha256"],
+            manifest_v2["artifacts"]["package"]["sha256"]
+        )
+        self.assertEqual(
+            manifest_v1["artifacts"]["srt"]["sha256"],
+            manifest_v2["artifacts"]["srt"]["sha256"]
+        )
+        self.assertEqual(
+            manifest_v1["artifacts"]["narration"]["sha256"],
+            manifest_v2["artifacts"]["narration"]["sha256"]
+        )
+
+        # 2. Hashes que devem diferir: o video e o plano de sobreposicao textual
+        self.assertNotEqual(
+            manifest_v1["artifacts"]["video"]["sha256"],
+            manifest_v2["artifacts"]["video"]["sha256"]
+        )
+        self.assertNotEqual(
+            manifest_v1["artifacts"]["textOverlayPlan"]["sha256"],
+            manifest_v2["artifacts"]["textOverlayPlan"]["sha256"]
+        )
+
+        # 3. Inspecao dos dois MP4 com FFprobe
+        video_v1 = os.path.join(WORKTREE, res_v1["artifacts"]["video"])
+        video_v2 = os.path.join(WORKTREE, res_v2["artifacts"]["video"])
+        for path in (video_v1, video_v2):
+            insp = build_video.validate_mp4(path, 1080, 1920, 30, 14.0)
+            self.assertEqual(insp["videoStreams"], 1)
+            self.assertEqual(insp["audioStreams"], 0)
+            self.assertEqual(insp["duration"], 14.0)
+            self.assertEqual(insp["pixFmt"], "yuv420p")
+
+        # 4. Inspecao visual dos quadros: antes (t=2.0s), durante (t=7.0s) e depois (t=12.0s)
+        frame_v1_pre = extract_raw_frame(video_v1, 2.0)
+        frame_v2_pre = extract_raw_frame(video_v2, 2.0)
+        mae_pre = calculate_mae(frame_v1_pre, frame_v2_pre, y_start=0, y_end=1920)
+        self.assertLess(mae_pre, 0.5, f"Quadro antes do intervalo deveria ser visualmente igual, MAE={mae_pre}")
+
+        frame_v1_post = extract_raw_frame(video_v1, 12.0)
+        frame_v2_post = extract_raw_frame(video_v2, 12.0)
+        mae_post = calculate_mae(frame_v1_post, frame_v2_post, y_start=0, y_end=1920)
+        self.assertLess(mae_post, 0.5, f"Quadro depois do intervalo deveria ser visualmente igual, MAE={mae_post}")
+
+        frame_v1_mid = extract_raw_frame(video_v1, 7.0)
+        frame_v2_mid = extract_raw_frame(video_v2, 7.0)
+        # Regiao superior (titulo): a diferenca entre os textos aparece aqui
+        mae_title_region = calculate_mae(frame_v1_mid, frame_v2_mid, y_start=0, y_end=400)
+        self.assertGreater(mae_title_region, 2.0, f"Regiao do titulo deveria diferir entre as versoes, MAE={mae_title_region}")
+        # Regiao inferior (legenda e imagem de fundo): tolerante a compressao do codec (< 1.0)
+        mae_bottom_region = calculate_mae(frame_v1_mid, frame_v2_mid, y_start=1200, y_end=1920)
+        self.assertLess(mae_bottom_region, 1.0, f"Regiao inferior da legenda deveria ser igual, MAE={mae_bottom_region}")
+
+        # 5. Reabertura e recalculacao de hashes de todos os arquivos publicados em ambos os manifestos
+        for m in (manifest_v1, manifest_v2):
+            self.assertIn("textOverlayPlan", m["artifacts"])
+            for key, entry in m["artifacts"].items():
+                file_path = os.path.join(WORKTREE, entry["path"])
+                self.assertTrue(os.path.isfile(file_path))
+                self.assertEqual(os.path.getsize(file_path), entry["bytes"])
+                self.assertEqual(render_local.sha256_file(file_path), entry["sha256"])
+
+    def test_13_text_overlay_reexecution_updates_same_destination(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        output_dir = os.path.join(self.tmp, "reexec-delivery")
+        plan_v1_file = os.path.join(self.tmp, "plan_reexec_v1.json")
+        plan_v2_file = os.path.join(self.tmp, "plan_reexec_v2.json")
+
+        write_json(plan_v1_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "demonstration-body", "text": "TITULO VERSAO UM"}]
+        })
+        write_json(plan_v2_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "demonstration-body", "text": "TITULO VERSAO DOIS REVISADO"}]
+        })
+
+        # Primeira execucao
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+            text_overlays_path=plan_v1_file)
+        hashes_v1 = delivery_hashes(output_dir)
+
+        # Reexecucao com titulo revisado no mesmo destino
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+            text_overlays_path=plan_v2_file)
+        hashes_v2 = delivery_hashes(output_dir)
+
+        # Pacote, SRT e narracao permanecem identicos
+        package_name = [k for k in hashes_v1 if k.endswith(".execution-package.json")][0]
+        srt_name = [k for k in hashes_v1 if k.endswith("-captions.srt")][0]
+        narration_name = [k for k in hashes_v1 if k.endswith("-narration-script.txt")][0]
+        self.assertEqual(hashes_v1[package_name], hashes_v2[package_name])
+        self.assertEqual(hashes_v1[srt_name], hashes_v2[srt_name])
+        self.assertEqual(hashes_v1[narration_name], hashes_v2[narration_name])
+
+        # Video e plano de titulos mudaram
+        overlay_plan_name = [k for k in hashes_v1 if k.endswith("-text-overlay-plan.json")][0]
+        video_name = [k for k in hashes_v1 if k.endswith("-primary-output.mp4")][0]
+        self.assertNotEqual(hashes_v1[overlay_plan_name], hashes_v2[overlay_plan_name])
+        self.assertNotEqual(hashes_v1[video_name], hashes_v2[video_name])
+
+    def test_14_invalid_text_overlay_preserves_previous_delivery(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        output_dir = os.path.join(self.tmp, "preserve-invalid-overlay")
+        valid_plan_file = os.path.join(self.tmp, "plan_valid.json")
+        bad_plan_file = os.path.join(self.tmp, "plan_bad.json")
+
+        write_json(valid_plan_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "demonstration-body", "text": "TITULO VALIDO"}]
+        })
+        write_json(bad_plan_file, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "beat-inexistente", "text": "TITULO INVALIDO"}]
+        })
+
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+            text_overlays_path=valid_plan_file)
+        hashes_before = delivery_hashes(output_dir)
+
+        # Tentativa de renderizar com plano invalido
+        with self.assertRaises(render_local.RenderInputError):
+            render_pipeline.run_render_pipeline(
+                os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+                text_overlays_path=bad_plan_file)
+
+        # Destino intacto
+        self.assertEqual(hashes_before, delivery_hashes(output_dir))
+
+    def test_15_concurrent_empty_destination_collision_revalidated_under_lock(self):
+        assoc_ms = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        assoc_mh = self._prepare_assoc(ASSOC_MH_REL, self.assets_dir_mh)
+        output_dir = os.path.join(self.tmp, "concurrent-collision")
+
+        original_acquire = render_local.acquire_promotion_lock
+
+        def simulate_concurrent_promotion(target_dir):
+            lock = original_acquire(target_dir)
+            # Simula que outro caso promoveu no mesmo destino enquanto o segundo renderizava:
+            manifest_sim = {
+                "schemaVersion": 1,
+                "caseId": "marca-salao-pipeline-pilot",
+                "packageId": "pkg-concorrente"
+            }
+            write_json(os.path.join(target_dir, "delivery-manifest.json"), manifest_sim)
+            return lock
+
+        with mock.patch("render_local.acquire_promotion_lock", side_effect=simulate_concurrent_promotion):
+            with self.assertRaises(render_pipeline.DeliveryCollisionError) as ctx:
+                render_pipeline.run_render_pipeline(
+                    os.path.join(WORKTREE, CASE_MH_REL), assoc_mh, output_dir, WORKTREE, None)
+            self.assertIn("colisao de entrega", str(ctx.exception))
+
+
+def extract_raw_frame(video_path, timestamp_s, width=1080, height=1920):
+    cmd = [
+        build_video.get_ffmpeg(),
+        "-ss", f"{timestamp_s:.3f}",
+        "-i", video_path,
+        "-vframes", "1",
+        "-f", "rawvideo",
+        "-pix_fmt", "rgb24",
+        "-"
+    ]
+    res = subprocess.run(cmd, capture_output=True, timeout=render_local.PROBE_TIMEOUT_SECONDS)
+    if res.returncode != 0:
+        raise RuntimeError(f"Falha ao extrair quadro em t={timestamp_s}")
+    expected_size = width * height * 3
+    if len(res.stdout) < expected_size:
+        raise RuntimeError(f"Tamanho de quadro insuficiente: {len(res.stdout)} < {expected_size}")
+    return res.stdout[:expected_size]
+
+
+def calculate_mae(frame_a, frame_b, width=1080, y_start=0, y_end=1920):
+    bytes_per_row = width * 3
+    start_offset = y_start * bytes_per_row
+    end_offset = y_end * bytes_per_row
+    slice_a = frame_a[start_offset:end_offset]
+    slice_b = frame_b[start_offset:end_offset]
+    diff = sum(abs(a - b) for a, b in zip(slice_a, slice_b))
+    return diff / float(len(slice_a))
 
 
 if __name__ == "__main__":

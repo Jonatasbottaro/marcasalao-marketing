@@ -20,10 +20,12 @@ import path from 'node:path'
 
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
+import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
 import {
     checkLocalRenderConfiguration,
     validateLocalRenderInput,
 } from '../platform/dist/src/validate-local-render-input.js'
+import { validateTextOverlayPlan } from '../platform/dist/src/validate-text-overlay-plan.js'
 
 function buildPlan(caseId, pkg, configCheck) {
     const output = pkg.output
@@ -55,6 +57,7 @@ function buildPlan(caseId, pkg, configCheck) {
 function handleCasePipeline(args) {
     let casePath = null
     let assetsPath = null
+    let textOverlaysPath = null
     let rootDir = process.cwd()
     let planOnly = false
 
@@ -64,6 +67,8 @@ function handleCasePipeline(args) {
             casePath = args[++i]
         } else if (arg === '--assets' && i + 1 < args.length) {
             assetsPath = args[++i]
+        } else if (arg === '--text-overlays' && i + 1 < args.length) {
+            textOverlaysPath = args[++i]
         } else if (arg === '--root' && i + 1 < args.length) {
             rootDir = args[++i]
         } else if (arg === '--plan-only') {
@@ -75,7 +80,7 @@ function handleCasePipeline(args) {
     }
 
     if (!casePath) {
-        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--plan-only]')
+        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--text-overlays <overlays.json>] [--plan-only]')
         process.exit(2)
     }
 
@@ -98,6 +103,38 @@ function handleCasePipeline(args) {
     const configCheck = checkLocalRenderConfiguration(pkg)
     const plan = buildPlan(creation.caseId, pkg, configCheck)
 
+    let canonicalTextOverlayJson = null
+    let resolvedTextOverlays = []
+    let textOverlayPlan = null
+
+    if (textOverlaysPath) {
+        let textOverlaysInput
+        try {
+            textOverlaysInput = JSON.parse(readFileSync(textOverlaysPath, 'utf8'))
+        } catch {
+            console.error('erro: arquivo de sobreposicao de texto ilegivel ou JSON invalido')
+            process.exit(2)
+        }
+
+        const overlayValidation = validateTextOverlayPlan(pkg, creation.caseId, textOverlaysInput)
+        if (!overlayValidation.ok) {
+            console.log(JSON.stringify({
+                ok: false,
+                caseId: creation.caseId,
+                packageId: pkg.packageId,
+                failureCode: overlayValidation.failureCode,
+                subject: overlayValidation.subject,
+                plan,
+            }))
+            process.exit(3)
+        }
+
+        textOverlayPlan = overlayValidation.plan
+        canonicalTextOverlayJson = serializeTextOverlayPlan(overlayValidation.plan)
+        resolvedTextOverlays = overlayValidation.resolvedOverlays
+        plan.textOverlays = resolvedTextOverlays
+    }
+
     if (planOnly || !assetsPath) {
         console.log(JSON.stringify({
             ok: true,
@@ -106,6 +143,9 @@ function handleCasePipeline(args) {
             packageId: pkg.packageId,
             package: pkg,
             canonicalJson,
+            canonicalTextOverlayJson,
+            textOverlays: textOverlayPlan,
+            resolvedTextOverlays,
             plan,
         }))
         process.exit(0)
@@ -139,6 +179,9 @@ function handleCasePipeline(args) {
         packageId: pkg.packageId,
         package: pkg,
         canonicalJson,
+        canonicalTextOverlayJson,
+        textOverlays: textOverlayPlan,
+        resolvedTextOverlays,
         association: validation.association,
         plan,
     }))
