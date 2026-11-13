@@ -43,3 +43,5 @@ pre { background: #0d0f13; border: 1px solid var(--line); border-radius: 6px; pa
 .mode-btn.active { background: var(--accent); color: #fff; }
 .card-thumb { width: 220px; height: 220px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); display: block; margin: 8px 0; background: #000; }
 #c-delivery-output .profile-card img { max-width: 100%; }
+#m-canvas { border: 1px solid var(--line); border-radius: 6px; background: #000; cursor: crosshair; display: block; margin: 8px 0; touch-action: none; }
+#m-delivery-output video { width: 270px; max-width: 100%; border-radius: 6px; background: #000; display: block; margin: 8px 0; }

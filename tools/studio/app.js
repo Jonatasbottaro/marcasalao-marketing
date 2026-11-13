@@ -388,8 +388,11 @@ function emptyCarousel() {
 function setMode(mode) {
   $('#mode-video').hidden = mode !== 'video';
   $('#mode-carousel').hidden = mode !== 'carousel';
+  $('#mode-motion').hidden = mode !== 'motion';
   $('#mode-video-btn').classList.toggle('active', mode === 'video');
   $('#mode-carousel-btn').classList.toggle('active', mode === 'carousel');
+  $('#mode-motion-btn').classList.toggle('active', mode === 'motion');
+  if (mode === 'motion') drawMotionCanvas();
 }
 
 async function loadCProjects() {
@@ -631,6 +634,190 @@ async function initCarousel() {
   $('#c-btn-load-delivery').addEventListener('click', () => loadCDelivery().catch((e) => toast(e.message)));
 }
 
+// ================= Motion (contorno animado) =================
+let mreq = null, mplan = null, mImg = null, mDrag = null, mPollTimer = null;
+const mEffect = () => (mplan && mplan.effects[0]) || null;
+
+async function loadMExamples() {
+  const d = await api('/api/examples');
+  const sel = $('#m-example-select');
+  sel.innerHTML = '';
+  const vids = d.examples.filter((e) => e.kind === 'video' && e.name.includes('motion'));
+  for (const e of vids) sel.append(el('option', { value: e.path, text: e.name }));
+  sel._examples = vids;
+}
+
+function loadMExample() {
+  const sel = $('#m-example-select');
+  const ex = (sel._examples || []).find((e) => e.path === sel.value);
+  if (!ex) { toast('Selecione um exemplo.'); return; }
+  mreq = JSON.parse(JSON.stringify(ex.request));
+  $('#m-plan-path').value = '.workspace/tmp/video-studio/drafts/' + mreq.id + '.motion.json';
+  $('#m-output-dir').value = '.workspace/archives/video-studio/' + mreq.id;
+  const planPath = ex.path.replace('.video-request.json', '.motion-plan.json');
+  api('/api/draft/load?path=' + encodeURIComponent(planPath))
+    .then((d) => { mplan = d.request; afterMPlan(); })
+    .catch(() => {
+      mplan = { schemaVersion: 1, requestId: mreq.id, effects: [{ sceneId: mreq.scenes[0].id, region: { x: 0.1, y: 0.3, w: 0.8, h: 0.15 }, color: '#FFD700', thickness: 6, startMs: 500, endMs: 3000 }] };
+      afterMPlan();
+    });
+  populateMProfiles();
+}
+
+function afterMPlan() {
+  const e = mEffect();
+  $('#m-start').value = e.startMs; $('#m-end').value = e.endMs;
+  $('#m-color').value = e.color; $('#m-thickness').value = e.thickness;
+  populateMScenes(); drawMotionCanvas(); updateMRegionInfo();
+}
+
+function populateMScenes() {
+  const sel = $('#m-scene-select');
+  sel.innerHTML = '';
+  for (const s of mreq.scenes) sel.append(el('option', { value: s.id, text: s.id }));
+  sel.value = mEffect().sceneId;
+  sel.onchange = () => { mEffect().sceneId = sel.value; mImg = null; drawMotionCanvas(); };
+}
+
+function populateMProfiles() {
+  const sel = $('#m-profile-select');
+  sel.innerHTML = '';
+  for (const p of mreq.profiles) sel.append(el('option', { value: p, text: p }));
+}
+
+function currentMedia() {
+  const s = mreq.scenes.find((x) => x.id === mEffect().sceneId);
+  return mreq.media.find((m) => m.id === s.mediaId);
+}
+
+function drawMotionCanvas() {
+  const cv = $('#m-canvas'); const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  if (!mreq || !mplan) return;
+  const media = currentMedia(); if (!media) return;
+  if (!mImg || mImg._src !== media.path) {
+    mImg = new Image(); mImg._src = media.path;
+    mImg.onload = () => drawMotionCanvas();
+    mImg.src = '/source-media?path=' + encodeURIComponent(media.path);
+    return;
+  }
+  const scale = Math.min(cv.width / mImg.width, cv.height / mImg.height);
+  const dw = mImg.width * scale, dh = mImg.height * scale;
+  ctx.drawImage(mImg, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+  const r = mEffect().region;
+  ctx.strokeStyle = mEffect().color; ctx.lineWidth = 3;
+  ctx.strokeRect(r.x * cv.width, r.y * cv.height, r.w * cv.width, r.h * cv.height);
+}
+
+function updateMRegionInfo() {
+  const e = mEffect(); if (!e) return;
+  const r = e.region;
+  $('#m-region-info').textContent = `Região x=${r.x.toFixed(2)} y=${r.y.toFixed(2)} w=${r.w.toFixed(2)} h=${r.h.toFixed(2)} — contorno de ${e.startMs}ms a ${e.endMs}ms (relativo à cena ${e.sceneId}).`;
+}
+
+function canvasFraction(ev) {
+  const cv = $('#m-canvas'); const rect = cv.getBoundingClientRect();
+  return { x: (ev.clientX - rect.left) / rect.width, y: (ev.clientY - rect.top) / rect.height };
+}
+
+function initMotionCanvas() {
+  const cv = $('#m-canvas');
+  cv.addEventListener('pointerdown', (ev) => { mDrag = canvasFraction(ev); cv.setPointerCapture(ev.pointerId); });
+  cv.addEventListener('pointermove', (ev) => {
+    if (!mDrag || !mEffect()) return;
+    const p = canvasFraction(ev);
+    const x = Math.min(mDrag.x, p.x), y = Math.min(mDrag.y, p.y);
+    const w = Math.abs(p.x - mDrag.x), h = Math.abs(p.y - mDrag.y);
+    mEffect().region = { x: Math.max(0, x), y: Math.max(0, y), w: Math.min(1, w), h: Math.min(1, h) };
+    drawMotionCanvas(); updateMRegionInfo();
+  });
+  cv.addEventListener('pointerup', () => { mDrag = null; });
+  for (const [id, key] of [['m-start', 'startMs'], ['m-end', 'endMs'], ['m-thickness', 'thickness']]) {
+    $('#' + id).addEventListener('input', (e) => { if (mEffect()) { mEffect()[key] = Number(e.target.value); updateMRegionInfo(); } });
+  }
+  $('#m-color').addEventListener('input', (e) => { if (mEffect()) { mEffect().color = e.target.value; drawMotionCanvas(); } });
+}
+
+async function saveMPlan() {
+  const path = $('#m-plan-path').value.trim();
+  if (!path || !mplan) { toast('Informe o caminho do plano.'); return; }
+  const d = await post('/api/draft/save', { path, request: mplan });
+  toast('Plano salvo: ' + d.path);
+}
+
+async function openMPlan() {
+  const path = $('#m-plan-path').value.trim();
+  if (!path) { toast('Informe o caminho do plano.'); return; }
+  const d = await api('/api/draft/load?path=' + encodeURIComponent(path));
+  mplan = d.request; afterMPlan(); toast('Plano reaberto.');
+}
+
+async function mPreview() {
+  const out = $('#m-preview-output');
+  out.innerHTML = '<p class="muted">Calculando prévia…</p>';
+  try {
+    const d = await post('/api/preview', { request: mreq, motionPlan: mplan, kind: 'video' });
+    const r = d.result;
+    out.innerHTML = '';
+    if (r.status !== 'preview') { out.append(el('pre', { text: JSON.stringify(r, null, 2) })); return; }
+    for (const p of r.profiles) {
+      if (p.status !== 'compiled') { out.append(el('p', { class: 'badge err', text: `${p.profileId}: ${p.failureCode}` })); continue; }
+      const mo = p.motion;
+      if (!mo) { out.append(el('p', { text: `${p.profileId}: sem motion` })); continue; }
+      for (const e of mo.effects) {
+        out.append(el('p', { text: `${p.profileId} / ${e.sceneId}: contorno ${e.absoluteStartMs}ms→${e.absoluteEndMs}ms (absoluto), região x=${e.region.x.toFixed(2)} y=${e.region.y.toFixed(2)} w=${e.region.w.toFixed(2)} h=${e.region.h.toFixed(2)}, cor ${e.color}` }));
+      }
+    }
+  } catch (err) { out.innerHTML = ''; out.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+async function mExport() {
+  const outputDir = $('#m-output-dir').value.trim();
+  if (!outputDir) { toast('Informe a pasta de entrega.'); return; }
+  const status = $('#m-export-status');
+  status.innerHTML = '<p class="muted">Exportando com Motion…</p>';
+  try {
+    const d = await post('/api/export', { request: mreq, outputDir, profile: $('#m-profile-select').value, kind: 'video', motionPlan: mplan });
+    mPoll(d.jobId, outputDir);
+  } catch (err) { status.innerHTML = ''; status.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+function mPoll(jobId, outputDir) {
+  if (mPollTimer) clearTimeout(mPollTimer);
+  const tick = async () => {
+    const d = await api('/api/export/status?job=' + jobId);
+    const status = $('#m-export-status');
+    if (d.status === 'running') { status.innerHTML = '<p class="muted">Exportando… (segundo plano)</p>'; mPollTimer = setTimeout(tick, 1200); return; }
+    status.innerHTML = '';
+    status.append(el('p', {}, el('span', { class: d.status === 'completed' ? 'badge ok' : 'badge err', text: d.status })));
+    const out = $('#m-delivery-output');
+    out.innerHTML = '';
+    if (d.status === 'completed') {
+      const profile = $('#m-profile-select').value;
+      const base = `/media?dir=${encodeURIComponent(outputDir)}&profile=${encodeURIComponent(profile)}`;
+      out.append(el('video', { controls: '', preload: 'metadata', src: base + '&kind=video' }));
+      out.append(el('div', {}, [
+        el('a', { href: base + '&kind=video', download: '', text: 'Baixar MP4' }),
+        el('a', { href: base + '&kind=srt', download: '', text: 'SRT' }),
+        el('a', { href: base + '&kind=narration', download: '', text: 'Narração' }),
+      ]));
+    } else {
+      out.append(el('pre', { text: JSON.stringify(d.result, null, 2) }));
+    }
+  };
+  tick();
+}
+
+async function initMotion() {
+  await loadMExamples();
+  initMotionCanvas();
+  $('#m-btn-load-example').addEventListener('click', loadMExample);
+  $('#m-btn-save-plan').addEventListener('click', () => saveMPlan().catch((e) => toast(e.message)));
+  $('#m-btn-open-plan').addEventListener('click', () => openMPlan().catch((e) => toast(e.message)));
+  $('#m-btn-preview').addEventListener('click', mPreview);
+  $('#m-btn-export').addEventListener('click', mExport);
+}
+
 async function init() {
   draft = emptyDraft();
   await loadProjects();
@@ -648,7 +835,9 @@ async function init() {
   $('#btn-load-delivery').addEventListener('click', () => loadDelivery().catch((e) => toast(e.message)));
   $('#mode-video-btn').addEventListener('click', () => setMode('video'));
   $('#mode-carousel-btn').addEventListener('click', () => setMode('carousel'));
+  $('#mode-motion-btn').addEventListener('click', () => setMode('motion'));
   await initCarousel();
+  await initMotion();
   setMode('video');
 }
 

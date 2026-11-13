@@ -58,7 +58,7 @@ def rel(root, path):
     return render_local.rel(root, path)
 
 
-def run_bridge_video_request(root, input_path, profile=None):
+def run_bridge_video_request(root, input_path, profile=None, motion_plan_path=None):
     node = shutil.which('node')
     if not node:
         raise render_local.InputFileError('node nao encontrado no PATH')
@@ -69,6 +69,8 @@ def run_bridge_video_request(root, input_path, profile=None):
     cmd = [node, bridge, '--video-request', input_path, '--root', root]
     if profile:
         cmd.extend(['--profile', profile])
+    if motion_plan_path:
+        cmd.extend(['--motion-plan', motion_plan_path])
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
@@ -100,6 +102,7 @@ def preview_profile(profile):
         'beats': plan['beats'] if plan else [],
         'supported': plan['supported'] if plan else None,
         'warnings': profile.get('warnings', []),
+        'motion': profile.get('motion'),
     }
 
 
@@ -138,7 +141,7 @@ def write_working_documents(run_dir, profile, project):
     return paths
 
 
-def export_profile(root, profile, project, media, output_dir, run_root, preset, staging):
+def export_profile(root, profile, project, media, output_dir, run_root, preset, staging, motion_plan=None):
     profile_id = profile['profileId']
     run_dir = os.path.join(run_root, profile_id)
     paths = write_working_documents(run_dir, profile, project)
@@ -146,6 +149,9 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         root, paths['case'], paths['association'], media)
     write_text(paths['asset_manifest'], canonical_json)
     profile_output = os.path.join(output_dir, profile_id)
+    motion = None
+    if motion_plan and profile.get('motion'):
+        motion = {'plan': motion_plan, 'effects': profile['motion']['effects']}
     summary = render_pipeline.run_render_pipeline(
         paths['case'],
         None,
@@ -156,6 +162,7 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         text_overlays_path=paths.get('overlays'),
         visual_style_path=paths.get('style'),
         asset_manifest_path=paths['asset_manifest'],
+        motion=motion,
     )
     return {
         'profileId': profile_id,
@@ -335,6 +342,7 @@ def main(argv=None):
     parser.add_argument('--plan-only', action='store_true', help='Apenas compila e exibe a previa, sem render nem gravacao')
     parser.add_argument('--output-dir', default=None, help='Diretorio final de entrega (um subdiretorio por perfil)')
     parser.add_argument('--profile', default=None, help='Restringe a exportacao a um perfil pedido')
+    parser.add_argument('--motion-plan', default=None, help='Plano de motion (MotionPlan v1) com contorno por cena')
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo (opcional)')
     parser.add_argument('--preset', default='veryfast', help='Preset do FFmpeg')
@@ -363,12 +371,25 @@ def main(argv=None):
         print('Erro: ProjectManifest do pedido ausente ou fora da raiz', file=sys.stderr)
         return 2
 
+    motion_plan_input = None
+    if args.motion_plan:
+        motion_path = os.path.realpath(args.motion_plan)
+        if not render_local.contained(root, motion_path) or not os.path.isfile(motion_path):
+            print('Erro: plano de motion ausente ou fora da raiz', file=sys.stderr)
+            return 2
+        try:
+            with open(motion_path, 'r', encoding='utf-8') as handle:
+                motion_plan_input = json.load(handle)
+        except (OSError, ValueError):
+            print('Erro: plano de motion ilegivel ou JSON invalido', file=sys.stderr)
+            return 2
+
     if not args.plan_only and not args.output_dir:
         print('Erro: informe --output-dir para exportar, ou use --plan-only', file=sys.stderr)
         return 2
 
     try:
-        verdict = run_bridge_video_request(root, input_path, args.profile)
+        verdict = run_bridge_video_request(root, input_path, args.profile, args.motion_plan)
         if not verdict.get('ok'):
             raise render_local.RenderInputError(verdict.get('failureCode', 'VIDEO_REQUEST_INVALID'),
                                                 verdict.get('subject'))
@@ -424,7 +445,8 @@ def main(argv=None):
                     continue
                 try:
                     results.append(export_profile(root, profile, project, media, output_dir,
-                                                  run_root, args.preset, args.staging))
+                                                  run_root, args.preset, args.staging,
+                                                  motion_plan=motion_plan_input))
                 except (build_video.DeliveryError, render_local.RenderInputError,
                         render_local.InputFileError, OSError, ValueError) as exc:
                     results.append(failed_result(profile, error=str(exc)))

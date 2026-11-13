@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-motion-demo",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "Marca Salao - agenda com destaque",
+  "locale": "pt-BR",
+  "profiles": ["instagram-reels-video"],
+  "media": [
+    {
+      "id": "agenda",
+      "path": ".workspace/tmp/motion-demo/assets/marca-salao/agenda.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "agenda",
+      "durationMs": 4000,
+      "mediaId": "agenda",
+      "caption": "Agenda do dia",
+      "narration": "Veja os horarios do dia.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    }
+  ]
+}

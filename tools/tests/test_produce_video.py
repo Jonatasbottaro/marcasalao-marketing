@@ -20,6 +20,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import build_video
+import make_agenda_media
 import make_proof_assets
 import make_request_media
 import produce_video
@@ -380,6 +381,84 @@ class IndexRegressionTest(unittest.TestCase):
         self.assertIsNotNone(entry["lastValidDelivery"])
         self.assertEqual(entry["lastValidDelivery"]["packageId"], "pkg-youtube-shorts")
         self.assertEqual(index["completedCount"], 1)
+
+
+class MotionTest(unittest.TestCase):
+    """MotionPlan v1: previa resolvida, exportacao com contorno e manifesto/relatorio."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not HAS_BRIDGE:
+            raise unittest.SkipTest("ponte indisponivel")
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg ausente")
+            raise unittest.SkipTest("FFmpeg indisponivel")
+
+    def setUp(self):
+        self.dir = os.path.join(TMP_BASE, f"motion_{self._testMethodName}")
+        os.makedirs(self.dir, exist_ok=True)
+        self.request = read_json(os.path.join(MAIN_ROOT, "tools/produce/examples/marca-salao-motion.video-request.json"))
+        self.plan = read_json(os.path.join(MAIN_ROOT, "tools/produce/examples/marca-salao-motion.motion-plan.json"))
+        self.input_path = os.path.join(self.dir, "pedido.json")
+        self.plan_path = os.path.join(self.dir, "plano.json")
+        write_json(self.input_path, self.request)
+        write_json(self.plan_path, self.plan)
+        agenda_rel = self.request["media"][0]["path"]
+        make_agenda_media.write_agenda_png(os.path.join(MAIN_ROOT, agenda_rel.replace("/", os.sep)))
+        self.output = os.path.join(self.dir, "entrega")
+
+    def tearDown(self):
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def rel(self, p):
+        return os.path.relpath(p, MAIN_ROOT).replace(os.sep, "/")
+
+    def run_cli(self, extra):
+        return subprocess.run([sys.executable, os.path.join(WORKTREE, "tools/produce_video.py"),
+                               "--input", self.rel(self.input_path), "--motion-plan", self.rel(self.plan_path), *extra],
+                              capture_output=True, text=True, cwd=MAIN_ROOT, timeout=300)
+
+    def test_preview_motion_resolved(self):
+        res = self.run_cli(["--plan-only", "--json"])
+        self.assertEqual(res.returncode, 0, res.stderr)
+        d = json.loads(res.stdout)
+        motion = d["profiles"][0]["motion"]
+        self.assertEqual(motion["effects"][0]["absoluteStartMs"], 500)
+        self.assertEqual(motion["effects"][0]["absoluteEndMs"], 3000)
+
+    def test_export_motion_manifest_and_report(self):
+        res = self.run_cli(["--output-dir", self.rel(self.output), "--json"])
+        self.assertEqual(res.returncode, 0, res.stderr)
+        d = json.loads(res.stdout)
+        profile_dir = os.path.join(self.output, "instagram-reels-video")
+        manifest = read_json(os.path.join(profile_dir, "delivery-manifest.json"))
+        self.assertIn("motionPlan", manifest["artifacts"])
+        mp = manifest["artifacts"]["motionPlan"]
+        self.assertEqual(render_local.sha256_file(os.path.join(MAIN_ROOT, mp["path"])), mp["sha256"])
+        report_files = [f for f in os.listdir(profile_dir) if f.endswith("-execution-report.json")]
+        report = read_json(os.path.join(profile_dir, report_files[0]))
+        self.assertEqual(report["motion"]["effects"][0]["absoluteStartMs"], 500)
+        self.assertEqual(report["motion"]["effects"][0]["region"]["x"], 0.06)
+
+    def test_invalid_region_interval_reference_zoom(self):
+        bad = json.loads(json.dumps(self.plan))
+        bad["effects"][0]["region"] = {"x": 0.5, "y": 0.2, "w": 0.8, "h": 0.1}
+        write_json(self.plan_path, bad)
+        self.assertEqual(self.run_cli(["--plan-only", "--json"]).returncode, 3)
+        bad = json.loads(json.dumps(self.plan))
+        bad["effects"][0]["endMs"] = 9000
+        write_json(self.plan_path, bad)
+        self.assertEqual(self.run_cli(["--plan-only", "--json"]).returncode, 3)
+        bad = json.loads(json.dumps(self.plan))
+        bad["effects"][0]["sceneId"] = "inexistente"
+        write_json(self.plan_path, bad)
+        self.assertEqual(self.run_cli(["--plan-only", "--json"]).returncode, 3)
+        zoom = json.loads(json.dumps(self.request))
+        zoom["scenes"][0]["motionIntent"] = "slow-zoom"
+        write_json(self.input_path, zoom)
+        write_json(self.plan_path, self.plan)
+        self.assertEqual(self.run_cli(["--plan-only", "--json"]).returncode, 3)
 
 
 if __name__ == "__main__":

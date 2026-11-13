@@ -17,6 +17,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import make_agenda_media
 import make_request_media
 import video_studio
 
@@ -310,6 +311,66 @@ class CarouselPanelTest(StudioTestBase):
         self.assertEqual(third["status"], "completed")
         self.assertEqual(second["result"], final["result"])
         self.assertEqual(third["result"], final["result"])
+
+
+class MotionPanelTest(StudioTestBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg ausente")
+            raise unittest.SkipTest("FFmpeg indisponivel")
+
+    def setUp(self):
+        super().setUp()
+        self.mreq = read_json(os.path.join(MAIN_ROOT, "tools/produce/examples/marca-salao-motion.video-request.json"))
+        self.mplan = read_json(os.path.join(MAIN_ROOT, "tools/produce/examples/marca-salao-motion.motion-plan.json"))
+        make_agenda_media.write_agenda_png(os.path.join(MAIN_ROOT, self.mreq["media"][0]["path"].replace("/", os.sep)))
+
+    def test_source_media_served(self):
+        status, _ = self.request("GET", "/source-media?path=" + self.mreq["media"][0]["path"])
+        self.assertEqual(status, 200)
+
+    def test_preview_motion_resolved(self):
+        status, data = self.request("POST", "/api/preview", {"request": self.mreq, "motionPlan": self.mplan, "kind": "video"})
+        self.assertEqual(status, 200, data)
+        motion = data["result"]["profiles"][0]["motion"]
+        self.assertEqual(motion["effects"][0]["absoluteStartMs"], 500)
+        self.assertEqual(motion["effects"][0]["absoluteEndMs"], 3000)
+
+    def test_export_motion_and_concurrent_status(self):
+        output_rel = f".workspace/tmp/t_studio/{self._testMethodName}/entrega"
+        status, data = self.request("POST", "/api/export", {"request": self.mreq, "outputDir": output_rel, "profile": "instagram-reels-video", "kind": "video", "motionPlan": self.mplan})
+        self.assertEqual(status, 200, data)
+        job = data["jobId"]
+        final = None
+        for _ in range(120):
+            status, d = self.request("GET", "/api/export/status?job=" + job)
+            if d["status"] != "running":
+                final = d
+                break
+            import time
+            time.sleep(1.0)
+        self.assertIsNotNone(final)
+        self.assertEqual(final["status"], "completed", final)
+        # consultas simultaneas apos o fim: mesmo resultado, job finalizado uma vez
+        results = []
+        threads = [threading.Thread(target=lambda: results.append(self.request("GET", "/api/export/status?job=" + job))) for _ in range(4)]
+        for t in threads: t.start()
+        for t in threads: t.join()
+        self.assertEqual(len(results), 4)
+        for _, r in results:
+            self.assertEqual(r["status"], "completed")
+            self.assertEqual(r["result"], final["result"])
+        # video com motion servido
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
+        conn.request("GET", f"/media?dir={output_rel}&profile=instagram-reels-video&kind=video", headers={"Host": self.host})
+        res = conn.getresponse()
+        blob = res.read()
+        conn.close()
+        self.assertEqual(res.status, 200)
+        self.assertGreater(len(blob), 1000)
 
 
 if __name__ == "__main__":

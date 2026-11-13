@@ -266,3 +266,26 @@ jobs:
               print(brand, 'carousel ok:', files)
           print('carousel CI proof ok: JPEG 1080x1080 + ZIP na ordem, duas marcas')
           PY
+
+      - name: Prova do efeito Motion (contorno animado, MP4 sem audio)
+        run: |
+          python tools/make_agenda_media.py --output .workspace/tmp/motion-demo/assets/marca-salao/agenda.png
+          python tools/make_agenda_media.py --output .workspace/tmp/motion-demo/assets/multitrack-hub/agenda.png
+          python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --plan-only --json
+          python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/ci-motion/marca-salao --json
+          python tools/produce_video.py --input tools/produce/examples/multitrack-hub-motion.video-request.json --motion-plan tools/produce/examples/multitrack-hub-motion.motion-plan.json --output-dir .workspace/archives/ci-motion/multitrack-hub --json
+          python - <<'PY'
+          import glob, json, subprocess
+          for brand in ('marca-salao', 'multitrack-hub'):
+              base = f'.workspace/archives/ci-motion/{brand}/instagram-reels-video'
+              m = json.load(open(f'{base}/delivery-manifest.json'))
+              assert 'motionPlan' in m['artifacts'], m['artifacts'].keys()
+              mp4 = glob.glob(f'{base}/*-primary-output.mp4')[0]
+              info = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', mp4], text=True))
+              streams = info['streams']
+              v = [s for s in streams if s.get('codec_type') == 'video'][0]
+              assert int(v['width']) == 1080 and int(v['height']) == 1920
+              assert sum(1 for s in streams if s.get('codec_type') == 'audio') == 0
+              print(brand, 'motion ok: 1080x1920, 0 audio, motionPlan no manifesto')
+          print('motion CI proof ok: contorno animado, duas marcas, sem audio')
+          PY

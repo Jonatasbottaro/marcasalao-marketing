@@ -22,6 +22,7 @@ import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/cre
 import { compileVideoRequest } from '../platform/dist/src/compile-video-request.js'
 import { validateCarouselRequest } from '../platform/dist/src/validate-carousel-request.js'
 import { resolveOutputPlan } from '../platform/dist/src/resolve-output-profile.js'
+import { resolveMotionPlan } from '../platform/dist/src/resolve-motion-plan.js'
 import { serializeAssetManifest } from '../platform/dist/src/serialize-asset-manifest.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
@@ -310,6 +311,7 @@ function handleVideoRequest(args) {
     let requestPath = null
     let rootDir = process.cwd()
     let profileFilter = null
+    let motionPlanPath = null
 
     for (let i = 0; i < args.length; i++) {
         const arg = args[i]
@@ -319,6 +321,8 @@ function handleVideoRequest(args) {
             rootDir = args[++i]
         } else if (arg === '--profile' && i + 1 < args.length) {
             profileFilter = args[++i]
+        } else if (arg === '--motion-plan' && i + 1 < args.length) {
+            motionPlanPath = args[++i]
         } else if (arg === '--plan-only') {
             // A compilacao e pura; a previa e a exportacao consomem o mesmo veredito.
         } else {
@@ -328,7 +332,7 @@ function handleVideoRequest(args) {
     }
 
     if (!requestPath) {
-        console.error('uso: node tools/render_bridge.mjs --video-request <pedido.json> [--root <raiz>] [--profile <id>] [--plan-only]')
+        console.error('uso: node tools/render_bridge.mjs --video-request <pedido.json> [--root <raiz>] [--profile <id>] [--motion-plan <plano.json>] [--plan-only]')
         process.exit(2)
     }
 
@@ -354,8 +358,31 @@ function handleVideoRequest(args) {
         process.exit(2)
     }
 
+    let motionInput = null
+    if (motionPlanPath) {
+        try {
+            motionInput = JSON.parse(readFileSync(motionPlanPath, 'utf8'))
+        } catch {
+            console.error('erro: plano de motion ilegivel ou JSON invalido')
+            process.exit(2)
+        }
+    }
+
     const options = profileFilter === null ? undefined : { profileFilter }
     const result = compileVideoRequest(requestInput, projectInput, options)
+    if (result.ok && motionInput !== null) {
+        for (const profile of result.profiles) {
+            if (profile.status !== 'compiled') continue
+            const resolution = resolveMotionPlan(profile.package, motionInput)
+            if (resolution.ok) {
+                profile.motion = { requestId: resolution.requestId, effects: resolution.effects }
+            } else {
+                profile.status = 'failed'
+                profile.failureCode = resolution.failureCode
+                profile.errors = [{ code: resolution.failureCode, path: resolution.subject ?? '', message: resolution.failureCode }]
+            }
+        }
+    }
     console.log(JSON.stringify(result))
     process.exit(result.ok ? 0 : 3)
 }

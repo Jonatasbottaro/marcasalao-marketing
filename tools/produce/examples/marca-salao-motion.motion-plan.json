@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "requestId": "marca-salao-motion-demo",
+  "effects": [
+    {
+      "sceneId": "agenda",
+      "region": { "x": 0.06, "y": 0.375, "w": 0.88, "h": 0.14583333333333334 },
+      "color": "#FFD700",
+      "thickness": 6,
+      "startMs": 500,
+      "endMs": 3000,
+      "fadeInMs": 200,
+      "fadeOutMs": 200
+    }
+  ]
+}
