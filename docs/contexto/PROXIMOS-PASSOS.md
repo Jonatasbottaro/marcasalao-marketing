@@ -141,7 +141,7 @@ Continua bloqueado até decisão explícita: produção de campanhas reais, míd
 
 ## 4e. R003 — módulo local de carrosséis no painel — concluído em 13/11/2026
 
-> O titular autorizou em 13/11/2026 implementar o R003 (carrosséis locais acessíveis pelo painel existente), com código, testes, prova no navegador, CI e documentação na mesma rodada, e integração à main após os gates. Comando do painel: `python tools/video_studio.py --port 8765` (aba **Carrosséis**); CLI: `python tools/produce_carousel.py --input <pedido> --plan-only|--output-dir <entrega> --json`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md), seção Carrosséis (R003).
+> O titular autorizou em 13/11/2026 implementar o R003 (carrosséis locais acessíveis pelo painel existente), com código, testes, prova no navegador, CI e documentação na mesma rodada, e integração à main após os gates. **Integrada na main pelo merge commit `7902e569360e76fc4f18fd4bda82800bf96615ad`** (branch `codex/r003-carousel-local-v1`). Comando do painel: `python tools/video_studio.py --port 8765` (aba **Carrosséis**); CLI: `python tools/produce_carousel.py --input <pedido> --plan-only|--output-dir <entrega> --json`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md), seção Carrosséis (R003).
 
 Critérios de conclusão atendidos:
 - **Entrada única** `CarouselRequest v1` (id, projeto, perfil de imagem, cadastro reutilizável de mídias com origem/licença, cards ordenados com id/título/corpo/mídia opcionais); exemplo com capa, conteúdo e fechamento com CTA; texto editável no pedido;
