@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TextOverlayPlan",
+  "description": "Contrato declarativo de TextOverlayPlan v1: plano de sobreposicao de titulos editaveis por beat.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "caseId",
+    "overlays"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Unica versao suportada nesta fatia."
+    },
+    "caseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Identificador do caso de pipeline em kebab-case."
+    },
+    "overlays": {
+      "type": "array",
+      "description": "Lista de titulos associados a beats.",
+      "items": {
+        "$ref": "#/definitions/textOverlayBinding"
+      }
+    }
+  },
+  "definitions": {
+    "textOverlayBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "beatId",
+        "text"
+      ],
+      "properties": {
+        "beatId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Identificador do beat em kebab-case."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Texto do titulo a ser sobreposto na tela."
+        }
+      }
+    }
+  }
+}
