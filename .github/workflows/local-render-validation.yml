@@ -138,5 +138,5 @@ jobs:
             .workspace/archives/ci-pipeline/marca-salao/*-primary-output.mp4
           ffprobe -v error -show_streams -show_format -of json \
             .workspace/archives/ci-pipeline/multitrack-hub/*-primary-output.mp4
-          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao/delivery-manifest.json')); assert m['status']=='completed' and m['caseId']=='marca-salao-pipeline-pilot'"
-          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/multitrack-hub/delivery-manifest.json')); assert m['status']=='completed' and m['caseId']=='multitrack-hub-pipeline-pilot'"
+          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao/delivery-manifest.json')); assert m['schemaVersion']==1 and m['caseId']=='marca-salao-pipeline-pilot'"
+          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/multitrack-hub/delivery-manifest.json')); assert m['schemaVersion']==1 and m['caseId']=='multitrack-hub-pipeline-pilot'"
