@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Studio — Marca Salão Marketing</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Video Studio</h1>
+    <p class="sub">Criar, revisar e exportar vídeo pelo navegador — pipeline local, sem áudio, rascunhos editoriais.</p>
+  </header>
+
+  <main>
+    <section id="sec-project">
+      <h2>1. Projeto e destinos</h2>
+      <div class="row">
+        <label>ProjectManifest
+          <select id="project-select"></select>
+        </label>
+        <button id="btn-load-profiles">Carregar perfis</button>
+      </div>
+      <table id="profiles-table">
+        <thead><tr><th>Usar</th><th>Perfil</th><th>Destino</th><th>Resolução</th><th>FPS</th><th>Allowlist</th><th>Exportação local</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="sec-draft">
+      <h2>2. Rascunho (VideoRequest v1)</h2>
+      <div class="row">
+        <label>Exemplo
+          <select id="example-select"></select>
+        </label>
+        <button id="btn-load-example">Carregar exemplo</button>
+        <label>Caminho do rascunho (.workspace/…)
+          <input id="draft-path" type="text" placeholder=".workspace/tmp/video-studio/drafts/meu-pedido.json">
+        </label>
+        <button id="btn-save-draft">Salvar</button>
+        <button id="btn-open-draft">Reabrir</button>
+      </div>
+      <div class="row">
+        <label>Id do pedido <input id="req-id" type="text"></label>
+        <label>Título do vídeo <input id="req-title" type="text"></label>
+        <label>Locale <input id="req-locale" type="text"></label>
+      </div>
+      <fieldset id="style-fields">
+        <legend>VisualStyle (títulos sobrepostos)</legend>
+        <div class="row">
+          <label>Id <input id="style-id" type="text"></label>
+          <label>Cor texto <input id="style-text" type="text" placeholder="#FFFFFF"></label>
+          <label>Cor contorno <input id="style-outline" type="text" placeholder="#000000"></label>
+          <label>Fonte (px) <input id="style-font" type="number" min="16" max="160"></label>
+          <label>Margem topo <input id="style-top" type="number" min="0" max="600"></label>
+          <label>Margem lateral <input id="style-horiz" type="number" min="0" max="400"></label>
+        </div>
+      </fieldset>
+    </section>
+
+    <section id="sec-media">
+      <h2>3. Mídias (cadastro reutilizável)</h2>
+      <div class="row">
+        <label>Pasta de trabalho (.workspace/…)
+          <input id="media-folder" type="text" placeholder=".workspace/tmp/video-studio/media">
+        </label>
+        <button id="btn-scan-media">Escanear pasta</button>
+        <button id="btn-generate-media">Gerar mídia fictícia do rascunho</button>
+      </div>
+      <table id="media-table">
+        <thead><tr><th>Id</th><th>Tipo</th><th>Caminho</th><th>Origem</th><th>Licença</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="sec-scenes">
+      <h2>4. Cenas ordenadas</h2>
+      <div id="scenes-list"></div>
+      <button id="btn-add-scene">Adicionar cena</button>
+    </section>
+
+    <section id="sec-preview">
+      <h2>5. Prévia (sem FFmpeg)</h2>
+      <button id="btn-preview">Gerar prévia</button>
+      <div id="preview-output"></div>
+    </section>
+
+    <section id="sec-export">
+      <h2>6. Exportação</h2>
+      <div class="row">
+        <label>Pasta de entrega (.workspace/…)
+          <input id="output-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
+        </label>
+        <label>Perfil
+          <select id="export-profile"><option value="">Todos os perfis do rascunho</option></select>
+        </label>
+        <button id="btn-export">Exportar</button>
+      </div>
+      <div id="export-status"></div>
+    </section>
+
+    <section id="sec-delivery">
+      <h2>7. Entrega — assistir e baixar</h2>
+      <div class="row">
+        <label>Pasta de entrega
+          <input id="delivery-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
+        </label>
+        <button id="btn-load-delivery">Abrir entrega</button>
+      </div>
+      <div id="delivery-output"></div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
