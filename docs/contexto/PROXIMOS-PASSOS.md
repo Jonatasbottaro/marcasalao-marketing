@@ -112,6 +112,20 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até deliberação específica: produção de campanhas reais, fornecedores, áudio/TTS, Temporal e deploy.
 
+## 4c. Produção de vídeo por entrada única (`VideoRequest` v1 + `tools/produce_video.py`) — concluído em 13/11/2026
+
+> O titular autorizou em 13/11/2026 uma entrega completa: descrever as cenas em um JSON, conferir a prévia e exportar o vídeo para os perfis escolhidos, com implementação, testes, render de prova, CI e documentação na mesma rodada, e integração à main após os gates. Detalhes e comandos em [tools/produce/README.md](../../tools/produce/README.md) e [tools/render/README.md](../../tools/render/README.md), seção Produção por entrada única.
+
+Critérios de conclusão atendidos:
+- **Entrada única**: contrato `VideoRequest` v1 puro (`platform/src/video-request-contract.ts`, `validate-video-request.ts`, espelho draft-07 `video-request.schema.json` com paridade Ajv) e compilador puro `compile-video-request.ts` que deriva `Composition`, `BeatPlan`, `OutputPlan`, `CreativeExecutionPackage`, associação de mídia e títulos por perfil, resolvendo cada perfil apenas pelo catálogo (`resolveOutputPlan`), respeitando a allowlist do projeto e validando pelo pipeline canônico; casos gerados como rascunhos editoriais;
+- **Prévia** (`--plan-only`): perfis resolvidos, duração total, tempos por cena, mídias necessárias e avisos, sem FFmpeg e sem gravação;
+- **Exportação**: `tools/produce_video.py` prepara e verifica o `AssetManifest` por perfil (origem/licença por material via `build_asset_manifest_from_registry`) e chama o pipeline local existente; um único pedido gera os três destinos (`instagram-reels-video`, `facebook-reels-video`, `youtube-shorts`) em 9:16 a 30 fps, MP4 sem áudio, SRT e narração TXT;
+- **Revisão e recuperação**: `--profile` reexporta um perfil após corrigir cena ou título com promoção transacional; falha de um perfil preserva a entrega anterior e não impede os demais; `index.json` verificável com caminhos válidos após a limpeza do staging; exit ≠ 0 quando algum perfil falha;
+- **Prova reproduzível**: exemplos versionados das duas marcas em `tools/produce/examples/`, gerador `tools/make_request_media.py`, seis vídeos inspecionados por FFprobe (1080×1920@30, H.264/yuv420p, 14 s, 0 áudio), 48 hashes conferidos, SRT/TXT válidos, reexportação de um perfil com reutilização de mídia (hash do inventário idêntico) e segundo pedido Multitrack Hub pelo mesmo comando;
+- **Gates**: typecheck, contratos e suíte da platform verdes; suíte Python com `REQUIRE_RENDER=1`; CI de render real em Ubuntu e Windows (`.github/workflows/local-render-validation.yml`) com prova do `produce_video`; API pública `["validateComposition"]` inalterada.
+
+Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, áudio/TTS, publicação, Temporal e deploy. A aprovação editorial e a publicação seguem o fluxo vigente.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

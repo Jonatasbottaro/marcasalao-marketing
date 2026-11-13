@@ -975,6 +975,16 @@ const ASSET_MANIFEST_SCHEMA_FILES = [
     'asset-manifest.schema.json',
 ]
 
+/** Entrada unica de producao de video VideoRequest v1 (compilador puro). */
+const VIDEO_REQUEST_SOURCE_FILES = [
+    'compile-video-request.ts',
+    'validate-video-request.ts',
+    'video-request-contract.ts',
+]
+const VIDEO_REQUEST_SCHEMA_FILES = [
+    'video-request.schema.json',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1113,6 +1123,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['schemas', VISUAL_STYLE_SCHEMA_FILES],
         ['src', ASSET_MANIFEST_SOURCE_FILES],
         ['schemas', ASSET_MANIFEST_SCHEMA_FILES],
+        ['src', VIDEO_REQUEST_SOURCE_FILES],
+        ['schemas', VIDEO_REQUEST_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1124,12 +1136,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES, ...VISUAL_STYLE_SOURCE_FILES, ...ASSET_MANIFEST_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES, ...VISUAL_STYLE_SOURCE_FILES, ...ASSET_MANIFEST_SOURCE_FILES, ...VIDEO_REQUEST_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES, ...VISUAL_STYLE_SCHEMA_FILES, ...ASSET_MANIFEST_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES, ...VISUAL_STYLE_SCHEMA_FILES, ...ASSET_MANIFEST_SCHEMA_FILES, ...VIDEO_REQUEST_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 

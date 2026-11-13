@@ -308,6 +308,30 @@ Garantias e diagnósticos do inventário:
 - **Rastreabilidade**: o inventário canônico é promovido como `*-asset-manifest.json` e registrado em `delivery-manifest.json` (`assetManifest`, `assetManifestSummary` e `artifacts.assetManifest`), enquanto `*-execution-report.json` registra `beatId`, `assetId` e as medições observadas no FFprobe;
 - **Diagnósticos antes do FFmpeg**: adulteração de bytes (`ASSET_HASH_MISMATCH` / `ASSET_SIZE_MISMATCH`), arquivo ausente (`ASSET_MISSING`), ilegível (`ASSET_UNREADABLE`), corrompido (`ASSET_CORRUPTED`), vídeo curto para o beat (`ASSET_VIDEO_TOO_SHORT`) ou referência inválida (`UNKNOWN_ASSET_REFERENCE`) abortam antes de codificar vídeo e preservam integralmente qualquer entrega anterior no destino.
 
+### 6. Produção por entrada única (`tools/produce_video.py`)
+
+A CLI `tools/produce_video.py` recebe um único pedido `VideoRequest v1`
+(`platform/src/video-request-contract.ts`, `validate-video-request.ts`,
+`compile-video-request.ts` e `platform/schemas/video-request.schema.json`) e
+produz os três destinos (`instagram-reels-video`, `facebook-reels-video`,
+`youtube-shorts`) a partir da mesma fonte de cenas e mídia. O compilador puro
+deriva `Composition`, `BeatPlan`, `OutputPlan`, `CreativeExecutionPackage`,
+associação de mídia e títulos por perfil, resolvendo cada perfil apenas pelo
+catálogo (`resolveOutputPlan`), respeitando a allowlist do projeto e validando
+cada caso pelo pipeline canônico. Os casos gerados são rascunhos editoriais.
+
+```bash
+python tools/make_request_media.py --input tools/produce/examples/marca-salao-social-reel.video-request.json
+python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --plan-only --json
+python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --output-dir .workspace/archives/primeiro-video --json
+python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --profile youtube-shorts --output-dir .workspace/archives/primeiro-video --json
+```
+
+- **Prévia** (`--plan-only`): perfis resolvidos, duração, tempos por cena, mídias e avisos, sem FFmpeg e sem gravação;
+- **Exportação**: prepara e verifica o `AssetManifest` por perfil (origem/licença por material) e chama o pipeline local existente; entrega MP4 sem áudio, SRT, narração TXT e `delivery-manifest.json` por perfil, mais `index.json` na raiz da entrega;
+- **Revisão e recuperação**: `--profile` reexporta um perfil após corrigir cena ou título com promoção transacional; falha de um perfil preserva a entrega anterior e não impede os demais; exit ≠ 0 quando algum falha;
+- **Independência de marca**: mesma CLI para Marca Salão e Multitrack Hub; diferenças vêm apenas do pedido e dos assets. Guia e exemplos em `tools/produce/README.md`.
+
 ### Exit codes
 
 | Código | Significado |

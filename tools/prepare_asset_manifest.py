@@ -185,6 +185,100 @@ def build_asset_manifest(root_real: str, case_abs: str, assets_abs: str,
     return canonical_manifest, canonical_json
 
 
+def build_asset_manifest_from_registry(root_real: str, case_abs: str, association_abs: str,
+                                       media_entries: list[dict]) -> tuple[dict, str]:
+    """Monta AssetManifest v1 a partir do cadastro de midia do pedido.
+
+    Diferente de build_asset_manifest (origem/licenca unicas), preserva a origem
+    e a licenca declaradas por material no cadastro do VideoRequest, deduplica
+    arquivos fisicos repetidos e valida o inventario pelo nucleo da platform.
+    """
+    verdict = run_bridge_prepare(root_real, case_abs, assets_abs=association_abs, plan_only=False)
+    case_id = verdict['caseId']
+    package_id = verdict['packageId']
+    association = verdict['association']
+
+    media_by_path: dict[str, dict] = {}
+    for entry in media_entries:
+        media_by_path[entry['path'].replace('\\', '/')] = entry
+
+    assets_by_real: dict[str, dict] = {}
+    used_ids: set[str] = set()
+    assets_list: list[dict] = []
+    bindings_list: list[dict] = []
+
+    for binding in association['assets']:
+        beat_id = binding['beatId']
+        declared_rel = binding['path']
+        joined = os.path.join(root_real, declared_rel.replace('/', os.sep))
+        real_path = os.path.realpath(joined)
+        if not render_local.contained(root_real, real_path):
+            raise render_local.InputFileError(f'asset fora da raiz do projeto: {declared_rel}')
+        if not os.path.isfile(real_path):
+            raise build_video.DeliveryError(f'asset nao encontrado: {declared_rel}')
+        try:
+            with open(real_path, 'rb') as check_handle:
+                check_handle.read(1)
+        except OSError:
+            raise build_video.DeliveryError(f'asset ilegivel: {declared_rel}')
+
+        if real_path in assets_by_real:
+            asset_entry = assets_by_real[real_path]
+        else:
+            canonical_rel = render_local.rel(root_real, real_path)
+            media = media_by_path.get(declared_rel.replace('\\', '/')) or media_by_path.get(canonical_rel)
+            if media is None:
+                raise render_local.RenderInputError('ASSET_MANIFEST_INVALID', declared_rel)
+            media_type = media.get('type') or infer_media_type(canonical_rel)
+            size_bytes = os.path.getsize(real_path)
+            if size_bytes < 1:
+                raise build_video.DeliveryError(f'asset vazio (0 bytes): {canonical_rel}')
+            sha256_hex = render_local.sha256_file(real_path)
+            asset_id = make_unique_asset_id(canonical_rel, used_ids)
+            asset_entry = {
+                'id': asset_id,
+                'type': media_type,
+                'path': canonical_rel,
+                'bytes': size_bytes,
+                'sha256': sha256_hex,
+                'origin': media['origin'],
+                'license': media.get('license') or 'pending',
+            }
+            assets_by_real[real_path] = asset_entry
+            assets_list.append(asset_entry)
+
+        bindings_list.append({
+            'beatId': beat_id,
+            'assetId': asset_entry['id'],
+        })
+
+    manifest_candidate = {
+        'schemaVersion': 1,
+        'caseId': case_id,
+        'packageId': package_id,
+        'assets': assets_list,
+        'bindings': bindings_list,
+    }
+
+    tmp_dir = os.path.join(root_real, '.workspace', 'tmp')
+    os.makedirs(tmp_dir, exist_ok=True)
+    fd, tmp_manifest_path = tempfile.mkstemp(prefix='prepare-registry-', suffix='.json', dir=tmp_dir)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
+            handle.write(json.dumps(manifest_candidate, ensure_ascii=False, indent=2) + '\n')
+        validated = run_bridge_prepare(
+            root_real,
+            case_abs,
+            asset_manifest_abs=tmp_manifest_path,
+            plan_only=True,
+        )
+    finally:
+        if os.path.exists(tmp_manifest_path):
+            os.remove(tmp_manifest_path)
+
+    return validated['assetManifest'], validated['canonicalAssetManifestJson']
+
+
 def prepare_manifest(case_path: str, assets_path: str, origin: str, output_path: str,
                      root: str, license_value: str | None = None) -> dict:
     root_real = os.path.realpath(root)

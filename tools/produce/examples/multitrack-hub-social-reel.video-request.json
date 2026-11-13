@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "multitrack-hub-social-reel-demo",
+  "project": "platform/examples/projects/multitrack-hub-social.project.json",
+  "title": "Multitrack Hub - reel social de demonstracao",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "multitrack-hub-demo-style",
+    "title": {
+      "textColor": "#FFD700",
+      "outlineColor": "#1A1A1A",
+      "fontSize": 48,
+      "marginTop": 180,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "tela-abertura",
+      "path": ".workspace/tmp/produce-video-demo/assets/multitrack-hub/tela-abertura.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "tela-demo",
+      "path": ".workspace/tmp/produce-video-demo/assets/multitrack-hub/tela-demo.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "abertura",
+      "durationMs": 4000,
+      "mediaId": "tela-abertura",
+      "caption": "Conheca o Multitrack Hub",
+      "narration": "Abertura tecnica do reel de demonstracao.",
+      "title": "Multitrack Hub",
+      "narrativeFunction": "hook",
+      "motionIntent": "none"
+    },
+    {
+      "id": "demonstracao",
+      "durationMs": 6000,
+      "mediaId": "tela-demo",
+      "caption": "Rateios em funcionamento",
+      "narration": "Demonstracao tecnica do quadro central.",
+      "title": "Demonstracao",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "fecho",
+      "durationMs": 4000,
+      "mediaId": "tela-abertura",
+      "caption": "Acesse o link na bio",
+      "narration": "Chamada tecnica final para conhecer o sistema.",
+      "title": "Conheca o sistema",
+      "narrativeFunction": "cta",
+      "motionIntent": "none"
+    }
+  ]
+}

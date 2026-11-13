@@ -36,6 +36,19 @@ Solicite um acesso de demonstração ao responsável pelo projeto.
 ## Padrão de entrega
 Vídeos sem áudio, com legendas nas cenas, arquivo SRT e texto de narração separado para geração de áudio em ferramenta externa. Não preservar o áudio original nem gerar áudio no editor. Vídeos de teste não são campanhas finais aprovadas.
 
+## Produzir o primeiro vídeo (entrada única)
+
+Descreva as cenas em um JSON, confira a prévia e exporte para os perfis escolhidos. O mesmo pedido gera `instagram-reels-video`, `facebook-reels-video` e `youtube-shorts` a partir da mesma fonte de cenas e mídia. Guia completo em [tools/produce/README.md](tools/produce/README.md).
+
+```bash
+cd platform && npm ci && npm run build && cd ..   # FFmpeg/FFprobe no PATH
+python tools/make_request_media.py --input tools/produce/examples/marca-salao-social-reel.video-request.json
+python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --plan-only --json
+python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --output-dir .workspace/archives/primeiro-video --json
+```
+
+Cada perfil entrega MP4 sem áudio, SRT, narração em TXT, pacote canônico, inventário de mídia e `delivery-manifest.json`; o `index.json` reúne o estado por perfil. Os casos gerados são rascunhos editoriais, não campanhas aprovadas.
+
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 
