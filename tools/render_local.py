@@ -59,6 +59,42 @@ TITLE_STYLE = (
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 
 
+def hex_to_ass_color(hex_str: str) -> str:
+    """Converte cor hexadecimal (#RRGGBB) para o formato ASS (&H00BBGGRR)."""
+    cleaned = hex_str.strip().lstrip('#')
+    if len(cleaned) == 6:
+        r, g, b = cleaned[0:2], cleaned[2:4], cleaned[4:6]
+        return f'&H00{b.upper()}{g.upper()}{r.upper()}'
+    return '&H00FFFFFF'
+
+
+def build_title_style(visual_style: dict | None = None) -> str:
+    """Gera o estilo ASS para titulos superiores baseado em VisualStyle v1 ou padrao."""
+    if not visual_style:
+        return TITLE_STYLE
+    title = visual_style.get('title', {})
+    text_color = title.get('textColor', '#FFFFFF')
+    outline_color = title.get('outlineColor', '#000000')
+    font_size = title.get('fontSize', 42)
+    margin_top = title.get('marginTop', 160)
+    margin_h = title.get('marginHorizontal', 60)
+
+    ass_primary = hex_to_ass_color(text_color)
+    ass_outline = hex_to_ass_color(outline_color)
+
+    return (
+        'PlayResX=1080,PlayResY=1920,Fontname=Arial,'
+        f'Fontsize={font_size},'
+        f'PrimaryColour={ass_primary},'
+        f'OutlineColour={ass_outline},'
+        'BackColour=&H80000000,'
+        'Bold=1,Outline=2,Shadow=1,Alignment=6,'
+        f'MarginV={margin_top},'
+        f'MarginL={margin_h},'
+        f'MarginR={margin_h}'
+    )
+
+
 class RenderInputError(Exception):
     """Pacote ou associacao reprovados pelo nucleo; codigo estavel."""
 
@@ -273,7 +309,7 @@ def build_narration(package):
     return '\n'.join(lines).rstrip('\n') + '\n'
 
 
-def build_filter_graph(package, srt_path, title_srt_path=None):
+def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None):
     output = package['output']
     width, height, fps = output['width'], output['height'], output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -306,8 +342,9 @@ def build_filter_graph(package, srt_path, title_srt_path=None):
         last_label = '[faded]'
 
     if title_srt_path and os.path.exists(title_srt_path) and os.path.getsize(title_srt_path) > 0:
+        style_to_use = title_style or TITLE_STYLE
         clean_title_srt = title_srt_path.replace('\\', '/').replace(':', '\\:')
-        chains.append(f"{last_label}subtitles='{clean_title_srt}':force_style='{TITLE_STYLE}'[vtitles]")
+        chains.append(f"{last_label}subtitles='{clean_title_srt}':force_style='{style_to_use}'[vtitles]")
         last_label = '[vtitles]'
 
     clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
@@ -315,7 +352,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None):
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -327,7 +364,7 @@ def build_render_command(package, asset_paths, srt_path, video_path, preset, tit
             cmd += ['-loop', '1', '-framerate', str(fps), '-t', f'{duration_s:.3f}', '-i', asset_path]
         else:
             cmd += ['-t', f'{duration_s:.3f}', '-i', asset_path]
-    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path), '-map', '[vfinal]']
+    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style), '-map', '[vfinal]']
     cmd += ['-an', '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
             '-t', f'{total_s:.3f}', video_path]
     return cmd
