@@ -955,6 +955,16 @@ const TEXT_OVERLAY_PLAN_SCHEMA_FILES = [
     'text-overlay-plan.schema.json',
 ]
 
+/** Direcao visual compartilhada VisualStyle v1 (piloto de composicao e render local). */
+const VISUAL_STYLE_SOURCE_FILES = [
+    'serialize-visual-style.ts',
+    'validate-visual-style.ts',
+    'visual-style-contract.ts',
+]
+const VISUAL_STYLE_SCHEMA_FILES = [
+    'visual-style.schema.json',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1089,6 +1099,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['src', LOCAL_RENDER_INPUT_SOURCE_FILES],
         ['src', TEXT_OVERLAY_PLAN_SOURCE_FILES],
         ['schemas', TEXT_OVERLAY_PLAN_SCHEMA_FILES],
+        ['src', VISUAL_STYLE_SOURCE_FILES],
+        ['schemas', VISUAL_STYLE_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1100,12 +1112,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES, ...VISUAL_STYLE_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES, ...VISUAL_STYLE_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 
@@ -1113,7 +1125,7 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
     assert.deepEqual(
         beatPlanEntries.sort(),
         [...BEAT_PLAN_SOURCE_FILES, ...BEAT_PLAN_SCHEMA_FILES].sort(),
-        'nenhum arquivo de VisualStyle, VisualAnchor, AssetManifest, AudioPlan ou RenderPlan foi criado',
+        'nenhum arquivo de VisualAnchor, AssetManifest, AudioPlan ou RenderPlan foi criado',
     )
 
     for (const forbidden of ['adapters', 'outputs', 'previews', 'assets', 'audio-plans', 'render-plans', 'visual-styles', 'visual-anchors', 'asset-manifests']) {
