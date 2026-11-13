@@ -68,7 +68,7 @@ def write_text(path, text):
         handle.write(text)
 
 
-def run_bridge_case(root, case_path, assets_path=None, plan_only=False):
+def run_bridge_case(root, case_path, assets_path=None, text_overlays_path=None, plan_only=False):
     node = shutil.which('node')
     if not node:
         raise render_local.InputFileError('node nao encontrado no PATH')
@@ -81,6 +81,8 @@ def run_bridge_case(root, case_path, assets_path=None, plan_only=False):
         cmd.append('--plan-only')
     if assets_path:
         cmd.extend(['--assets', assets_path])
+    if text_overlays_path:
+        cmd.extend(['--text-overlays', text_overlays_path])
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
@@ -144,7 +146,7 @@ def check_destination_collision(output_dir, expected_case_id):
             raise DeliveryCollisionError('destino ja existe e contem arquivos desconhecidos')
 
 
-def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_arg):
+def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_arg, text_overlays_path=None):
     if staging_arg:
         staging = os.path.realpath(staging_arg)
         if not contained(root, staging):
@@ -153,7 +155,7 @@ def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_a
             raise render_local.InputFileError('staging nao pode ser a raiz do projeto')
         if os.path.realpath(root).startswith(staging + os.sep):
             raise render_local.InputFileError('staging nao pode conter a raiz do projeto')
-        for label, path in (('case', case_path), ('assets', assets_path), ('output', output_dir)):
+        for label, path in (('case', case_path), ('assets', assets_path), ('output', output_dir), ('text-overlays', text_overlays_path)):
             if path and overlaps(staging, path):
                 raise render_local.InputFileError(f'staging sobrepoe {label} da execucao')
         if os.path.exists(staging):
@@ -168,42 +170,54 @@ def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_a
     return staging, True
 
 
-def run_plan_only(case_path, root):
+def run_plan_only(case_path, root, text_overlays_path=None):
     root = os.path.realpath(root)
     if not contained(root, case_path):
         raise render_local.InputFileError('caminho de case fora da raiz do projeto')
     if not os.path.isfile(case_path):
         raise render_local.InputFileError('arquivo de case ausente')
 
-    verdict = run_bridge_case(root, case_path, plan_only=True)
+    if text_overlays_path:
+        if not contained(root, text_overlays_path):
+            raise render_local.InputFileError('caminho de text-overlays fora da raiz do projeto')
+        if not os.path.isfile(text_overlays_path):
+            raise render_local.InputFileError('arquivo de text-overlays ausente')
+
+    verdict = run_bridge_case(root, case_path, text_overlays_path=text_overlays_path, plan_only=True)
     if not verdict.get('ok'):
         raise render_local.RenderInputError(verdict.get('failureCode', 'CASE_INVALID'),
-                                            verdict.get('summary'))
+                                            verdict.get('subject') or verdict.get('summary'))
     return verdict['plan']
 
 
-def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast'):
+def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast',
+                        text_overlays_path=None):
     root = os.path.realpath(root)
-    for label, path in (('case', case_path), ('assets', assets_path), ('output', output_dir)):
+    inputs_to_check = [('case', case_path), ('assets', assets_path)]
+    if text_overlays_path:
+        inputs_to_check.append(('text-overlays', text_overlays_path))
+
+    for label, path in inputs_to_check + [('output', output_dir)]:
         if not contained(root, path):
             raise render_local.InputFileError(f'caminho de {label} fora da raiz do projeto')
-    for label, path in (('case', case_path), ('assets', assets_path)):
+    for label, path in inputs_to_check:
         if not os.path.isfile(path):
             raise render_local.InputFileError(f'arquivo de {label} ausente')
 
     output_real = os.path.realpath(output_dir)
     if output_real == os.path.realpath(root):
         raise render_local.InputFileError('destino nao pode ser a raiz do projeto')
-    for label, path in (('case', case_path), ('assets', assets_path)):
+    for label, path in inputs_to_check:
         if overlaps(output_real, path):
             raise render_local.InputFileError(f'destino sobrepoe {label} da execucao')
 
     render_local.ensure_video_tools(root)
 
     staging, staging_created = prepare_pipeline_staging(
-        root, output_dir, case_path, assets_path, staging_dir)
+        root, output_dir, case_path, assets_path, staging_dir, text_overlays_path=text_overlays_path)
 
-    verdict = run_bridge_case(root, case_path, assets_path=assets_path, plan_only=False)
+    verdict = run_bridge_case(root, case_path, assets_path=assets_path,
+                              text_overlays_path=text_overlays_path, plan_only=False)
     if not verdict.get('ok'):
         raise render_local.RenderInputError(verdict.get('failureCode', 'CASE_INVALID'),
                                             verdict.get('subject') or verdict.get('summary'))
@@ -212,6 +226,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     package = verdict['package']
     association = verdict['association']
     canonical_package_json = verdict['canonicalJson']
+    canonical_overlay_json = verdict.get('canonicalTextOverlayJson')
+    resolved_text_overlays = verdict.get('resolvedTextOverlays', [])
 
     check_destination_collision(output_dir, case_id)
 
@@ -234,14 +250,26 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'report': f'{package_id}-execution-report.json',
         'manifest': 'delivery-manifest.json',
     }
+    if text_overlays_path and canonical_overlay_json:
+        names['textOverlayPlan'] = f'{package_id}-text-overlay-plan.json'
+
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
     write_text(staging_paths['package'], canonical_package_json)
     write_text(staging_paths['srt'], render_local.build_srt(package))
     write_text(staging_paths['narration'], render_local.build_narration(package))
 
+    title_srt_staging = None
+    if text_overlays_path and resolved_text_overlays:
+        write_text(staging_paths['textOverlayPlan'], canonical_overlay_json)
+        title_srt_content = render_local.build_title_srt(resolved_text_overlays)
+        if title_srt_content:
+            title_srt_staging = os.path.join(staging, f'{package_id}-titles.srt')
+            write_text(title_srt_staging, title_srt_content)
+
     cmd = render_local.build_render_command(
-        package, asset_paths, staging_paths['srt'], staging_paths['video'], preset)
+        package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
+        title_srt_path=title_srt_staging)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -274,6 +302,47 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         f' --assets {rel(root, assets_path)}'
         f' --output-dir {rel(root, output_dir)}'
     )
+    if text_overlays_path:
+        command += f' --text-overlays {rel(root, text_overlays_path)}'
+
+    report_artifacts = [
+        {
+            'id': 'package',
+            'kind': 'execution-package',
+            'path': rel(root, dests['package']),
+            'sha256': sha256_file(staging_paths['package']),
+            'bytes': os.path.getsize(staging_paths['package']),
+        },
+        {
+            'id': 'video',
+            'kind': 'primary-output',
+            'path': rel(root, dests['video']),
+            'sha256': sha256_file(staging_paths['video']),
+            'bytes': os.path.getsize(staging_paths['video']),
+        },
+        {
+            'id': 'srt',
+            'kind': 'captions',
+            'path': rel(root, dests['srt']),
+            'sha256': sha256_file(staging_paths['srt']),
+            'bytes': os.path.getsize(staging_paths['srt']),
+        },
+        {
+            'id': 'narration',
+            'kind': 'narration-script',
+            'path': rel(root, dests['narration']),
+            'sha256': sha256_file(staging_paths['narration']),
+            'bytes': os.path.getsize(staging_paths['narration']),
+        },
+    ]
+    if 'textOverlayPlan' in dests:
+        report_artifacts.append({
+            'id': 'textOverlayPlan',
+            'kind': 'text-overlay-plan',
+            'path': rel(root, dests['textOverlayPlan']),
+            'sha256': sha256_file(staging_paths['textOverlayPlan']),
+            'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
+        })
 
     report = {
         'schemaVersion': 1,
@@ -301,43 +370,60 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path)}
             for step, path in zip(package['timeline'], asset_paths)
         ],
-        'artifacts': [
-            {
-                'id': 'package',
-                'kind': 'execution-package',
-                'path': rel(root, dests['package']),
-                'sha256': sha256_file(staging_paths['package']),
-                'bytes': os.path.getsize(staging_paths['package']),
-            },
-            {
-                'id': 'video',
-                'kind': 'primary-output',
-                'path': rel(root, dests['video']),
-                'sha256': sha256_file(staging_paths['video']),
-                'bytes': os.path.getsize(staging_paths['video']),
-            },
-            {
-                'id': 'srt',
-                'kind': 'captions',
-                'path': rel(root, dests['srt']),
-                'sha256': sha256_file(staging_paths['srt']),
-                'bytes': os.path.getsize(staging_paths['srt']),
-            },
-            {
-                'id': 'narration',
-                'kind': 'narration-script',
-                'path': rel(root, dests['narration']),
-                'sha256': sha256_file(staging_paths['narration']),
-                'bytes': os.path.getsize(staging_paths['narration']),
-            },
-        ],
+        'artifacts': report_artifacts,
         'tools': {
             'ffmpeg': render_local.tool_version(build_video.get_ffmpeg()),
             'ffprobe': render_local.tool_version(build_video.get_ffprobe()),
         },
         'command': command,
     }
+    if text_overlays_path and resolved_text_overlays:
+        report['textOverlays'] = [
+            {'beatId': item['beatId'], 'text': item['text'], 'startMs': item['startMs'], 'endMs': item['endMs']}
+            for item in resolved_text_overlays
+        ]
     write_text(staging_paths['report'], json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+
+    manifest_artifacts = {
+        'package': {
+            'id': 'package',
+            'path': rel(root, dests['package']),
+            'sha256': sha256_file(staging_paths['package']),
+            'bytes': os.path.getsize(staging_paths['package']),
+        },
+        'video': {
+            'id': 'video',
+            'path': rel(root, dests['video']),
+            'sha256': sha256_file(staging_paths['video']),
+            'bytes': os.path.getsize(staging_paths['video']),
+            'ffprobe': inspection,
+        },
+        'srt': {
+            'id': 'srt',
+            'path': rel(root, dests['srt']),
+            'sha256': sha256_file(staging_paths['srt']),
+            'bytes': os.path.getsize(staging_paths['srt']),
+        },
+        'narration': {
+            'id': 'narration',
+            'path': rel(root, dests['narration']),
+            'sha256': sha256_file(staging_paths['narration']),
+            'bytes': os.path.getsize(staging_paths['narration']),
+        },
+        'report': {
+            'id': 'report',
+            'path': rel(root, dests['report']),
+            'sha256': sha256_file(staging_paths['report']),
+            'bytes': os.path.getsize(staging_paths['report']),
+        },
+    }
+    if 'textOverlayPlan' in dests:
+        manifest_artifacts['textOverlayPlan'] = {
+            'id': 'textOverlayPlan',
+            'path': rel(root, dests['textOverlayPlan']),
+            'sha256': sha256_file(staging_paths['textOverlayPlan']),
+            'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
+        }
 
     manifest = {
         'schemaVersion': 1,
@@ -351,45 +437,16 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'association': rel(root, assets_path),
         'command': command,
         'outputDir': rel(root, output_dir),
-        'artifacts': {
-            'package': {
-                'id': 'package',
-                'path': rel(root, dests['package']),
-                'sha256': sha256_file(staging_paths['package']),
-                'bytes': os.path.getsize(staging_paths['package']),
-            },
-            'video': {
-                'id': 'video',
-                'path': rel(root, dests['video']),
-                'sha256': sha256_file(staging_paths['video']),
-                'bytes': os.path.getsize(staging_paths['video']),
-                'ffprobe': inspection,
-            },
-            'srt': {
-                'id': 'srt',
-                'path': rel(root, dests['srt']),
-                'sha256': sha256_file(staging_paths['srt']),
-                'bytes': os.path.getsize(staging_paths['srt']),
-            },
-            'narration': {
-                'id': 'narration',
-                'path': rel(root, dests['narration']),
-                'sha256': sha256_file(staging_paths['narration']),
-                'bytes': os.path.getsize(staging_paths['narration']),
-            },
-            'report': {
-                'id': 'report',
-                'path': rel(root, dests['report']),
-                'sha256': sha256_file(staging_paths['report']),
-                'bytes': os.path.getsize(staging_paths['report']),
-            },
-        },
+        'artifacts': manifest_artifacts,
     }
+    if text_overlays_path:
+        manifest['textOverlays'] = rel(root, text_overlays_path)
     write_text(staging_paths['manifest'], json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
     backup_dir = os.path.join(staging, '.backup')
     lock = render_local.acquire_promotion_lock(output_dir)
     try:
+        check_destination_collision(output_dir, case_id)
         render_local.promote_with_backup(staging_paths, dests, backup_dir)
     finally:
         os.remove(lock)
@@ -414,6 +471,7 @@ def main(argv=None):
     parser.add_argument('--case', required=True, help='Manifesto do caso (*.pipeline.json)')
     parser.add_argument('--plan-only', action='store_true', help='Apenas calcula e exibe a previa do plano')
     parser.add_argument('--assets', default=None, help='Associacao explicita de assets (*.assets.json)')
+    parser.add_argument('--text-overlays', default=None, help='Plano declarativo de sobreposicao de titulos (*.json)')
     parser.add_argument('--output-dir', default=None, help='Diretorio final de entrega')
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo')
@@ -423,7 +481,7 @@ def main(argv=None):
 
     if args.plan_only:
         try:
-            plan = run_plan_only(args.case, args.root)
+            plan = run_plan_only(args.case, args.root, text_overlays_path=args.text_overlays)
         except render_local.RenderInputError as exc:
             subject = f': {exc.subject}' if exc.subject else ''
             print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)
@@ -451,6 +509,10 @@ def main(argv=None):
             print(f"  Duracao: {plan['duracao']}")
             print(f"  Beats que precisam de assets: {', '.join(plan['beats'])}")
             print(f"  Cabe no recorte do adaptador: {recorte_txt}")
+            if plan.get('textOverlays'):
+                print('  Titulos sobrepostos:')
+                for item in plan['textOverlays']:
+                    print(f"    - {item['beatId']} ({item['startMs']}ms -> {item['endMs']}ms): \"{item['text']}\"")
         return 0
 
     if not args.assets or not args.output_dir:
@@ -459,7 +521,8 @@ def main(argv=None):
 
     try:
         summary = run_render_pipeline(args.case, args.assets, args.output_dir, args.root,
-                                      args.staging, preset=args.preset)
+                                      args.staging, preset=args.preset,
+                                      text_overlays_path=args.text_overlays)
     except render_local.RenderInputError as exc:
         subject = f': {exc.subject}' if exc.subject else ''
         print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)

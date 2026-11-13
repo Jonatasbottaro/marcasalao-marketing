@@ -945,6 +945,16 @@ const LOCAL_RENDER_INPUT_SOURCE_FILES = [
     'validate-local-render-input.ts',
 ]
 
+/** Plano de sobreposicao textual editavel v1 (piloto de composicao e render local). */
+const TEXT_OVERLAY_PLAN_SOURCE_FILES = [
+    'serialize-text-overlay-plan.ts',
+    'text-overlay-plan-contract.ts',
+    'validate-text-overlay-plan.ts',
+]
+const TEXT_OVERLAY_PLAN_SCHEMA_FILES = [
+    'text-overlay-plan.schema.json',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1077,6 +1087,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['src', SIMULATED_EXECUTION_SOURCE_FILES],
         ['schemas', SIMULATED_EXECUTION_SCHEMA_FILES],
         ['src', LOCAL_RENDER_INPUT_SOURCE_FILES],
+        ['src', TEXT_OVERLAY_PLAN_SOURCE_FILES],
+        ['schemas', TEXT_OVERLAY_PLAN_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1088,12 +1100,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 

@@ -56,6 +56,7 @@ Os marcos permanecem distintos e não se substituem:
 - integração da redação portável da raiz de armazenamento (autorizada pelo titular em 12/11/2026): merge commit `a9118752c593b8bcd7b4636ad948055b77cb5687`, a partir da branch documental `codex/corrige-contexto-raiz-portavel` (HEAD `83eb4e5b8563aaf0c21cdb4fe5cc964c55110557`, commits `1d731cf` e `83eb4e5` preservados). A raiz oficial passa a ser o próprio checkout principal de cada estação (`<RAIZ>` = `git rev-parse --show-toplevel`), com `.workspace/` dentro dele; o invariante são os arquivos versionados alinhados por Git, não o caminho literal. Substância da regra de armazenamento inalterada; nenhum repositório realocado.
 - integração do histórico da sessão de governança e do checklist de alinhamento entre estações (autorizada pelo titular em 12/11/2026): merge commit `8c209677d556678c7ed597c2ce6ead6374980422`, a partir da branch documental `codex/historico-sessao-2026-11-12` (HEAD `3e6cda0ee2ca705ba1755bab9ca55617b69059d7`, commits `1878c3f` e `3e6cda0` preservados). Versiona em `docs/historico/` o registro da sessão de governança de armazenamento/auditoria/limpeza de branches (11–12/11/2026) e o checklist de alinhamento entre estações, para que a continuidade viaje pelo Git e não dependa de `.workspace/` local. Registros de consulta: não autorizam produção, publicação, mídia, deploy nem nova fatia de TEMPORAL-02.
 - integração do pipeline local de renderização a partir de casos (autorizada pelo titular em 12/11/2026): CLI `tools/render_pipeline.py`, prévia (`--plan-only`), render e2e com pacote canônico gerado em memória, promoção atômica com manifesto de entrega versionado (`delivery-manifest.json`), testes e CI dedicados; detalhe na seção Pipeline local de renderização a partir de casos — integrado na main.
+- integração do piloto de composição com títulos editáveis (`--text-overlays`) no pipeline local: contrato `TextOverlayPlan` v1 puro, validador puro, serialização canônica, espelho draft-07, paridade Ajv, suporte na ponte Node e CLI `render_pipeline.py` com posicionamento superior de títulos sobre o vídeo sem áudio, preservação de legendas e narração, rastreabilidade no manifesto e prova visual de reaproveitamento de assets; detalhe na seção Piloto de composição com títulos editáveis — integrado na main.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -440,8 +441,31 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
   - Reexecução idempotente do mesmo caso atualizando deterministicamente;
   - Limpeza de staging temporário após a promoção;
   - Em `--json`, stdout é estritamente reservado ao JSON de saída e mensagens de progresso/diagnóstico vão para stderr.
-- Suíte de testes: `tools/tests/test_render_pipeline.py` (18 testes) cobrindo prévia (--plan-only), ponte Node, renders reais dos dois casos, manifesto com recalculação e conferência de hashes de cada arquivo publicado, reexecução idempotente, colisão de casos, associação incompatível, configuração fora do recorte, asset ausente, falha de promoção, falha de restauração com backup preservado, disputa de lock e sobreposição de staging.
+- Suíte de testes: `tools/tests/test_render_pipeline.py` cobrindo prévia (--plan-only), ponte Node, renders reais dos dois casos, manifesto com recalculação e conferência de hashes de cada arquivo publicado, reexecução idempotente, colisão de casos, associação incompatível, configuração fora do recorte, asset ausente, falha de promoção, falha de restauração com backup preservado, disputa de lock e sobreposição de staging.
 - CI: atualizado em `.github/workflows/local-render-validation.yml` para testar os dois modos (`--plan-only` e render completo com inspeção FFprobe e validação do `delivery-manifest.json`).
+
+## Piloto de composição com títulos editáveis (--text-overlays) — integrado na main
+
+- Status: **implementado, testado e integrado**, entregando o piloto de composição previsto no projeto com suporte a títulos textuais sobrepostos via `--text-overlays <plano.json>`.
+- Contrato e validação pura na `platform`:
+  - Contrato TypeScript `TextOverlayPlan` em `platform/src/text-overlay-plan-contract.ts` com `schemaVersion: 1`, `caseId` e lista `overlays` vinculando `beatId` a `text`;
+  - Validador puro `validateTextOverlayPlan` em `platform/src/validate-text-overlay-plan.ts` que valida a estrutura do plano, verifica integridade do pacote canônico, confere correspondência exata de `caseId`, rejeita `beatId` duplicado ou inexistente na timeline e texto vazio, e resolve os intervalos (`startMs`, `endMs`, `durationMs`) diretamente do `CreativeExecutionPackage`;
+  - Serializador canônico determinístico em `platform/src/serialize-text-overlay-plan.ts` (ordenação estável de chaves, 2 espaços, LF puro);
+  - Espelho JSON Schema draft-07 em `platform/schemas/text-overlay-plan.schema.json` com `additionalProperties: false`;
+  - Suíte de paridade Ajv em `platform/tests/contracts/text-overlay-plan-schema.test.ts` e testes unitários/de conformidade com os dois casos em `platform/tests/text-overlay-plan.test.ts`.
+- Integração no pipeline e adaptador de render:
+  - `tools/render_bridge.mjs`: suporte à validação do plano e resolução dos intervalos temporais de cada overlay;
+  - `tools/render_pipeline.py`: flag `--text-overlays <plano.json>` aceita tanto em `--plan-only` quanto no render completo;
+  - Prévia (`--plan-only`): exibe títulos e intervalos resolvidos em milissegundos sem dependência de FFmpeg ou criação de arquivos;
+  - Posicionamento superior e renderização: `tools/render_local.py` compila os títulos resolvidos em `.srt` temporário e aplica filtro de legendas superior (`Alignment=6, MarginV=160, Fontsize=42, Bold=1, Outline=2, Shadow=1, PlayResX=1080, PlayResY=1920`) encadeado com a legenda inferior pré-existente. Garante contraste e legibilidade sem interferir na legenda do rodapé nem no roteiro de narração;
+  - Áudio e vídeo: conformidade contínua com a política de vídeo mudo (`-an`, zero streams de áudio);
+  - Revalidação de colisão sob lock: reconfere se o destino foi ocupado por outro caso durante a disputa de destino vazio antes de promover a entrega;
+  - Promoção transacional e manifesto: o plano canônico é promovido como `*-text-overlay-plan.json` e incluído no `delivery-manifest.json` com caminho final, tamanho e hash SHA-256 recalculado na leitura do arquivo promovido.
+- Prova de reaproveitamento do visual e estabilidade:
+  - Suíte `tools/tests/test_render_pipeline.py` expandida para 25 testes cobrindo a CLI com overlays, prévia formatada/JSON, validação de erros, reexecução, preservação em falha e corrida sob lock;
+  - Prova técnica de revisão (`test_12_text_overlay_revision_reuses_visual_and_differs_in_title_region`): render de duas versões sobre o mesmo beat com mídia (`demonstration-body`) alterando apenas o texto do título. Hashes SHA-256 de assets, pacote canônico, legenda SRT e roteiro TXT permanecem estritamente idênticos. Apenas o MP4 e o plano de títulos diferem. Inspeção visual de quadros via FFmpeg por erro absoluto médio (MAE) comprova diferença restrita à região superior durante o beat (MAE ≈ 5.7) e nula antes e após o intervalo (MAE = 0.0), com tolerância à compressão H.264 no restante do quadro;
+  - Verificação FFprobe confirmando vídeo 1080×1920@30fps H.264 yuv420p, duração exata e 0 faixas de áudio;
+  - CI de render real atualizado em `.github/workflows/local-render-validation.yml` com etapa dedicada à prova do piloto de composição.
 
 ## TEMPORAL-01
 

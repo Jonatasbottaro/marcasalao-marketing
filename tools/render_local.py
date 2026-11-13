@@ -51,6 +51,11 @@ SUBTITLE_STYLE = (
     'Fontname=Arial,Fontsize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,'
     'BackColour=&H80000000,Bold=1,Outline=2,Shadow=1,Alignment=2,MarginV=60'
 )
+TITLE_STYLE = (
+    'PlayResX=1080,PlayResY=1920,Fontname=Arial,Fontsize=42,PrimaryColour=&H00FFFFFF,'
+    'OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=1,'
+    'Alignment=6,MarginV=160'
+)
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 
 
@@ -230,6 +235,22 @@ def build_srt(package):
     return '\n\n'.join(blocks) + '\n'
 
 
+def build_title_srt(resolved_overlays):
+    blocks = []
+    for item in resolved_overlays:
+        text = item.get('text', '').strip()
+        if not text:
+            continue
+        blocks.append(
+            f"{len(blocks) + 1}\n"
+            f"{srt_timestamp(item['startMs'])} --> {srt_timestamp(item['endMs'])}\n"
+            f"{text}"
+        )
+    if not blocks:
+        return ''
+    return '\n\n'.join(blocks) + '\n'
+
+
 def build_narration(package):
     lines = [
         f"Roteiro de narracao - {package['packageId']}",
@@ -252,7 +273,7 @@ def build_narration(package):
     return '\n'.join(lines).rstrip('\n') + '\n'
 
 
-def build_filter_graph(package, srt_path):
+def build_filter_graph(package, srt_path, title_srt_path=None):
     output = package['output']
     width, height, fps = output['width'], output['height'], output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -283,12 +304,18 @@ def build_filter_graph(package, srt_path):
         start = max(0.0, total_s - FADE_OUT_SECONDS)
         chains.append(f'[cat]fade=t=out:st={start:.3f}:d={FADE_OUT_SECONDS:.3f}[faded]')
         last_label = '[faded]'
+
+    if title_srt_path and os.path.exists(title_srt_path) and os.path.getsize(title_srt_path) > 0:
+        clean_title_srt = title_srt_path.replace('\\', '/').replace(':', '\\:')
+        chains.append(f"{last_label}subtitles='{clean_title_srt}':force_style='{TITLE_STYLE}'[vtitles]")
+        last_label = '[vtitles]'
+
     clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
     chains.append(f"{last_label}subtitles='{clean_srt}':force_style='{SUBTITLE_STYLE}'[vfinal]")
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -300,7 +327,7 @@ def build_render_command(package, asset_paths, srt_path, video_path, preset):
             cmd += ['-loop', '1', '-framerate', str(fps), '-t', f'{duration_s:.3f}', '-i', asset_path]
         else:
             cmd += ['-t', f'{duration_s:.3f}', '-i', asset_path]
-    cmd += ['-filter_complex', build_filter_graph(package, srt_path), '-map', '[vfinal]']
+    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path), '-map', '[vfinal]']
     cmd += ['-an', '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
             '-t', f'{total_s:.3f}', video_path]
     return cmd

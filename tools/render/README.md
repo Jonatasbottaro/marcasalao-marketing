@@ -199,10 +199,41 @@ Cada entrega publica na pasta de destino:
 ### Garantias transacionais do pipeline:
 - **Lock exclusivo** por pasta de destino (`.local-render-promotion.lock`);
 - **Rejeição de colisão**: rejeita sobrescrever uma entrega pertencente a outro caso;
+- **Revalidação de colisão sob lock**: verifica colisão de `caseId` mesmo quando duas execuções concorrentes iniciam com o destino inicialmente vazio;
 - **Idempotência**: repetir o mesmo caso para o mesmo destino atualiza de forma determinística;
 - **Staging isolado** e contenção verificada antes de qualquer render ou escrita;
 - **Rollback atômico** em falhas de promoção restaurando a entrega anterior;
 - **Preservação de backup** para diagnóstico caso a própria restauração falhe.
+
+### 3. Títulos editáveis e piloto de composição (`--text-overlays`)
+
+A CLI `tools/render_pipeline.py` suporta um plano opcional de títulos editáveis (`--text-overlays <plano.json>`), entregando o piloto de composição previsto no projeto:
+
+```json
+{
+  "schemaVersion": 1,
+  "caseId": "marca-salao-social-reel-example",
+  "overlays": [
+    {
+      "beatId": "demonstration-body",
+      "text": "GESTÃO COMPLETA DO SALÃO"
+    }
+  ]
+}
+```
+
+- **Contrato e validação pura**: `platform/src/text-overlay-plan-contract.ts` e `validate-text-overlay-plan.ts` validam `schemaVersion`, `caseId` coincidente com o caso, unicidade de `beatId` (um título por beat), existência do beat na timeline e texto não vazio, com espelho JSON Schema draft-07 e paridade Ajv.
+- **Resolução de intervalos**: os tempos `startMs`, `endMs` e `durationMs` são derivados do `CreativeExecutionPackage` canônico.
+- **Prévia (`--plan-only`)**: em `--plan-only --json`, exibe os títulos e intervalos resolvidos sem dependência de FFmpeg ou escrita em disco:
+  ```bash
+  python tools/render_pipeline.py \
+    --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+    --text-overlays plano-titulos.json \
+    --plan-only --json
+  ```
+- **Render e posicionamento**: o título é renderizado no topo do quadro (`Alignment=6`, `MarginV=160`, fonte Arial 42 negrito com borda e sombra), garantindo contraste e legibilidade sem sobrepor a legenda inferior do vídeo. Caracteres acentuados e pontuação são tratados integralmente como dados.
+- **Entrega rastreável**: o plano canônico é promovido como `*-text-overlay-plan.json` e registrado com caminho relativo, tamanho e SHA-256 no `delivery-manifest.json` (chave `textOverlayPlan`).
+- **Prova de reaproveitamento do visual**: ao revisar apenas o título, os hashes SHA-256 dos assets de entrada, do pacote canônico, do SRT e do roteiro TXT permanecem rigorosamente idênticos; a inspeção de quadros confirma que a alteração ocorre exclusivamente na região superior durante o beat configurado.
 
 ### Exit codes
 

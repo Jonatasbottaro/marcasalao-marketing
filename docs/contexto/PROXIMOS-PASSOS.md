@@ -87,19 +87,19 @@ Critérios de conclusão atendidos:
 
 A fixture genérica (`fixture-project`) permanece para testar variações de idioma e formato. Trabalho possível remanescente, não autorizado por esta integração: novos casos de pipeline para outros formatos/perfis, evolução do contrato de caso e qualquer consumo do agregador pelo Temporal (bloqueado).
 
-## 4. Preparar um piloto mínimo de composição
+## 4. Piloto mínimo de composição com títulos editáveis — concluído em 13/11/2026
 
-Definir uma cena com mídia e texto editável no mesmo intervalo, necessidade presente no roteiro da NS-001. Fazer primeiro um desenho pequeno do contrato e da compatibilidade com a v1.
+> O piloto mínimo de composição com títulos editáveis foi autorizado, implementado e integrado via opção `--text-overlays <plano.json>` na CLI `tools/render_pipeline.py`. Detalhes e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Piloto de composição com títulos editáveis, e em [tools/render/README.md](../../tools/render/README.md).
 
-Critérios de conclusão:
+Critérios de conclusão atendidos:
+- **Reaproveitamento do visual**: corrigir ou revisar o título textual na sobreposição não exige regenerar nem alterar os assets visuais, o pacote canônico de execução, a legenda sincronizada `.srt` ou o roteiro de narração `.txt`;
+- **Origem única e contratos**: `TextOverlayPlan` v1 com validação pura na `platform` e espelho draft-07 (`platform/schemas/text-overlay-plan.schema.json`), com intervalos derivados do `CreativeExecutionPackage` canônico;
+- **Posicionamento e renderização**: títulos aplicados na região superior do quadro com contraste e legibilidade, preservando as legendas inferiores;
+- **Política de áudio e inspeção**: MP4 gerado estritamente sem áudio (`-an`, 0 faixas de áudio), inspecionado e validado via FFprobe;
+- **Transacionalidade e rastreabilidade**: promoção atômica, lock com revalidação de colisão sob disputa de destino vazio, e manifesto versionado `delivery-manifest.json` com caminhos, tamanhos e SHA-256 recalculados na leitura direta dos arquivos promovidos;
+- **Prova visual automatizada**: teste de regressão e inspeção comparativa de quadros (MAE) comprovando isolamento da alteração na região superior.
 
-- corrigir texto não exige regenerar o visual;
-- tempo, conteúdo e referências de assets têm uma única origem identificável;
-- um adaptador de teste comprova entradas, saídas e falhas sem serviço pago;
-- política de áudio e inspeção técnica são verificáveis;
-- qualquer produção real do piloto respeita as aprovações específicas da campanha.
-
-Não é necessário implementar todos os planos conceituais antes dessa prova. O piloto continua sendo trabalho possível, não autorizado: depende de decisão específica do titular, e os bloqueios de adaptadores, renderização e mídia registrados no passo 2 permanecem válidos.
+Continua bloqueado até deliberação específica: produção de campanhas reais, fornecedores, áudio/TTS, Temporal e deploy.
 
 ## 5. Separar as decisões editoriais da execução técnica
 
