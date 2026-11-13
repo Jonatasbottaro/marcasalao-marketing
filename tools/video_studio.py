@@ -149,7 +149,11 @@ class Studio:
         examples = []
         if os.path.isdir(examples_dir):
             for name in sorted(os.listdir(examples_dir)):
-                if not name.endswith('.video-request.json'):
+                if name.endswith('.video-request.json'):
+                    kind = 'video'
+                elif name.endswith('.carousel-request.json'):
+                    kind = 'carousel'
+                else:
                     continue
                 path = os.path.join(examples_dir, name)
                 try:
@@ -157,7 +161,7 @@ class Studio:
                         request = json.load(handle)
                 except (OSError, ValueError):
                     continue
-                examples.append({'name': name, 'path': self.rel(path), 'request': request})
+                examples.append({'name': name, 'path': self.rel(path), 'kind': kind, 'request': request})
         return examples
 
     # ---- rascunhos ----
@@ -189,9 +193,12 @@ class Studio:
         return tmp
 
     # ---- previa e exportacao ----
-    def preview(self, request, profile=None):
+    def _tool_for(self, kind):
+        return 'produce_carousel.py' if kind == 'carousel' else 'produce_video.py'
+
+    def preview(self, request, profile=None, kind='video'):
         tmp = self._write_temp_request(request)
-        cmd = [sys.executable, os.path.join(self.tools, 'produce_video.py'),
+        cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
                '--input', tmp, '--root', self.root, '--plan-only', '--json']
         if profile:
             cmd.extend(['--profile', profile])
@@ -206,10 +213,10 @@ class Studio:
             payload = {'status': 'error', 'error': res.stderr.strip() or 'previa ilegivel'}
         return {'returncode': res.returncode, 'result': payload}
 
-    def start_export(self, request, output_dir_rel, profile=None):
+    def start_export(self, request, output_dir_rel, profile=None, kind='video'):
         output_abs = self.confine_workspace(output_dir_rel)
         tmp = self._write_temp_request(request)
-        cmd = [sys.executable, os.path.join(self.tools, 'produce_video.py'),
+        cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
                '--input', tmp, '--root', self.root, '--output-dir', output_abs, '--json']
         if profile:
             cmd.extend(['--profile', profile])
@@ -222,8 +229,8 @@ class Studio:
                                 stdin=subprocess.DEVNULL, text=True)
         with self.jobs_lock:
             self.jobs[job_id] = {'proc': proc, 'tmp': tmp, 'outputDir': self.rel(output_abs),
-                                 'profile': profile, 'status': 'running', 'result': None,
-                                 'out': out_path, 'err': err_path,
+                                 'profile': profile, 'kind': kind, 'status': 'running', 'result': None,
+                                 'returncode': None, 'out': out_path, 'err': err_path,
                                  'out_handle': out_handle, 'err_handle': err_handle}
         return job_id
 
@@ -232,10 +239,16 @@ class Studio:
             job = self.jobs.get(job_id)
         if job is None:
             raise ValueError('job desconhecido')
+        # Job ja finalizado: devolve o resultado em cache, sem reler temporarios.
+        if job['status'] != 'running':
+            return {'status': job['status'], 'returncode': job['returncode'],
+                    'outputDir': job['outputDir'], 'profile': job['profile'],
+                    'kind': job.get('kind', 'video'), 'result': job['result']}
         proc = job['proc']
         code = proc.poll()
         if code is None:
-            return {'status': 'running', 'outputDir': job['outputDir'], 'profile': job['profile']}
+            return {'status': 'running', 'outputDir': job['outputDir'],
+                    'profile': job['profile'], 'kind': job.get('kind', 'video')}
         job['out_handle'].close()
         job['err_handle'].close()
         try:
@@ -256,8 +269,9 @@ class Studio:
         with self.jobs_lock:
             job['status'] = status
             job['result'] = result
+            job['returncode'] = code
         return {'status': status, 'returncode': code, 'outputDir': job['outputDir'],
-                'profile': job['profile'], 'result': result}
+                'profile': job['profile'], 'kind': job.get('kind', 'video'), 'result': result}
 
     # ---- entrega e midia verificada ----
     def read_delivery(self, dir_rel):
@@ -291,6 +305,41 @@ class Studio:
         if not artifact or not artifact.get('path'):
             raise ValueError('artefato ausente no manifesto')
         target = self.confine(artifact['path'])
+        if not os.path.isfile(target):
+            raise ValueError('arquivo de artefato ausente')
+        return target
+
+    def read_carousel_delivery(self, dir_rel):
+        delivery_abs = self.confine(dir_rel)
+        index = None
+        index_path = os.path.join(delivery_abs, 'index.json')
+        if os.path.isfile(index_path):
+            with open(index_path, 'r', encoding='utf-8') as handle:
+                index = json.load(handle)
+        manifest = None
+        manifest_path = os.path.join(delivery_abs, 'carousel-manifest.json')
+        if os.path.isfile(manifest_path):
+            with open(manifest_path, 'r', encoding='utf-8') as handle:
+                manifest = json.load(handle)
+        return {'dir': self.rel(delivery_abs), 'index': index, 'manifest': manifest}
+
+    def verified_carousel_path(self, dir_rel, kind, index=None):
+        delivery_abs = self.confine(dir_rel)
+        manifest_path = os.path.join(delivery_abs, 'carousel-manifest.json')
+        with open(manifest_path, 'r', encoding='utf-8') as handle:
+            manifest = json.load(handle)
+        if kind == 'zip':
+            path = manifest.get('zip', {}).get('path')
+        elif kind == 'card':
+            cards = manifest.get('cards', [])
+            if index is None or not (0 <= index < len(cards)):
+                raise ValueError('indice de card invalido')
+            path = cards[index].get('path')
+        else:
+            raise ValueError('tipo de artefato de carrossel invalido')
+        if not path:
+            raise ValueError('artefato ausente no manifesto')
+        target = self.confine(path)
         if not os.path.isfile(target):
             raise ValueError('arquivo de artefato ausente')
         return target
@@ -381,9 +430,15 @@ class StudioHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def serve_artifact(self, query):
+        kind = query.get('kind', [''])[0]
         try:
-            target = self.studio.verified_artifact_path(
-                query.get('dir', [''])[0], query.get('profile', [''])[0], query.get('kind', [''])[0])
+            if kind in ('zip', 'card'):
+                index = query.get('index', [None])[0]
+                index = int(index) if index is not None else None
+                target = self.studio.verified_carousel_path(query.get('dir', [''])[0], kind, index)
+            else:
+                target = self.studio.verified_artifact_path(
+                    query.get('dir', [''])[0], query.get('profile', [''])[0], kind)
         except (ValueError, OSError) as exc:
             self.send_error_json(404, str(exc))
             return
@@ -446,6 +501,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.export_status(query.get('job', [''])[0])})
             elif path == '/api/delivery':
                 self.send_json(200, {'ok': True, **studio.read_delivery(query.get('dir', [''])[0])})
+            elif path == '/api/carousel-delivery':
+                self.send_json(200, {'ok': True, **studio.read_carousel_delivery(query.get('dir', [''])[0])})
             elif path == '/media':
                 self.serve_artifact(query)
             else:
@@ -459,17 +516,19 @@ class StudioHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         studio = self.studio
-        if not self.check_write():
-            return
         try:
+            # Drena o corpo antes de qualquer resposta (evita reset de conexao
+            # quando a escrita e recusada por Host/Origin).
             body = self.read_body()
+            if not self.check_write():
+                return
             if path == '/api/draft/save':
                 rel = studio.save_draft(body.get('path', ''), body.get('request'))
                 self.send_json(200, {'ok': True, 'path': rel})
             elif path == '/api/preview':
-                self.send_json(200, {'ok': True, **studio.preview(body.get('request'), body.get('profile'))})
+                self.send_json(200, {'ok': True, **studio.preview(body.get('request'), body.get('profile'), body.get('kind', 'video'))})
             elif path == '/api/export':
-                job_id = studio.start_export(body.get('request'), body.get('outputDir', ''), body.get('profile'))
+                job_id = studio.start_export(body.get('request'), body.get('outputDir', ''), body.get('profile'), body.get('kind', 'video'))
                 self.send_json(200, {'ok': True, 'jobId': job_id})
             elif path == '/api/media/scan':
                 self.send_json(200, {'ok': True, 'media': studio.scan_media(body.get('folder', ''))})

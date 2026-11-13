@@ -377,6 +377,260 @@ function renderAll() {
   if (catalog.length) renderProfiles();
 }
 
+// ================= Carrossel (R003) =================
+let cdraft = null;
+let cPollTimer = null;
+
+function emptyCarousel() {
+  return { schemaVersion: 1, id: 'novo-carrossel', project: '', profile: 'instagram-feed-image-square', title: 'Novo carrossel', media: [], cards: [] };
+}
+
+function setMode(mode) {
+  $('#mode-video').hidden = mode !== 'video';
+  $('#mode-carousel').hidden = mode !== 'carousel';
+  $('#mode-video-btn').classList.toggle('active', mode === 'video');
+  $('#mode-carousel-btn').classList.toggle('active', mode === 'carousel');
+}
+
+async function loadCProjects() {
+  const data = await api('/api/projects');
+  const sel = $('#c-project-select');
+  sel.innerHTML = '';
+  sel.append(el('option', { value: '', text: '— selecione —' }));
+  for (const p of data.projects) sel.append(el('option', { value: p.path, text: `${p.id} — ${p.name || ''}` }));
+  if (cdraft && cdraft.project) sel.value = cdraft.project;
+}
+
+async function loadCProfiles() {
+  const project = $('#c-project-select').value;
+  if (!project) { toast('Selecione um projeto.'); return; }
+  cdraft.project = project;
+  const data = await api('/api/profiles?project=' + encodeURIComponent(project));
+  const p = data.listing.profiles.find((x) => x.id === 'instagram-feed-image-square');
+  $('#c-profile-info').textContent = p
+    ? `instagram-feed-image-square: ${p.width}×${p.height} — ${p.availability === 'allowed' ? 'permitido' : 'bloqueado (' + p.blockCode + ')'}`
+    : 'perfil instagram-feed-image-square ausente no catálogo';
+}
+
+async function loadCExamples() {
+  const data = await api('/api/examples');
+  const sel = $('#c-example-select');
+  sel.innerHTML = '';
+  const carousels = data.examples.filter((e) => e.kind === 'carousel');
+  for (const ex of carousels) sel.append(el('option', { value: ex.path, text: ex.name }));
+  sel._examples = carousels;
+}
+
+function loadCExample() {
+  const sel = $('#c-example-select');
+  const ex = (sel._examples || []).find((e) => e.path === sel.value);
+  if (!ex) { toast('Selecione um exemplo.'); return; }
+  cdraft = JSON.parse(JSON.stringify(ex.request));
+  $('#c-draft-path').value = '.workspace/tmp/video-studio/drafts/' + cdraft.id + '.json';
+  $('#c-output-dir').value = '.workspace/archives/video-studio/' + cdraft.id;
+  $('#c-delivery-dir').value = '.workspace/archives/video-studio/' + cdraft.id;
+  $('#c-project-select').value = cdraft.project;
+  renderCAll();
+  loadCProfiles();
+  toast('Exemplo de carrossel carregado: ' + cdraft.id);
+}
+
+async function saveCDraft() {
+  syncCFields();
+  const path = $('#c-draft-path').value.trim();
+  if (!path) { toast('Informe o caminho.'); return; }
+  const d = await post('/api/draft/save', { path, request: cdraft });
+  toast('Rascunho salvo: ' + d.path);
+}
+
+async function openCDraft() {
+  const path = $('#c-draft-path').value.trim();
+  if (!path) { toast('Informe o caminho.'); return; }
+  const d = await api('/api/draft/load?path=' + encodeURIComponent(path));
+  cdraft = d.request;
+  $('#c-project-select').value = cdraft.project || '';
+  renderCAll();
+  if (cdraft.project) loadCProfiles();
+  toast('Rascunho reaberto.');
+}
+
+function syncCFields() {
+  if (!cdraft) return;
+  cdraft.id = $('#c-req-id').value.trim() || cdraft.id;
+  cdraft.title = $('#c-req-title').value;
+}
+
+function renderCFields() {
+  $('#c-req-id').value = cdraft.id || '';
+  $('#c-req-title').value = cdraft.title || '';
+}
+
+function renderCMedia() {
+  const tbody = $('#c-media-table tbody');
+  tbody.innerHTML = '';
+  cdraft.media.forEach((m, i) => {
+    tbody.append(el('tr', {}, [
+      el('td', { text: m.id }), el('td', { text: m.type }), el('td', { text: m.path }),
+      el('td', {}, el('input', { type: 'text', value: m.origin || '', oninput: (e) => { m.origin = e.target.value; } })),
+      el('td', {}, el('input', { type: 'text', value: m.license || 'pending', oninput: (e) => { m.license = e.target.value; } })),
+      el('td', {}, el('button', { class: 'secondary', text: 'Remover', onclick: () => { cdraft.media.splice(i, 1); renderCMedia(); renderCCards(); } })),
+    ]));
+  });
+}
+
+async function scanCMedia() {
+  const folder = $('#c-media-folder').value.trim();
+  if (!folder) { toast('Informe a pasta.'); return; }
+  const d = await post('/api/media/scan', { folder });
+  let added = 0;
+  for (const f of d.media) {
+    if (f.type !== 'image' || cdraft.media.some((m) => m.path === f.path)) continue;
+    const id = f.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'media';
+    let u = id; let n = 2;
+    while (cdraft.media.some((m) => m.id === u)) u = `${id}-${n++}`;
+    cdraft.media.push({ id: u, path: f.path, type: 'image', origin: 'synthetic', license: 'pending' });
+    added++;
+  }
+  renderCMedia(); renderCCards();
+  toast(`${added} mídia(s) cadastrada(s).`);
+}
+
+async function generateCMedia() {
+  syncCFields();
+  if (!cdraft.media.length) { toast('Cadastre mídias primeiro.'); return; }
+  toast('Gerando mídia fictícia…');
+  const d = await post('/api/media/generate', { request: cdraft });
+  toast(`${d.written.length} arquivo(s) gerado(s).`);
+}
+
+function renderCCards() {
+  const list = $('#c-cards-list');
+  list.innerHTML = '';
+  cdraft.cards.forEach((c, i) => {
+    const mediaSel = el('select', { onchange: (e) => { c.mediaId = e.target.value || undefined; } });
+    mediaSel.append(el('option', { value: '', text: '— sem mídia —' }));
+    for (const m of cdraft.media) mediaSel.append(el('option', { value: m.id, text: m.id }));
+    mediaSel.value = c.mediaId || '';
+    list.append(el('div', { class: 'scene' }, [
+      el('div', { class: 'row' }, [
+        el('label', { text: `Card ${i + 1} — id` }, el('input', { type: 'text', value: c.id, oninput: (e) => { c.id = e.target.value; } })),
+        el('label', { text: 'Mídia' }, mediaSel),
+      ]),
+      el('div', { class: 'row' }, [
+        el('label', { text: 'Título' }, el('input', { type: 'text', value: c.title || '', oninput: (e) => { c.title = e.target.value; } })),
+      ]),
+      el('div', { class: 'row' }, [
+        el('label', { text: 'Corpo (opcional)' }, el('input', { type: 'text', value: c.body || '', oninput: (e) => { c.body = e.target.value || undefined; } })),
+      ]),
+      el('div', { class: 'row' }, [
+        el('button', { class: 'secondary', text: '↑', onclick: () => { if (i > 0) { [cdraft.cards[i - 1], cdraft.cards[i]] = [cdraft.cards[i], cdraft.cards[i - 1]]; renderCCards(); } } }),
+        el('button', { class: 'secondary', text: '↓', onclick: () => { if (i < cdraft.cards.length - 1) { [cdraft.cards[i + 1], cdraft.cards[i]] = [cdraft.cards[i], cdraft.cards[i + 1]]; renderCCards(); } } }),
+        el('button', { class: 'secondary', text: 'Remover', onclick: () => { cdraft.cards.splice(i, 1); renderCCards(); } }),
+      ]),
+    ]));
+  });
+}
+
+function addCCard() {
+  const n = cdraft.cards.length + 1;
+  cdraft.cards.push({ id: `card-${n}`, title: '', body: '', mediaId: cdraft.media[0]?.id });
+  renderCCards();
+}
+
+async function cPreview() {
+  syncCFields();
+  const out = $('#c-preview-output');
+  out.innerHTML = '<p class="muted">Calculando prévia…</p>';
+  try {
+    const d = await post('/api/preview', { request: cdraft, kind: 'carousel' });
+    const r = d.result;
+    out.innerHTML = '';
+    if (r.status !== 'preview') { out.append(el('pre', { text: JSON.stringify(r, null, 2) })); return; }
+    out.append(el('p', { text: `Carrossel ${r.requestId} — ${r.profileId} ${r.geometry.width}×${r.geometry.height}` }));
+    for (const c of r.cards) {
+      out.append(el('div', { text: `${String(c.order).padStart(2, '0')} ${c.id}: ${c.title}` + (c.overflow ? '  [EXCEDE ÁREA — ajuste o texto]' : '') , class: c.overflow ? 'badge err' : '' }));
+    }
+    if (r.overflowCards && r.overflowCards.length) out.append(el('p', { class: 'badge err', text: 'Cards a ajustar: ' + r.overflowCards.join(', ') }));
+  } catch (err) { out.innerHTML = ''; out.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+async function cExport() {
+  syncCFields();
+  const outputDir = $('#c-output-dir').value.trim();
+  if (!outputDir) { toast('Informe a pasta de entrega.'); return; }
+  const status = $('#c-export-status');
+  status.innerHTML = '<p class="muted">Exportando carrossel…</p>';
+  try {
+    const d = await post('/api/export', { request: cdraft, outputDir, kind: 'carousel' });
+    cPoll(d.jobId, outputDir);
+  } catch (err) { status.innerHTML = ''; status.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+function cPoll(jobId, outputDir) {
+  if (cPollTimer) clearTimeout(cPollTimer);
+  const tick = async () => {
+    const d = await api('/api/export/status?job=' + jobId);
+    const status = $('#c-export-status');
+    if (d.status === 'running') { status.innerHTML = '<p class="muted">Exportando… (segundo plano)</p>'; cPollTimer = setTimeout(tick, 1200); return; }
+    status.innerHTML = '';
+    status.append(el('p', {}, el('span', { class: d.status === 'completed' ? 'badge ok' : 'badge err', text: d.status })));
+    const r = d.result || {};
+    if (r.cards) for (const f of r.cards) status.append(el('div', { text: '✓ ' + f }));
+    if (d.status !== 'completed') status.append(el('pre', { text: JSON.stringify(r, null, 2) }));
+    $('#c-delivery-dir').value = outputDir;
+    loadCDelivery();
+  };
+  tick();
+}
+
+async function loadCDelivery() {
+  const dir = $('#c-delivery-dir').value.trim();
+  if (!dir) { toast('Informe a pasta de entrega.'); return; }
+  const out = $('#c-delivery-output');
+  out.innerHTML = '<p class="muted">Abrindo entrega…</p>';
+  try {
+    const d = await api('/api/carousel-delivery?dir=' + encodeURIComponent(dir));
+    out.innerHTML = '';
+    if (d.index) {
+      const lv = d.index.lastValidDelivery;
+      const la = d.index.lastAttempt;
+      out.append(el('p', {}, [
+        lv ? el('span', { class: 'badge ok', text: 'entrega válida' }) : el('span', { class: 'badge muted', text: 'sem entrega válida' }),
+        la && la.status === 'failed' ? el('span', { class: 'badge err', text: 'última tentativa falhou' }) : null,
+      ]));
+    }
+    if (!d.manifest) { out.append(el('p', { class: 'muted', text: 'Nenhum manifesto de carrossel nesta pasta.' })); return; }
+    const base = `/media?dir=${encodeURIComponent(dir)}`;
+    out.append(el('p', {}, el('a', { href: base + '&kind=zip', download: '', text: 'Baixar ZIP (carousel.zip)' })));
+    d.manifest.cards.forEach((c, i) => {
+      out.append(el('div', { class: 'profile-card' }, [
+        el('strong', { text: `${String(c.order).padStart(2, '0')} ${c.id} ` }),
+        el('img', { class: 'card-thumb', src: `${base}&kind=card&index=${i}`, alt: c.id }),
+        el('div', {}, el('a', { href: `${base}&kind=card&index=${i}`, download: c.file, text: 'Baixar ' + c.file })),
+      ]));
+    });
+  } catch (err) { out.innerHTML = ''; out.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+function renderCAll() { renderCFields(); renderCMedia(); renderCCards(); }
+
+async function initCarousel() {
+  cdraft = emptyCarousel();
+  await loadCProjects();
+  await loadCExamples();
+  renderCAll();
+  $('#c-btn-load-profiles').addEventListener('click', () => loadCProfiles().catch((e) => toast(e.message)));
+  $('#c-btn-load-example').addEventListener('click', loadCExample);
+  $('#c-btn-save-draft').addEventListener('click', () => saveCDraft().catch((e) => toast(e.message)));
+  $('#c-btn-open-draft').addEventListener('click', () => openCDraft().catch((e) => toast(e.message)));
+  $('#c-btn-scan-media').addEventListener('click', () => scanCMedia().catch((e) => toast(e.message)));
+  $('#c-btn-generate-media').addEventListener('click', () => generateCMedia().catch((e) => toast(e.message)));
+  $('#c-btn-add-card').addEventListener('click', addCCard);
+  $('#c-btn-preview').addEventListener('click', cPreview);
+  $('#c-btn-export').addEventListener('click', cExport);
+  $('#c-btn-load-delivery').addEventListener('click', () => loadCDelivery().catch((e) => toast(e.message)));
+}
+
 async function init() {
   draft = emptyDraft();
   await loadProjects();
@@ -392,6 +646,10 @@ async function init() {
   $('#btn-preview').addEventListener('click', preview);
   $('#btn-export').addEventListener('click', () => startExport());
   $('#btn-load-delivery').addEventListener('click', () => loadDelivery().catch((e) => toast(e.message)));
+  $('#mode-video-btn').addEventListener('click', () => setMode('video'));
+  $('#mode-carousel-btn').addEventListener('click', () => setMode('carousel'));
+  await initCarousel();
+  setMode('video');
 }
 
 init();

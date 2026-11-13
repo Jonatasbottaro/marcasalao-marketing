@@ -120,3 +120,34 @@ apenas por referencias dos manifestos promovidos; processos com argumentos
 estruturados. O indice separa `lastAttempt` (tentativa mais recente) de
 `lastValidDelivery` (ultima entrega valida): uma reexportacao que falha mostra o
 erro e continua permitindo abrir a entrega anterior, com hashes preservados.
+
+## Carrosséis (R003)
+
+A aba **Carrosséis** do painel e a CLI `tools/produce_carousel.py` produzem
+carrosséis de imagens a partir de `CarouselRequest v1`
+(`platform/src/carousel-request-contract.ts`, `validate-carousel-request.ts`,
+`platform/schemas/carousel-request.schema.json`). O perfil de imagem
+(`instagram-feed-image-square`) e resolvido pelo catalogo + allowlist do projeto
+via `resolveOutputPlan`; a geometria vem do perfil (1080×1080).
+
+```bash
+python tools/make_request_media.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json
+python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --plan-only --json
+python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --output-dir .workspace/archives/carrossel --json
+```
+
+- **Pedido**: id, projeto, perfil de imagem, titulo, cadastro reutilizavel de
+  midias (origem/licenca declarada ou `pending`) e cards ordenados (id, titulo,
+  corpo opcional, referencia opcional a midia). Texto editavel no pedido.
+- **Previa** (`--plan-only`): ordem, geometria e erros/overflow por card, sem
+  FFmpeg e sem gravacao. Texto que excede a area indica o card a ajustar.
+- **Render**: JPEGs 1080×1080 com layout reutilizavel (margens, contraste, quebra
+  de linha); FFmpeg decodifica/escala a midia e converte PNG→JPEG. Nomes
+  numerados (`01-capa.jpg`, `02-conteudo.jpg`, …).
+- **Entrega**: `carousel.zip` na mesma ordem + `carousel-manifest.json` (id do
+  pedido, dimensoes, caminhos relativos, tamanhos, SHA-256) + `index.json`
+  (`lastAttempt`/`lastValidDelivery`). Promocao do conjunto sob lock com backup;
+  falha preserva a ultima entrega valida; remover card e reexportar reflete a
+  nova ordem no conjunto ativo e no ZIP.
+- **Painel**: editor de cards (adicionar/reordenar/remover), previa, exportacao,
+  imagens na ordem do manifesto com download individual e do ZIP.

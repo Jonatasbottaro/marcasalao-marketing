@@ -139,6 +139,21 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, áudio/TTS, publicação, Temporal e deploy. O painel produz arquivos locais para revisão; a aprovação editorial e a publicação seguem o fluxo vigente.
 
+## 4e. R003 — módulo local de carrosséis no painel — concluído em 13/11/2026
+
+> O titular autorizou em 13/11/2026 implementar o R003 (carrosséis locais acessíveis pelo painel existente), com código, testes, prova no navegador, CI e documentação na mesma rodada, e integração à main após os gates. Comando do painel: `python tools/video_studio.py --port 8765` (aba **Carrosséis**); CLI: `python tools/produce_carousel.py --input <pedido> --plan-only|--output-dir <entrega> --json`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md), seção Carrosséis (R003).
+
+Critérios de conclusão atendidos:
+- **Entrada única** `CarouselRequest v1` (id, projeto, perfil de imagem, cadastro reutilizável de mídias com origem/licença, cards ordenados com id/título/corpo/mídia opcionais); exemplo com capa, conteúdo e fechamento com CTA; texto editável no pedido;
+- **Validação e prévia**: schema draft-07 + validador puro + paridade Ajv; `resolveOutputPlan` + allowlist resolvem `instagram-feed-image-square` (geometria do perfil); prévia informa ordem, geometria e erros sem FFmpeg e sem gravação; overflow de texto indica o card;
+- **Render local**: JPEGs 1080×1080 com layout reutilizável (margens, contraste, quebra de linha); mídias de origem preservadas ao editar textos e reexportar;
+- **Entrega**: nomes numerados, ZIP na mesma ordem, manifesto com id/dimensões/caminhos/tamanhos/SHA-256; promoção sob lock preservando a última entrega válida; remoção de card reflete a nova ordem no conjunto e no ZIP;
+- **Painel**: abas Vídeos/Carrosséis com editores próprios; editor de carrossel carrega exemplo, salva/reabre, adiciona/reordena cards, revisa e exporta; imagens na ordem do manifesto com download individual e do ZIP; `export_status` corrigido (finaliza uma vez, resultado em cache em consultas repetidas — regressão coberta);
+- **Prova em navegador**: exemplo Marca Salão editado/reordenado, exportado, ZIP baixado (JPEG/dimensões/ordem/hashes conferidos); Multitrack Hub pelo mesmo fluxo; edição de texto reexportada (texto novo na imagem, hash da mídia de origem inalterado); falha com mídia indisponível preserva a entrega anterior; pedido inválido e remoção de card cobertos;
+- **Gates**: suíte da platform e suíte Python verdes; CI em Ubuntu/Windows com prova de carrossel preservando a prova de render de vídeo. API pública inalterada.
+
+Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, publicação, Temporal e deploy. O painel produz arquivos locais para revisão; aprovação editorial e publicação seguem o processo vigente.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

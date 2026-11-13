@@ -242,3 +242,27 @@ jobs:
           print('studio preview ok: 3 perfis, sem FFmpeg')
           PY
           kill $STUDIO_PID || true
+
+      - name: Prova de exportacao de carrossel (R003, JPEG 1080x1080 + ZIP)
+        run: |
+          python tools/make_request_media.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json
+          python tools/make_request_media.py --input tools/produce/examples/multitrack-hub-carousel.carousel-request.json
+          python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --plan-only --json
+          python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --output-dir .workspace/archives/ci-carousel/marca-salao --json
+          python tools/produce_carousel.py --input tools/produce/examples/multitrack-hub-carousel.carousel-request.json --output-dir .workspace/archives/ci-carousel/multitrack-hub --json
+          python - <<'PY'
+          import glob, json, zipfile
+          for brand in ('marca-salao', 'multitrack-hub'):
+              base = f'.workspace/archives/ci-carousel/{brand}'
+              m = json.load(open(f'{base}/carousel-manifest.json'))
+              assert m['geometry']['width'] == 1080 and m['geometry']['height'] == 1080
+              files = [c['file'] for c in m['cards']]
+              assert files == sorted(files), files
+              with zipfile.ZipFile(f'{base}/carousel.zip') as z:
+                  assert z.namelist() == files
+              for c in m['cards']:
+                  data = open(c['path'], 'rb').read()
+                  assert data[:3] == b'\xff\xd8\xff', c['file']
+              print(brand, 'carousel ok:', files)
+          print('carousel CI proof ok: JPEG 1080x1080 + ZIP na ordem, duas marcas')
+          PY

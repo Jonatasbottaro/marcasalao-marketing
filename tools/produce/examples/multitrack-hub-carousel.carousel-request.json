@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "multitrack-hub-carrossel-demo",
+  "project": "platform/examples/projects/multitrack-hub-social.project.json",
+  "profile": "instagram-feed-image-square",
+  "title": "Carrossel Multitrack Hub",
+  "media": [
+    {
+      "id": "fundo-01",
+      "path": ".workspace/tmp/carousel-demo/assets/multitrack-hub/fundo-01.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "cards": [
+    {
+      "id": "capa",
+      "title": "Conheca o Multitrack Hub",
+      "body": "Rateios e multas em um so lugar",
+      "mediaId": "fundo-01"
+    },
+    {
+      "id": "conteudo",
+      "title": "Divida com clareza",
+      "body": "Cada um sabe o que pagar"
+    },
+    {
+      "id": "fechamento",
+      "title": "Acesse o link na bio",
+      "body": "Conheca o sistema"
+    }
+  ]
+}

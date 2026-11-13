@@ -38,3 +38,8 @@ legend { color: var(--muted); font-size: 13px; padding: 0 6px; }
 #toast.show { opacity: 1; }
 pre { background: #0d0f13; border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow: auto; font-size: 13px; }
 .muted { color: var(--muted); }
+#mode-nav { margin-top: 12px; display: flex; gap: 8px; }
+.mode-btn { background: #2a2e37; color: var(--ink); }
+.mode-btn.active { background: var(--accent); color: #fff; }
+.card-thumb { width: 220px; height: 220px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); display: block; margin: 8px 0; background: #000; }
+#c-delivery-output .profile-card img { max-width: 100%; }

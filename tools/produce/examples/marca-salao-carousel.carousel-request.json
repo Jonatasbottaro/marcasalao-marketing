@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-carrossel-demo",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "profile": "instagram-feed-image-square",
+  "title": "Carrossel Marca Salao",
+  "media": [
+    {
+      "id": "fundo-01",
+      "path": ".workspace/tmp/carousel-demo/assets/marca-salao/fundo-01.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "fundo-02",
+      "path": ".workspace/tmp/carousel-demo/assets/marca-salao/fundo-02.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "cards": [
+    {
+      "id": "capa",
+      "title": "Conheca o Marca Salao",
+      "body": "Gestao completa do seu salao",
+      "mediaId": "fundo-01"
+    },
+    {
+      "id": "conteudo",
+      "title": "Agenda e clientes",
+      "body": "Organize o dia a dia em um so lugar",
+      "mediaId": "fundo-02"
+    },
+    {
+      "id": "fechamento",
+      "title": "Acesse o link da descricao",
+      "body": "Conheca o sistema"
+    }
+  ]
+}
