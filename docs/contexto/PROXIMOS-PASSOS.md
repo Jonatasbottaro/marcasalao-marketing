@@ -126,6 +126,19 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, áudio/TTS, publicação, Temporal e deploy. A aprovação editorial e a publicação seguem o fluxo vigente.
 
+## 4d. Painel local de vídeo pelo navegador (Video Studio) — concluído em 13/11/2026
+
+> O titular autorizou em 13/11/2026 uma entrega completa para criar, revisar e exportar um vídeo pelo navegador usando o pipeline existente, com implementação, testes, prova em navegador, CI e documentação na mesma rodada, e integração à main após os gates. Comando: `python tools/video_studio.py --port 8765` (abra `http://127.0.0.1:8765`). Detalhes em [tools/produce/README.md](../../tools/produce/README.md), seção Painel local (Video Studio).
+
+Critérios de conclusão atendidos:
+- **Painel local** (`tools/video_studio.py` + `tools/studio/`): servidor HTTP stdlib em `127.0.0.1`; seleção de `ProjectManifest`, perfis do catálogo + allowlist com resolução/FPS/disponibilidade local; cadastro de mídia reutilizável com origem/licença; editor de cenas (adicionar/editar/remover/reordenar; duração, legenda, título, narração); rascunho `VideoRequest v1` (salvar/reabrir/exemplos); prévia via `produce_video.py --plan-only --json` sem FFmpeg; exportação em segundo plano com resultado por perfil; assistir MP4 e baixar MP4/SRT/TXT por referências verificadas nos manifestos; reexportar somente um perfil;
+- **Segurança**: Host/Origin validados nas escritas; entradas/saídas confinadas à raiz (`.workspace/`); arquivos servidos apenas por referências dos manifestos promovidos; processos com argumentos estruturados; validação/render/promoção permanecem no pipeline existente;
+- **Preservação da última entrega válida**: `merge_index` corrigido para registrar `lastAttempt` e `lastValidDelivery` separadamente, ler índices v1, validar o dono do destino, serializar exportações concorrentes (lock), gravar por substituição atômica e reconciliar pelos manifestos promovidos; uma reexportação que falha mostra o erro e continua abrindo a entrega anterior com hashes preservados;
+- **Prova em navegador** (Playwright, checkout local): exemplo Marca Salão carregado, cena editada, prévia conferida, três destinos exportados, MP4 reproduzido no painel, SRT/TXT baixados; exemplo Multitrack Hub pelo mesmo fluxo (seleção por projeto); reexportação de um perfil após alterar título com reutilização de mídia (hash do inventário idêntico); falha provocada com mídia indisponível mostra o erro e ainda abre o vídeo anterior com hashes preservados; FFprobe confirma 1080×1920, 30 fps, duração esperada e zero faixas de áudio;
+- **Gates**: suíte da platform e suíte Python com `REQUIRE_RENDER=1` (inclui `test_video_studio.py` e a regressão do índice); CI de render real em Ubuntu e Windows com prova HTTP do painel. API pública da platform inalterada.
+
+Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, áudio/TTS, publicação, Temporal e deploy. O painel produz arquivos locais para revisão; a aprovação editorial e a publicação seguem o fluxo vigente.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

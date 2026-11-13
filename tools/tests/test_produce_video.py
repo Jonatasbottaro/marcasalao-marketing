@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import build_video
 import make_proof_assets
 import make_request_media
+import produce_video
 import render_local
 import render_pipeline
 
@@ -317,6 +318,68 @@ class DemoExampleTest(ProduceTestBase):
         index = read_json(os.path.join(self.output_dir, "index.json"))
         self.assertEqual(index["completedCount"], 3)
         self.assertEqual(index["requestId"], "multitrack-hub-social-reel-demo")
+
+
+class IndexRegressionTest(unittest.TestCase):
+    """merge_index preserva a ultima entrega valida separada da tentativa mais recente."""
+
+    def setUp(self):
+        self.dir = os.path.join(TMP_BASE, f"index_{self._testMethodName}")
+        os.makedirs(self.dir, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def completed(self, profile="youtube-shorts"):
+        return {
+            "profileId": profile, "caseId": f"pedido-teste-{profile}", "packageId": f"pkg-{profile}",
+            "status": "completed", "outputDir": f".workspace/tmp/x/{profile}",
+            "deliveryManifest": f".workspace/tmp/x/{profile}/delivery-manifest.json",
+            "artifacts": {"video": f".workspace/tmp/x/{profile}/v.mp4"},
+            "inspection": {"width": 1080, "height": 1920},
+        }
+
+    def failed(self, profile="youtube-shorts"):
+        return {"profileId": profile, "caseId": f"pedido-teste-{profile}", "status": "failed",
+                "failureCode": "ASSET_MISSING", "errors": [], "error": "asset nao encontrado"}
+
+    def test_completed_then_failed_preserves_last_valid(self):
+        produce_video.merge_index(self.dir, "pedido-teste", [self.completed()])
+        index = produce_video.merge_index(self.dir, "pedido-teste", [self.failed()])
+        entry = index["profiles"][0]
+        self.assertEqual(entry["lastAttempt"]["status"], "failed")
+        self.assertIsNotNone(entry["lastValidDelivery"])
+        self.assertEqual(entry["lastValidDelivery"]["status"], "completed")
+        self.assertEqual(entry["status"], "completed")
+        self.assertEqual(index["completedCount"], 1)
+
+    def test_reads_v1_index(self):
+        v1 = {"schemaVersion": 1, "requestId": "pedido-teste", "profileCount": 1, "completedCount": 1,
+              "overallStatus": "completed", "profiles": [self.completed()]}
+        write_json(os.path.join(self.dir, "index.json"), v1)
+        index = produce_video.merge_index(self.dir, "pedido-teste", [self.failed()])
+        entry = index["profiles"][0]
+        self.assertIsNotNone(entry["lastValidDelivery"])
+        self.assertEqual(entry["lastValidDelivery"]["packageId"], "pkg-youtube-shorts")
+        self.assertEqual(entry["lastAttempt"]["status"], "failed")
+
+    def test_owner_conflict_raises(self):
+        produce_video.merge_index(self.dir, "pedido-a", [self.completed()])
+        with self.assertRaises(render_pipeline.DeliveryCollisionError):
+            produce_video.merge_index(self.dir, "pedido-b", [self.completed()])
+
+    def test_reconcile_from_promoted_manifests(self):
+        profile_dir = os.path.join(self.dir, "youtube-shorts")
+        os.makedirs(profile_dir, exist_ok=True)
+        manifest = {"schemaVersion": 1, "caseId": "pedido-teste-youtube-shorts", "packageId": "pkg-youtube-shorts",
+                    "projectId": "marca-salao", "outputDir": ".workspace/tmp/x/youtube-shorts",
+                    "artifacts": {"video": {"path": ".workspace/tmp/x/youtube-shorts/v.mp4", "sha256": "a" * 64, "ffprobe": {"width": 1080}}}}
+        write_json(os.path.join(profile_dir, "delivery-manifest.json"), manifest)
+        index = produce_video.reconcile_index_from_manifests(self.dir, "pedido-teste")
+        entry = next(p for p in index["profiles"] if p["profileId"] == "youtube-shorts")
+        self.assertIsNotNone(entry["lastValidDelivery"])
+        self.assertEqual(entry["lastValidDelivery"]["packageId"], "pkg-youtube-shorts")
+        self.assertEqual(index["completedCount"], 1)
 
 
 if __name__ == "__main__":

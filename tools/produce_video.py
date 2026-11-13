@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -179,31 +180,153 @@ def failed_result(profile, error=None):
     }
 
 
-def merge_index(output_dir, request_id, results):
-    index_path = os.path.join(output_dir, 'index.json')
-    existing = {}
-    if os.path.isfile(index_path):
-        try:
-            with open(index_path, 'r', encoding='utf-8') as handle:
-                previous = json.load(handle)
-            for entry in previous.get('profiles', []):
-                existing[entry['profileId']] = entry
-        except (OSError, ValueError):
-            existing = {}
-    for entry in results:
-        existing[entry['profileId']] = entry
-    profiles = [existing[key] for key in sorted(existing)]
-    completed = sum(1 for entry in profiles if entry.get('status') == 'completed')
-    index = {
+DELIVERY_FIELDS = ('profileId', 'caseId', 'packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection')
+EXPORT_LOCK_NAME = '.produce-video-export.lock'
+
+
+def _delivery_from_entry(entry):
+    """Extrai a ultima entrega valida de um registro (formato novo ou indice v1)."""
+    if not isinstance(entry, dict):
+        return None
+    if 'lastValidDelivery' in entry:
+        valid = entry['lastValidDelivery']
+        return valid if isinstance(valid, dict) and valid.get('status') == 'completed' else None
+    if entry.get('status') == 'completed':
+        delivery = {key: entry[key] for key in DELIVERY_FIELDS if key in entry}
+        delivery['status'] = 'completed'
+        return delivery
+    return None
+
+
+def _write_index_atomic(index_path, index):
+    parent = os.path.dirname(index_path)
+    fd, tmp = tempfile.mkstemp(prefix='.index-', suffix='.tmp', dir=parent)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
+            json.dump(index, handle, ensure_ascii=False, indent=2)
+            handle.write('\n')
+        os.replace(tmp, index_path)
+    except OSError:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+
+
+def _build_index(request_id, profiles):
+    completed = sum(1 for entry in profiles if entry.get('lastValidDelivery'))
+    return {
         'schemaVersion': 1,
         'requestId': request_id,
         'profileCount': len(profiles),
         'completedCount': completed,
-        'overallStatus': 'completed' if completed == len(profiles) and profiles else 'partial',
+        'overallStatus': 'completed' if profiles and completed == len(profiles) else 'partial',
         'profiles': profiles,
     }
-    write_json(index_path, index)
+
+
+def merge_index(output_dir, request_id, results):
+    """Atualiza o indice separando a tentativa mais recente da ultima entrega valida.
+
+    Le indices v1 existentes, valida o dono do destino, preserva a entrega valida
+    anterior quando uma reexportacao falha e grava por substituicao atomica.
+    """
+    index_path = os.path.join(output_dir, 'index.json')
+    prior = {}
+    if os.path.isfile(index_path):
+        try:
+            with open(index_path, 'r', encoding='utf-8') as handle:
+                previous = json.load(handle)
+        except (OSError, ValueError):
+            previous = {}
+        owner = previous.get('requestId')
+        if owner and owner != request_id:
+            raise render_pipeline.DeliveryCollisionError(
+                f"colisao de entrega: destino pertence ao pedido '{owner}' (diferente de '{request_id}')")
+        for entry in previous.get('profiles', []):
+            if isinstance(entry, dict) and 'profileId' in entry:
+                prior[entry['profileId']] = entry
+    merged = dict(prior)
+    for result in results:
+        profile_id = result['profileId']
+        last_valid = _delivery_from_entry(prior.get(profile_id))
+        if result.get('status') == 'completed':
+            last_valid = {key: result[key] for key in DELIVERY_FIELDS if key in result}
+            last_valid['status'] = 'completed'
+        entry = {
+            'profileId': profile_id,
+            'caseId': result.get('caseId') or (prior.get(profile_id) or {}).get('caseId'),
+            'status': 'completed' if last_valid else result.get('status'),
+            'lastAttempt': result,
+            'lastValidDelivery': last_valid,
+        }
+        source = last_valid if last_valid else result
+        for key in ('packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection'):
+            if key in source:
+                entry[key] = source[key]
+        merged[profile_id] = entry
+    profiles = [merged[key] for key in sorted(merged)]
+    index = _build_index(request_id, profiles)
+    _write_index_atomic(index_path, index)
     return index
+
+
+def reconcile_index_from_manifests(output_dir, request_id):
+    """Reconstroi o indice a partir dos manifestos promovidos (fonte de verdade).
+
+    Usado quando a atualizacao do indice falha apos um render concluido: cada
+    subdiretorio com delivery-manifest.json valido volta a ser uma entrega valida.
+    """
+    profiles = []
+    if os.path.isdir(output_dir):
+        for name in sorted(os.listdir(output_dir)):
+            manifest_path = os.path.join(output_dir, name, 'delivery-manifest.json')
+            if not os.path.isfile(manifest_path):
+                continue
+            try:
+                with open(manifest_path, 'r', encoding='utf-8') as handle:
+                    manifest = json.load(handle)
+            except (OSError, ValueError):
+                continue
+            artifacts = manifest.get('artifacts', {})
+            output_rel = manifest.get('outputDir')
+            delivery = {
+                'profileId': name,
+                'caseId': manifest.get('caseId'),
+                'packageId': manifest.get('packageId'),
+                'status': 'completed',
+                'outputDir': output_rel,
+                'deliveryManifest': f'{output_rel}/delivery-manifest.json' if output_rel else None,
+                'artifacts': artifacts,
+                'inspection': (artifacts.get('video') or {}).get('ffprobe'),
+            }
+            entry = {
+                'profileId': name,
+                'caseId': manifest.get('caseId'),
+                'status': 'completed',
+                'lastAttempt': delivery,
+                'lastValidDelivery': delivery,
+            }
+            for key in ('packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection'):
+                entry[key] = delivery[key]
+            profiles.append(entry)
+    index = _build_index(request_id, profiles)
+    _write_index_atomic(os.path.join(output_dir, 'index.json'), index)
+    return index
+
+
+def acquire_export_lock(output_dir, timeout=300):
+    """Serializa exportacoes concorrentes para o mesmo destino (lock O_EXCL)."""
+    lock_path = os.path.join(output_dir, EXPORT_LOCK_NAME)
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            os.close(fd)
+            return lock_path
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise build_video.DeliveryError('exportacao concorrente no destino; lock ocupado')
+            time.sleep(0.2)
 
 
 def main(argv=None):
@@ -288,6 +411,7 @@ def main(argv=None):
             if render_local.overlaps(output_dir, path):
                 raise render_local.InputFileError(f'destino sobrepoe {label} da execucao')
         os.makedirs(output_dir, exist_ok=True)
+        lock_path = acquire_export_lock(output_dir)
 
         parent = os.path.join(root, '.workspace', 'tmp')
         os.makedirs(parent, exist_ok=True)
@@ -304,9 +428,14 @@ def main(argv=None):
                 except (build_video.DeliveryError, render_local.RenderInputError,
                         render_local.InputFileError, OSError, ValueError) as exc:
                     results.append(failed_result(profile, error=str(exc)))
-            index = merge_index(output_dir, request_id, results)
+            try:
+                index = merge_index(output_dir, request_id, results)
+            except OSError:
+                index = reconcile_index_from_manifests(output_dir, request_id)
         finally:
             shutil.rmtree(run_root, ignore_errors=True)
+            if os.path.exists(lock_path):
+                os.remove(lock_path)
 
         all_completed = all(entry['status'] == 'completed' for entry in results) and bool(results)
         payload = {
