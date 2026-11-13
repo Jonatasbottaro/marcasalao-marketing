@@ -114,7 +114,7 @@ Continua bloqueado até deliberação específica: produção de campanhas reais
 
 ## 4c. Produção de vídeo por entrada única (`VideoRequest` v1 + `tools/produce_video.py`) — concluído em 13/11/2026
 
-> O titular autorizou em 13/11/2026 uma entrega completa: descrever as cenas em um JSON, conferir a prévia e exportar o vídeo para os perfis escolhidos, com implementação, testes, render de prova, CI e documentação na mesma rodada, e integração à main após os gates. Detalhes e comandos em [tools/produce/README.md](../../tools/produce/README.md) e [tools/render/README.md](../../tools/render/README.md), seção Produção por entrada única.
+> O titular autorizou em 13/11/2026 uma entrega completa: descrever as cenas em um JSON, conferir a prévia e exportar o vídeo para os perfis escolhidos, com implementação, testes, render de prova, CI e documentação na mesma rodada, e integração à main após os gates. **Integrada na main pelo merge commit `2ba0ee010a24a6183a57e0d67d2214228b033aa3`** (branch `codex/produce-video-single-input-v1`). Detalhes e comandos em [tools/produce/README.md](../../tools/produce/README.md) e [tools/render/README.md](../../tools/render/README.md), seção Produção por entrada única.
 
 Critérios de conclusão atendidos:
 - **Entrada única**: contrato `VideoRequest` v1 puro (`platform/src/video-request-contract.ts`, `validate-video-request.ts`, espelho draft-07 `video-request.schema.json` com paridade Ajv) e compilador puro `compile-video-request.ts` que deriva `Composition`, `BeatPlan`, `OutputPlan`, `CreativeExecutionPackage`, associação de mídia e títulos por perfil, resolvendo cada perfil apenas pelo catálogo (`resolveOutputPlan`), respeitando a allowlist do projeto e validando pelo pipeline canônico; casos gerados como rascunhos editoriais;
