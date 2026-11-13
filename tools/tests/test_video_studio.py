@@ -223,5 +223,94 @@ class StudioExportTest(StudioTestBase):
         self.assertEqual(status, 200)
 
 
+class CarouselPanelTest(StudioTestBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg ausente")
+            raise unittest.SkipTest("FFmpeg indisponivel")
+
+    def setUp(self):
+        super().setUp()
+        self.carousel = read_json(os.path.join(MAIN_ROOT, "tools/produce/examples/marca-salao-carousel.carousel-request.json"))
+        make_request_media.generate_request_media(self.carousel, MAIN_ROOT)
+
+    def test_examples_include_carousel(self):
+        status, data = self.request("GET", "/api/examples")
+        self.assertEqual(status, 200)
+        kinds = {e["kind"] for e in data["examples"]}
+        self.assertIn("carousel", kinds)
+        self.assertIn("video", kinds)
+
+    def test_preview_carousel(self):
+        status, data = self.request("POST", "/api/preview", {"request": self.carousel, "kind": "carousel"})
+        self.assertEqual(status, 200, data)
+        r = data["result"]
+        self.assertEqual(r["status"], "preview")
+        self.assertEqual(r["geometry"]["width"], 1080)
+        self.assertEqual(len(r["cards"]), 3)
+
+    def test_export_carousel_and_serve_images_zip(self):
+        output_rel = f".workspace/tmp/t_studio/{self._testMethodName}/entrega"
+        status, data = self.request("POST", "/api/export", {"request": self.carousel, "outputDir": output_rel, "kind": "carousel"})
+        self.assertEqual(status, 200, data)
+        job = data["jobId"]
+        final = None
+        for _ in range(120):
+            status, d = self.request("GET", "/api/export/status?job=" + job)
+            if d["status"] != "running":
+                final = d
+                break
+            import time
+            time.sleep(1.0)
+        self.assertIsNotNone(final)
+        self.assertEqual(final["status"], "completed", final)
+        self.assertEqual(final["kind"], "carousel")
+
+        status, delivery = self.request("GET", "/api/carousel-delivery?dir=" + output_rel)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(delivery["manifest"]["cards"]), 3)
+        self.assertIsNotNone(delivery["index"]["lastValidDelivery"])
+
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
+        conn.request("GET", f"/media?dir={output_rel}&kind=card&index=0", headers={"Host": self.host})
+        res = conn.getresponse()
+        blob = res.read()
+        conn.close()
+        self.assertEqual(res.status, 200)
+        self.assertEqual(blob[:3], b"\xff\xd8\xff")
+
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
+        conn.request("GET", f"/media?dir={output_rel}&kind=zip", headers={"Host": self.host})
+        res = conn.getresponse()
+        zblob = res.read()
+        conn.close()
+        self.assertEqual(res.status, 200)
+        self.assertEqual(zblob[:2], b"PK")
+
+    def test_job_status_idempotent_two_queries(self):
+        output_rel = f".workspace/tmp/t_studio/{self._testMethodName}/entrega"
+        status, data = self.request("POST", "/api/export", {"request": self.carousel, "outputDir": output_rel, "kind": "carousel"})
+        job = data["jobId"]
+        final = None
+        for _ in range(120):
+            status, d = self.request("GET", "/api/export/status?job=" + job)
+            if d["status"] != "running":
+                final = d
+                break
+            import time
+            time.sleep(1.0)
+        self.assertIsNotNone(final)
+        self.assertEqual(final["status"], "completed")
+        status, second = self.request("GET", "/api/export/status?job=" + job)
+        status, third = self.request("GET", "/api/export/status?job=" + job)
+        self.assertEqual(second["status"], "completed")
+        self.assertEqual(third["status"], "completed")
+        self.assertEqual(second["result"], final["result"])
+        self.assertEqual(third["result"], final["result"])
+
+
 if __name__ == "__main__":
     unittest.main()
