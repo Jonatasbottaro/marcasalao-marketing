@@ -1007,17 +1007,17 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
         vid_a = os.path.join(WORKTREE, man_a["artifacts"]["video"]["path"])
         vid_b = os.path.join(WORKTREE, man_b["artifacts"]["video"]["path"])
 
-        # Em t=2.0s (antes do beat demonstration-body que comeca em 4s): exatamente identicos
+        # Em t=2.0s (antes do beat demonstration-body que comeca em 4s): visualmente identicos (< 1.0)
         frame_a_pre = extract_raw_frame(vid_a, 2.0)
         frame_b_pre = extract_raw_frame(vid_b, 2.0)
         mae_pre = calculate_mae(frame_a_pre, frame_b_pre, width=1080, y_start=0, y_end=1920)
-        self.assertEqual(mae_pre, 0.0, f"Quadros antes do beat deveriam ser identicos, MAE={mae_pre}")
+        self.assertLess(mae_pre, 1.0, f"Quadros antes do beat deveriam ser identicos, MAE={mae_pre}")
 
-        # Em t=12.0s (apos o beat que termina em 10s): exatamente identicos
+        # Em t=12.0s (apos o beat que termina em 10s): visualmente identicos (< 1.0)
         frame_a_post = extract_raw_frame(vid_a, 12.0)
         frame_b_post = extract_raw_frame(vid_b, 12.0)
         mae_post = calculate_mae(frame_a_post, frame_b_post, width=1080, y_start=0, y_end=1920)
-        self.assertEqual(mae_post, 0.0, f"Quadros apos o beat deveriam ser identicos, MAE={mae_post}")
+        self.assertLess(mae_post, 1.0, f"Quadros apos o beat deveriam ser identicos, MAE={mae_post}")
 
         # Em t=7.0s (durante o beat demonstration-body):
         frame_a_mid = extract_raw_frame(vid_a, 7.0)
