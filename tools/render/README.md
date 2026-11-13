@@ -212,7 +212,7 @@ A CLI `tools/render_pipeline.py` suporta um plano opcional de títulos editávei
 ```json
 {
   "schemaVersion": 1,
-  "caseId": "marca-salao-social-reel-example",
+  "caseId": "marca-salao-pipeline-pilot",
   "overlays": [
     {
       "beatId": "demonstration-body",
@@ -224,6 +224,7 @@ A CLI `tools/render_pipeline.py` suporta um plano opcional de títulos editávei
 
 - **Contrato e validação pura**: `platform/src/text-overlay-plan-contract.ts` e `validate-text-overlay-plan.ts` validam `schemaVersion`, `caseId` coincidente com o caso, unicidade de `beatId` (um título por beat), existência do beat na timeline e texto não vazio, com espelho JSON Schema draft-07 e paridade Ajv.
 - **Resolução de intervalos**: os tempos `startMs`, `endMs` e `durationMs` são derivados do `CreativeExecutionPackage` canônico.
+- **Plano de títulos vazio**: quando fornecido com `overlays: []`, o plano é validado, gravado e rastreado no manifesto normalmente, e o render é executado sem filtro de títulos.
 - **Prévia (`--plan-only`)**: em `--plan-only --json`, exibe os títulos e intervalos resolvidos sem dependência de FFmpeg ou escrita em disco:
   ```bash
   python tools/render_pipeline.py \
@@ -234,6 +235,35 @@ A CLI `tools/render_pipeline.py` suporta um plano opcional de títulos editávei
 - **Render e posicionamento**: o título é renderizado no topo do quadro (`Alignment=6`, `MarginV=160`, fonte Arial 42 negrito com borda e sombra), garantindo contraste e legibilidade sem sobrepor a legenda inferior do vídeo. Caracteres acentuados e pontuação são tratados integralmente como dados.
 - **Entrega rastreável**: o plano canônico é promovido como `*-text-overlay-plan.json` e registrado com caminho relativo, tamanho e SHA-256 no `delivery-manifest.json` (chave `textOverlayPlan`).
 - **Prova de reaproveitamento do visual**: ao revisar apenas o título, os hashes SHA-256 dos assets de entrada, do pacote canônico, do SRT e do roteiro TXT permanecem rigorosamente idênticos; a inspeção de quadros confirma que a alteração ocorre exclusivamente na região superior durante o beat configurado.
+
+### 4. Direção visual compartilhada (`--visual-style`)
+
+A CLI suporta opcionalmente um documento versionado `VisualStyle` v1 (`--visual-style <estilo.json>`), permitindo estilizar títulos editáveis de forma desacoplada do caso:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ouro",
+  "title": {
+    "textColor": "#FFD700",
+    "outlineColor": "#000000",
+    "fontSize": 48,
+    "marginTop": 180,
+    "marginHorizontal": 80
+  }
+}
+```
+
+- **Reutilização e independência de caso**: `VisualStyle` não carrega `caseId`. O mesmo estilo visual pode ser reutilizado em qualquer caso (`marca-salao`, `multitrack-hub`, etc.);
+- **Parâmetros e limites (quadro 1080×1920)**:
+  - `textColor`: hexadecimal `#RRGGBB` da cor principal do texto;
+  - `outlineColor`: hexadecimal `#RRGGBB` do contorno do texto;
+  - `fontSize`: tamanho da fonte em pixels (16 a 160 px);
+  - `marginTop`: margem superior em pixels a partir do topo (0 a 600 px);
+  - `marginHorizontal`: margens laterais esquerda e direita em pixels (0 a 400 px);
+- **Prévia (`--plan-only`)**: em `--plan-only --json`, exibe o estilo visual resolvido e sinaliza `hasTitlesToApply` (`true` se houver títulos para aplicar o estilo, `false` caso contrário), sem executar FFmpeg;
+- **Render**: o adaptador traduz as cores hexadecimais para o formato ASS e injeta no filtro de vídeo. Chamadas sem `--visual-style` mantêm o estilo padrão (`#FFFFFF`, `#000000`, 42px, margem superior 160px);
+- **Rastreabilidade**: o arquivo de estilo canônico é promovido para a pasta de entrega como `*-visual-style.json` e registrado em `delivery-manifest.json` (`visualStyle`) com caminho final, tamanho e hash SHA-256 recalculado na leitura direta do arquivo promovido.
 
 ### Exit codes
 
