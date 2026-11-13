@@ -57,7 +57,8 @@ Os marcos permanecem distintos e não se substituem:
 - integração do histórico da sessão de governança e do checklist de alinhamento entre estações (autorizada pelo titular em 12/11/2026): merge commit `8c209677d556678c7ed597c2ce6ead6374980422`, a partir da branch documental `codex/historico-sessao-2026-11-12` (HEAD `3e6cda0ee2ca705ba1755bab9ca55617b69059d7`, commits `1878c3f` e `3e6cda0` preservados). Versiona em `docs/historico/` o registro da sessão de governança de armazenamento/auditoria/limpeza de branches (11–12/11/2026) e o checklist de alinhamento entre estações, para que a continuidade viaje pelo Git e não dependa de `.workspace/` local. Registros de consulta: não autorizam produção, publicação, mídia, deploy nem nova fatia de TEMPORAL-02.
 - integração do pipeline local de renderização a partir de casos (autorizada pelo titular em 12/11/2026): CLI `tools/render_pipeline.py`, prévia (`--plan-only`), render e2e com pacote canônico gerado em memória, promoção atômica com manifesto de entrega versionado (`delivery-manifest.json`), testes e CI dedicados; detalhe na seção Pipeline local de renderização a partir de casos — integrado na main.
 - integração do piloto de composição com títulos editáveis (`--text-overlays`) no pipeline local: contrato `TextOverlayPlan` v1 puro, validador puro, serialização canônica, espelho draft-07, paridade Ajv, suporte na ponte Node e CLI `render_pipeline.py` com posicionamento superior de títulos sobre o vídeo sem áudio, preservação de legendas e narração, rastreabilidade no manifesto e prova visual de reaproveitamento de assets; detalhe na seção Piloto de composição com títulos editáveis — integrado na main;
-- integração de estilos visuais reutilizáveis (`VisualStyle` v1) nos títulos editáveis: contrato `VisualStyle` v1 puro, validador puro, serialização determinística com normalização de cores hexadecimais, espelho draft-07, paridade Ajv, desacoplado de `caseId` e compartilhável entre marcas, suporte a `--visual-style` na CLI e na ponte Node, conversor de cores/métricas para estilos ASS em `tools/render_local.py`, correção de planos vazios (`overlays: []`), promoção transacional com rastreabilidade no manifesto (`delivery-manifest.json`), prova visual automatizada (MAE) demonstrando reuso de assets e variação estrita do estilo, reuso no caso Multitrack Hub e CI dedicado; detalhe na seção Estilos visuais reutilizáveis (VisualStyle v1) nos títulos editáveis — integrado na main.
+- integração de estilos visuais reutilizáveis (`VisualStyle` v1) nos títulos editáveis: contrato `VisualStyle` v1 puro, validador puro, serialização determinística com normalização de cores hexadecimais, espelho draft-07, paridade Ajv, desacoplado de `caseId` e compartilhável entre marcas, suporte a `--visual-style` na CLI e na ponte Node, conversor de cores/métricas para estilos ASS em `tools/render_local.py`, correção de planos vazios (`overlays: []`), promoção transacional com rastreabilidade no manifesto (`delivery-manifest.json`), prova visual automatizada (MAE) demonstrando reuso de assets e variação estrita do estilo, reuso no caso Multitrack Hub e CI dedicado (`c6a9a831fd75d91d575b8b61f82f408535d8bd47`); detalhe na seção Estilos visuais reutilizáveis (VisualStyle v1) nos títulos editáveis — integrado na main.
+- integração do inventário de mídia de ponta a ponta (`AssetManifest` v1): contrato `AssetManifest` v1 puro, validador puro, serialização canônica, espelho draft-07, paridade Ajv, montador CLI `tools/prepare_asset_manifest.py` com deduplicação de arquivos repetidos e licença declarada ou `pending`, prévia (`--plan-only`), verificação de integridade e FFprobe uma vez por asset único (`--check-assets`), staging isolado dos bytes verificados com rastreabilidade no `delivery-manifest.json` e suporte a imagem reutilizada e clipe de vídeo `.mp4` local; detalhe na seção Inventário de mídia de ponta a ponta (AssetManifest v1) — integrado.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -95,7 +96,7 @@ O BeatPlan **saiu desta lista**: a reconciliação `7d919fc208ac4dfeebe5b0b65a95
 ### Planejado ou documentado
 
 - **R002**: integrado na main como piloto técnico local de vídeo sem áudio (merge `b7ed1d9`); detalhe na seção R002 — piloto técnico local de vídeo sem áudio. **R003**: sem documento próprio no repositório; a única ocorrência na main é o §14 do planejamento do TEMPORAL-01, que o declara não iniciado e não integrado.
-- **VisualStyle, VisualAnchor, AssetManifest, AudioPlan, RenderPlan e adaptadores**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md). Nenhum tem implementação na main. O núcleo já contém projeto, composição, fronteira pública de validação, R001 (catálogo, OutputPlan interno, resolvedor, validadores e CLIs) e BeatPlan v1 interno; isso não implementa esses conceitos nem um renderizador. Os dois primeiros passos da ordem recomendada pela decisão (Composition → BeatPlan) estão cumpridos como contratos declarativos e não autorizam os seguintes.
+- **VisualAnchor, AudioPlan e RenderPlan**: conceitos registrados em [`docs/decisoes/`](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md) sem implementação na main (`VisualStyle` v1 e `AssetManifest` v1 já estão integrados em escopo local interno à `platform` e à camada `tools/`, mantendo a API pública mínima inalterada e sem entrar no Temporal). Os primeiros passos da ordem declarativa (Composition → BeatPlan → TextOverlayPlan → VisualStyle → AssetManifest) cumprem contratos locais sem autorizar mídia real, áudio ou deploy.
 - **Qwen3.8**: família indicada para um futuro executor de texto, registrada no §15 do planejamento do TEMPORAL-01. Nada instalado, baixado, inferido ou acoplado.
 - **Higgsfield**: nenhuma ocorrência em código ou documentação da main. É referência externa de conversa, não ferramenta adotada.
 - **TEMPORAL-02-01**, **TEMPORAL-02-02**, **TEMPORAL-02-03**, **fatia Workflow de TEMPORAL-02**, **TEMPORAL-02** e **TEMPORAL-04**: estados próprios nas seções abaixo. As seções das fatias iniciais preservam o recorte e as evidências de cada commit; ausências registradas nesses marcos não substituem o estado atual da fatia Workflow.
@@ -491,6 +492,28 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
   - Preservação da entrega anterior em caso de estilo inválido (`test_19_invalid_visual_style_preserves_previous_delivery`);
   - Suíte `tools/tests/test_render_pipeline.py` expandida para 31 testes aprovados;
   - CI de render real atualizado em `.github/workflows/local-render-validation.yml`.
+
+## Inventário de mídia de ponta a ponta (AssetManifest v1) — integrado
+
+- Status: **implementado, testado e integrado**, permitindo montar inventários de mídia (`tools/prepare_asset_manifest.py`), verificar integridade e FFprobe uma única vez por arquivo (`--check-assets`) e renderizar a partir de `--asset-manifest <inventario.json>`.
+- Contrato e validação pura na `platform`:
+  - Contrato TypeScript `AssetManifest` em `platform/src/asset-manifest-contract.ts` com `schemaVersion: 1`, `caseId`, `packageId`, `assets` (`id`, `type: image|video`, `path` relativo à raiz, `bytes`, `sha256` em hex minúsculo, `origin`, `license` declarada ou `pending`) e `bindings` (`beatId`, `assetId`, com reuso de um mesmo asset entre vários beats);
+  - Validador puro `validateAssetManifest` em `platform/src/validate-asset-manifest.ts` verificando estrutura fechada, correspondência com `caseId` e `packageId`, IDs únicos em kebab-case, contenção léxica e extensão compatível com `type`, cobertura completa dos beats na ordem da timeline e delegação ao `validateLocalRenderInput`;
+  - Serializador canônico determinístico em `platform/src/serialize-asset-manifest.ts` (2 espaços, LF puro);
+  - Espelho JSON Schema draft-07 em `platform/schemas/asset-manifest.schema.json`;
+  - Suíte de paridade Ajv em `platform/tests/contracts/asset-manifest-schema.test.ts` e testes unitários em `platform/tests/asset-manifest.test.ts`.
+- Integração nas ferramentas locais (`tools/`):
+  - `tools/prepare_asset_manifest.py`: converte associação existente + `--origin` (+ `--license` opcional, padrão `pending`), deduplica arquivos físicos repetidos, calcula tamanho e SHA-256, valida pela ponte e grava o inventário canônico dentro da raiz sem alterar os arquivos de origem;
+  - `tools/render_bridge.mjs`: aceita `--asset-manifest <inventario.json>`, rejeita combinação com `--assets`, valida pelo núcleo puro e devolve os vínculos resolvidos na ordem da timeline;
+  - `tools/make_proof_assets.py`: inclui `write_scene_mp4` para geração determinística de clipes MP4 sintéticos sem áudio dentro de `.workspace/`;
+  - `tools/render_pipeline.py`:
+    - `--plan-only --asset-manifest`: valida referências e exibe vínculos sem ler arquivos de mídia nem exigir FFmpeg;
+    - `--check-assets --asset-manifest`: verifica contenção real, tamanho, SHA-256, dimensões pares positivas via FFprobe (uma única vez por arquivo único) e duração compatível para clipes de vídeo (`ASSET_VIDEO_TOO_SHORT`), sem criar diretório de saída;
+    - `--asset-manifest` no render: verifica e copia os assets para staging isolado (`verified-assets/`), reconfere bytes/SHA-256 antes do FFmpeg, preserva combinação com `--text-overlays` e `--visual-style`, mantém vídeo sem áudio (`-an`), legenda queimada, `.srt` e narração `.txt` separados, e promove `*-asset-manifest.json` registrado em `delivery-manifest.json` e `*-execution-report.json`.
+- Provas e CI:
+  - Marca Salão com imagem compartilhada em 2 beats + clipe `.mp4` local combinando `--asset-manifest`, `--text-overlays` e `--visual-style`, e Multitrack Hub com imagem compartilhada + clipe `.mp4`;
+  - Cobertura de erro antes do FFmpeg (byte adulterado com `ASSET_HASH_MISMATCH` preservando entrega anterior, asset ausente/corrompido, vídeo curto, referência inválida, rollback em falha de promoção e compatibilidade preservada de `--assets`);
+  - Etapa dedicada no CI de render real `.github/workflows/local-render-validation.yml` em Ubuntu e Windows.
 
 ## TEMPORAL-01
 
@@ -967,7 +990,7 @@ O Workflow já está integrado, homologado tecnicamente e ratificado no escopo d
 - integração de TEMPORAL-02 em produção (a execução local já está integrada em `5376890`);
 - combinação de BeatPlan × OutputPlan e BeatPlan no Temporal;
 - TEMPORAL-04;
-- renderização, adaptadores, `VisualStyle`, `VisualAnchor`, `AssetManifest` completo, `AudioPlan` e `RenderPlan`;
+- renderização de campanha real, adaptadores de fornecedores, `VisualAnchor`, `AudioPlan` e `RenderPlan`;
 - mídia, fornecedores e deploy.
 
 Pré-condições técnicas já cumpridas, sem abrir autorização futura:

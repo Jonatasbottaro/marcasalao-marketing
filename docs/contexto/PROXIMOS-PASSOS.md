@@ -42,9 +42,9 @@ Continuam estritamente bloqueados até autorização específica:
 - gate Elephant–Goldfish de TEMPORAL-02;
 - integração final completa de TEMPORAL-02;
 - combinação BeatPlan × OutputPlan;
-- BeatPlan no Temporal e combinação de OutputPlan e outros planos no Temporal;
-- renderização e adaptadores;
-- `VisualStyle`, `VisualAnchor`, `AssetManifest` completo, `AudioPlan` e `RenderPlan`;
+- combinação de OutputPlan e outros planos no Temporal;
+- renderização de campanha real e adaptadores de fornecedores externos;
+- `VisualAnchor`, `AudioPlan` e `RenderPlan`; (`VisualStyle` v1 e `AssetManifest` v1 integrados apenas no pipeline local e contratos internos da `platform`);
 - mídia;
 - fornecedores;
 - TEMPORAL-04;
@@ -98,6 +98,17 @@ Critérios de conclusão atendidos:
 - **Política de áudio e inspeção**: MP4 gerado estritamente sem áudio (`-an`, 0 faixas de áudio), inspecionado e validado via FFprobe;
 - **Transacionalidade e rastreabilidade**: promoção atômica, lock com revalidação de colisão sob disputa de destino vazio, e manifesto versionado `delivery-manifest.json` com caminhos, tamanhos e SHA-256 recalculados na leitura direta dos arquivos promovidos (incluindo `textOverlayPlan` mesmo com `overlays: []` e `visualStyle`);
 - **Prova visual automatizada**: testes de regressão e inspeção comparativa de quadros (MAE) comprovando isolamento da alteração na região superior tanto na troca de texto quanto na troca de estilo visual.
+
+## 4b. Inventário de mídia de ponta a ponta (`AssetManifest` v1) — concluído em 13/11/2026
+
+> O inventário de mídia de ponta a ponta foi autorizado, implementado e integrado via `tools/prepare_asset_manifest.py`, `--asset-manifest <inventario.json>` e `--check-assets` em `tools/render_pipeline.py`, mantendo retrocompatibilidade integral de `--assets`. Detalhes e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Inventário de mídia de ponta a ponta (AssetManifest v1), e em [tools/render/README.md](../../tools/render/README.md).
+
+Critérios de conclusão atendidos:
+- **Montagem e deduplicação (`prepare_asset_manifest.py`)**: converte associação existente em inventário canônico, deduplica arquivos físicos repetidos, calcula tamanho em bytes e SHA-256 e registra `origin` e `license` (padrão `pending`), preservando os arquivos de origem intactos;
+- **Prévia (`--plan-only --asset-manifest`)**: valida referências do inventário e exibe os vínculos na ordem da timeline sem ler mídias nem exigir FFmpeg;
+- **Verificação prévia (`--check-assets`)**: verifica contenção na raiz, bytes, SHA-256, dimensões e compatibilidade de duração de vídeo via FFprobe exatamente uma vez por asset único, sem criar diretório de saída;
+- **Render e rastreabilidade (`--asset-manifest --output-dir`)**: copia e revalida os bytes verificados em staging (`verified-assets/`), combina com `--text-overlays` e `--visual-style`, gera MP4 sem áudio (`-an`), legendas queimadas, `.srt` e narração `.txt` separados, promove `*-asset-manifest.json` e registra no `delivery-manifest.json` e relatório de execução;
+- **Falha segura antes do FFmpeg**: adulteração de byte (`ASSET_HASH_MISMATCH`), arquivo ausente/corrompido, vídeo curto (`ASSET_VIDEO_TOO_SHORT`) e falhas de promoção preservam integralmente entregas anteriores.
 
 Continua bloqueado até deliberação específica: produção de campanhas reais, fornecedores, áudio/TTS, Temporal e deploy.
 

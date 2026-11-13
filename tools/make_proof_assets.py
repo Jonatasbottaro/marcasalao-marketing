@@ -17,7 +17,9 @@ import hashlib
 import json
 import os
 import struct
+import subprocess
 import sys
+import tempfile
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +65,48 @@ def write_scene_png(path, project_id, beat_id, order):
            + r002_pilot._png_chunk(b"IEND", b""))
     with open(path, "wb") as handle:
         handle.write(png)
+
+
+def write_scene_mp4(path, project_id, beat_id, order, duration_s=6.0, fps=30):
+    """Gera um clipe MP4 sintetico sem audio (H.264/yuv420p) a partir da cena."""
+    parent = os.path.dirname(os.path.abspath(path))
+    os.makedirs(parent, exist_ok=True)
+    fd, tmp_png = tempfile.mkstemp(prefix=".proof-frame-", suffix=".png", dir=parent)
+    os.close(fd)
+    try:
+        write_scene_png(tmp_png, project_id, beat_id, order)
+        cmd = [
+            r002_pilot.build_video.get_ffmpeg(),
+            "-y",
+            "-loop",
+            "1",
+            "-framerate",
+            str(fps),
+            "-t",
+            f"{duration_s:.3f}",
+            "-i",
+            tmp_png,
+            "-an",
+            "-vf",
+            "scale=1080:1920:flags=bilinear,setsar=1",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-pix_fmt",
+            "yuv420p",
+            "-r",
+            str(fps),
+            path,
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if res.returncode != 0:
+            raise r002_pilot.build_video.DeliveryError(
+                f"falha ao gerar clipe mp4 sintetico para {beat_id}: {res.stderr[-240:]}"
+            )
+    finally:
+        if os.path.exists(tmp_png):
+            os.remove(tmp_png)
 
 
 def generate_assets(package_path, output_dir, root, case_path=None):

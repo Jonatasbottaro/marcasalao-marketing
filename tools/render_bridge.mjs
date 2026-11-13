@@ -8,9 +8,9 @@
  *    Valida o pacote e a associacao via validateLocalRenderInput.
  *
  * 2. Pipeline (render_pipeline.py):
- *    node tools/render_bridge.mjs --case <case.pipeline.json> [--root <rootDir>] [--assets <assets.json>] [--plan-only]
+ *    node tools/render_bridge.mjs --case <case.pipeline.json> [--root <rootDir>] [--assets <assets.json> | --asset-manifest <manifest.json>] [--plan-only]
  *    Carrega o caso, gera o CreativeExecutionPackage canonico a partir do caso
- *    valido e opcionalmente valida a associacao de assets e o recorte de configuracao.
+ *    valido e opcionalmente valida a associacao de assets ou o inventario de midia.
  *
  * Exit codes: 0 sucesso/valido; 2 uso ou JSON ilegivel; 3 entrada invalida.
  */
@@ -19,9 +19,11 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
+import { serializeAssetManifest } from '../platform/dist/src/serialize-asset-manifest.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
 import { serializeVisualStyle } from '../platform/dist/src/serialize-visual-style.js'
+import { validateAssetManifest } from '../platform/dist/src/validate-asset-manifest.js'
 import {
     checkLocalRenderConfiguration,
     validateLocalRenderInput,
@@ -59,6 +61,7 @@ function buildPlan(caseId, pkg, configCheck) {
 function handleCasePipeline(args) {
     let casePath = null
     let assetsPath = null
+    let assetManifestPath = null
     let textOverlaysPath = null
     let visualStylePath = null
     let rootDir = process.cwd()
@@ -70,6 +73,8 @@ function handleCasePipeline(args) {
             casePath = args[++i]
         } else if (arg === '--assets' && i + 1 < args.length) {
             assetsPath = args[++i]
+        } else if (arg === '--asset-manifest' && i + 1 < args.length) {
+            assetManifestPath = args[++i]
         } else if (arg === '--text-overlays' && i + 1 < args.length) {
             textOverlaysPath = args[++i]
         } else if (arg === '--visual-style' && i + 1 < args.length) {
@@ -85,7 +90,12 @@ function handleCasePipeline(args) {
     }
 
     if (!casePath) {
-        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--text-overlays <overlays.json>] [--visual-style <style.json>] [--plan-only]')
+        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json> | --asset-manifest <manifest.json>] [--text-overlays <overlays.json>] [--visual-style <style.json>] [--plan-only]')
+        process.exit(2)
+    }
+
+    if (assetsPath && assetManifestPath) {
+        console.error('erro: informe apenas um entre --assets e --asset-manifest')
         process.exit(2)
     }
 
@@ -172,6 +182,47 @@ function handleCasePipeline(args) {
         plan.hasTitlesToApply = resolvedTextOverlays.length > 0
     }
 
+    let canonicalAssetManifestJson = null
+    let assetManifest = null
+    let resolvedAssetBindings = []
+    let manifestAssociation = null
+
+    if (assetManifestPath) {
+        let assetManifestInput
+        try {
+            assetManifestInput = JSON.parse(readFileSync(assetManifestPath, 'utf8'))
+        } catch {
+            console.error('erro: arquivo de inventario de midia ilegivel ou JSON invalido')
+            process.exit(2)
+        }
+
+        const manifestValidation = validateAssetManifest(pkg, creation.caseId, assetManifestInput)
+        if (!manifestValidation.ok) {
+            console.log(JSON.stringify({
+                ok: false,
+                caseId: creation.caseId,
+                packageId: pkg.packageId,
+                failureCode: manifestValidation.failureCode,
+                subject: manifestValidation.subject,
+                plan,
+            }))
+            process.exit(3)
+        }
+
+        assetManifest = manifestValidation.manifest
+        canonicalAssetManifestJson = serializeAssetManifest(manifestValidation.manifest)
+        resolvedAssetBindings = manifestValidation.resolvedBindings
+        manifestAssociation = manifestValidation.association
+        plan.assetManifest = {
+            caseId: assetManifest.caseId,
+            packageId: assetManifest.packageId,
+            assetCount: assetManifest.assets.length,
+            assets: assetManifest.assets,
+            bindings: assetManifest.bindings,
+            resolvedBindings: resolvedAssetBindings,
+        }
+    }
+
     if (planOnly || !assetsPath) {
         console.log(JSON.stringify({
             ok: true,
@@ -182,9 +233,13 @@ function handleCasePipeline(args) {
             canonicalJson,
             canonicalTextOverlayJson,
             canonicalVisualStyleJson,
+            canonicalAssetManifestJson,
             textOverlays: textOverlayPlan,
             resolvedTextOverlays,
             visualStyle,
+            assetManifest,
+            resolvedAssetBindings,
+            association: manifestAssociation,
             plan,
         }))
         process.exit(0)
@@ -220,9 +275,12 @@ function handleCasePipeline(args) {
         canonicalJson,
         canonicalTextOverlayJson,
         canonicalVisualStyleJson,
+        canonicalAssetManifestJson: null,
         textOverlays: textOverlayPlan,
         resolvedTextOverlays,
         visualStyle,
+        assetManifest: null,
+        resolvedAssetBindings: [],
         association: validation.association,
         plan,
     }))
