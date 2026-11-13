@@ -30,6 +30,25 @@ associação beats → assets ───┘        │  veredito JSON via tools/r
                           → validação SRT/narração → promoção transacional
 ```
 
+Ou a partir de um caso completo de pipeline:
+
+```
+Caso (*.pipeline.json) ───┐
+                          ├─ ponte Node (platform pura)
+                          │    ├─ validateContentPipelineCase
+                          │    ├─ createCreativeExecutionPackageFromCase
+                          │    └─ serializeCreativeExecutionPackage (canônico)
+                          │
+associação beats → assets ┼─► validateLocalRenderInput & checkLocalRenderConfiguration
+                          │
+                          ▼
+             tools/render_pipeline.py (camada de ferramentas)
+               --plan-only: prévia sem FFmpeg, assets ou escrita
+               render: staging → render FFmpeg (-an) → inspeção FFprobe
+                       → validação SRT/narração → promoção transacional
+                       → manifesto versionado (delivery-manifest.json)
+```
+
 - A validação do pacote reutiliza `validateCreativeExecutionPackage` e o
   contrato de associação vive em
   `platform/src/local-render-input-contract.ts` /
@@ -105,6 +124,85 @@ ffprobe -v error -show_streams -show_format -of json \
 
 As diferenças entre as duas marcas vêm exclusivamente dos pacotes e dos
 assets: mesma CLI, mesmo código, zero regra por marca.
+
+## Pipeline local completo — `tools/render_pipeline.py`
+
+Consome diretamente o manifesto de caso (`*.pipeline.json`), orquestra o
+carregamento dos 4 documentos (`project`, `composition`, `outputPlan`, `beatPlan`),
+executa a validação consolidada e gera em memória o `CreativeExecutionPackage`
+canônico correspondente via ponte TypeScript da `platform`.
+
+Oferece duas formas de uso:
+
+### 1. Prévia do plano (`--plan-only`)
+
+Calcula e devolve metadados essenciais de execução (`caseId`, `packageId`,
+`perfil`, `geometria`, `fps`, `duracao`, `beats` que requerem assets) e
+indica se a configuração cabe no recorte do adaptador (`supported`,
+`cabeNoRecorte`, `unsupportedReason`):
+
+```bash
+# Formato JSON (stdout reservado exclusivamente ao JSON)
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --plan-only --json
+
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+  --plan-only --json
+
+# Formato legível para terminal
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --plan-only
+```
+
+A prévia opera sem FFmpeg/FFprobe, sem requerer arquivos de assets e sem
+criar qualquer pasta ou arquivo em disco.
+
+### 2. Render completo e entrega rastreável
+
+Recebe o caso e o arquivo de associação `beatId → path`:
+
+```bash
+# Geração dos assets fictícios pelo caso
+python tools/make_proof_assets.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --output-dir .workspace/tmp/pipeline-assets/marca-salao
+python tools/make_proof_assets.py \
+  --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+  --output-dir .workspace/tmp/pipeline-assets/multitrack-hub
+
+# Renderização com promoção transacional e emissão de manifesto
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+  --assets tools/render/marca-salao.assets.json \
+  --output-dir .workspace/archives/local-pipeline-render/marca-salao --json
+
+python tools/render_pipeline.py \
+  --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+  --assets tools/render/multitrack-hub.assets.json \
+  --output-dir .workspace/archives/local-pipeline-render/multitrack-hub --json
+```
+
+Cada entrega publica na pasta de destino:
+- O pacote canônico derivado (`*-beat-plan.execution-package.json`);
+- O vídeo MP4 vertical H.264/yuv420p sem áudio (`-an`), com legendas gravadas;
+- O arquivo `.srt` sincronizado com LF e UTF-8 estrito;
+- O roteiro de narração `.txt` separado, por cena e tempos;
+- O relatório do render (`*-render-report.json`);
+- O manifesto de entrega versionado (`delivery-manifest.json`), contendo os IDs do
+  caso e do pacote, a associação usada, caminhos relativos de todos os artefatos,
+  tamanhos em bytes e hashes SHA-256 recalculados pela leitura direta dos
+  arquivos promovidos.
+
+### Garantias transacionais do pipeline:
+- **Lock exclusivo** por pasta de destino (`.local-render-promotion.lock`);
+- **Rejeição de colisão**: rejeita sobrescrever uma entrega pertencente a outro caso;
+- **Idempotência**: repetir o mesmo caso para o mesmo destino atualiza de forma determinística;
+- **Staging isolado** e contenção verificada antes de qualquer render ou escrita;
+- **Rollback atômico** em falhas de promoção restaurando a entrega anterior;
+- **Preservação de backup** para diagnóstico caso a própria restauração falhe.
 
 ### Exit codes
 

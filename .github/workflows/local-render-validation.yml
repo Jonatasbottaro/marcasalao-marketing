@@ -105,3 +105,38 @@ jobs:
             .workspace/archives/ci-render/marca-salao/*-primary-output.mp4
           ffprobe -v error -show_streams -show_format -of json \
             .workspace/archives/ci-render/multitrack-hub/*-primary-output.mp4
+
+      - name: Previa do plano do pipeline (--plan-only)
+        run: |
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --plan-only --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+            --plan-only --json
+
+      - name: Prova do pipeline local com os dois casos versionados
+        run: |
+          python tools/make_proof_assets.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --output-dir .workspace/tmp/pipeline-assets/marca-salao
+          python tools/make_proof_assets.py \
+            --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+            --output-dir .workspace/tmp/pipeline-assets/multitrack-hub
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --assets tools/render/marca-salao.assets.json \
+            --output-dir .workspace/archives/ci-pipeline/marca-salao --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/multitrack-hub-pipeline-pilot.pipeline.json \
+            --assets tools/render/multitrack-hub.assets.json \
+            --output-dir .workspace/archives/ci-pipeline/multitrack-hub --json
+
+      - name: Inspecao FFprobe e manifestos do pipeline promovido
+        run: |
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/ci-pipeline/marca-salao/*-primary-output.mp4
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/ci-pipeline/multitrack-hub/*-primary-output.mp4
+          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao/delivery-manifest.json')); assert m['schemaVersion']==1 and m['caseId']=='marca-salao-pipeline-pilot'"
+          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/multitrack-hub/delivery-manifest.json')); assert m['schemaVersion']==1 and m['caseId']=='multitrack-hub-pipeline-pilot'"

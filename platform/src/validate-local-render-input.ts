@@ -78,6 +78,22 @@ function configurationSupported(pkg: CreativeExecutionPackage): string | null {
 }
 
 /**
+ * Verifica se a configuracao do pacote cabe no recorte inicial suportado pelo
+ * adaptador de render local. Reutilizada pela validacao de entrada e pela
+ * previa de plano.
+ */
+export function checkLocalRenderConfiguration(pkg: CreativeExecutionPackage): {
+    readonly supported: boolean
+    readonly unsupportedReason: string | null
+} {
+    const unsupported = configurationSupported(pkg)
+    return {
+        supported: unsupported === null,
+        unsupportedReason: unsupported,
+    }
+}
+
+/**
  * Valida pacote e associacao em conjunto. A ordem das verificacoes e fixa:
  * pacote, estrutura da associacao, eco do packageId, cobertura de beats,
  * caminhos, extensoes e recorte de configuracao.

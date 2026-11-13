@@ -15,7 +15,10 @@ import {
     LOCAL_RENDER_INPUT_SCHEMA_VERSION,
     type LocalRenderAssetAssociation,
 } from '../src/local-render-input-contract.js'
-import { validateLocalRenderInput } from '../src/validate-local-render-input.js'
+import {
+    checkLocalRenderConfiguration,
+    validateLocalRenderInput,
+} from '../src/validate-local-render-input.js'
 import { moduleRoot } from './contract-harness.js'
 
 const PACKAGE_FIXTURES = [
@@ -226,4 +229,17 @@ test('fade final e slow-zoom continuam dentro do recorte', () => {
         const result = validateLocalRenderInput(pkg, associationFor(pkg))
         assert.equal(result.ok, true)
     }
+})
+
+test('checkLocalRenderConfiguration indica suporte e razao quando fora do recorte', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0])
+    const valid = checkLocalRenderConfiguration(pkg)
+    assert.equal(valid.supported, true)
+    assert.equal(valid.unsupportedReason, null)
+
+    const invalidPkg = clone(pkg) as Mutable<CreativeExecutionPackage>
+    invalidPkg.output.aspectRatio = '16:9'
+    const invalid = checkLocalRenderConfiguration(invalidPkg)
+    assert.equal(invalid.supported, false)
+    assert.equal(invalid.unsupportedReason, 'output.aspectRatio')
 })

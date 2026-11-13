@@ -55,6 +55,7 @@ Os marcos permanecem distintos e não se substituem:
 - integração do primeiro adaptador de render local de prova (autorizada em 12/11/2026, **integrada na main** pelo merge commit `5be61b8cb3c1894088aae950a81469633447c45f`): branch `codex/local-render-adapter-v1`, a partir de `fbaf2b76943771bbc1a45c1768f39edbfcf67008`; detalhe na seção Adaptador de render local de prova — integrado na main.
 - integração da redação portável da raiz de armazenamento (autorizada pelo titular em 12/11/2026): merge commit `a9118752c593b8bcd7b4636ad948055b77cb5687`, a partir da branch documental `codex/corrige-contexto-raiz-portavel` (HEAD `83eb4e5b8563aaf0c21cdb4fe5cc964c55110557`, commits `1d731cf` e `83eb4e5` preservados). A raiz oficial passa a ser o próprio checkout principal de cada estação (`<RAIZ>` = `git rev-parse --show-toplevel`), com `.workspace/` dentro dele; o invariante são os arquivos versionados alinhados por Git, não o caminho literal. Substância da regra de armazenamento inalterada; nenhum repositório realocado.
 - integração do histórico da sessão de governança e do checklist de alinhamento entre estações (autorizada pelo titular em 12/11/2026): merge commit `8c209677d556678c7ed597c2ce6ead6374980422`, a partir da branch documental `codex/historico-sessao-2026-11-12` (HEAD `3e6cda0ee2ca705ba1755bab9ca55617b69059d7`, commits `1878c3f` e `3e6cda0` preservados). Versiona em `docs/historico/` o registro da sessão de governança de armazenamento/auditoria/limpeza de branches (11–12/11/2026) e o checklist de alinhamento entre estações, para que a continuidade viaje pelo Git e não dependa de `.workspace/` local. Registros de consulta: não autorizam produção, publicação, mídia, deploy nem nova fatia de TEMPORAL-02.
+- integração do pipeline local de renderização a partir de casos (autorizada pelo titular em 12/11/2026): CLI `tools/render_pipeline.py`, prévia (`--plan-only`), render e2e com pacote canônico gerado em memória, promoção atômica com manifesto de entrega versionado (`delivery-manifest.json`), testes e CI dedicados; detalhe na seção Pipeline local de renderização a partir de casos — integrado na main.
 
 O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as PRs abertas e o conteúdo integrado antes de trabalhar. As evidências de 162 testes de Workflow se referem a `f584210`. As de 626 testes da platform com BeatPlan se referem a `7d919fc` e `d5761b1`. A conclusão integral de TEMPORAL-02 depende das etapas descritas na seção Próximo passo.
 
@@ -419,6 +420,28 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 - nenhum áudio, TTS, fornecedor, rede, upload, publicação, Postiz, Temporal, banco ou deploy; nenhuma regra por marca no código;
 - os MP4 e demais saídas existem apenas neste computador enquanto permanecerem em `.workspace/`; o manifesto versionado preserva hashes, bytes, medições e comando reproduzível;
 - a integração na main foi concluída nesta rodada por autorização explícita do titular; os bloqueios de TEMPORAL-02/04, de produção real, de campanha real, de mídia real, de fornecedores e de publicação permanecem intactos.
+
+## Pipeline local de renderização a partir de casos — integrado na main
+
+- Status: **implementado, testado e integrado**, entregando a CLI unificada `tools/render_pipeline.py` para consumo direto de casos (`*.pipeline.json`).
+- Fronteiras e arquitetura:
+  - O planejamento e os contratos vivem estritamente na `platform`: a ponte Node (`tools/render_bridge.mjs`) carrega os 4 documentos referenciados pelo caso (`project`, `composition`, `outputPlan`, `beatPlan`), roda a validação consolidada (`validateContentPipelineCase`), gera o `CreativeExecutionPackage` canônico via `createCreativeExecutionPackageFromCase` e `serializeCreativeExecutionPackage`, e verifica o recorte via `checkLocalRenderConfiguration` e `validateLocalRenderInput`;
+  - A geração do pacote a partir do caso reproduz exatamente os mesmos bytes canônicos das fixtures versionadas (`6776c0ab...` para Marca Salão e `0c263f0e...` para Multitrack Hub);
+  - Todo o I/O de disco e a orquestração transacional ficam em `tools/render_pipeline.py`;
+  - O render FFmpeg permanece no adaptador `tools/render_local.py`, gerando vídeo H.264/yuv420p sem faixa de áudio (`-an`, 0 streams de áudio), com legendas visíveis no vídeo, arquivo `.srt` separado com validação de timestamps e formatação estrita (LF, UTF-8), e roteiro de narração em TXT por cena e tempos.
+- Duas formas de uso da CLI:
+  1. `python tools/render_pipeline.py --case <caso.pipeline.json> --plan-only [--json]`: prévia em milissegundos sem FFmpeg, sem assets e sem criar arquivos, informando `caseId`, `packageId`, `perfil`, `geometria`, `fps`, `duracao`, beats necessários e conformidade com o recorte do adaptador (`supported`, `cabeNoRecorte`, `unsupportedReason`);
+  2. `python tools/render_pipeline.py --case <caso.pipeline.json> --assets <associacao.json> --output-dir <destino> [--json]`: execução completa com geração em memória do pacote canônico, validação de assets, render FFmpeg, validação FFprobe, promoção transacional e emissão de manifesto de entrega versionado (`delivery-manifest.json`).
+- Garantias transacionais e rastreabilidade:
+  - Promoção atômica via staging exclusivo e lock `.local-render-promotion.lock`;
+  - Rollback automático restaurando a entrega anterior em caso de falha de promoção;
+  - Preservação de backup para diagnóstico caso a própria restauração falhe;
+  - Rejeição de colisão de entrega caso a pasta de destino pertença a outro caso (`DeliveryCollisionError`);
+  - Reexecução idempotente do mesmo caso atualizando deterministicamente;
+  - Limpeza de staging temporário após a promoção;
+  - Em `--json`, stdout é estritamente reservado ao JSON de saída e mensagens de progresso/diagnóstico vão para stderr.
+- Suíte de testes: `tools/tests/test_render_pipeline.py` (18 testes) cobrindo prévia (--plan-only), ponte Node, renders reais dos dois casos, manifesto com recalculação e conferência de hashes de cada arquivo publicado, reexecução idempotente, colisão de casos, associação incompatível, configuração fora do recorte, asset ausente, falha de promoção, falha de restauração com backup preservado, disputa de lock e sobreposição de staging.
+- CI: atualizado em `.github/workflows/local-render-validation.yml` para testar os dois modos (`--plan-only` e render completo com inspeção FFprobe e validação do `delivery-manifest.json`).
 
 ## TEMPORAL-01
 
