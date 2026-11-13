@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-social-reel-demo",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "Marca Salao - reel social de demonstracao",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "marca-salao-demo-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 46,
+      "marginTop": 180,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "tela-abertura",
+      "path": ".workspace/tmp/produce-video-demo/assets/marca-salao/tela-abertura.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "tela-demo",
+      "path": ".workspace/tmp/produce-video-demo/assets/marca-salao/tela-demo.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "abertura",
+      "durationMs": 4000,
+      "mediaId": "tela-abertura",
+      "caption": "Conheca o Marca Salao",
+      "narration": "Abertura tecnica do reel de demonstracao.",
+      "title": "Marca Salao",
+      "narrativeFunction": "hook",
+      "motionIntent": "none"
+    },
+    {
+      "id": "demonstracao",
+      "durationMs": 6000,
+      "mediaId": "tela-demo",
+      "caption": "Sistema em funcionamento",
+      "narration": "Demonstracao tecnica do quadro central.",
+      "title": "Demonstracao",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "fecho",
+      "durationMs": 4000,
+      "mediaId": "tela-abertura",
+      "caption": "Acesse o link da descricao",
+      "narration": "Chamada tecnica final para conhecer o sistema.",
+      "title": "Conheca o sistema",
+      "narrativeFunction": "cta",
+      "motionIntent": "none"
+    }
+  ]
+}

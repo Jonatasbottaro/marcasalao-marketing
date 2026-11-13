@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import build_video
 import make_proof_assets
+import make_request_media
 import render_local
 import render_pipeline
 
@@ -279,6 +280,43 @@ class FailureIsolationTest(ProduceTestBase):
         self.assertNotEqual(second.returncode, 0)
         after = render_local.sha256_file(os.path.join(self.output_dir, "instagram-reels-video", "delivery-manifest.json"))
         self.assertEqual(before, after)
+
+
+class MakeRequestMediaTest(ProduceTestBase):
+    def test_gera_png_por_material_cadastrado(self):
+        written = make_request_media.generate_request_media(self.request, MAIN_ROOT)
+        self.assertEqual(len(written), 2)
+        for media in self.request["media"]:
+            target = os.path.join(MAIN_ROOT, media["path"].replace("/", os.sep))
+            self.assertTrue(os.path.isfile(target))
+            with open(target, "rb") as handle:
+                self.assertEqual(handle.read(8), b"\x89PNG\r\n\x1a\n")
+
+
+class DemoExampleTest(ProduceTestBase):
+    """O exemplo versionado de Multitrack Hub produz os tres destinos pelo mesmo comando."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg/FFprobe ausentes")
+            raise unittest.SkipTest("FFmpeg/FFprobe indisponiveis")
+
+    def test_exemplo_multitrack_versionado(self):
+        example_rel = "tools/produce/examples/multitrack-hub-social-reel.video-request.json"
+        gen = subprocess.run([sys.executable, os.path.join(WORKTREE, "tools", "make_request_media.py"),
+                              "--input", example_rel], capture_output=True, text=True, cwd=MAIN_ROOT, timeout=120)
+        self.assertEqual(gen.returncode, 0, gen.stderr)
+        res = run_produce(["--input", example_rel, "--output-dir", self.rel(self.output_dir), "--json"])
+        self.assertEqual(res.returncode, 0, res.stderr)
+        payload = json.loads(res.stdout)
+        self.assertEqual(payload["status"], "completed")
+        self.assertEqual(len([p for p in payload["profiles"] if p["status"] == "completed"]), 3)
+        index = read_json(os.path.join(self.output_dir, "index.json"))
+        self.assertEqual(index["completedCount"], 3)
+        self.assertEqual(index["requestId"], "multitrack-hub-social-reel-demo")
 
 
 if __name__ == "__main__":
