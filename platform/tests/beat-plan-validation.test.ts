@@ -977,6 +977,7 @@ const ASSET_MANIFEST_SCHEMA_FILES = [
 
 /** Entrada unica de producao de video VideoRequest v1 (compilador puro). */
 const VIDEO_REQUEST_SOURCE_FILES = [
+    'compile-video-request.ts',
     'validate-video-request.ts',
     'video-request-contract.ts',
 ]
