@@ -200,3 +200,25 @@ jobs:
             --visual-style .workspace/tmp/ci-visual-style.json \
             --output-dir .workspace/archives/ci-pipeline/marca-salao-asset-manifest --json
           python -c "import glob, json, subprocess; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao-asset-manifest/delivery-manifest.json')); assert 'assetManifest' in m['artifacts'] and m['assetManifestSummary']['assetCount']==2 and m['visualStyleId']=='ci-gold-style'; mp4=glob.glob('.workspace/archives/ci-pipeline/marca-salao-asset-manifest/*-primary-output.mp4')[0]; info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',mp4], text=True)); streams=info['streams']; assert sum(1 for s in streams if s.get('codec_type')=='video')==1 and sum(1 for s in streams if s.get('codec_type')=='audio')==0"
+
+      - name: Prova da producao por entrada unica (produce_video, tres destinos por pedido)
+        run: |
+          python tools/make_request_media.py --input tools/produce/examples/marca-salao-social-reel.video-request.json
+          python tools/make_request_media.py --input tools/produce/examples/multitrack-hub-social-reel.video-request.json
+          python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --plan-only --json
+          python tools/produce_video.py --input tools/produce/examples/marca-salao-social-reel.video-request.json --output-dir .workspace/archives/ci-produce/marca-salao --json
+          python tools/produce_video.py --input tools/produce/examples/multitrack-hub-social-reel.video-request.json --output-dir .workspace/archives/ci-produce/multitrack-hub --json
+          python - <<'PY'
+          import glob, json, subprocess
+          for brand in ('marca-salao', 'multitrack-hub'):
+              index = json.load(open(f'.workspace/archives/ci-produce/{brand}/index.json'))
+              assert index['completedCount'] == 3, index
+              for profile in ('instagram-reels-video', 'facebook-reels-video', 'youtube-shorts'):
+                  mp4 = glob.glob(f'.workspace/archives/ci-produce/{brand}/{profile}/*-primary-output.mp4')[0]
+                  info = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', mp4], text=True))
+                  streams = info['streams']
+                  video = [s for s in streams if s.get('codec_type') == 'video']
+                  assert len(video) == 1 and int(video[0]['width']) == 1080 and int(video[0]['height']) == 1920
+                  assert sum(1 for s in streams if s.get('codec_type') == 'audio') == 0
+          print('produce_video CI proof ok: 6 videos, 0 audio, 1080x1920')
+          PY
