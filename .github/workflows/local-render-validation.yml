@@ -222,3 +222,23 @@ jobs:
                   assert sum(1 for s in streams if s.get('codec_type') == 'audio') == 0
           print('produce_video CI proof ok: 6 videos, 0 audio, 1080x1920')
           PY
+
+      - name: Prova do painel local Video Studio (HTTP em 127.0.0.1)
+        run: |
+          python tools/video_studio.py --port 8799 > .workspace/tmp/studio-ci.log 2>&1 &
+          STUDIO_PID=$!
+          sleep 3
+          curl -sf http://127.0.0.1:8799/ > /dev/null
+          curl -sf http://127.0.0.1:8799/api/projects | python -c "import sys,json; d=json.load(sys.stdin); assert d['ok'] and any(p['id']=='marca-salao' for p in d['projects'])"
+          curl -sf "http://127.0.0.1:8799/api/profiles?project=platform/examples/projects/marca-salao-social.project.json" | python -c "import sys,json; d=json.load(sys.stdin); ps={p['id']:p for p in d['listing']['profiles']}; assert all(ps[x]['localExport'] for x in ('instagram-reels-video','facebook-reels-video','youtube-shorts'))"
+          python - <<'PY'
+          import json, urllib.request
+          req = json.load(open('tools/produce/examples/marca-salao-social-reel.video-request.json'))
+          body = json.dumps({'request': req}).encode()
+          r = urllib.request.Request('http://127.0.0.1:8799/api/preview', data=body,
+                                     headers={'Content-Type': 'application/json', 'Origin': 'http://127.0.0.1:8799'})
+          d = json.load(urllib.request.urlopen(r, timeout=60))
+          assert d['ok'] and d['result']['status'] == 'preview' and len(d['result']['profiles']) == 3
+          print('studio preview ok: 3 perfis, sem FFmpeg')
+          PY
+          kill $STUDIO_PID || true

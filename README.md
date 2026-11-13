@@ -49,6 +49,17 @@ python tools/produce_video.py --input tools/produce/examples/marca-salao-social-
 
 Cada perfil entrega MP4 sem áudio, SRT, narração em TXT, pacote canônico, inventário de mídia e `delivery-manifest.json`; o `index.json` reúne o estado por perfil. Os casos gerados são rascunhos editoriais, não campanhas aprovadas.
 
+### Painel local (Video Studio)
+
+Para criar, revisar e exportar pelo navegador, abra o painel local:
+
+```bash
+python tools/video_studio.py --port 8765
+# abra http://127.0.0.1:8765
+```
+
+No painel: selecione o `ProjectManifest`, carregue os perfis (Reels/Shorts 9:16@30), carregue um exemplo (Marca Salão ou Multitrack Hub), cadastre/escaneie mídias de uma pasta em `.workspace/`, edite as cenas (duração, legenda, título, narração), confira a **prévia sem FFmpeg** e **exporte**. Ao terminar, assista ao MP4 no painel e baixe MP4/SRT/TXT; reexporte apenas um perfil após corrigir uma cena. As entregas ficam em `.workspace/archives/video-studio/<pedido>/` (um subdiretório por perfil + `index.json`). O painel escuta só em `127.0.0.1`, valida Host/Origin e confina tudo à raiz; uma reexportação que falha preserva a última entrega válida. Guia em [tools/produce/README.md](tools/produce/README.md).
+
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 

@@ -86,3 +86,37 @@ material, com `origin` e `license` declarada ou `pending`) e `scenes` ordenadas
 `narrativeFunction` e `motionIntent` opcionais). Uma midia pode ser vinculada a
 varias cenas. O recorte local e 9:16 a 30 fps, movimento `none|slow-zoom`,
 transicoes `cut` e `fade` (fade apenas no ultimo beat).
+
+## Painel local (Video Studio)
+
+`tools/video_studio.py` serve um painel HTML/CSS/JS em `127.0.0.1` sobre o mesmo
+pipeline, para criar, revisar e exportar pelo navegador:
+
+```bash
+python tools/video_studio.py --port 8765   # abra http://127.0.0.1:8765
+```
+
+Fluxo no painel:
+1. **Projeto e destinos** — selecione o `ProjectManifest`; os perfis vem do
+   catalogo + allowlist, com resolucao, FPS e disponibilidade de exportacao local
+   (9:16@30). Marque Instagram Reels, Facebook Reels e YouTube Shorts.
+2. **Rascunho** — carregue um exemplo (Marca Salao / Multitrack Hub), salve e
+   reabra o pedido (`VideoRequest v1`) em `.workspace/`.
+3. **Midias** — escaneie uma pasta de trabalho dentro da raiz ou gere midia
+   ficticia do rascunho; origem e licenca declarada ou `pending`; reutilize a
+   mesma midia em varias cenas.
+4. **Cenas** — adicione, edite, remova e reordene; duracao, legenda, titulo
+   sobreposto e narracao em campos proprios.
+5. **Previa** — `produce_video.py --plan-only --json`: linha do tempo, duracao
+   total, avisos e erros por perfil, sem FFmpeg.
+6. **Exportacao** — `produce_video.py` em segundo plano; resultado por perfil ao
+   terminar.
+7. **Entrega** — assista ao MP4 no painel e baixe MP4/SRT/TXT por referencias
+   verificadas nos manifestos; reexporte somente um perfil.
+
+Seguranca: escuta apenas `127.0.0.1`; valida Host e Origin nas escritas; confina
+entradas/saidas a raiz (rascunhos e entregas em `.workspace/`); serve arquivos
+apenas por referencias dos manifestos promovidos; processos com argumentos
+estruturados. O indice separa `lastAttempt` (tentativa mais recente) de
+`lastValidDelivery` (ultima entrega valida): uma reexportacao que falha mostra o
+erro e continua permitindo abrir a entrega anterior, com hashes preservados.
