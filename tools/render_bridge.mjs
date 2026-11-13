@@ -1,36 +1,178 @@
 #!/usr/bin/env node
 /**
- * Ponte interna entre a camada de ferramentas (Python) e o validador puro da
- * platform. Le o pacote e a associacao de assets, executa
- * validateLocalRenderInput e imprime o veredito JSON em stdout.
+ * Ponte interna entre a camada de ferramentas (Python) e o nucleo puro da
+ * platform. Suporta dois modos:
  *
- * Nao renderiza nada, nao acessa rede e nao resolve caminhos fisicos: a
- * contencao real e a existencia dos assets ficam com tools/render_local.py.
- * Requer o build da platform (npm run build em platform/).
+ * 1. Legado (render_local.py):
+ *    node tools/render_bridge.mjs <package.json> <assets.json>
+ *    Valida o pacote e a associacao via validateLocalRenderInput.
  *
- * Exit codes: 0 entrada valida; 2 uso ou JSON ilegivel; 3 entrada invalida.
+ * 2. Pipeline (render_pipeline.py):
+ *    node tools/render_bridge.mjs --case <case.pipeline.json> [--root <rootDir>] [--assets <assets.json>] [--plan-only]
+ *    Carrega o caso, gera o CreativeExecutionPackage canonico a partir do caso
+ *    valido e opcionalmente valida a associacao de assets e o recorte de configuracao.
+ *
+ * Exit codes: 0 sucesso/valido; 2 uso ou JSON ilegivel; 3 entrada invalida.
  */
 
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
 
-import { validateLocalRenderInput } from '../platform/dist/src/validate-local-render-input.js'
+import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
+import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
+import {
+    checkLocalRenderConfiguration,
+    validateLocalRenderInput,
+} from '../platform/dist/src/validate-local-render-input.js'
 
-const [packagePath, associationPath] = process.argv.slice(2)
-if (!packagePath || !associationPath) {
-    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json>')
+function buildPlan(caseId, pkg, configCheck) {
+    const output = pkg.output
+    const beats = pkg.timeline.map((step) => step.beatId)
+    return {
+        caseId,
+        packageId: pkg.packageId,
+        perfil: output.profileId,
+        profileId: output.profileId,
+        geometria: `${output.width}x${output.height} (${output.aspectRatio})`,
+        geometry: {
+            width: output.width,
+            height: output.height,
+            aspectRatio: output.aspectRatio,
+        },
+        fps: output.fps,
+        FPS: output.fps,
+        duracao: `${(output.durationMs / 1000.0).toFixed(1)}s`,
+        durationMs: output.durationMs,
+        durationSeconds: output.durationMs / 1000.0,
+        beats,
+        requiredBeats: beats,
+        supported: configCheck.supported,
+        cabeNoRecorte: configCheck.supported,
+        unsupportedReason: configCheck.unsupportedReason,
+    }
+}
+
+function handleCasePipeline(args) {
+    let casePath = null
+    let assetsPath = null
+    let rootDir = process.cwd()
+    let planOnly = false
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        if (arg === '--case' && i + 1 < args.length) {
+            casePath = args[++i]
+        } else if (arg === '--assets' && i + 1 < args.length) {
+            assetsPath = args[++i]
+        } else if (arg === '--root' && i + 1 < args.length) {
+            rootDir = args[++i]
+        } else if (arg === '--plan-only') {
+            planOnly = true
+        } else {
+            console.error(`erro: flag desconhecida na ponte: ${arg}`)
+            process.exit(2)
+        }
+    }
+
+    if (!casePath) {
+        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--plan-only]')
+        process.exit(2)
+    }
+
+    const creation = createCreativeExecutionPackageFromCase(casePath, path.resolve(rootDir))
+    if (creation.status !== 'generated' || !creation.package) {
+        const failureCode = creation.failureCode || (creation.status === 'case-invalid' ? 'CASE_INVALID' : 'GENERATION_FAILED')
+        console.log(JSON.stringify({
+            ok: false,
+            status: creation.status,
+            caseId: creation.caseId,
+            failureCode,
+            packageErrors: creation.packageErrors,
+            summary: creation.summary,
+        }))
+        process.exit(3)
+    }
+
+    const pkg = creation.package
+    const canonicalJson = serializeCreativeExecutionPackage(pkg)
+    const configCheck = checkLocalRenderConfiguration(pkg)
+    const plan = buildPlan(creation.caseId, pkg, configCheck)
+
+    if (planOnly || !assetsPath) {
+        console.log(JSON.stringify({
+            ok: true,
+            status: 'generated',
+            caseId: creation.caseId,
+            packageId: pkg.packageId,
+            package: pkg,
+            canonicalJson,
+            plan,
+        }))
+        process.exit(0)
+    }
+
+    let associationInput
+    try {
+        associationInput = JSON.parse(readFileSync(assetsPath, 'utf8'))
+    } catch {
+        console.error('erro: arquivo de associacao ilegivel ou JSON invalido')
+        process.exit(2)
+    }
+
+    const validation = validateLocalRenderInput(pkg, associationInput)
+    if (!validation.ok) {
+        console.log(JSON.stringify({
+            ok: false,
+            caseId: creation.caseId,
+            packageId: pkg.packageId,
+            failureCode: validation.failureCode,
+            subject: validation.subject,
+            plan,
+        }))
+        process.exit(3)
+    }
+
+    console.log(JSON.stringify({
+        ok: true,
+        status: 'generated',
+        caseId: creation.caseId,
+        packageId: pkg.packageId,
+        package: pkg,
+        canonicalJson,
+        association: validation.association,
+        plan,
+    }))
+    process.exit(0)
+}
+
+function handleLegacy(packagePath, associationPath) {
+    let packageInput
+    let associationInput
+    try {
+        packageInput = JSON.parse(readFileSync(packagePath, 'utf8'))
+        associationInput = JSON.parse(readFileSync(associationPath, 'utf8'))
+    } catch {
+        console.error('erro: arquivo de entrada ilegivel ou JSON invalido')
+        process.exit(2)
+    }
+
+    const result = validateLocalRenderInput(packageInput, associationInput)
+    console.log(JSON.stringify(result))
+    process.exit(result.ok ? 0 : 3)
+}
+
+const rawArgs = process.argv.slice(2)
+if (rawArgs.length === 0) {
+    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json>')
     process.exit(2)
 }
 
-let packageInput
-let associationInput
-try {
-    packageInput = JSON.parse(readFileSync(packagePath, 'utf8'))
-    associationInput = JSON.parse(readFileSync(associationPath, 'utf8'))
-} catch {
-    console.error('erro: arquivo de entrada ilegivel ou JSON invalido')
-    process.exit(2)
+if (rawArgs[0].startsWith('--')) {
+    handleCasePipeline(rawArgs)
+} else {
+    if (rawArgs.length !== 2) {
+        console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json>')
+        process.exit(2)
+    }
+    handleLegacy(rawArgs[0], rawArgs[1])
 }
-
-const result = validateLocalRenderInput(packageInput, associationInput)
-console.log(JSON.stringify(result))
-process.exit(result.ok ? 0 : 3)

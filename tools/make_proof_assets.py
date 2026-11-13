@@ -65,15 +65,30 @@ def write_scene_png(path, project_id, beat_id, order):
         handle.write(png)
 
 
-def generate_assets(package_path, output_dir, root):
+def generate_assets(package_path, output_dir, root, case_path=None):
     if not r002_pilot.contained(root, output_dir):
         raise r002_pilot.build_video.DeliveryError("diretorio de saida fora da raiz do projeto")
-    with open(package_path, "r", encoding="utf-8") as handle:
-        package = json.load(handle)
-    project_id = package["projectId"]
+    if case_path:
+        with open(case_path, "r", encoding="utf-8") as handle:
+            case_data = json.load(handle)
+        case_dir = os.path.dirname(case_path)
+        proj_file = os.path.normpath(os.path.join(case_dir, case_data["project"]))
+        beat_file = os.path.normpath(os.path.join(case_dir, case_data["beatPlan"]))
+        with open(proj_file, "r", encoding="utf-8") as handle:
+            project_data = json.load(handle)
+        with open(beat_file, "r", encoding="utf-8") as handle:
+            beat_data = json.load(handle)
+        project_id = project_data["id"]
+        beats = [{"beatId": b["id"], "order": b["order"]} for b in beat_data["beats"]]
+    else:
+        with open(package_path, "r", encoding="utf-8") as handle:
+            package = json.load(handle)
+        project_id = package["projectId"]
+        beats = [{"beatId": step["beatId"], "order": step["order"]} for step in package["timeline"]]
+
     os.makedirs(output_dir, exist_ok=True)
     written = []
-    for step in package["timeline"]:
+    for step in beats:
         target = os.path.join(output_dir, f"{step['beatId']}.png")
         write_scene_png(target, project_id, step["beatId"], step["order"])
         written.append(os.path.relpath(target, root).replace(os.sep, "/"))
@@ -82,12 +97,16 @@ def generate_assets(package_path, output_dir, root):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Assets ficticios para o render local de prova")
-    parser.add_argument("--package", required=True)
+    parser.add_argument("--package", default=None)
+    parser.add_argument("--case", default=None)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--root", default=os.getcwd())
     args = parser.parse_args(argv)
+    if not args.package and not args.case:
+        print("Erro: informe --case ou --package", file=sys.stderr)
+        return 2
     try:
-        written = generate_assets(args.package, args.output_dir, args.root)
+        written = generate_assets(args.package, args.output_dir, args.root, case_path=args.case)
     except r002_pilot.build_video.DeliveryError as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1
