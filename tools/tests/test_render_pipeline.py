@@ -241,6 +241,103 @@ class PlanOnlyTest(unittest.TestCase):
             if os.path.exists(overlay_file):
                 os.remove(overlay_file)
 
+    def test_plan_only_with_visual_style(self):
+        style = {
+            "schemaVersion": 1,
+            "id": "style-gold",
+            "title": {
+                "textColor": "#FFD700",
+                "outlineColor": "#000000",
+                "fontSize": 48,
+                "marginTop": 180,
+                "marginHorizontal": 80
+            }
+        }
+        overlays = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "demonstration-body", "text": "TITULO DE PROVA"}]
+        }
+        style_file = os.path.join(TMP_BASE, "style_gold.json")
+        overlay_file = os.path.join(TMP_BASE, "overlays_sample.json")
+        os.makedirs(TMP_BASE, exist_ok=True)
+        write_json(style_file, style)
+        write_json(overlay_file, overlays)
+        try:
+            # Com overlays: hasTitlesToApply deve ser True
+            res = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--text-overlays", overlay_file,
+                 "--visual-style", style_file,
+                 "--plan-only", "--json"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
+            data = json.loads(res.stdout)
+            self.assertIn("visualStyle", data)
+            self.assertEqual(data["visualStyle"]["id"], "style-gold")
+            self.assertEqual(data["visualStyle"]["title"]["textColor"], "#FFD700")
+            self.assertTrue(data.get("hasTitlesToApply"))
+
+            # Sem overlays: hasTitlesToApply deve ser False
+            res_no_overlays = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--visual-style", style_file,
+                 "--plan-only", "--json"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res_no_overlays.returncode, 0)
+            data_no = json.loads(res_no_overlays.stdout)
+            self.assertIn("visualStyle", data_no)
+            self.assertFalse(data_no.get("hasTitlesToApply"))
+
+            # Saida legivel de terminal
+            res_txt = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--text-overlays", overlay_file,
+                 "--visual-style", style_file,
+                 "--plan-only"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res_txt.returncode, 0)
+            self.assertIn("Estilo visual: style-gold", res_txt.stdout)
+            self.assertIn("Cor do texto: #FFD700", res_txt.stdout)
+            self.assertIn("Tamanho da fonte: 48px", res_txt.stdout)
+            self.assertIn("Margem superior: 180px", res_txt.stdout)
+            self.assertIn("Margem lateral: 80px", res_txt.stdout)
+            self.assertIn("Aplicavel a titulos: Sim", res_txt.stdout)
+        finally:
+            for f in (style_file, overlay_file):
+                if os.path.exists(f):
+                    os.remove(f)
+
+    def test_plan_only_invalid_visual_style_rejected(self):
+        bad_style = {
+            "schemaVersion": 1,
+            "id": "bad-style",
+            "title": {
+                "textColor": "amarelo-invalido",
+                "outlineColor": "#000000",
+                "fontSize": 48,
+                "marginTop": 180,
+                "marginHorizontal": 80
+            }
+        }
+        style_file = os.path.join(TMP_BASE, "bad_style.json")
+        os.makedirs(TMP_BASE, exist_ok=True)
+        write_json(style_file, bad_style)
+        try:
+            res = subprocess.run(
+                [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+                 "--case", os.path.join(WORKTREE, CASE_MS_REL),
+                 "--visual-style", style_file,
+                 "--plan-only", "--json"],
+                capture_output=True, text=True, cwd=WORKTREE)
+            self.assertEqual(res.returncode, 3)
+            self.assertIn("STYLE_COLOR_INVALID", res.stderr)
+        finally:
+            if os.path.exists(style_file):
+                os.remove(style_file)
 
 class PipelineBridgeTest(unittest.TestCase):
     """Ponte Node de carregamento de caso e validacao integrada."""
@@ -817,6 +914,257 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
                 render_pipeline.run_render_pipeline(
                     os.path.join(WORKTREE, CASE_MH_REL), assoc_mh, output_dir, WORKTREE, None)
             self.assertIn("colisao de entrega", str(ctx.exception))
+
+    def test_16_visual_style_dual_render_reuses_visual_and_differs_in_title_region(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        out_a = os.path.join(self.tmp, "ms-style-a")
+        out_b = os.path.join(self.tmp, "ms-style-b")
+
+        overlays_data = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [
+                {"beatId": "demonstration-body", "text": "TITULO DE PROVA VISUAL"}
+            ]
+        }
+        style_a_data = {
+            "schemaVersion": 1,
+            "id": "style-gold",
+            "title": {
+                "textColor": "#FFD700",
+                "outlineColor": "#000000",
+                "fontSize": 48,
+                "marginTop": 180,
+                "marginHorizontal": 80
+            }
+        }
+        style_b_data = {
+            "schemaVersion": 1,
+            "id": "style-cyan",
+            "title": {
+                "textColor": "#00FFFF",
+                "outlineColor": "#1A1A1A",
+                "fontSize": 36,
+                "marginTop": 240,
+                "marginHorizontal": 100
+            }
+        }
+
+        overlays_file = os.path.join(self.tmp, "overlays.json")
+        style_a_file = os.path.join(self.tmp, "style_a.json")
+        style_b_file = os.path.join(self.tmp, "style_b.json")
+        write_json(overlays_file, overlays_data)
+        write_json(style_a_file, style_a_data)
+        write_json(style_b_file, style_b_data)
+
+        res_a = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, out_a, WORKTREE, None,
+            text_overlays_path=overlays_file, visual_style_path=style_a_file)
+        self.assertEqual(res_a["status"], "completed")
+
+        res_b = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, out_b, WORKTREE, None,
+            text_overlays_path=overlays_file, visual_style_path=style_b_file)
+        self.assertEqual(res_b["status"], "completed")
+
+        with open(res_a["manifest"], "r", encoding="utf-8") as f:
+            man_a = json.load(f)
+        with open(res_b["manifest"], "r", encoding="utf-8") as f:
+            man_b = json.load(f)
+
+        # 1. Hashes identicos entre as duas versoes: pacote, srt, narracao, plano de titulos
+        self.assertEqual(man_a["artifacts"]["package"]["sha256"], man_b["artifacts"]["package"]["sha256"])
+        self.assertEqual(man_a["artifacts"]["srt"]["sha256"], man_b["artifacts"]["srt"]["sha256"])
+        self.assertEqual(man_a["artifacts"]["narration"]["sha256"], man_b["artifacts"]["narration"]["sha256"])
+        self.assertEqual(man_a["artifacts"]["textOverlayPlan"]["sha256"], man_b["artifacts"]["textOverlayPlan"]["sha256"])
+
+        # 2. Hashes que diferem: video e estilo visual
+        self.assertNotEqual(man_a["artifacts"]["video"]["sha256"], man_b["artifacts"]["video"]["sha256"])
+        self.assertIn("visualStyle", man_a["artifacts"])
+        self.assertIn("visualStyle", man_b["artifacts"])
+        self.assertEqual(man_a["artifacts"]["visualStyle"]["styleId"], "style-gold")
+        self.assertEqual(man_b["artifacts"]["visualStyle"]["styleId"], "style-cyan")
+        self.assertNotEqual(man_a["artifacts"]["visualStyle"]["sha256"], man_b["artifacts"]["visualStyle"]["sha256"])
+
+        # 3. Recalculo de todos os arquivos publicados em ambos os manifestos
+        for man, out_dir in ((man_a, out_a), (man_b, out_b)):
+            for key, artifact in man["artifacts"].items():
+                target_path = os.path.join(WORKTREE, artifact["path"])
+                self.assertTrue(os.path.isfile(target_path), f"Arquivo do manifesto ausente: {target_path}")
+                self.assertEqual(render_local.sha256_file(target_path), artifact["sha256"], f"SHA divergente: {key}")
+                self.assertEqual(os.path.getsize(target_path), artifact["bytes"], f"Tamanho divergente: {key}")
+
+        # 4. Inspecao FFprobe
+        for vid in (os.path.join(WORKTREE, man_a["artifacts"]["video"]["path"]),
+                    os.path.join(WORKTREE, man_b["artifacts"]["video"]["path"])):
+            insp = build_video.validate_mp4(vid, 1080, 1920, 30, 14.0)
+            self.assertEqual(insp["videoStreams"], 1)
+            self.assertEqual(insp["audioStreams"], 0)
+            self.assertEqual(insp["duration"], 14.0)
+            self.assertEqual(insp["pixFmt"], "yuv420p")
+
+        # 5. Comparacao visual de quadros
+        vid_a = os.path.join(WORKTREE, man_a["artifacts"]["video"]["path"])
+        vid_b = os.path.join(WORKTREE, man_b["artifacts"]["video"]["path"])
+
+        # Em t=2.0s (antes do beat demonstration-body que comeca em 4s): visualmente identicos (< 1.0)
+        frame_a_pre = extract_raw_frame(vid_a, 2.0)
+        frame_b_pre = extract_raw_frame(vid_b, 2.0)
+        mae_pre = calculate_mae(frame_a_pre, frame_b_pre, width=1080, y_start=0, y_end=1920)
+        self.assertLess(mae_pre, 1.0, f"Quadros antes do beat deveriam ser identicos, MAE={mae_pre}")
+
+        # Em t=12.0s (apos o beat que termina em 10s): visualmente identicos (< 1.0)
+        frame_a_post = extract_raw_frame(vid_a, 12.0)
+        frame_b_post = extract_raw_frame(vid_b, 12.0)
+        mae_post = calculate_mae(frame_a_post, frame_b_post, width=1080, y_start=0, y_end=1920)
+        self.assertLess(mae_post, 1.0, f"Quadros apos o beat deveriam ser identicos, MAE={mae_post}")
+
+        # Em t=7.0s (durante o beat demonstration-body):
+        frame_a_mid = extract_raw_frame(vid_a, 7.0)
+        frame_b_mid = extract_raw_frame(vid_b, 7.0)
+
+        # Regiao superior do titulo (y=150 a y=320): diferenca visual significativa entre os estilos
+        mae_title = calculate_mae(frame_a_mid, frame_b_mid, width=1080, y_start=150, y_end=320)
+        self.assertGreater(mae_title, 2.0, f"Regiao do titulo deveria diferir entre estilos, MAE={mae_title}")
+
+        # Regiao inferior (y=1200 a y=1800): diferenca insignificante (apenas ruido de compressao H.264)
+        mae_bottom = calculate_mae(frame_a_mid, frame_b_mid, width=1080, y_start=1200, y_end=1800)
+        self.assertLess(mae_bottom, 2.0, f"Regiao inferior nao deveria ter diferenca visual relevante, MAE={mae_bottom}")
+        self.assertGreater(mae_title, mae_bottom, f"Diferenca no titulo ({mae_title}) deve superar ruido inferior ({mae_bottom})")
+
+    def test_17_visual_style_shared_with_multitrack_hub(self):
+        assoc = self._prepare_assoc(ASSOC_MH_REL, self.assets_dir_mh)
+        out_mh = os.path.join(self.tmp, "mh-style-shared")
+
+        overlays_data = {
+            "schemaVersion": 1,
+            "caseId": "multitrack-hub-pipeline-pilot",
+            "overlays": [
+                {"beatId": "opening-hook", "text": "RATEIOS MULTITRACK HUB"}
+            ]
+        }
+        # Reutiliza o mesmo estilo gold definido para Marca Salao
+        style_shared = {
+            "schemaVersion": 1,
+            "id": "style-gold",
+            "title": {
+                "textColor": "#FFD700",
+                "outlineColor": "#000000",
+                "fontSize": 48,
+                "marginTop": 180,
+                "marginHorizontal": 80
+            }
+        }
+        overlays_file = os.path.join(self.tmp, "mh_overlays.json")
+        style_file = os.path.join(self.tmp, "shared_style.json")
+        write_json(overlays_file, overlays_data)
+        write_json(style_file, style_shared)
+
+        res = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MH_REL), assoc, out_mh, WORKTREE, None,
+            text_overlays_path=overlays_file, visual_style_path=style_file)
+        self.assertEqual(res["status"], "completed")
+
+        with open(res["manifest"], "r", encoding="utf-8") as f:
+            man = json.load(f)
+
+        self.assertIn("visualStyle", man["artifacts"])
+        self.assertEqual(man["artifacts"]["visualStyle"]["styleId"], "style-gold")
+        self.assertEqual(man.get("visualStyleId"), "style-gold")
+
+        # Recalculo de todos os arquivos
+        for key, artifact in man["artifacts"].items():
+            target_path = os.path.join(WORKTREE, artifact["path"])
+            self.assertTrue(os.path.isfile(target_path))
+            self.assertEqual(render_local.sha256_file(target_path), artifact["sha256"])
+
+        # FFprobe Multitrack Hub: 1080x1920@30, 15.0s, 0 audio
+        vid = os.path.join(WORKTREE, man["artifacts"]["video"]["path"])
+        insp = build_video.validate_mp4(vid, 1080, 1920, 30, 15.0)
+        self.assertEqual(insp["videoStreams"], 1)
+        self.assertEqual(insp["audioStreams"], 0)
+        self.assertEqual(insp["duration"], 15.0)
+        self.assertEqual(insp["pixFmt"], "yuv420p")
+
+    def test_18_empty_text_overlay_plan_tracked_and_renders_without_title_filter(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        out_dir = os.path.join(self.tmp, "ms-empty-overlays")
+
+        empty_overlays = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": []
+        }
+        overlays_file = os.path.join(self.tmp, "empty_overlays.json")
+        write_json(overlays_file, empty_overlays)
+
+        res = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, out_dir, WORKTREE, None,
+            text_overlays_path=overlays_file)
+        self.assertEqual(res["status"], "completed")
+
+        with open(res["manifest"], "r", encoding="utf-8") as f:
+            man = json.load(f)
+
+        # O plano com overlays: [] deve ser gravado e rastreado no manifesto
+        self.assertIn("textOverlayPlan", man["artifacts"])
+        plan_path = os.path.join(WORKTREE, man["artifacts"]["textOverlayPlan"]["path"])
+        self.assertTrue(os.path.isfile(plan_path))
+        with open(plan_path, "r", encoding="utf-8") as f:
+            saved_plan = json.load(f)
+        self.assertEqual(saved_plan["overlays"], [])
+
+        # O video e gerado perfeitamente sem falhas
+        vid = os.path.join(WORKTREE, man["artifacts"]["video"]["path"])
+        insp = build_video.validate_mp4(vid, 1080, 1920, 30, 14.0)
+        self.assertEqual(insp["videoStreams"], 1)
+        self.assertEqual(insp["audioStreams"], 0)
+        self.assertEqual(insp["duration"], 14.0)
+
+    def test_19_invalid_visual_style_preserves_previous_delivery(self):
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        output_dir = os.path.join(self.tmp, "preserve-invalid-style")
+
+        valid_style = {
+            "schemaVersion": 1,
+            "id": "valid-style",
+            "title": {
+                "textColor": "#FFFFFF",
+                "outlineColor": "#000000",
+                "fontSize": 42,
+                "marginTop": 160,
+                "marginHorizontal": 60
+            }
+        }
+        bad_style = {
+            "schemaVersion": 1,
+            "id": "bad-style",
+            "title": {
+                "textColor": "#FFFFFF",
+                "outlineColor": "#000000",
+                "fontSize": 999,  # Acima de 160
+                "marginTop": 160,
+                "marginHorizontal": 60
+            }
+        }
+        valid_file = os.path.join(self.tmp, "valid_style.json")
+        bad_file = os.path.join(self.tmp, "bad_style.json")
+        write_json(valid_file, valid_style)
+        write_json(bad_file, bad_style)
+
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+            visual_style_path=valid_file)
+        hashes_before = delivery_hashes(output_dir)
+
+        # Tentativa de renderizar com visual-style invalido
+        with self.assertRaises(render_local.RenderInputError):
+            render_pipeline.run_render_pipeline(
+                os.path.join(WORKTREE, CASE_MS_REL), assoc, output_dir, WORKTREE, None,
+                visual_style_path=bad_file)
+
+        # Destino intacto
+        self.assertEqual(hashes_before, delivery_hashes(output_dir))
 
 
 def extract_raw_frame(video_path, timestamp_s, width=1080, height=1920):

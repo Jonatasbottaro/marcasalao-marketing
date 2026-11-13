@@ -156,3 +156,21 @@ jobs:
           ffprobe -v error -show_streams -show_format -of json \
             .workspace/archives/ci-pipeline/marca-salao-title/*-primary-output.mp4
           python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao-title/delivery-manifest.json')); assert 'textOverlayPlan' in m['artifacts']"
+
+      - name: Prova do piloto de composicao com estilos visuais (--visual-style)
+        run: |
+          python -c "import json; json.dump({'schemaVersion': 1, 'id': 'ci-gold-style', 'title': {'textColor': '#FFD700', 'outlineColor': '#000000', 'fontSize': 46, 'marginTop': 180, 'marginHorizontal': 80}}, open('.workspace/tmp/ci-visual-style.json', 'w'))"
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --text-overlays .workspace/tmp/ci-title-overlays.json \
+            --visual-style .workspace/tmp/ci-visual-style.json \
+            --plan-only --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --assets tools/render/marca-salao.assets.json \
+            --text-overlays .workspace/tmp/ci-title-overlays.json \
+            --visual-style .workspace/tmp/ci-visual-style.json \
+            --output-dir .workspace/archives/ci-pipeline/marca-salao-style --json
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/ci-pipeline/marca-salao-style/*-primary-output.mp4
+          python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao-style/delivery-manifest.json')); assert 'visualStyle' in m['artifacts'] and m['visualStyleId']=='ci-gold-style'"

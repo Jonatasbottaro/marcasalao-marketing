@@ -87,17 +87,17 @@ Critérios de conclusão atendidos:
 
 A fixture genérica (`fixture-project`) permanece para testar variações de idioma e formato. Trabalho possível remanescente, não autorizado por esta integração: novos casos de pipeline para outros formatos/perfis, evolução do contrato de caso e qualquer consumo do agregador pelo Temporal (bloqueado).
 
-## 4. Piloto mínimo de composição com títulos editáveis — concluído em 13/11/2026
+## 4. Piloto mínimo de composição com títulos editáveis e estilos visuais — concluído em 13/11/2026
 
-> O piloto mínimo de composição com títulos editáveis foi autorizado, implementado e integrado via opção `--text-overlays <plano.json>` na CLI `tools/render_pipeline.py`. Detalhes e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Piloto de composição com títulos editáveis, e em [tools/render/README.md](../../tools/render/README.md).
+> O piloto mínimo de composição com títulos editáveis e estilos visuais reutilizáveis foi autorizado, implementado e integrado via opções `--text-overlays <plano.json>` e `--visual-style <estilo.json>` na CLI `tools/render_pipeline.py`. Detalhes e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seções Piloto de composição com títulos editáveis e Estilos visuais reutilizáveis, e em [tools/render/README.md](../../tools/render/README.md).
 
 Critérios de conclusão atendidos:
-- **Reaproveitamento do visual**: corrigir ou revisar o título textual na sobreposição não exige regenerar nem alterar os assets visuais, o pacote canônico de execução, a legenda sincronizada `.srt` ou o roteiro de narração `.txt`;
-- **Origem única e contratos**: `TextOverlayPlan` v1 com validação pura na `platform` e espelho draft-07 (`platform/schemas/text-overlay-plan.schema.json`), com intervalos derivados do `CreativeExecutionPackage` canônico;
-- **Posicionamento e renderização**: títulos aplicados na região superior do quadro com contraste e legibilidade, preservando as legendas inferiores;
+- **Reaproveitamento do visual**: corrigir ou revisar o título textual na sobreposição ou alterar o estilo visual não exige regenerar nem alterar os assets visuais, o pacote canônico de execução, a legenda sincronizada `.srt` ou o roteiro de narração `.txt`;
+- **Origem única e contratos**: `TextOverlayPlan` v1 e `VisualStyle` v1 com validação pura na `platform` e espelhos draft-07 (`platform/schemas/text-overlay-plan.schema.json` e `platform/schemas/visual-style.schema.json`), com intervalos derivados do `CreativeExecutionPackage` canônico e estilo desacoplado de `caseId` (compartilhável entre Marca Salão e Multitrack Hub);
+- **Posicionamento e renderização**: títulos aplicados na região superior do quadro com cores hexadecimais convertidas para ASS, fonte configurável e margens superior e horizontais protegidas, preservando as legendas inferiores;
 - **Política de áudio e inspeção**: MP4 gerado estritamente sem áudio (`-an`, 0 faixas de áudio), inspecionado e validado via FFprobe;
-- **Transacionalidade e rastreabilidade**: promoção atômica, lock com revalidação de colisão sob disputa de destino vazio, e manifesto versionado `delivery-manifest.json` com caminhos, tamanhos e SHA-256 recalculados na leitura direta dos arquivos promovidos;
-- **Prova visual automatizada**: teste de regressão e inspeção comparativa de quadros (MAE) comprovando isolamento da alteração na região superior.
+- **Transacionalidade e rastreabilidade**: promoção atômica, lock com revalidação de colisão sob disputa de destino vazio, e manifesto versionado `delivery-manifest.json` com caminhos, tamanhos e SHA-256 recalculados na leitura direta dos arquivos promovidos (incluindo `textOverlayPlan` mesmo com `overlays: []` e `visualStyle`);
+- **Prova visual automatizada**: testes de regressão e inspeção comparativa de quadros (MAE) comprovando isolamento da alteração na região superior tanto na troca de texto quanto na troca de estilo visual.
 
 Continua bloqueado até deliberação específica: produção de campanhas reais, fornecedores, áudio/TTS, Temporal e deploy.
 

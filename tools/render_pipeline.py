@@ -68,7 +68,7 @@ def write_text(path, text):
         handle.write(text)
 
 
-def run_bridge_case(root, case_path, assets_path=None, text_overlays_path=None, plan_only=False):
+def run_bridge_case(root, case_path, assets_path=None, text_overlays_path=None, visual_style_path=None, plan_only=False):
     node = shutil.which('node')
     if not node:
         raise render_local.InputFileError('node nao encontrado no PATH')
@@ -83,6 +83,8 @@ def run_bridge_case(root, case_path, assets_path=None, text_overlays_path=None, 
         cmd.extend(['--assets', assets_path])
     if text_overlays_path:
         cmd.extend(['--text-overlays', text_overlays_path])
+    if visual_style_path:
+        cmd.extend(['--visual-style', visual_style_path])
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
@@ -146,7 +148,8 @@ def check_destination_collision(output_dir, expected_case_id):
             raise DeliveryCollisionError('destino ja existe e contem arquivos desconhecidos')
 
 
-def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_arg, text_overlays_path=None):
+def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_arg,
+                             text_overlays_path=None, visual_style_path=None):
     if staging_arg:
         staging = os.path.realpath(staging_arg)
         if not contained(root, staging):
@@ -155,7 +158,8 @@ def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_a
             raise render_local.InputFileError('staging nao pode ser a raiz do projeto')
         if os.path.realpath(root).startswith(staging + os.sep):
             raise render_local.InputFileError('staging nao pode conter a raiz do projeto')
-        for label, path in (('case', case_path), ('assets', assets_path), ('output', output_dir), ('text-overlays', text_overlays_path)):
+        for label, path in (('case', case_path), ('assets', assets_path), ('output', output_dir),
+                            ('text-overlays', text_overlays_path), ('visual-style', visual_style_path)):
             if path and overlaps(staging, path):
                 raise render_local.InputFileError(f'staging sobrepoe {label} da execucao')
         if os.path.exists(staging):
@@ -170,7 +174,7 @@ def prepare_pipeline_staging(root, output_dir, case_path, assets_path, staging_a
     return staging, True
 
 
-def run_plan_only(case_path, root, text_overlays_path=None):
+def run_plan_only(case_path, root, text_overlays_path=None, visual_style_path=None):
     root = os.path.realpath(root)
     if not contained(root, case_path):
         raise render_local.InputFileError('caminho de case fora da raiz do projeto')
@@ -183,7 +187,14 @@ def run_plan_only(case_path, root, text_overlays_path=None):
         if not os.path.isfile(text_overlays_path):
             raise render_local.InputFileError('arquivo de text-overlays ausente')
 
-    verdict = run_bridge_case(root, case_path, text_overlays_path=text_overlays_path, plan_only=True)
+    if visual_style_path:
+        if not contained(root, visual_style_path):
+            raise render_local.InputFileError('caminho de visual-style fora da raiz do projeto')
+        if not os.path.isfile(visual_style_path):
+            raise render_local.InputFileError('arquivo de visual-style ausente')
+
+    verdict = run_bridge_case(root, case_path, text_overlays_path=text_overlays_path,
+                              visual_style_path=visual_style_path, plan_only=True)
     if not verdict.get('ok'):
         raise render_local.RenderInputError(verdict.get('failureCode', 'CASE_INVALID'),
                                             verdict.get('subject') or verdict.get('summary'))
@@ -191,11 +202,13 @@ def run_plan_only(case_path, root, text_overlays_path=None):
 
 
 def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast',
-                        text_overlays_path=None):
+                        text_overlays_path=None, visual_style_path=None):
     root = os.path.realpath(root)
     inputs_to_check = [('case', case_path), ('assets', assets_path)]
     if text_overlays_path:
         inputs_to_check.append(('text-overlays', text_overlays_path))
+    if visual_style_path:
+        inputs_to_check.append(('visual-style', visual_style_path))
 
     for label, path in inputs_to_check + [('output', output_dir)]:
         if not contained(root, path):
@@ -214,10 +227,12 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     render_local.ensure_video_tools(root)
 
     staging, staging_created = prepare_pipeline_staging(
-        root, output_dir, case_path, assets_path, staging_dir, text_overlays_path=text_overlays_path)
+        root, output_dir, case_path, assets_path, staging_dir,
+        text_overlays_path=text_overlays_path, visual_style_path=visual_style_path)
 
     verdict = run_bridge_case(root, case_path, assets_path=assets_path,
-                              text_overlays_path=text_overlays_path, plan_only=False)
+                              text_overlays_path=text_overlays_path,
+                              visual_style_path=visual_style_path, plan_only=False)
     if not verdict.get('ok'):
         raise render_local.RenderInputError(verdict.get('failureCode', 'CASE_INVALID'),
                                             verdict.get('subject') or verdict.get('summary'))
@@ -228,6 +243,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     canonical_package_json = verdict['canonicalJson']
     canonical_overlay_json = verdict.get('canonicalTextOverlayJson')
     resolved_text_overlays = verdict.get('resolvedTextOverlays', [])
+    visual_style = verdict.get('visualStyle')
+    canonical_visual_style_json = verdict.get('canonicalVisualStyleJson')
 
     check_destination_collision(output_dir, case_id)
 
@@ -252,6 +269,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     }
     if text_overlays_path and canonical_overlay_json:
         names['textOverlayPlan'] = f'{package_id}-text-overlay-plan.json'
+    if visual_style_path and canonical_visual_style_json:
+        names['visualStyle'] = f'{package_id}-visual-style.json'
 
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
@@ -260,16 +279,21 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     write_text(staging_paths['narration'], render_local.build_narration(package))
 
     title_srt_staging = None
-    if text_overlays_path and resolved_text_overlays:
+    if text_overlays_path and canonical_overlay_json:
         write_text(staging_paths['textOverlayPlan'], canonical_overlay_json)
-        title_srt_content = render_local.build_title_srt(resolved_text_overlays)
-        if title_srt_content:
-            title_srt_staging = os.path.join(staging, f'{package_id}-titles.srt')
-            write_text(title_srt_staging, title_srt_content)
+        if resolved_text_overlays:
+            title_srt_content = render_local.build_title_srt(resolved_text_overlays)
+            if title_srt_content:
+                title_srt_staging = os.path.join(staging, f'{package_id}-titles.srt')
+                write_text(title_srt_staging, title_srt_content)
 
+    if visual_style_path and canonical_visual_style_json:
+        write_text(staging_paths['visualStyle'], canonical_visual_style_json)
+
+    title_style = render_local.build_title_style(visual_style) if visual_style else None
     cmd = render_local.build_render_command(
         package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
-        title_srt_path=title_srt_staging)
+        title_srt_path=title_srt_staging, title_style=title_style)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -304,6 +328,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     )
     if text_overlays_path:
         command += f' --text-overlays {rel(root, text_overlays_path)}'
+    if visual_style_path:
+        command += f' --visual-style {rel(root, visual_style_path)}'
 
     report_artifacts = [
         {
@@ -343,6 +369,15 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'sha256': sha256_file(staging_paths['textOverlayPlan']),
             'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
         })
+    if 'visualStyle' in dests:
+        report_artifacts.append({
+            'id': 'visualStyle',
+            'styleId': visual_style['id'],
+            'kind': 'visual-style',
+            'path': rel(root, dests['visualStyle']),
+            'sha256': sha256_file(staging_paths['visualStyle']),
+            'bytes': os.path.getsize(staging_paths['visualStyle']),
+        })
 
     report = {
         'schemaVersion': 1,
@@ -377,7 +412,9 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         },
         'command': command,
     }
-    if text_overlays_path and resolved_text_overlays:
+    if visual_style:
+        report['visualStyleId'] = visual_style['id']
+    if text_overlays_path:
         report['textOverlays'] = [
             {'beatId': item['beatId'], 'text': item['text'], 'startMs': item['startMs'], 'endMs': item['endMs']}
             for item in resolved_text_overlays
@@ -424,6 +461,14 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'sha256': sha256_file(staging_paths['textOverlayPlan']),
             'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
         }
+    if 'visualStyle' in dests:
+        manifest_artifacts['visualStyle'] = {
+            'id': visual_style['id'],
+            'styleId': visual_style['id'],
+            'path': rel(root, dests['visualStyle']),
+            'sha256': sha256_file(staging_paths['visualStyle']),
+            'bytes': os.path.getsize(staging_paths['visualStyle']),
+        }
 
     manifest = {
         'schemaVersion': 1,
@@ -441,6 +486,9 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     }
     if text_overlays_path:
         manifest['textOverlays'] = rel(root, text_overlays_path)
+    if visual_style_path and visual_style:
+        manifest['visualStyleId'] = visual_style['id']
+        manifest['visualStyle'] = rel(root, visual_style_path)
     write_text(staging_paths['manifest'], json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
     backup_dir = os.path.join(staging, '.backup')
@@ -454,7 +502,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     if staging_created:
         shutil.rmtree(staging, ignore_errors=True)
 
-    return {
+    summary = {
         'status': 'completed',
         'caseId': case_id,
         'packageId': package_id,
@@ -463,6 +511,9 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'artifacts': {key: rel(root, dests[key]) for key in names},
         'inspection': inspection,
     }
+    if visual_style:
+        summary['visualStyleId'] = visual_style['id']
+    return summary
 
 
 def main(argv=None):
@@ -472,6 +523,7 @@ def main(argv=None):
     parser.add_argument('--plan-only', action='store_true', help='Apenas calcula e exibe a previa do plano')
     parser.add_argument('--assets', default=None, help='Associacao explicita de assets (*.assets.json)')
     parser.add_argument('--text-overlays', default=None, help='Plano declarativo de sobreposicao de titulos (*.json)')
+    parser.add_argument('--visual-style', default=None, help='Direcao visual compartilhada (*.json)')
     parser.add_argument('--output-dir', default=None, help='Diretorio final de entrega')
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo')
@@ -481,7 +533,8 @@ def main(argv=None):
 
     if args.plan_only:
         try:
-            plan = run_plan_only(args.case, args.root, text_overlays_path=args.text_overlays)
+            plan = run_plan_only(args.case, args.root, text_overlays_path=args.text_overlays,
+                                 visual_style_path=args.visual_style)
         except render_local.RenderInputError as exc:
             subject = f': {exc.subject}' if exc.subject else ''
             print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)
@@ -513,6 +566,17 @@ def main(argv=None):
                 print('  Titulos sobrepostos:')
                 for item in plan['textOverlays']:
                     print(f"    - {item['beatId']} ({item['startMs']}ms -> {item['endMs']}ms): \"{item['text']}\"")
+            if plan.get('visualStyle'):
+                vs = plan['visualStyle']
+                t_info = vs.get('title', {})
+                print(f"  Estilo visual: {vs.get('id', 'desconhecido')}")
+                print(f"    Cor do texto: {t_info.get('textColor')}")
+                print(f"    Cor do contorno: {t_info.get('outlineColor')}")
+                print(f"    Tamanho da fonte: {t_info.get('fontSize')}px")
+                print(f"    Margem superior: {t_info.get('marginTop')}px")
+                print(f"    Margem lateral: {t_info.get('marginHorizontal')}px")
+                status_titulos = 'Sim' if plan.get('hasTitlesToApply') else 'Nao (sem titulos definidos)'
+                print(f"    Aplicavel a titulos: {status_titulos}")
         return 0
 
     if not args.assets or not args.output_dir:
@@ -522,7 +586,8 @@ def main(argv=None):
     try:
         summary = run_render_pipeline(args.case, args.assets, args.output_dir, args.root,
                                       args.staging, preset=args.preset,
-                                      text_overlays_path=args.text_overlays)
+                                      text_overlays_path=args.text_overlays,
+                                      visual_style_path=args.visual_style)
     except render_local.RenderInputError as exc:
         subject = f': {exc.subject}' if exc.subject else ''
         print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)

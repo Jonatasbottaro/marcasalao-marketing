@@ -21,11 +21,13 @@ import path from 'node:path'
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
+import { serializeVisualStyle } from '../platform/dist/src/serialize-visual-style.js'
 import {
     checkLocalRenderConfiguration,
     validateLocalRenderInput,
 } from '../platform/dist/src/validate-local-render-input.js'
 import { validateTextOverlayPlan } from '../platform/dist/src/validate-text-overlay-plan.js'
+import { validateVisualStyle } from '../platform/dist/src/validate-visual-style.js'
 
 function buildPlan(caseId, pkg, configCheck) {
     const output = pkg.output
@@ -58,6 +60,7 @@ function handleCasePipeline(args) {
     let casePath = null
     let assetsPath = null
     let textOverlaysPath = null
+    let visualStylePath = null
     let rootDir = process.cwd()
     let planOnly = false
 
@@ -69,6 +72,8 @@ function handleCasePipeline(args) {
             assetsPath = args[++i]
         } else if (arg === '--text-overlays' && i + 1 < args.length) {
             textOverlaysPath = args[++i]
+        } else if (arg === '--visual-style' && i + 1 < args.length) {
+            visualStylePath = args[++i]
         } else if (arg === '--root' && i + 1 < args.length) {
             rootDir = args[++i]
         } else if (arg === '--plan-only') {
@@ -80,7 +85,7 @@ function handleCasePipeline(args) {
     }
 
     if (!casePath) {
-        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--text-overlays <overlays.json>] [--plan-only]')
+        console.error('uso: node tools/render_bridge.mjs --case <caso.pipeline.json> [--root <raiz>] [--assets <assets.json>] [--text-overlays <overlays.json>] [--visual-style <style.json>] [--plan-only]')
         process.exit(2)
     }
 
@@ -135,6 +140,38 @@ function handleCasePipeline(args) {
         plan.textOverlays = resolvedTextOverlays
     }
 
+    let canonicalVisualStyleJson = null
+    let visualStyle = null
+
+    if (visualStylePath) {
+        let visualStyleInput
+        try {
+            visualStyleInput = JSON.parse(readFileSync(visualStylePath, 'utf8'))
+        } catch {
+            console.error('erro: arquivo de estilo visual ilegivel ou JSON invalido')
+            process.exit(2)
+        }
+
+        const styleValidation = validateVisualStyle(visualStyleInput)
+        if (!styleValidation.ok) {
+            console.log(JSON.stringify({
+                ok: false,
+                caseId: creation.caseId,
+                packageId: pkg.packageId,
+                failureCode: styleValidation.failureCode,
+                subject: styleValidation.subject,
+                plan,
+            }))
+            process.exit(3)
+        }
+
+        visualStyle = styleValidation.style
+        canonicalVisualStyleJson = serializeVisualStyle(styleValidation.style)
+        plan.visualStyle = visualStyle
+        plan.hasTitles = resolvedTextOverlays.length > 0
+        plan.hasTitlesToApply = resolvedTextOverlays.length > 0
+    }
+
     if (planOnly || !assetsPath) {
         console.log(JSON.stringify({
             ok: true,
@@ -144,8 +181,10 @@ function handleCasePipeline(args) {
             package: pkg,
             canonicalJson,
             canonicalTextOverlayJson,
+            canonicalVisualStyleJson,
             textOverlays: textOverlayPlan,
             resolvedTextOverlays,
+            visualStyle,
             plan,
         }))
         process.exit(0)
@@ -180,8 +219,10 @@ function handleCasePipeline(args) {
         package: pkg,
         canonicalJson,
         canonicalTextOverlayJson,
+        canonicalVisualStyleJson,
         textOverlays: textOverlayPlan,
         resolvedTextOverlays,
+        visualStyle,
         association: validation.association,
         plan,
     }))
