@@ -60,6 +60,18 @@ python tools/video_studio.py --port 8765
 
 No painel: selecione o `ProjectManifest`, carregue os perfis (Reels/Shorts 9:16@30), carregue um exemplo (Marca Salão ou Multitrack Hub), cadastre/escaneie mídias de uma pasta em `.workspace/`, edite as cenas (duração, legenda, título, narração), confira a **prévia sem FFmpeg** e **exporte**. Ao terminar, assista ao MP4 no painel e baixe MP4/SRT/TXT; reexporte apenas um perfil após corrigir uma cena. As entregas ficam em `.workspace/archives/video-studio/<pedido>/` (um subdiretório por perfil + `index.json`). O painel escuta só em `127.0.0.1`, valida Host/Origin e confina tudo à raiz; uma reexportação que falha preserva a última entrega válida. Guia em [tools/produce/README.md](tools/produce/README.md).
 
+### Carrosséis (R003)
+
+O mesmo painel tem a aba **Carrosséis**: escolha o projeto, monte os cards (capa, conteúdo, fechamento com CTA), confira a ordem, exporte os JPEGs 1080×1080 e baixe o ZIP. Pela CLI:
+
+```bash
+python tools/make_request_media.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json
+python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --plan-only --json
+python tools/produce_carousel.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json --output-dir .workspace/archives/carrossel --json
+```
+
+A entrega traz JPEGs numerados (`01-capa.jpg`, …), `carousel.zip` na mesma ordem e `carousel-manifest.json` (id, dimensões, caminhos, tamanhos, SHA-256). Remover um card e reexportar reflete a nova ordem no conjunto e no ZIP; uma falha preserva a última entrega válida.
+
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
 
