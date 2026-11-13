@@ -20,6 +20,8 @@ import path from 'node:path'
 
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
 import { compileVideoRequest } from '../platform/dist/src/compile-video-request.js'
+import { validateCarouselRequest } from '../platform/dist/src/validate-carousel-request.js'
+import { resolveOutputPlan } from '../platform/dist/src/resolve-output-profile.js'
 import { serializeAssetManifest } from '../platform/dist/src/serialize-asset-manifest.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
@@ -358,13 +360,83 @@ function handleVideoRequest(args) {
     process.exit(result.ok ? 0 : 3)
 }
 
+function handleCarouselRequest(args) {
+    let requestPath = null
+    let rootDir = process.cwd()
+    let profileOverride = null
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        if (arg === '--carousel-request' && i + 1 < args.length) requestPath = args[++i]
+        else if (arg === '--root' && i + 1 < args.length) rootDir = args[++i]
+        else if (arg === '--profile' && i + 1 < args.length) profileOverride = args[++i]
+        else if (arg === '--plan-only') { /* compilacao pura */ }
+        else { console.error(`erro: flag desconhecida na ponte: ${arg}`); process.exit(2) }
+    }
+    if (!requestPath) {
+        console.error('uso: node tools/render_bridge.mjs --carousel-request <pedido.json> [--root <raiz>] [--profile <id>]')
+        process.exit(2)
+    }
+    let requestInput
+    try { requestInput = JSON.parse(readFileSync(requestPath, 'utf8')) }
+    catch { console.error('erro: pedido de carrossel ilegivel ou JSON invalido'); process.exit(2) }
+    if (typeof requestInput !== 'object' || requestInput === null || typeof requestInput.project !== 'string') {
+        console.log(JSON.stringify({ ok: false, failureCode: 'CAROUSEL_REQUEST_INVALID', subject: 'project' }))
+        process.exit(3)
+    }
+    let projectInput
+    try { projectInput = JSON.parse(readFileSync(path.resolve(rootDir, requestInput.project), 'utf8')) }
+    catch { console.error('erro: ProjectManifest do carrossel ilegivel ou ausente'); process.exit(2) }
+
+    const validation = validateCarouselRequest(requestInput)
+    if (!validation.ok) {
+        console.log(JSON.stringify({ ok: false, failureCode: validation.failureCode, subject: validation.subject }))
+        process.exit(3)
+    }
+    const request = validation.request
+    const profileId = profileOverride || request.profile || 'instagram-feed-image-square'
+    const resolution = resolveOutputPlan(projectInput, profileId)
+    if (resolution.plan === null) {
+        console.log(JSON.stringify({
+            ok: false, requestId: request.id, profileId,
+            failureCode: resolution.report.errors[0]?.code ?? 'OUTPUT_PLAN_INVALID',
+            errors: resolution.report.errors,
+        }))
+        process.exit(3)
+    }
+    if (resolution.plan.mediaKind !== 'image') {
+        console.log(JSON.stringify({ ok: false, requestId: request.id, profileId, failureCode: 'CAROUSEL_PROFILE_NOT_IMAGE' }))
+        process.exit(3)
+    }
+    const mediaById = new Map(request.media.map((m) => [m.id, m]))
+    const cards = request.cards.map((card, index) => ({
+        order: index + 1,
+        id: card.id,
+        title: card.title,
+        body: card.body ?? null,
+        mediaId: card.mediaId ?? null,
+        mediaPath: card.mediaId ? mediaById.get(card.mediaId).path : null,
+    }))
+    console.log(JSON.stringify({
+        ok: true,
+        requestId: request.id,
+        profileId,
+        geometry: resolution.plan.image,
+        cards,
+        warnings: resolution.report.warnings,
+    }))
+    process.exit(0)
+}
+
 const rawArgs = process.argv.slice(2)
 if (rawArgs.length === 0) {
-    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json>')
+    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json> OU --carousel-request <pedido.json>')
     process.exit(2)
 }
 
-if (rawArgs.includes('--video-request')) {
+if (rawArgs.includes('--carousel-request')) {
+    handleCarouselRequest(rawArgs)
+} else if (rawArgs.includes('--video-request')) {
     handleVideoRequest(rawArgs)
 } else if (rawArgs[0].startsWith('--')) {
     handleCasePipeline(rawArgs)
