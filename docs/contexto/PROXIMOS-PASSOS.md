@@ -156,7 +156,7 @@ Continua bloqueado até decisão explícita: produção de campanhas reais, míd
 
 ## 4f. Aba Motion (contorno animado) no painel — concluído em 13/11/2026
 
-> O titular autorizou em 13/11/2026 entregar a aba Motion no painel existente: abrir um pedido de vídeo, marcar uma região da cena, configurar um contorno animado, conferir a prévia e exportar o MP4 pelo pipeline atual, com código, testes, prova no navegador, CI e documentação na mesma rodada. Comando do painel: `python tools/video_studio.py --port 8765` (aba **Motion**); CLI: `python tools/produce_video.py --input <pedido> --motion-plan <plano.json> --plan-only|--output-dir <entrega> [--profile <id>] --json`.
+> O titular autorizou em 13/11/2026 entregar a aba Motion no painel existente: abrir um pedido de vídeo, marcar uma região da cena, configurar um contorno animado, conferir a prévia e exportar o MP4 pelo pipeline atual, com código, testes, prova no navegador, CI e documentação na mesma rodada. **Integrada na main pelo merge commit `a825ded6dcfcb33ac4d77f0d315ca311147e2eb5`** (branch `codex/motion-outline-v1`). Comando do painel: `python tools/video_studio.py --port 8765` (aba **Motion**); CLI: `python tools/produce_video.py --input <pedido> --motion-plan <plano.json> --plan-only|--output-dir <entrega> [--profile <id>] --json`.
 
 Critérios de conclusão atendidos:
 - **Contrato** `MotionPlan v1` separado do pedido, com `requestId` e efeitos por `sceneId` (região relativa, cor, espessura, intervalo relativo à cena; um efeito por cena); schema draft-07 + paridade Ajv; tempos absolutos pela timeline canônica; valida referência/geometria/intervalo/compatibilidade (cena com zoom → incompatível);
