@@ -388,7 +388,8 @@ def run_check_assets(case_path, asset_manifest_path, root,
 
 
 def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast',
-                        text_overlays_path=None, visual_style_path=None, asset_manifest_path=None):
+                        text_overlays_path=None, visual_style_path=None, asset_manifest_path=None,
+                        motion=None):
     root = os.path.realpath(root)
     if bool(assets_path) == bool(asset_manifest_path):
         raise render_local.InputFileError('informe exatamente um entre --assets e --asset-manifest')
@@ -494,6 +495,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         names['visualStyle'] = f'{package_id}-visual-style.json'
     if asset_manifest_path and canonical_asset_manifest_json:
         names['assetManifest'] = f'{package_id}-asset-manifest.json'
+    if motion:
+        names['motionPlan'] = f'{package_id}-motion-plan.json'
 
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
@@ -516,10 +519,30 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     if asset_manifest_path and canonical_asset_manifest_json:
         write_text(staging_paths['assetManifest'], canonical_asset_manifest_json)
 
+    motion_render = []
+    if motion:
+        write_text(staging_paths['motionPlan'], json.dumps(motion['plan'], ensure_ascii=False, indent=2) + '\n')
+        m_width = package['output']['width']
+        m_height = package['output']['height']
+        for i, eff in enumerate(motion['effects']):
+            png = os.path.join(staging, f'.motion-{i}.png')
+            rect = (eff['region']['x'] * m_width, eff['region']['y'] * m_height,
+                    eff['region']['w'] * m_width, eff['region']['h'] * m_height)
+            hexcolor = eff['color'].lstrip('#')
+            rgba = (int(hexcolor[0:2], 16), int(hexcolor[2:4], 16), int(hexcolor[4:6], 16), 255)
+            r002_pilot.write_outline_png(png, rect, eff['thickness'], rgba, 0, m_width, m_height)
+            motion_render.append({
+                'png': png,
+                'start': eff['absoluteStartMs'] / 1000.0,
+                'end': eff['absoluteEndMs'] / 1000.0,
+                'fadeIn': eff['resolvedFadeInMs'] / 1000.0,
+                'fadeOut': eff['resolvedFadeOutMs'] / 1000.0,
+            })
+
     title_style = render_local.build_title_style(visual_style) if visual_style else None
     cmd = render_local.build_render_command(
         package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
-        title_srt_path=title_srt_staging, title_style=title_style)
+        title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -623,6 +646,14 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path)}
         for step, path in zip(package['timeline'], asset_paths)
     ]
+    if 'motionPlan' in dests and motion:
+        report_artifacts.append({
+            'id': 'motionPlan',
+            'kind': 'motion-plan',
+            'path': rel(root, dests['motionPlan']),
+            'sha256': sha256_file(staging_paths['motionPlan']),
+            'bytes': os.path.getsize(staging_paths['motionPlan']),
+        })
 
     report = {
         'schemaVersion': 1,
@@ -670,6 +701,17 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'path': rel(root, dests['assetManifest']),
             'sha256': sha256_file(staging_paths['assetManifest']),
             'bytes': os.path.getsize(staging_paths['assetManifest']),
+        }
+    if motion:
+        report['motion'] = {
+            'requestId': motion['plan'].get('requestId'),
+            'effects': [
+                {'sceneId': e['sceneId'], 'region': e['region'], 'color': e['color'],
+                 'thickness': e['thickness'], 'absoluteStartMs': e['absoluteStartMs'],
+                 'absoluteEndMs': e['absoluteEndMs'], 'fadeInMs': e['resolvedFadeInMs'],
+                 'fadeOutMs': e['resolvedFadeOutMs']}
+                for e in motion['effects']
+            ],
         }
     write_text(staging_paths['report'], json.dumps(report, ensure_ascii=False, indent=2) + '\n')
 
@@ -730,6 +772,13 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'path': rel(root, dests['assetManifest']),
             'sha256': sha256_file(staging_paths['assetManifest']),
             'bytes': os.path.getsize(staging_paths['assetManifest']),
+        }
+    if 'motionPlan' in dests and motion:
+        manifest_artifacts['motionPlan'] = {
+            'id': 'motionPlan',
+            'path': rel(root, dests['motionPlan']),
+            'sha256': sha256_file(staging_paths['motionPlan']),
+            'bytes': os.path.getsize(staging_paths['motionPlan']),
         }
 
     manifest = {

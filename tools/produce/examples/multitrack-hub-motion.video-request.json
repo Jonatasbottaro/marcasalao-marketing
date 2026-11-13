@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "multitrack-hub-motion-demo",
+  "project": "platform/examples/projects/multitrack-hub-social.project.json",
+  "title": "Multitrack Hub - agenda com destaque",
+  "locale": "pt-BR",
+  "profiles": ["instagram-reels-video"],
+  "media": [
+    {
+      "id": "agenda",
+      "path": ".workspace/tmp/motion-demo/assets/multitrack-hub/agenda.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "agenda",
+      "durationMs": 4000,
+      "mediaId": "agenda",
+      "caption": "Agenda de rateios",
+      "narration": "Veja os horarios de rateio.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    }
+  ]
+}

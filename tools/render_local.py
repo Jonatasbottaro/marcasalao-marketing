@@ -309,7 +309,7 @@ def build_narration(package):
     return '\n'.join(lines).rstrip('\n') + '\n'
 
 
-def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None):
+def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None, motion_effects=None):
     output = package['output']
     width, height, fps = output['width'], output['height'], output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -341,6 +341,21 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None)
         chains.append(f'[cat]fade=t=out:st={start:.3f}:d={FADE_OUT_SECONDS:.3f}[faded]')
         last_label = '[faded]'
 
+    # Contorno de motion sobre o quadro enquadrado, ANTES de titulos e legenda,
+    # com entrada/saida suaves (alpha) dentro da janela absoluta do efeito.
+    for i, me in enumerate(motion_effects or []):
+        ol = f'ol{i}'
+        fade_out_start = max(0.0, me['end'] - me['fadeOut'])
+        chains.append(
+            f"[{me['input_index']}:v]format=rgba,"
+            f"fade=t=in:st={me['start']:.3f}:d={me['fadeIn']:.3f}:alpha=1,"
+            f"fade=t=out:st={fade_out_start:.3f}:d={me['fadeOut']:.3f}:alpha=1[{ol}]"
+        )
+        chains.append(
+            f"{last_label}[{ol}]overlay=0:0:enable='between(t,{me['start']:.3f},{me['end']:.3f})'[vm{i}]"
+        )
+        last_label = f'[vm{i}]'
+
     if title_srt_path and os.path.exists(title_srt_path) and os.path.getsize(title_srt_path) > 0:
         style_to_use = title_style or TITLE_STYLE
         clean_title_srt = title_srt_path.replace('\\', '/').replace(':', '\\:')
@@ -352,7 +367,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None)
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -364,7 +379,15 @@ def build_render_command(package, asset_paths, srt_path, video_path, preset, tit
             cmd += ['-loop', '1', '-framerate', str(fps), '-t', f'{duration_s:.3f}', '-i', asset_path]
         else:
             cmd += ['-t', f'{duration_s:.3f}', '-i', asset_path]
-    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style), '-map', '[vfinal]']
+    motion_effects = []
+    for i, m in enumerate(motion or []):
+        input_index = len(package['timeline']) + i
+        cmd += ['-loop', '1', '-framerate', str(fps), '-t', f'{total_s:.3f}', '-i', m['png']]
+        motion_effects.append({
+            'input_index': input_index, 'start': m['start'], 'end': m['end'],
+            'fadeIn': m['fadeIn'], 'fadeOut': m['fadeOut'],
+        })
+    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style, motion_effects=motion_effects), '-map', '[vfinal]']
     cmd += ['-an', '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
             '-t', f'{total_s:.3f}', video_path]
     return cmd
