@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import build_video
 import make_proof_assets
+import prepare_asset_manifest
 import render_local
 import render_pipeline
 import srt_validate
@@ -1165,6 +1166,399 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
 
         # Destino intacto
         self.assertEqual(hashes_before, delivery_hashes(output_dir))
+
+
+class AssetManifestPipelineTests(unittest.TestCase):
+    """Testes de ponta a ponta do inventario de midia (AssetManifest v1)."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not HAS_BRIDGE:
+            if REQUIRE_RENDER:
+                raise RuntimeError("build da platform ausente e REQUIRE_RENDER=1")
+            raise unittest.SkipTest("build da platform ausente")
+        if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+            if REQUIRE_RENDER:
+                raise RuntimeError("ffmpeg/ffprobe ausentes e REQUIRE_RENDER=1")
+            raise unittest.SkipTest("ffmpeg/ffprobe ausentes")
+
+    def setUp(self):
+        os.makedirs(TMP_BASE, exist_ok=True)
+        short_tag = hashlib.sha1(self._testMethodName.encode("utf-8")).hexdigest()[:8]
+        self.tmp = os.path.join(TMP_BASE, f"am-{short_tag}")
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        os.makedirs(self.tmp, exist_ok=True)
+        self.media_dir = os.path.join(self.tmp, "media")
+        os.makedirs(self.media_dir, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _build_mixed_media_ms(self):
+        shared_img = os.path.join(self.media_dir, "shared-card.png")
+        clip_mp4 = os.path.join(self.media_dir, "demo-clip.mp4")
+        make_proof_assets.write_scene_png(shared_img, "marca-salao", "opening-hook", 1)
+        make_proof_assets.write_scene_mp4(clip_mp4, "marca-salao", "demonstration-body", 2, duration_s=6.0)
+
+        base_assoc = read_json(os.path.join(WORKTREE, ASSOC_MS_REL))
+        assoc_path = os.path.join(self.tmp, "ms-mixed.assets.json")
+        rel_img = render_local.rel(WORKTREE, shared_img)
+        rel_vid = render_local.rel(WORKTREE, clip_mp4)
+        assoc_data = {
+            "schemaVersion": 1,
+            "packageId": base_assoc["packageId"],
+            "assets": [
+                {"beatId": "opening-hook", "path": rel_img},
+                {"beatId": "demonstration-body", "path": rel_vid},
+                {"beatId": "closing-cta", "path": rel_img},
+            ],
+        }
+        write_json(assoc_path, assoc_data)
+        return shared_img, clip_mp4, assoc_path
+
+    def test_01_prepare_manifest_deduplication_license_and_source_preservation(self):
+        shared_img, clip_mp4, assoc_path = self._build_mixed_media_ms()
+        img_hash_before = render_local.sha256_file(shared_img)
+        vid_hash_before = render_local.sha256_file(clip_mp4)
+        assoc_hash_before = render_local.sha256_file(assoc_path)
+
+        out_pending = os.path.join(self.tmp, "ms-pending.asset-manifest.json")
+        res = subprocess.run(
+            [sys.executable, os.path.join(WORKTREE, "tools", "prepare_asset_manifest.py"),
+             "--case", os.path.join(WORKTREE, CASE_MS_REL),
+             "--assets", assoc_path,
+             "--origin", "synthetic-proof-unit",
+             "--output", out_pending,
+             "--root", WORKTREE, "--json"],
+            capture_output=True, text=True, cwd=WORKTREE)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        summary = json.loads(res.stdout)
+        self.assertEqual(summary["assetCount"], 2)
+        self.assertEqual(summary["bindingCount"], 3)
+        self.assertEqual(summary["deduplicatedCount"], 1)
+
+        manifest = read_json(out_pending)
+        self.assertEqual(len(manifest["assets"]), 2)
+        self.assertEqual(len(manifest["bindings"]), 3)
+        for entry in manifest["assets"]:
+            self.assertEqual(entry["origin"], "synthetic-proof-unit")
+            self.assertEqual(entry["license"], "pending")
+        self.assertEqual(manifest["bindings"][0]["assetId"], manifest["bindings"][2]["assetId"])
+
+        out_declared = os.path.join(self.tmp, "ms-declared.asset-manifest.json")
+        summary2 = prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc_path, "local-studio",
+            out_declared, WORKTREE, license_value="owned-synthetic"
+        )
+        self.assertEqual(summary2["manifest"]["assets"][0]["license"], "owned-synthetic")
+        self.assertEqual(render_local.sha256_file(shared_img), img_hash_before)
+        self.assertEqual(render_local.sha256_file(clip_mp4), vid_hash_before)
+        self.assertEqual(render_local.sha256_file(assoc_path), assoc_hash_before)
+
+    def test_02_plan_only_with_asset_manifest_skips_media_io_and_ffmpeg(self):
+        base_assoc = read_json(os.path.join(WORKTREE, ASSOC_MS_REL))
+        ghost_manifest = {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "packageId": base_assoc["packageId"],
+            "assets": [
+                {
+                    "id": "asset-ghost-img",
+                    "type": "image",
+                    "path": ".workspace/tmp/inexistent-ghost-dir/missing-a.png",
+                    "bytes": 1234,
+                    "sha256": "a" * 64,
+                    "origin": "synthetic-proof",
+                    "license": "pending",
+                }
+            ],
+            "bindings": [
+                {"beatId": "opening-hook", "assetId": "asset-ghost-img"},
+                {"beatId": "demonstration-body", "assetId": "asset-ghost-img"},
+                {"beatId": "closing-cta", "assetId": "asset-ghost-img"},
+            ],
+        }
+        manifest_path = os.path.join(self.tmp, "ghost.asset-manifest.json")
+        write_json(manifest_path, ghost_manifest)
+
+        with mock.patch("build_video.get_ffmpeg", side_effect=AssertionError("nao deveria chamar ffmpeg")), \
+             mock.patch("build_video.get_ffprobe", side_effect=AssertionError("nao deveria chamar ffprobe")):
+            plan = render_pipeline.run_plan_only(
+                os.path.join(WORKTREE, CASE_MS_REL), WORKTREE, asset_manifest_path=manifest_path)
+
+        self.assertEqual(plan["assetManifest"]["assetCount"], 1)
+        self.assertEqual(len(plan["assetManifest"]["resolvedBindings"]), 3)
+
+        bad_manifest = json.loads(json.dumps(ghost_manifest))
+        bad_manifest["bindings"][1]["assetId"] = "asset-inexistente"
+        bad_path = os.path.join(self.tmp, "bad-ref.asset-manifest.json")
+        write_json(bad_path, bad_manifest)
+        res = subprocess.run(
+            [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+             "--case", os.path.join(WORKTREE, CASE_MS_REL),
+             "--asset-manifest", bad_path,
+             "--plan-only", "--json"],
+            capture_output=True, text=True, cwd=WORKTREE)
+        self.assertEqual(res.returncode, 3)
+        self.assertIn("UNKNOWN_ASSET_REFERENCE", res.stderr)
+
+    def test_03_check_assets_inspects_reused_asset_once_without_output_dir(self):
+        _, _, assoc_path = self._build_mixed_media_ms()
+        manifest_path = os.path.join(self.tmp, "ms.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc_path, "synthetic-proof", manifest_path, WORKTREE
+        )
+
+        with mock.patch("render_local.probe_asset", wraps=render_local.probe_asset) as spy_probe:
+            report = render_pipeline.run_check_assets(
+                os.path.join(WORKTREE, CASE_MS_REL), manifest_path, WORKTREE
+            )
+        self.assertEqual(report["status"], "assets-verified")
+        self.assertEqual(report["assetCount"], 2)
+        self.assertEqual(report["bindingCount"], 3)
+        self.assertEqual(spy_probe.call_count, 2)
+
+        cli = subprocess.run(
+            [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+             "--case", os.path.join(WORKTREE, CASE_MS_REL),
+             "--asset-manifest", manifest_path,
+             "--check-assets", "--json"],
+            capture_output=True, text=True, cwd=WORKTREE)
+        self.assertEqual(cli.returncode, 0, cli.stderr)
+        cli_json = json.loads(cli.stdout)
+        self.assertEqual(cli_json["status"], "assets-verified")
+        self.assertEqual(len(cli_json["resolvedBindings"]), 3)
+
+    def test_04_e2e_render_marca_salao_combined_asset_manifest_overlays_and_style(self):
+        _, _, assoc_path = self._build_mixed_media_ms()
+        manifest_path = os.path.join(self.tmp, "ms.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc_path, "synthetic-proof", manifest_path, WORKTREE,
+            license_value="owned-synthetic"
+        )
+        overlays_path = os.path.join(self.tmp, "ms-overlays.json")
+        style_path = os.path.join(self.tmp, "ms-style.json")
+        write_json(overlays_path, {
+            "schemaVersion": 1,
+            "caseId": "marca-salao-pipeline-pilot",
+            "overlays": [{"beatId": "demonstration-body", "text": "TITULO DE INVENTARIO"}],
+        })
+        write_json(style_path, {
+            "schemaVersion": 1,
+            "id": "style-gold",
+            "title": {
+                "textColor": "#FFD700",
+                "outlineColor": "#000000",
+                "fontSize": 48,
+                "marginTop": 180,
+                "marginHorizontal": 80,
+            },
+        })
+
+        out_dir = os.path.join(self.tmp, "delivery-ms-combined")
+        res = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), None, out_dir, WORKTREE, None,
+            text_overlays_path=overlays_path, visual_style_path=style_path,
+            asset_manifest_path=manifest_path,
+        )
+        self.assertEqual(res["status"], "completed")
+        self.assertEqual(res.get("visualStyleId"), "style-gold")
+        self.assertIn("assetManifest", res["artifacts"])
+
+        delivery = read_json(os.path.join(WORKTREE, res["manifest"]))
+        self.assertIn("assetManifest", delivery["artifacts"])
+        self.assertEqual(delivery["assetManifestSummary"]["caseId"], "marca-salao-pipeline-pilot")
+        self.assertEqual(delivery["assetManifestSummary"]["assetCount"], 2)
+        for key, artifact in delivery["artifacts"].items():
+            full_path = os.path.join(WORKTREE, artifact["path"])
+            self.assertTrue(os.path.isfile(full_path), f"artefato ausente: {key}")
+            self.assertEqual(os.path.getsize(full_path), artifact["bytes"])
+            self.assertEqual(render_local.sha256_file(full_path), artifact["sha256"])
+
+        report = read_json(os.path.join(WORKTREE, delivery["artifacts"]["report"]["path"]))
+        self.assertEqual(len(report["assets"]), 3)
+        self.assertEqual(report["assets"][0]["assetId"], report["assets"][2]["assetId"])
+        self.assertEqual(report["assets"][1]["type"], "video")
+        self.assertGreaterEqual(report["assets"][1]["durationSeconds"], 6.0)
+
+        vid_path = os.path.join(WORKTREE, delivery["artifacts"]["video"]["path"])
+        insp = build_video.validate_mp4(vid_path, 1080, 1920, 30, 14.0)
+        self.assertEqual(insp["videoStreams"], 1)
+        self.assertEqual(insp["audioStreams"], 0)
+        self.assertEqual(insp["duration"], 14.0)
+        self.assertEqual(insp["pixFmt"], "yuv420p")
+
+        srt_path = os.path.join(WORKTREE, delivery["artifacts"]["srt"]["path"])
+        self.assertEqual(srt_validate.validate_srt_file(srt_path, 14.0), [])
+        narration_path = os.path.join(WORKTREE, delivery["artifacts"]["narration"]["path"])
+        with open(narration_path, "r", encoding="utf-8") as handle:
+            self.assertTrue(handle.read().strip())
+
+    def test_05_e2e_render_multitrack_hub_from_asset_manifest(self):
+        shared_img = os.path.join(self.media_dir, "mh-shared.png")
+        clip_mp4 = os.path.join(self.media_dir, "mh-demo.mp4")
+        make_proof_assets.write_scene_png(shared_img, "multitrack-hub", "opening-hook", 1)
+        make_proof_assets.write_scene_mp4(clip_mp4, "multitrack-hub", "demonstration-body", 2, duration_s=5.0)
+
+        base_assoc = read_json(os.path.join(WORKTREE, ASSOC_MH_REL))
+        assoc_path = os.path.join(self.tmp, "mh.assets.json")
+        rel_img = render_local.rel(WORKTREE, shared_img)
+        rel_vid = render_local.rel(WORKTREE, clip_mp4)
+        write_json(assoc_path, {
+            "schemaVersion": 1,
+            "packageId": base_assoc["packageId"],
+            "assets": [
+                {"beatId": "opening-hook", "path": rel_img},
+                {"beatId": "demonstration-body", "path": rel_vid},
+                {"beatId": "explanation-body", "path": rel_img},
+                {"beatId": "closing-cta", "path": rel_img},
+            ],
+        })
+        manifest_path = os.path.join(self.tmp, "mh.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MH_REL), assoc_path, "synthetic-proof-mh", manifest_path, WORKTREE
+        )
+
+        out_dir = os.path.join(self.tmp, "delivery-mh")
+        res = render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MH_REL), None, out_dir, WORKTREE, None,
+            asset_manifest_path=manifest_path,
+        )
+        self.assertEqual(res["status"], "completed")
+        delivery = read_json(os.path.join(WORKTREE, res["manifest"]))
+        self.assertEqual(delivery["assetManifestSummary"]["assetCount"], 2)
+        for artifact in delivery["artifacts"].values():
+            full_path = os.path.join(WORKTREE, artifact["path"])
+            self.assertEqual(render_local.sha256_file(full_path), artifact["sha256"])
+
+        vid_path = os.path.join(WORKTREE, delivery["artifacts"]["video"]["path"])
+        insp = build_video.validate_mp4(vid_path, 1080, 1920, 30, 15.0)
+        self.assertEqual(insp["videoStreams"], 1)
+        self.assertEqual(insp["audioStreams"], 0)
+        self.assertEqual(insp["duration"], 15.0)
+
+    def test_06_tampered_asset_aborts_before_ffmpeg_and_preserves_delivery(self):
+        shared_img, _, assoc_path = self._build_mixed_media_ms()
+        manifest_path = os.path.join(self.tmp, "ms-tamper.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc_path, "synthetic-proof", manifest_path, WORKTREE
+        )
+
+        out_dir = os.path.join(self.tmp, "delivery-tamper")
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), None, out_dir, WORKTREE, None,
+            asset_manifest_path=manifest_path,
+        )
+        hashes_before = delivery_hashes(out_dir)
+
+        # Adultera 1 byte sem alterar o tamanho do arquivo -> dispara ASSET_HASH_MISMATCH
+        with open(shared_img, "r+b") as handle:
+            original_byte = handle.read(1)
+            handle.seek(0)
+            handle.write(bytes([original_byte[0] ^ 0xFF]))
+
+        with mock.patch("render_local.build_render_command",
+                        side_effect=AssertionError("nao deveria montar comando ffmpeg")):
+            with self.assertRaises(build_video.DeliveryError) as ctx:
+                render_pipeline.run_render_pipeline(
+                    os.path.join(WORKTREE, CASE_MS_REL), None, out_dir, WORKTREE, None,
+                    asset_manifest_path=manifest_path,
+                )
+        self.assertIn("ASSET_HASH_MISMATCH", str(ctx.exception))
+        self.assertEqual(hashes_before, delivery_hashes(out_dir))
+
+    def test_07_asset_manifest_failure_diagnostics_and_rollback(self):
+        shared_img, clip_mp4, assoc_path = self._build_mixed_media_ms()
+        manifest_path = os.path.join(self.tmp, "ms-fail.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), assoc_path, "synthetic-proof", manifest_path, WORKTREE
+        )
+
+        # 1. Video mais curto que a duracao do beat (1.0s < 6.0s)
+        short_clip = os.path.join(self.media_dir, "short-demo.mp4")
+        make_proof_assets.write_scene_mp4(short_clip, "marca-salao", "demonstration-body", 2, duration_s=1.0)
+        short_assoc = os.path.join(self.tmp, "short.assets.json")
+        base_assoc = read_json(os.path.join(WORKTREE, ASSOC_MS_REL))
+        rel_img = render_local.rel(WORKTREE, shared_img)
+        rel_short = render_local.rel(WORKTREE, short_clip)
+        write_json(short_assoc, {
+            "schemaVersion": 1,
+            "packageId": base_assoc["packageId"],
+            "assets": [
+                {"beatId": "opening-hook", "path": rel_img},
+                {"beatId": "demonstration-body", "path": rel_short},
+                {"beatId": "closing-cta", "path": rel_img},
+            ],
+        })
+        short_manifest = os.path.join(self.tmp, "short.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), short_assoc, "synthetic-proof", short_manifest, WORKTREE
+        )
+        with self.assertRaises(build_video.DeliveryError) as short_ctx:
+            render_pipeline.run_check_assets(os.path.join(WORKTREE, CASE_MS_REL), short_manifest, WORKTREE)
+        self.assertIn("ASSET_VIDEO_TOO_SHORT", str(short_ctx.exception))
+
+        # 2. Asset corrompido (junk com mesmo nome e extensao .png)
+        corrupt_img = os.path.join(self.media_dir, "corrupt.png")
+        with open(corrupt_img, "wb") as handle:
+            handle.write(b"nao-e-um-png-valido-1234567890")
+        corrupt_assoc = os.path.join(self.tmp, "corrupt.assets.json")
+        write_json(corrupt_assoc, {
+            "schemaVersion": 1,
+            "packageId": base_assoc["packageId"],
+            "assets": [
+                {"beatId": step["beatId"], "path": render_local.rel(WORKTREE, corrupt_img)}
+                for step in base_assoc["assets"]
+            ],
+        })
+        corrupt_manifest = os.path.join(self.tmp, "corrupt.asset-manifest.json")
+        prepare_asset_manifest.prepare_manifest(
+            os.path.join(WORKTREE, CASE_MS_REL), corrupt_assoc, "synthetic-proof", corrupt_manifest, WORKTREE
+        )
+        with self.assertRaises(build_video.DeliveryError) as corrupt_ctx:
+            render_pipeline.run_check_assets(os.path.join(WORKTREE, CASE_MS_REL), corrupt_manifest, WORKTREE)
+        self.assertIn("ASSET_CORRUPTED", str(corrupt_ctx.exception))
+
+        # 3. Falha na promocao preserva entrega anterior
+        out_dir = os.path.join(self.tmp, "delivery-rollback")
+        render_pipeline.run_render_pipeline(
+            os.path.join(WORKTREE, CASE_MS_REL), None, out_dir, WORKTREE, None,
+            asset_manifest_path=manifest_path,
+        )
+        hashes_before = delivery_hashes(out_dir)
+        with mock.patch("render_local.promote_with_backup",
+                        side_effect=build_video.DeliveryError("falha simulada na promocao")):
+            with self.assertRaises(build_video.DeliveryError):
+                render_pipeline.run_render_pipeline(
+                    os.path.join(WORKTREE, CASE_MS_REL), None, out_dir, WORKTREE, None,
+                    asset_manifest_path=manifest_path,
+                )
+        self.assertEqual(hashes_before, delivery_hashes(out_dir))
+
+        # 4. Asset ausente apos montagem do inventario
+        os.remove(clip_mp4)
+        with self.assertRaises(build_video.DeliveryError) as miss_ctx:
+            render_pipeline.run_check_assets(os.path.join(WORKTREE, CASE_MS_REL), manifest_path, WORKTREE)
+        self.assertIn("ASSET_MISSING", str(miss_ctx.exception))
+
+        # 5. Flags conflitantes na CLI devolvem codigo 2
+        conflict_1 = subprocess.run(
+            [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+             "--case", os.path.join(WORKTREE, CASE_MS_REL),
+             "--assets", assoc_path,
+             "--asset-manifest", manifest_path,
+             "--output-dir", out_dir],
+            capture_output=True, text=True, cwd=WORKTREE)
+        self.assertEqual(conflict_1.returncode, 2)
+
+        conflict_2 = subprocess.run(
+            [sys.executable, os.path.join(WORKTREE, "tools", "render_pipeline.py"),
+             "--case", os.path.join(WORKTREE, CASE_MS_REL),
+             "--asset-manifest", manifest_path,
+             "--check-assets",
+             "--output-dir", out_dir],
+            capture_output=True, text=True, cwd=WORKTREE)
+        self.assertEqual(conflict_2.returncode, 2)
 
 
 def extract_raw_frame(video_path, timestamp_s, width=1080, height=1920):

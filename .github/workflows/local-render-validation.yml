@@ -174,3 +174,29 @@ jobs:
           ffprobe -v error -show_streams -show_format -of json \
             .workspace/archives/ci-pipeline/marca-salao-style/*-primary-output.mp4
           python -c "import json; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao-style/delivery-manifest.json')); assert 'visualStyle' in m['artifacts'] and m['visualStyleId']=='ci-gold-style'"
+
+      - name: Prova do inventario de midia de ponta a ponta (--asset-manifest)
+        run: |
+          python -c "import json, os, sys; sys.path.insert(0, 'tools'); import make_proof_assets; d='.workspace/tmp/ci-asset-manifest'; os.makedirs(d, exist_ok=True); make_proof_assets.write_scene_png(f'{d}/shared.png', 'marca-salao', 'opening-hook', 1); make_proof_assets.write_scene_mp4(f'{d}/demo.mp4', 'marca-salao', 'demonstration-body', 2, duration_s=6.0); pkg=json.load(open('tools/render/marca-salao.assets.json'))['packageId']; json.dump({'schemaVersion': 1, 'packageId': pkg, 'assets': [{'beatId': 'opening-hook', 'path': f'{d}/shared.png'}, {'beatId': 'demonstration-body', 'path': f'{d}/demo.mp4'}, {'beatId': 'closing-cta', 'path': f'{d}/shared.png'}]}, open(f'{d}/ms.assets.json', 'w'), indent=2)"
+          python tools/prepare_asset_manifest.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --assets .workspace/tmp/ci-asset-manifest/ms.assets.json \
+            --origin ci-synthetic-proof \
+            --license owned-synthetic \
+            --output .workspace/tmp/ci-asset-manifest/ms.asset-manifest.json \
+            --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --asset-manifest .workspace/tmp/ci-asset-manifest/ms.asset-manifest.json \
+            --plan-only --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --asset-manifest .workspace/tmp/ci-asset-manifest/ms.asset-manifest.json \
+            --check-assets --json
+          python tools/render_pipeline.py \
+            --case platform/examples/pipelines/marca-salao-pipeline-pilot.pipeline.json \
+            --asset-manifest .workspace/tmp/ci-asset-manifest/ms.asset-manifest.json \
+            --text-overlays .workspace/tmp/ci-title-overlays.json \
+            --visual-style .workspace/tmp/ci-visual-style.json \
+            --output-dir .workspace/archives/ci-pipeline/marca-salao-asset-manifest --json
+          python -c "import glob, json, subprocess; m=json.load(open('.workspace/archives/ci-pipeline/marca-salao-asset-manifest/delivery-manifest.json')); assert 'assetManifest' in m['artifacts'] and m['assetManifestSummary']['assetCount']==2 and m['visualStyleId']=='ci-gold-style'; mp4=glob.glob('.workspace/archives/ci-pipeline/marca-salao-asset-manifest/*-primary-output.mp4')[0]; info=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-of','json',mp4], text=True)); streams=info['streams']; assert sum(1 for s in streams if s.get('codec_type')=='video')==1 and sum(1 for s in streams if s.get('codec_type')=='audio')==0"
