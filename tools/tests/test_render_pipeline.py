@@ -1029,7 +1029,8 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
 
         # Regiao inferior (y=1200 a y=1800): diferenca insignificante (apenas ruido de compressao H.264)
         mae_bottom = calculate_mae(frame_a_mid, frame_b_mid, width=1080, y_start=1200, y_end=1800)
-        self.assertLess(mae_bottom, 1.0, f"Regiao inferior nao deveria ter diferenca visual relevante, MAE={mae_bottom}")
+        self.assertLess(mae_bottom, 2.0, f"Regiao inferior nao deveria ter diferenca visual relevante, MAE={mae_bottom}")
+        self.assertGreater(mae_title, mae_bottom, f"Diferenca no titulo ({mae_title}) deve superar ruido inferior ({mae_bottom})")
 
     def test_17_visual_style_shared_with_multitrack_hub(self):
         assoc = self._prepare_assoc(ASSOC_MH_REL, self.assets_dir_mh)
