@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
+import { compileVideoRequest } from '../platform/dist/src/compile-video-request.js'
 import { serializeAssetManifest } from '../platform/dist/src/serialize-asset-manifest.js'
 import { serializeCreativeExecutionPackage } from '../platform/dist/src/serialize-creative-execution-package.js'
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
@@ -303,13 +304,69 @@ function handleLegacy(packagePath, associationPath) {
     process.exit(result.ok ? 0 : 3)
 }
 
+function handleVideoRequest(args) {
+    let requestPath = null
+    let rootDir = process.cwd()
+    let profileFilter = null
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        if (arg === '--video-request' && i + 1 < args.length) {
+            requestPath = args[++i]
+        } else if (arg === '--root' && i + 1 < args.length) {
+            rootDir = args[++i]
+        } else if (arg === '--profile' && i + 1 < args.length) {
+            profileFilter = args[++i]
+        } else if (arg === '--plan-only') {
+            // A compilacao e pura; a previa e a exportacao consomem o mesmo veredito.
+        } else {
+            console.error(`erro: flag desconhecida na ponte: ${arg}`)
+            process.exit(2)
+        }
+    }
+
+    if (!requestPath) {
+        console.error('uso: node tools/render_bridge.mjs --video-request <pedido.json> [--root <raiz>] [--profile <id>] [--plan-only]')
+        process.exit(2)
+    }
+
+    let requestInput
+    try {
+        requestInput = JSON.parse(readFileSync(requestPath, 'utf8'))
+    } catch {
+        console.error('erro: arquivo de pedido ilegivel ou JSON invalido')
+        process.exit(2)
+    }
+
+    if (typeof requestInput !== 'object' || requestInput === null || typeof requestInput.project !== 'string') {
+        console.log(JSON.stringify({ ok: false, failureCode: 'VIDEO_REQUEST_INVALID', subject: 'project' }))
+        process.exit(3)
+    }
+
+    const projectPath = path.resolve(rootDir, requestInput.project)
+    let projectInput
+    try {
+        projectInput = JSON.parse(readFileSync(projectPath, 'utf8'))
+    } catch {
+        console.error('erro: ProjectManifest do pedido ilegivel ou ausente')
+        process.exit(2)
+    }
+
+    const options = profileFilter === null ? undefined : { profileFilter }
+    const result = compileVideoRequest(requestInput, projectInput, options)
+    console.log(JSON.stringify(result))
+    process.exit(result.ok ? 0 : 3)
+}
+
 const rawArgs = process.argv.slice(2)
 if (rawArgs.length === 0) {
-    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json>')
+    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json>')
     process.exit(2)
 }
 
-if (rawArgs[0].startsWith('--')) {
+if (rawArgs.includes('--video-request')) {
+    handleVideoRequest(rawArgs)
+} else if (rawArgs[0].startsWith('--')) {
     handleCasePipeline(rawArgs)
 } else {
     if (rawArgs.length !== 2) {
