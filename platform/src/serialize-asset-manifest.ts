@@ -25,6 +25,7 @@ function canonicalBinding(binding: AssetManifestBinding): Record<string, unknown
     return {
         beatId: binding.beatId,
         assetId: binding.assetId,
+        ...(binding.sourceStartMs !== undefined && binding.sourceStartMs > 0 ? { sourceStartMs: binding.sourceStartMs } : {}),
     }
 }
 

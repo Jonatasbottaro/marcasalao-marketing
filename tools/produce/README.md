@@ -314,3 +314,110 @@ Testes: `platform/tests/local-export.test.ts` (matriz por modulo),
 `tools/tests/test_multi_format.py` (render real, enquadramento, overflow, promocao,
 revisao localizada, ZIP, isolamento entre marcas) e a etapa dedicada no workflow
 `.github/workflows/local-render-validation.yml`.
+
+## Edicao de gravacoes e cortes por cena (Video Studio)
+
+Uma gravacao importada pertence a biblioteca do trabalho e pode ser recortada em
+varias cenas. O corte vive no proprio `VideoRequest v1`: cada cena de video aceita
+`sourceStartMs` (inteiro nao negativo, em ms). `durationMs` continua sendo a duracao
+da cena; a saida da fonte e derivada (`sourceStartMs + durationMs`). A posicao na
+montagem vem da ordem e da soma das cenas anteriores. Pedidos legados sem o campo
+partem do inicio da fonte; **omitido e zero sao equivalentes** para a versao efetiva
+da edicao (revisao). Cenas de imagem usam apenas a duracao — `sourceStartMs` sobre
+imagem e rejeitado pelo validador (`VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED`).
+
+### Contrato e compilacao (platform)
+
+- `video-request-contract.ts` / `validate-video-request.ts` / `video-request.schema.json`:
+  campo opcional, soma representavel (`Number.isSafeInteger`), regra cruzada com o
+  cadastro de midias (video apenas). Codigos estaveis:
+  `VIDEO_REQUEST_SCENE_SOURCE_START_INVALID`, `VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED`.
+- `compile-video-request.ts`: a previa por perfil distingue `startMs/endMs` (montagem)
+  de `sourceStartMs/sourceEndMs` (janela na fonte; `null` para imagem). A associacao
+  de assets carrega `sourceStartMs` por beat (apenas quando > 0).
+- `local-render-input-contract.ts` / `validate-local-render-input.ts` e
+  `asset-manifest-contract.ts` / `validate-asset-manifest.ts`: `sourceStartMs` opcional
+  por vinculo, rejeitado em asset de imagem (`ASSET_SOURCE_START_INVALID`); vinculos
+  resolvidos expoem `sourceStartMs/sourceEndMs`. O `AssetManifest` canonico preserva o
+  corte por vinculo; a mesma fonte e deduplicada em um unico asset.
+- `validateComposition` e pedidos antigos permanecem inalterados (campo opcional).
+
+### Previa sem FFmpeg
+
+`python tools/produce_video.py --input <pedido> --plan-only --json` mostra por cena
+`fonte [inicio -> fim]` e `montagem [inicio -> fim]`, distintos. Sem leitura de midia,
+sem FFmpeg, sem gravacao; a conferencia do arquivo e da duracao disponivel pertence a
+etapa de inspecao (`verify_manifest_assets`).
+
+### Importacao de MP4 no navegador
+
+- Aba Videos → **Importar gravacao MP4 (H.264)**: envio em blocos de ate 4 MiB
+  (`/api/works/media/import-video/start|chunk|finish|cancel`), limite documentado de
+  **256 MiB**, area temporaria em `.workspace/tmp/studio-video-imports/<uploadId>/`.
+- O conteudo e validado com FFprobe (H.264, conteiner MP4, dimensoes pares, duracao > 0);
+  o registro guarda tipo, duracao, dimensoes, bytes, SHA-256, origem e licenca.
+- Promocao conjunta: arquivo verificado + registro da biblioteca; se a gravacao do
+  registro falhar, o arquivo promovido e removido e o estado anterior permanece.
+- Cada importacao cria uma **nova versao** do asset (versoes anteriores preservadas).
+- Reproducao da fonte: `/source-media?path=<arquivo registrado>` com **HTTP Range**
+  (206/Content-Range), suficiente para avancar e voltar no player; confinamento e
+  validacoes de escopo/caminho existentes, servidor em loopback.
+
+### Editor de cortes (aba Videos)
+
+Cada cena com video mostra player mudo da fonte, **Marcar entrada**, **Marcar saida**,
+campos de tempo editaveis (inicio na fonte e duracao do trecho) e **Reproduzir trecho**.
+Exibe duracao disponivel, duracao da cena e posicao na montagem; erro junto da cena
+quando o trecho ultrapassa a fonte ou apos troca de midia. **Duplicar cena** reaproveita
+a mesma fonte em outro trecho; ↑/↓ reordenam preservando a janela e recalculando a
+posicao. Salvar/recarregar/reiniciar o servidor recupera as mesmas escolhas; previa e
+exportacao consomem a edicao exibida.
+
+### Render real com cortes
+
+- Os intervalos resolvidos por `beatId` chegam ao pipeline pelo `AssetManifest`
+  (versao + integridade SHA-256 conferidas). A fonte e inspecionada e copiada para
+  staging **uma vez por render**, com intervalo proprio por uso.
+- Antes de renderizar, o fim solicitado e comparado com a duracao da **faixa de video**
+  (stream tem prioridade sobre o conteiner; duracao indisponivel falha com
+  `ASSET_DURATION_INVALID`). Fim exato e aceito (tolerancia de 1 ms para ruido de ponto
+  flutuante); alem do arquivo falha com `SOURCE_CUT_OUT_OF_RANGE` informando cena,
+  intervalo pedido e duracao disponivel. Pedidos legados sem corte mantem
+  `ASSET_VIDEO_TOO_SHORT`.
+- Precisao: `-ss` antes de `-i` (ao transcodificar, o FFmpeg decodifica do keyframe
+  anterior e descarta ate o quadro exato) + `setpts=PTS-STARTPTS` para reiniciar os
+  timestamps do trecho na concatenacao. Arredondamento: ms → segundos com 3 decimais;
+  o filtro `fps` reamostra para a grade de 30 fps e o `-t` final apara a montagem.
+  Titulo, legenda e Motion permanecem nos tempos da montagem; enquadramentos 9:16 e
+  16:9 existentes; Motion segue restrito ao vertical.
+- `delivery-manifest.json` e o relatorio registram `sourceCuts` por cena (beatId,
+  assetId, caminho, SHA-256 da fonte, janela e duracao). Staging, locks e promocao
+  transacional existentes: fonte ausente/alterada ou trecho invalido falham a tentativa
+  e preservam a ultima entrega valida.
+
+### Revisao e ZIP
+
+A versao efetiva e calculada do pedido + cortes + midia recebida pelo job. Alterar o
+inicio de uma cena marca `draft_outdated` os videos **e Motion** que usam a edicao
+anterior; carrossel independente continua valido. Reexportar um perfil promove apenas
+aquele destino; com duracao e textos identicos, o quadro e o hash do MP4 mudam enquanto
+fonte/SRT/TXT permanecem iguais. O ZIP registra `sourceCuts` por peca e confere os hashes
+contra os arquivos empacotados.
+
+### Comandos reproduziveis
+
+```bash
+# Fixture: gravacao ficticia de 3 trechos identificaveis (A/B/C), GOP de 3s
+python tools/make_request_media.py --input <pedido> --recording --root <raiz>
+python tools/produce_video.py --input <pedido> --plan-only --json
+python tools/produce_video.py --input <pedido> --output-dir <entrega> --json
+python tools/ci_recording_cuts_proof.py --port 8798   # prova HTTP completa (CI Ubuntu/Windows)
+```
+
+Testes: `platform/tests/video-request.test.ts`, `video-request-compiler.test.ts`,
+`contracts/video-request-schema.test.ts` (corpus Ajv), `local-render-input.test.ts`,
+`asset-manifest.test.ts`; `tools/tests/test_recording_cuts.py` (render real com
+verificacao de quadros por cor do trecho, fim exato/alem do arquivo, midia ausente,
+troca de midia, reexportacao com hashes, importacao em blocos, Range HTTP,
+persistencia/reinicio, revisao e ZIP) e a etapa dedicada no workflow
+`.github/workflows/local-render-validation.yml`.

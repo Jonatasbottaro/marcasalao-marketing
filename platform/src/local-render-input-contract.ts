@@ -42,10 +42,16 @@ export const LOCAL_RENDER_FPS = 30
 /** Proporcoes de video suportadas pelo adaptador local (vertical e horizontal). */
 export const LOCAL_RENDER_ASPECT_RATIOS = ['9:16', '16:9'] as const
 
-/** Ligacao explicita de um beat a um asset local, por caminho relativo. */
+/**
+ * Ligacao explicita de um beat a um asset local, por caminho relativo.
+ * `sourceStartMs` (opcional, inteiro nao negativo em ms) marca o inicio do
+ * trecho recortado da fonte de video; omitido equivale a zero. A duracao do
+ * trecho e a duracao do beat na timeline; a saida da fonte e a soma dos dois.
+ */
 export interface LocalRenderAssetBinding {
     readonly beatId: string
     readonly path: string
+    readonly sourceStartMs?: number
 }
 
 /**
@@ -68,6 +74,7 @@ export type LocalRenderInputFailureCode =
     | 'UNKNOWN_BEAT_REFERENCE'
     | 'ASSET_PATH_INVALID'
     | 'ASSET_EXTENSION_UNSUPPORTED'
+    | 'ASSET_SOURCE_START_INVALID'
     | 'RENDER_CONFIGURATION_UNSUPPORTED'
 
 export type LocalRenderInputValidationResult =

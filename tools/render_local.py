@@ -18,9 +18,19 @@ A validacao do pacote e da associacao reutiliza o nucleo puro da platform
 execucao da ferramenta de video acontece somente nesta camada de ferramentas.
 Nenhum fornecedor, nenhuma rede, nenhuma publicacao, nenhum Temporal.
 
-Recorte inicial: vertical 9:16 a 30 fps, dimensoes pares, movimento
-'none'/'slow-zoom', transicao de entrada 'none'/'cut', saida 'cut'/'fade'
-(fade somente no ultimo beat). Fora do recorte: diagnostico claro, sem render.
+Recorte inicial: vertical 9:16 e horizontal 16:9 a 30 fps, dimensoes pares,
+movimento 'none'/'slow-zoom', transicao de entrada 'none'/'cut', saida
+'cut'/'fade' (fade somente no ultimo beat). Fora do recorte: diagnostico
+claro, sem render.
+
+Cortes por cena (sourceStartMs): o trecho da fonte e selecionado com -ss
+antes de -i, que ao transcodificar e preciso no quadro exato (o FFmpeg
+decodifica a partir do keyframe anterior e descarta os quadros ate o tempo
+pedido). Arredondamento: tempos em ms viram segundos com 3 decimais; o
+filtro fps reamostra para a grade do perfil (30 fps), e o -t final apara a
+montagem na duracao exata do pacote. setpts=PTS-STARTPTS reinicia os
+timestamps de cada trecho para a concatenacao; titulo, legenda e Motion
+permanecem nos tempos absolutos da montagem.
 
 Exit codes: 0 entrega promovida; 1 falha de render/inspecao/promocao/asset;
 2 uso, caminho ou JSON invalido; 3 pacote ou associacao invalidos.
@@ -351,13 +361,16 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
     chains = []
     labels = []
     for index, step in enumerate(package['timeline']):
+        # setpts reinicia os timestamps do trecho (corte com -ss na entrada)
+        # para que a concatenacao e os filtros animados usem t a partir de 0.
         if step['motionIntent'] == 'slow-zoom':
             duration_s = step['durationMs'] / 1000.0
             # Zoom central 1.00 -> 1.10: scale animado (eval=frame) + crop fixo.
             # As expressoes w/h do crop nao aceitam t, e o zoompan custa minutos
             # em 1080x1920; esta forma e valida e rapida.
             chains.append(
-                f"[{index}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"[{index}:v]setpts=PTS-STARTPTS,"
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
                 f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},"
                 f"scale=w='{width}*(1+0.10*t/{duration_s:.3f})':"
                 f"h='{height}*(1+0.10*t/{duration_s:.3f})':eval=frame,"
@@ -365,7 +378,8 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
             )
         else:
             chains.append(
-                f"[{index}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"[{index}:v]setpts=PTS-STARTPTS,"
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
                 f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps}[v{index}]"
             )
         labels.append(f'[v{index}]')
@@ -402,17 +416,20 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None, source_cuts=None):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
     cmd = [build_video.get_ffmpeg(), '-y']
-    for step, asset_path in zip(package['timeline'], asset_paths):
+    for index, (step, asset_path) in enumerate(zip(package['timeline'], asset_paths)):
         duration_s = step['durationMs'] / 1000.0
+        start_ms = (source_cuts[index] if source_cuts else 0) or 0
         extension = os.path.splitext(asset_path)[1].lower()
         if extension in IMAGE_EXTENSIONS:
             cmd += ['-loop', '1', '-framerate', str(fps), '-t', f'{duration_s:.3f}', '-i', asset_path]
         else:
+            if start_ms > 0:
+                cmd += ['-ss', f'{start_ms / 1000.0:.3f}']
             cmd += ['-t', f'{duration_s:.3f}', '-i', asset_path]
     motion_effects = []
     for i, m in enumerate(motion or []):
@@ -502,15 +519,34 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     package = verdict['package']
     association = verdict['association']
 
-    by_beat = {binding['beatId']: binding['path'] for binding in association['assets']}
+    by_beat = {binding['beatId']: binding for binding in association['assets']}
     asset_paths = []
+    source_cuts = []
     for step in package['timeline']:
-        relative = by_beat[step['beatId']]
+        binding = by_beat[step['beatId']]
+        relative = binding['path']
         absolute = os.path.join(root, relative)
         if not contained(root, absolute) or not os.path.isfile(absolute):
             raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
-        probe_asset(root, absolute)
+        info = probe_asset(root, absolute)
+        start_ms = binding.get('sourceStartMs', 0)
+        if start_ms > 0:
+            stream = next(s for s in info.get('streams', []) if s.get('codec_type') == 'video')
+            raw_dur = stream.get('duration') or info.get('format', {}).get('duration')
+            try:
+                asset_dur_s = float(raw_dur)
+            except (TypeError, ValueError):
+                asset_dur_s = None
+            required_end_s = (start_ms + step['durationMs']) / 1000.0
+            if asset_dur_s is None or required_end_s > asset_dur_s + 0.001:
+                raise build_video.DeliveryError(
+                    f"SOURCE_CUT_OUT_OF_RANGE: {step['beatId']} pede fonte "
+                    f"[{start_ms}ms -> {start_ms + step['durationMs']}ms], "
+                    f"asset '{relative}' tem "
+                    f"{0.0 if asset_dur_s is None else asset_dur_s:.3f}s disponiveis"
+                )
         asset_paths.append(absolute)
+        source_cuts.append(start_ms)
 
     names = artifact_names(package)
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
@@ -519,7 +555,7 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     write_text(staging_paths['narration'], build_narration(package))
 
     cmd = build_render_command(package, asset_paths, staging_paths['srt'],
-                               staging_paths['video'], preset)
+                               staging_paths['video'], preset, source_cuts=source_cuts)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=RENDER_TIMEOUT_SECONDS)
@@ -574,8 +610,9 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
             'valid': True,
         },
         'assets': [
-            {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path)}
-            for step, path in zip(package['timeline'], asset_paths)
+            {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path),
+             'sourceStartMs': start_ms, 'sourceEndMs': start_ms + step['durationMs']}
+            for step, path, start_ms in zip(package['timeline'], asset_paths, source_cuts)
         ],
         'artifacts': [
             {

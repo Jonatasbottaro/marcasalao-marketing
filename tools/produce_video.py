@@ -10,8 +10,10 @@ Uso (a partir da raiz do checkout):
 
 Responsabilidades:
 - Previa (--plan-only): compila o pedido pelo nucleo puro, mostra perfis
-  resolvidos, duracao, tempos por cena, midias e avisos. Sem FFmpeg, sem
-  leitura de midias e sem gravacao.
+  resolvidos, duracao, tempos por cena (janela solicitada na fonte e posicao
+  na montagem, distintas), midias e avisos. Sem FFmpeg, sem leitura de midias
+  e sem gravacao; a conferencia do arquivo e da duracao disponivel pertence a
+  etapa de inspecao de midia do pipeline.
 - Exportacao: escreve os documentos derivados em staging interno, prepara e
   verifica o AssetManifest por perfil e chama o pipeline local existente.
   Entrega MP4 sem audio, legenda queimada, SRT e roteiro de narracao em TXT.
@@ -416,8 +418,12 @@ def main(argv=None):
                     print(f"  - {entry['profileId']}: {entry['geometry']['width']}x{entry['geometry']['height']} "
                           f"@ {entry['fps']}fps, {entry['durationSeconds']}s")
                     for beat in entry['beats']:
-                        print(f"      {beat['beatId']} [{beat['startMs']}ms -> {beat['endMs']}ms] "
-                              f"midia={beat['mediaId']} titulo={beat['title']}")
+                        if beat.get('sourceStartMs') is not None:
+                            fonte = (f"fonte [{beat['sourceStartMs']}ms -> {beat['sourceEndMs']}ms]")
+                        else:
+                            fonte = 'fonte [imagem estatica]'
+                        print(f"      {beat['beatId']} montagem [{beat['startMs']}ms -> {beat['endMs']}ms] "
+                              f"{fonte} midia={beat['mediaId']} titulo={beat['title']}")
                     for warning in entry['warnings']:
                         print(f"      aviso: {warning['code']} ({warning['path']})")
                 print(f"  Midias: {', '.join(item['id'] for item in media)}")

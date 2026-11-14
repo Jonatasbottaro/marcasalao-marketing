@@ -28,7 +28,9 @@ import { inspectRelativePath } from './relative-path.js'
 import { validateCreativeExecutionPackage } from './validate-creative-execution-package.js'
 
 const ASSOCIATION_FIELDS = ['schemaVersion', 'packageId', 'assets'] as const
-const BINDING_FIELDS = ['beatId', 'path'] as const
+const BINDING_REQUIRED_FIELDS = ['beatId', 'path'] as const
+const BINDING_OPTIONAL_FIELDS = ['sourceStartMs'] as const
+const VIDEO_ASSET_EXTENSIONS = ['.mp4', '.mov'] as const
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -45,6 +47,12 @@ function fail(failureCode: LocalRenderInputFailureCode, subject: string | null):
 function hasExactFields(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     const keys = Object.keys(value)
     return keys.length === allowed.length && allowed.every((field) => keys.includes(field))
+}
+
+function hasRequiredAndKnownFields(value: Record<string, unknown>, required: readonly string[], optional: readonly string[]): boolean {
+    const keys = Object.keys(value)
+    return required.every((field) => keys.includes(field))
+        && keys.every((key) => (required as readonly string[]).includes(key) || (optional as readonly string[]).includes(key))
 }
 
 function assetExtensionSupported(assetPath: string): boolean {
@@ -119,7 +127,7 @@ export function validateLocalRenderInput(
     }
     for (const binding of associationInput.assets) {
         if (!isPlainObject(binding)
-            || !hasExactFields(binding, BINDING_FIELDS)
+            || !hasRequiredAndKnownFields(binding, BINDING_REQUIRED_FIELDS, BINDING_OPTIONAL_FIELDS)
             || !isNonEmptyString(binding.beatId)
             || !isNonEmptyString(binding.path)) {
             return fail('ASSOCIATION_INVALID', null)
@@ -155,6 +163,19 @@ export function validateLocalRenderInput(
         }
         if (!assetExtensionSupported(binding.path)) {
             return fail('ASSET_EXTENSION_UNSUPPORTED', binding.path)
+        }
+        if (binding.sourceStartMs !== undefined) {
+            const lower = binding.path.toLowerCase()
+            const isVideoAsset = (VIDEO_ASSET_EXTENSIONS as readonly string[]).some((ext) => lower.endsWith(ext))
+            const step = pkg.timeline.find((entry) => entry.beatId === binding.beatId)
+            if (!isVideoAsset
+                || typeof binding.sourceStartMs !== 'number'
+                || !Number.isSafeInteger(binding.sourceStartMs)
+                || binding.sourceStartMs < 0
+                || !step
+                || !Number.isSafeInteger(binding.sourceStartMs + step.durationMs)) {
+                return fail('ASSET_SOURCE_START_INVALID', binding.beatId)
+            }
         }
     }
 

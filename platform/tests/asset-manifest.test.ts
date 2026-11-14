@@ -349,3 +349,56 @@ test('serializeAssetManifest gera JSON canonico deterministico com nova linha fi
     assert.equal(first.includes('\r\n'), false)
     assert.deepEqual(JSON.parse(first), manifest)
 })
+
+// ---- sourceStartMs: corte por vinculo beat -> fonte de video ----
+
+test('vinculo com sourceStartMs resolve janela da fonte e chega a associacao', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0].path)
+    const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+    assert.ok(pkg.timeline.length > 1, 'fixture precisa de ao menos dois beats')
+    manifest.bindings[1]!.sourceStartMs = 6200
+    const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    const resolved = result.resolvedBindings[1]!
+    assert.equal(resolved.sourceStartMs, 6200)
+    assert.equal(resolved.sourceEndMs, 6200 + resolved.durationMs)
+    assert.equal(resolved.startMs, pkg.timeline[1]!.startMs)
+    assert.equal(result.association.assets[1]!.sourceStartMs, 6200)
+    assert.equal(result.association.assets[0]!.sourceStartMs, undefined)
+    const canonical = JSON.parse(serializeAssetManifest(result.manifest)) as AssetManifest
+    assert.equal(canonical.bindings[1]!.sourceStartMs, 6200)
+    assert.equal(canonical.bindings[0]!.sourceStartMs, undefined)
+})
+
+test('vinculo legado sem corte resolve inicio zero e fim igual a duracao', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0].path)
+    const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+    const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    for (const resolved of result.resolvedBindings) {
+        assert.equal(resolved.sourceStartMs, 0)
+        assert.equal(resolved.sourceEndMs, resolved.durationMs)
+    }
+})
+
+test('sourceStartMs em asset de imagem falha com ASSET_SOURCE_START_INVALID', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0].path)
+    const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+    manifest.bindings[0]!.sourceStartMs = 1000
+    const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
+    assert.equal(result.ok, false)
+    if (!result.ok) assert.equal(result.failureCode, 'ASSET_SOURCE_START_INVALID')
+})
+
+test('sourceStartMs negativo ou fracionario falha na estrutura do inventario', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0].path)
+    for (const bad of [-1, 1.5]) {
+        const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+        ;(manifest.bindings[1] as Record<string, unknown>).sourceStartMs = bad
+        const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
+        assert.equal(result.ok, false)
+        if (!result.ok) assert.equal(result.failureCode, 'ASSET_MANIFEST_INVALID')
+    }
+})

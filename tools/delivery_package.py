@@ -364,6 +364,7 @@ def build_and_promote_package(studio, work_id, body):
                 'folderInZip': folder,
                 'cardOrder': card_order,
                 'mediaOrigins': piece.get('mediaOrigins') or [],
+                'sourceCuts': piece.get('sourceCuts') or [],
                 'metrics': piece.get('metrics') or {},
                 'files': piece_files,
             })

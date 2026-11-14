@@ -41,6 +41,13 @@ export const ASSET_MANIFEST_ENTRY_FIELDS = [
 export const ASSET_MANIFEST_BINDING_FIELDS = [
     'beatId',
     'assetId',
+    'sourceStartMs',
+] as const
+
+/** Campos obrigatorios de cada vinculo (sourceStartMs e opcional; omitido = 0). */
+export const ASSET_MANIFEST_BINDING_REQUIRED_FIELDS = [
+    'beatId',
+    'assetId',
 ] as const
 
 /** Tipos de midia suportados no inventario v1. */
@@ -69,10 +76,15 @@ export interface AssetManifestEntry {
     readonly license: string
 }
 
-/** Vinculo explicito entre um beat do pacote e um asset cadastrado. */
+/**
+ * Vinculo explicito entre um beat do pacote e um asset cadastrado.
+ * `sourceStartMs` (opcional) marca o inicio do trecho na fonte de video;
+ * a saida da fonte e `sourceStartMs + durationMs` do beat.
+ */
 export interface AssetManifestBinding {
     readonly beatId: string
     readonly assetId: string
+    readonly sourceStartMs?: number
 }
 
 /** Inventario versionado de midia AssetManifest v1. */
@@ -97,6 +109,9 @@ export interface ResolvedAssetBinding {
     readonly startMs: number
     readonly endMs: number
     readonly durationMs: number
+    /** Janela na fonte: 0..durationMs para imagem ou video sem corte explicito. */
+    readonly sourceStartMs: number
+    readonly sourceEndMs: number
 }
 
 /** Codigos de falha estaveis para validacao do inventario de midia. */

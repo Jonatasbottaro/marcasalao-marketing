@@ -622,15 +622,185 @@ async function generateMedia() {
   toast(`${data.written.length} arquivo(s) gerado(s).`);
 }
 
+// ---- Importação de gravação MP4 em blocos (biblioteca do trabalho) ----
+function bufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const STEP = 0x8000;
+  for (let i = 0; i < bytes.length; i += STEP) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + STEP));
+  }
+  return btoa(bin);
+}
+
+async function importRecordingFile(file) {
+  if (!currentWork) { toast('Abra um trabalho antes de importar a gravação.'); return; }
+  if (!file.name.toLowerCase().endsWith('.mp4')) { toast('A gravação deve ser um arquivo .mp4 (H.264).'); return; }
+  const note = $('#recording-import-note');
+  const original = note.textContent;
+  try {
+    note.textContent = `Enviando ${file.name} (${file.size} bytes) em blocos…`;
+    const start = await post('/api/works/media/import-video/start', {
+      workId: currentWork.id, fileName: file.name, totalBytes: file.size,
+      origin: 'imported-manual', license: 'pending',
+    });
+    const chunkBytes = start.chunkBytes;
+    let offset = 0;
+    while (offset < file.size) {
+      const slice = file.slice(offset, offset + chunkBytes);
+      const dataBase64 = bufferToBase64(await slice.arrayBuffer());
+      await post('/api/works/media/import-video/chunk', { uploadId: start.uploadId, offset, dataBase64 });
+      offset += slice.size;
+      note.textContent = `Enviando ${file.name}: ${offset}/${file.size} bytes…`;
+    }
+    note.textContent = 'Validando conteúdo com FFprobe e promovendo…';
+    const finish = await post('/api/works/media/import-video/finish', {
+      uploadId: start.uploadId, workId: currentWork.id,
+    });
+    const v = finish.version;
+    if (!draft.media.some((m) => m.id === finish.assetId)) {
+      draft.media.push({ id: finish.assetId, path: v.path, type: 'video', origin: v.origin, license: v.license });
+    }
+    renderMedia();
+    renderScenes();
+    if (window.StudioMedia && typeof window.StudioMedia.refresh === 'function') {
+      window.StudioMedia.refresh().catch(() => {});
+    }
+    toast(`Gravação importada: ${finish.assetId} (${v.width}×${v.height}, ${v.durationSeconds}s). Selecione-a nas cenas para recortar.`);
+  } catch (e) {
+    toast('Falha na importação: ' + e.message);
+  } finally {
+    note.textContent = original;
+  }
+}
+
 // ---- Cenas Vídeo ----
 const NARRATIVE = ['hook', 'context', 'problem', 'demonstration', 'explanation', 'proof', 'transition', 'cta', 'closing'];
 const MOTION = ['none', 'slow-zoom'];
+
+function sceneMediaEntry(s) {
+  return (draft.media || []).find((m) => m.id === s.mediaId) || null;
+}
+
+function assemblyStartMs(index) {
+  let acc = 0;
+  for (let i = 0; i < index; i++) acc += Number(draft.scenes[i].durationMs) || 0;
+  return acc;
+}
+
+function fmtMs(ms) {
+  const s = (Number(ms) || 0) / 1000;
+  return `${s.toFixed(2)}s`;
+}
+
+// ---- Editor de cortes por cena (fonte de video) ----
+function buildCutEditor(s, i) {
+  const media = sceneMediaEntry(s);
+  const video = el('video', {
+    class: 'cut-player', muted: '', controls: '', preload: 'metadata',
+    src: `/source-media?path=${encodeURIComponent(media.path)}`,
+    style: 'max-width: 270px; max-height: 240px; background: #000; border-radius: 6px;',
+  });
+  const info = el('p', { class: 'timeline cut-info' });
+  const err = el('p', { class: 'badge err cut-error', hidden: '' });
+  const startInput = el('input', {
+    type: 'number', min: '0', step: '1', value: s.sourceStartMs ?? 0,
+    oninput: (e) => {
+      const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+      if (v > 0) s.sourceStartMs = v; else delete s.sourceStartMs;
+      refresh();
+    },
+  });
+  const durInput = el('input', {
+    type: 'number', min: '1', step: '1', value: s.durationMs,
+    oninput: (e) => { s.durationMs = Math.max(1, Math.round(Number(e.target.value) || 1)); refresh(); },
+  });
+
+  function sourceDurationMs() {
+    return Number.isFinite(video.duration) && video.duration > 0 ? Math.round(video.duration * 1000) : null;
+  }
+  function refresh() {
+    const start = s.sourceStartMs || 0;
+    const dur = Number(s.durationMs) || 0;
+    const avail = sourceDurationMs();
+    const a0 = assemblyStartMs(i);
+    info.textContent = `Fonte: ${avail != null ? fmtMs(avail) + ' disponíveis' : 'duração desconhecida'} · `
+      + `Trecho: ${fmtMs(start)} → ${fmtMs(start + dur)} · Cena: ${fmtMs(dur)} · `
+      + `Montagem: ${fmtMs(a0)} → ${fmtMs(a0 + dur)}`;
+    let problem = null;
+    if (avail != null && start + dur > avail) {
+      problem = `Trecho ultrapassa a fonte: fim pedido ${fmtMs(start + dur)} > disponível ${fmtMs(avail)}. Ajuste o início ou a duração.`;
+    }
+    if (problem) { err.textContent = problem; err.removeAttribute('hidden'); }
+    else { err.textContent = ''; err.setAttribute('hidden', ''); }
+    // Sincroniza o campo de duração principal da cena.
+    const mainDur = document.querySelector(`#scenes-list .scene:nth-child(${i + 1}) .scene-duration`);
+    if (mainDur && Number(mainDur.value) !== dur) mainDur.value = dur;
+  }
+
+  video.addEventListener('loadedmetadata', refresh);
+  video.addEventListener('error', () => {
+    err.textContent = 'Não foi possível carregar a fonte registrada. Verifique o arquivo na biblioteca.';
+    err.removeAttribute('hidden');
+  });
+  video.addEventListener('timeupdate', () => {
+    const until = Number(video.dataset.playUntil || 0);
+    if (until > 0 && video.currentTime * 1000 >= until) {
+      video.pause();
+      video.dataset.playUntil = '0';
+    }
+  });
+
+  const markIn = el('button', {
+    class: 'secondary', type: 'button', text: 'Marcar entrada',
+    onclick: () => {
+      const v = Math.round(video.currentTime * 1000);
+      if (v > 0) s.sourceStartMs = v; else delete s.sourceStartMs;
+      startInput.value = v;
+      refresh();
+    },
+  });
+  const markOut = el('button', {
+    class: 'secondary', type: 'button', text: 'Marcar saída',
+    onclick: () => {
+      const end = Math.round(video.currentTime * 1000);
+      s.durationMs = Math.max(1, end - (s.sourceStartMs || 0));
+      durInput.value = s.durationMs;
+      refresh();
+    },
+  });
+  const playRange = el('button', {
+    class: 'secondary', type: 'button', text: 'Reproduzir trecho',
+    onclick: () => {
+      video.currentTime = (s.sourceStartMs || 0) / 1000;
+      video.dataset.playUntil = String((s.sourceStartMs || 0) + (Number(s.durationMs) || 0));
+      video.play().catch(() => {});
+    },
+  });
+
+  refresh();
+  return el('div', { class: 'cut-editor', style: 'margin-top: 6px; padding: 8px; border: 1px dashed var(--line); border-radius: 6px;' }, [
+    el('div', { class: 'row', style: 'align-items: flex-start; gap: 10px;' }, [
+      video,
+      el('div', {}, [
+        info,
+        err,
+        el('div', { class: 'row' }, [markIn, markOut, playRange]),
+        el('div', { class: 'row' }, [
+          el('label', { text: 'Início na fonte (ms)' }, startInput),
+          el('label', { text: 'Duração do trecho (ms)' }, durInput),
+        ]),
+        el('p', { class: 'muted', text: 'A saída da fonte é derivada: início + duração. A posição na montagem vem da ordem das cenas.' }),
+      ]),
+    ]),
+  ]);
+}
 
 function renderScenes() {
   const list = $('#scenes-list');
   list.innerHTML = '';
   draft.scenes.forEach((s, i) => {
-    const mediaSel = el('select', { onchange: (e) => { s.mediaId = e.target.value; } });
+    const mediaSel = el('select', { onchange: (e) => { s.mediaId = e.target.value; renderScenes(); } });
     mediaSel.append(el('option', { value: '', text: '— mídia —' }));
     for (const m of draft.media) mediaSel.append(el('option', { value: m.id, text: `${m.id} (${m.type})` }));
     mediaSel.value = s.mediaId || '';
@@ -643,7 +813,7 @@ function renderScenes() {
     const card = el('div', { class: 'scene' }, [
       el('div', { class: 'row' }, [
         el('label', { text: `Cena ${i + 1} — id` }, el('input', { type: 'text', value: s.id, oninput: (e) => { s.id = e.target.value; } })),
-        el('label', { text: 'Duração (ms)' }, el('input', { type: 'number', min: '1', value: s.durationMs, oninput: (e) => { s.durationMs = Number(e.target.value); } })),
+        el('label', { text: 'Duração (ms)' }, el('input', { type: 'number', class: 'scene-duration', min: '1', value: s.durationMs, oninput: (e) => { s.durationMs = Number(e.target.value); } })),
         el('label', { text: 'Mídia' }, mediaSel),
         el('label', { text: 'Função' }, nf),
         el('label', { text: 'Movimento' }, mi),
@@ -655,14 +825,29 @@ function renderScenes() {
       el('div', { class: 'row' }, [
         el('label', { text: 'Narração (TXT separado)' }, el('input', { type: 'text', value: s.narration || '', oninput: (e) => { s.narration = e.target.value; } })),
       ]),
+      sceneMediaEntry(s)?.type === 'video' ? buildCutEditor(s, i) : null,
       el('div', { class: 'row' }, [
         el('button', { class: 'secondary', text: '↑', onclick: () => { if (i > 0) { [draft.scenes[i - 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i - 1]]; renderScenes(); } } }),
         el('button', { class: 'secondary', text: '↓', onclick: () => { if (i < draft.scenes.length - 1) { [draft.scenes[i + 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i + 1]]; renderScenes(); } } }),
+        el('button', { class: 'secondary', text: 'Duplicar cena', onclick: () => { duplicateScene(i); } }),
         el('button', { class: 'secondary', text: 'Remover', onclick: () => { draft.scenes.splice(i, 1); renderScenes(); } }),
       ]),
     ]);
     list.append(card);
   });
+}
+
+function duplicateScene(i) {
+  const src = draft.scenes[i];
+  const used = new Set(draft.scenes.map((s) => s.id));
+  let n = 2;
+  let id = `${src.id}-copia`;
+  while (used.has(id)) id = `${src.id}-copia-${n++}`;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = id;
+  draft.scenes.splice(i + 1, 0, copy);
+  renderScenes();
+  toast(`Cena duplicada (${id}) — a mesma fonte pode ser recortada em outro trecho.`);
 }
 
 function addScene() {
@@ -708,6 +893,7 @@ async function preview() {
       }
       const rows = p.beats.map((b) => el('tr', {}, [
         el('td', { text: b.beatId }), el('td', { text: `${b.startMs}→${b.endMs} ms` }), el('td', { text: `${b.durationMs} ms` }),
+        el('td', { text: b.sourceStartMs != null ? `${b.sourceStartMs}→${b.sourceEndMs} ms` : 'imagem' }),
         el('td', { text: b.mediaId }), el('td', { text: b.title || '—' }),
       ]));
       const card = el('div', { class: 'profile-card' }, [
@@ -715,7 +901,7 @@ async function preview() {
         el('span', { class: 'badge ok', text: `${p.geometry.width}×${p.geometry.height} @ ${p.fps}fps` }),
         el('span', { class: 'badge muted', text: `total ${p.durationSeconds}s` }),
         el('table', {}, [
-          el('thead', {}, el('tr', {}, [el('th', { text: 'Beat' }), el('th', { text: 'Intervalo' }), el('th', { text: 'Duração' }), el('th', { text: 'Mídia' }), el('th', { text: 'Título' })])),
+          el('thead', {}, el('tr', {}, [el('th', { text: 'Beat' }), el('th', { text: 'Montagem' }), el('th', { text: 'Duração' }), el('th', { text: 'Trecho da fonte' }), el('th', { text: 'Mídia' }), el('th', { text: 'Título' })])),
           el('tbody', {}, rows),
         ]),
       ]);
@@ -1655,6 +1841,12 @@ async function init() {
     scanMediaInto(draft, $('#media-folder').value.trim(), ['image', 'video'], () => { renderMedia(); renderScenes(); }).catch((e) => toast(e.message));
   });
   $('#btn-generate-media').addEventListener('click', () => generateMedia().catch((e) => toast(e.message)));
+  $('#btn-import-recording').addEventListener('click', () => $('#recording-file').click());
+  $('#recording-file').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file) importRecordingFile(file).catch((err) => toast(err.message));
+  });
   $('#btn-add-scene').addEventListener('click', addScene);
   $('#btn-preview').addEventListener('click', preview);
   $('#btn-export').addEventListener('click', () => startExport());

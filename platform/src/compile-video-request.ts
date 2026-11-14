@@ -46,6 +46,9 @@ export interface VideoProfileBeatPreview {
     readonly startMs: number
     readonly endMs: number
     readonly durationMs: number
+    /** Janela solicitada na fonte de video; null para cenas de imagem. */
+    readonly sourceStartMs: number | null
+    readonly sourceEndMs: number | null
     readonly mediaId: string
     readonly mediaPath: string
     readonly caption: string
@@ -237,7 +240,12 @@ function compileProfile(
         assets: pkg.timeline.map((step) => {
             const scene = sceneById.get(step.beatId) as VideoRequestScene
             const media = mediaById.get(scene.mediaId) as VideoRequestMedia
-            return { beatId: step.beatId, path: media.path }
+            const sourceStartMs = media.type === 'video' ? (scene.sourceStartMs ?? 0) : 0
+            return {
+                beatId: step.beatId,
+                path: media.path,
+                ...(sourceStartMs > 0 ? { sourceStartMs } : {}),
+            }
         }),
     }
     const textOverlayPlan: TextOverlayPlan = {
@@ -259,12 +267,16 @@ function compileProfile(
         beats: pkg.timeline.map((step) => {
             const scene = sceneById.get(step.beatId) as VideoRequestScene
             const media = mediaById.get(scene.mediaId) as VideoRequestMedia
+            const isVideo = media.type === 'video'
+            const sourceStartMs = isVideo ? (scene.sourceStartMs ?? 0) : null
             return {
                 beatId: step.beatId,
                 order: step.order,
                 startMs: step.startMs,
                 endMs: step.endMs,
                 durationMs: step.durationMs,
+                sourceStartMs,
+                sourceEndMs: isVideo ? (sourceStartMs as number) + step.durationMs : null,
                 mediaId: scene.mediaId,
                 mediaPath: media.path,
                 caption: scene.caption,

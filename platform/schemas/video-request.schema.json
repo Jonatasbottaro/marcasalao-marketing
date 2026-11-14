@@ -129,7 +129,13 @@
         },
         "durationMs": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "description": "Duração da cena na montagem; para vídeo, também é a duração do trecho recortado da fonte."
+        },
+        "sourceStartMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Início explícito do trecho na fonte de vídeo (ms). Saída derivada: sourceStartMs + durationMs. Apenas para mídia de vídeo; a regra cruzada com o cadastro de mídias e a soma representável são verificadas pelo validador puro. Omitido equivale a zero."
         },
         "mediaId": {
           "type": "string",

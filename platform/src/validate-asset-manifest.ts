@@ -17,6 +17,7 @@
 
 import {
     ASSET_MANIFEST_BINDING_FIELDS,
+    ASSET_MANIFEST_BINDING_REQUIRED_FIELDS,
     ASSET_MANIFEST_ENTRY_FIELDS,
     ASSET_MANIFEST_IMAGE_EXTENSIONS,
     ASSET_MANIFEST_SCHEMA_VERSION,
@@ -46,6 +47,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 function hasExactFields(value: Record<string, unknown>, allowed: readonly string[]): boolean {
     const keys = Object.keys(value)
     return keys.length === allowed.length && allowed.every((field) => keys.includes(field))
+}
+
+function hasRequiredAndKnownFields(value: Record<string, unknown>, required: readonly string[], known: readonly string[]): boolean {
+    const keys = Object.keys(value)
+    return required.every((field) => keys.includes(field))
+        && keys.every((key) => (known as readonly string[]).includes(key))
 }
 
 function isNonEmptyControlFreeString(value: unknown): value is string {
@@ -95,7 +102,7 @@ function validateStructuralEntry(raw: unknown): AssetManifestEntry | null {
 }
 
 function validateStructuralBinding(raw: unknown): AssetManifestBinding | null {
-    if (!isPlainObject(raw) || !hasExactFields(raw, ASSET_MANIFEST_BINDING_FIELDS)) {
+    if (!isPlainObject(raw) || !hasRequiredAndKnownFields(raw, ASSET_MANIFEST_BINDING_REQUIRED_FIELDS, ASSET_MANIFEST_BINDING_FIELDS)) {
         return null
     }
     if (
@@ -106,9 +113,14 @@ function validateStructuralBinding(raw: unknown): AssetManifestBinding | null {
     ) {
         return null
     }
+    if (raw.sourceStartMs !== undefined
+        && (typeof raw.sourceStartMs !== 'number' || !Number.isSafeInteger(raw.sourceStartMs) || raw.sourceStartMs < 0)) {
+        return null
+    }
     return {
         beatId: raw.beatId,
         assetId: raw.assetId,
+        ...(raw.sourceStartMs !== undefined ? { sourceStartMs: raw.sourceStartMs } : {}),
     }
 }
 
@@ -200,7 +212,7 @@ export function validateAssetManifest(
 
     const orderedBindings: AssetManifestBinding[] = []
     const resolvedBindings: ResolvedAssetBinding[] = []
-    const derivedAssociationAssets: { beatId: string; path: string }[] = []
+    const derivedAssociationAssets: { beatId: string; path: string; sourceStartMs?: number }[] = []
 
     for (const step of pkg.timeline) {
         const binding = bindingByBeat.get(step.beatId)
@@ -208,6 +220,13 @@ export function validateAssetManifest(
             return fail('BEAT_ASSET_MISSING', step.beatId)
         }
         const asset = assetMap.get(binding.assetId)!
+        const sourceStartMs = binding.sourceStartMs ?? 0
+        if (sourceStartMs > 0 && asset.type !== 'video') {
+            return fail('ASSET_SOURCE_START_INVALID', step.beatId)
+        }
+        if (!Number.isSafeInteger(sourceStartMs + step.durationMs)) {
+            return fail('ASSET_SOURCE_START_INVALID', step.beatId)
+        }
         orderedBindings.push(binding)
         resolvedBindings.push({
             beatId: step.beatId,
@@ -221,10 +240,13 @@ export function validateAssetManifest(
             startMs: step.startMs,
             endMs: step.endMs,
             durationMs: step.durationMs,
+            sourceStartMs,
+            sourceEndMs: sourceStartMs + step.durationMs,
         })
         derivedAssociationAssets.push({
             beatId: step.beatId,
             path: asset.path,
+            ...(sourceStartMs > 0 ? { sourceStartMs } : {}),
         })
     }
 

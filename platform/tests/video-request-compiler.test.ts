@@ -137,3 +137,71 @@ test('e deterministico e nao muta a entrada', () => {
     assert.equal(JSON.stringify(req), beforeReq)
     assert.equal(JSON.stringify(proj), beforeProj)
 })
+
+// ---- sourceStartMs: trecho da fonte vs posicao na montagem ----
+
+function requestWithCuts(): Record<string, unknown> {
+    const req = request()
+    ;(req.media as Array<Record<string, unknown>>).push({ id: 'gravacao-01', path: '.workspace/tmp/prova/gravacao-01.mp4', type: 'video', origin: 'synthetic' })
+    req.scenes = [
+        { id: 'cena-1', durationMs: 2400, sourceStartMs: 6200, mediaId: 'gravacao-01', caption: 'Trecho B', narration: 'Narracao B' },
+        { id: 'cena-2', durationMs: 2000, mediaId: 'tela-01', caption: 'Imagem', narration: 'Narracao imagem' },
+        { id: 'cena-3', durationMs: 1500, sourceStartMs: 6200, mediaId: 'gravacao-01', caption: 'Trecho B de novo', narration: 'Narracao B2' },
+    ]
+    return req
+}
+
+test('previa distingue janela da fonte e posicao na montagem', () => {
+    const result = compileVideoRequest(requestWithCuts(), project())
+    assert.ok(result.ok, result.ok ? '' : `${result.failureCode}: ${result.subject}`)
+    if (!result.ok) return
+    const beats = result.profiles[0]!.plan!.beats
+    assert.deepEqual(beats.map((b) => b.startMs), [0, 2400, 4400])
+    assert.deepEqual(beats.map((b) => b.endMs), [2400, 4400, 5900])
+    assert.deepEqual(beats.map((b) => b.sourceStartMs), [6200, null, 6200])
+    assert.deepEqual(beats.map((b) => b.sourceEndMs), [8600, null, 7700])
+    assert.equal(result.profiles[0]!.package?.output.durationMs, 5900)
+})
+
+test('associacao carrega o corte por beat e reutiliza a fonte sem duplicar', () => {
+    const result = compileVideoRequest(requestWithCuts(), project())
+    assert.ok(result.ok)
+    if (!result.ok) return
+    const assets = result.profiles[0]!.association!.assets
+    assert.equal(assets.length, 3)
+    assert.equal(assets[0]?.sourceStartMs, 6200)
+    assert.equal(assets[1]?.sourceStartMs, undefined)
+    assert.equal(assets[2]?.sourceStartMs, 6200)
+    assert.equal(assets[0]?.path, assets[2]?.path)
+})
+
+test('inicio omitido e zero produzem a mesma associacao (versao efetiva)', () => {
+    const omitted = compileVideoRequest(requestWithCuts(), project())
+    const zeroReq = requestWithCuts()
+    ;(zeroReq.scenes as Array<Record<string, unknown>>)[0] = { ...(zeroReq.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: 0 }
+    const zero = compileVideoRequest(zeroReq, project())
+    assert.ok(omitted.ok && zero.ok)
+    if (!omitted.ok || !zero.ok) return
+    const legacy = requestWithCuts()
+    delete (legacy.scenes as Array<Record<string, unknown>>)[0]!.sourceStartMs
+    const legacyResult = compileVideoRequest(legacy, project())
+    assert.ok(legacyResult.ok)
+    if (!legacyResult.ok) return
+    assert.equal(JSON.stringify(zero.profiles[0]!.association), JSON.stringify(legacyResult.profiles[0]!.association))
+    assert.equal(zero.profiles[0]!.plan!.beats[0]!.sourceStartMs, 0)
+    assert.equal(legacyResult.profiles[0]!.plan!.beats[0]!.sourceStartMs, 0)
+})
+
+test('cortes compilam tambem no perfil horizontal 16:9', () => {
+    const proj = projectWith({ outputProfiles: ['youtube-video-horizontal'] })
+    const req = requestWithCuts()
+    req.profiles = ['youtube-video-horizontal']
+    const result = compileVideoRequest(req, proj)
+    assert.ok(result.ok, result.ok ? '' : `${result.failureCode}: ${result.subject}`)
+    if (!result.ok) return
+    const profile = result.profiles[0]!
+    assert.equal(profile.status, 'compiled', profile.failureCode ?? '')
+    assert.equal(profile.plan?.geometry.width, 1920)
+    assert.equal(profile.plan?.geometry.height, 1080)
+    assert.equal(profile.plan?.beats[0]?.sourceStartMs, 6200)
+})

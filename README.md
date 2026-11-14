@@ -124,6 +124,22 @@ Matriz de formatos efetivamente comprovada nesta rodada (render real + FFprobe +
 | Carrossel | `instagram-feed-image-portrait`, `facebook-feed-image-portrait` | 1080×1350 (4:5) | — | — | comprovado |
 | Motion | perfis de vídeo 9:16 | 1080×1920 | 30 | 0 faixas | comprovado (horizontal bloqueado com diagnóstico) |
 
+### Edição de gravações e cortes por cena
+
+Importe uma gravação **MP4 H.264** pelo navegador (aba Vídeos → **Importar gravação MP4**): o envio é em blocos, com limite de 256 MiB, validação por FFprobe (tipo, duração, dimensões, bytes, SHA-256, origem e licença) e promoção conjunta do arquivo + registro na biblioteca do trabalho. A mesma gravação pode ser recortada em **várias cenas**: cada cena de vídeo tem player mudo da fonte, **Marcar entrada/saída**, campos de tempo editáveis e **Reproduzir trecho**, com duração disponível, duração da cena e posição na montagem visíveis; trechos que ultrapassam a fonte mostram erro junto da cena. **Duplicar cena** reaproveita a fonte em outro trecho; reordenar preserva a janela e recalcula a posição. Salvar, recarregar e reiniciar o servidor recuperam as escolhas.
+
+O corte vive no `VideoRequest v1` (`sourceStartMs` opcional por cena; saída derivada `sourceStartMs + durationMs`; pedidos legados partem de zero; omitido ≡ zero na versão efetiva). A prévia `--plan-only --json` mostra a janela da fonte distinta da posição na montagem, sem FFmpeg. O render aplica o corte com precisão de quadro mesmo entre keyframes (`-ss` de entrada + `setpts=PTS-STARTPTS`), confere o fim pedido contra a duração da faixa de vídeo (fim exato aceito; além do arquivo → `SOURCE_CUT_OUT_OF_RANGE` com cena, intervalo e duração disponível) e registra `sourceCuts` (trecho, identidade e hash da fonte) no manifesto e no relatório. Título, legenda e Motion seguem nos tempos da montagem; a exportação continua **MP4 sem faixa de áudio + SRT + narração TXT**. Alterar o início de uma cena marca `draft_outdated` os vídeos e Motion que usam a edição anterior (carrossel independente não é afetado); reexportar um perfil com duração/textos idênticos muda o quadro e o hash do MP4, preservando fonte/SRT/TXT e os arquivos do perfil fora da reexportação. O ZIP registra os cortes por peça e confere os hashes empacotados.
+
+```bash
+# Gravação fictícia de três trechos identificáveis (fixture do projeto):
+python tools/make_request_media.py --input <pedido.video-request.json> --recording
+# Prévia (fonte × montagem) e exportação Reels + YouTube horizontal do mesmo pedido:
+python tools/produce_video.py --input <pedido.video-request.json> --plan-only --json
+python tools/produce_video.py --input <pedido.video-request.json> --output-dir .workspace/archives/cortes --json
+# Prova HTTP completa (CI e local): importação, cortes, quadros, reexportação, falha controlada, ZIP, reinício
+python tools/ci_recording_cuts_proof.py --port 8798
+```
+
 ### Carrosséis (R003)
 
 Na aba **Carrosséis** do painel (ou dentro de um trabalho ativo), edite capa, conteúdo e fechamento com CTA reaproveitando a pasta de mídias do trabalho, confira a **prévia sem FFmpeg**, exporte os JPEGs 1080×1080 (1:1) ou 1080×1350 (4:5, quando o projeto permitir `instagram-feed-image-portrait`) e baixe o ZIP. Pela CLI:

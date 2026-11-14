@@ -622,3 +622,7 @@ jobs:
       - name: Prova da exportacao multiformato (horizontal 16:9 e carrossel 4:5, Studio HTTP)
         run: |
           python tools/ci_multi_format_proof.py --port 8796
+
+      - name: Prova de edicao de gravacoes e cortes por cena (Studio HTTP)
+        run: |
+          python tools/ci_recording_cuts_proof.py --port 8798

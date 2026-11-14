@@ -22,14 +22,17 @@ import make_proof_assets
 import render_local
 
 
-def generate_request_media(request, root):
+def generate_request_media(request, root, recording=False):
     if not isinstance(request, dict) or not isinstance(request.get('media'), list):
         raise render_local.InputFileError('pedido invalido: cadastro de midia ausente')
     duration_by_media = {}
+    source_end_by_media = {}
     for scene in request.get('scenes', []):
         media_id = scene.get('mediaId')
         duration_ms = scene.get('durationMs', 0)
         duration_by_media[media_id] = max(duration_by_media.get(media_id, 0), duration_ms)
+        source_end_ms = (scene.get('sourceStartMs') or 0) + duration_ms
+        source_end_by_media[media_id] = max(source_end_by_media.get(media_id, 0), source_end_ms)
 
     written = []
     for index, media in enumerate(request['media'], start=1):
@@ -41,8 +44,12 @@ def generate_request_media(request, root):
         if media['type'] == 'image':
             make_proof_assets.write_scene_png(target, request['id'], media['id'], index)
         elif media['type'] == 'video':
-            duration_s = max(2.0, duration_by_media.get(media['id'], 2000) / 1000.0 + 0.5)
-            make_proof_assets.write_scene_mp4(target, request['id'], media['id'], index, duration_s=duration_s)
+            if recording:
+                required_s = source_end_by_media.get(media['id'], 0) / 1000.0
+                make_proof_assets.write_recording_mp4(target, duration_s=max(12.0, required_s + 1.0))
+            else:
+                duration_s = max(2.0, duration_by_media.get(media['id'], 2000) / 1000.0 + 0.5)
+                make_proof_assets.write_scene_mp4(target, request['id'], media['id'], index, duration_s=duration_s)
         else:
             raise render_local.InputFileError(f'tipo de midia nao suportado: {media["type"]}')
         written.append(render_local.rel(root, target))
@@ -53,6 +60,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Midia ficticia para um pedido VideoRequest v1')
     parser.add_argument('--input', required=True, help='Pedido de video (*.video-request.json)')
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
+    parser.add_argument('--recording', action='store_true',
+                        help='Gera videos como gravacoes ficticias de tres trechos identificaveis (A/B/C), longas o bastante para os cortes pedidos')
     args = parser.parse_args(argv)
     root = os.path.realpath(args.root)
     input_path = os.path.realpath(args.input)
@@ -62,7 +71,7 @@ def main(argv=None):
     try:
         with open(input_path, 'r', encoding='utf-8') as handle:
             request = json.load(handle)
-        written = generate_request_media(request, root)
+        written = generate_request_media(request, root, recording=args.recording)
     except render_local.InputFileError as exc:
         print(f'Erro: {exc}', file=sys.stderr)
         return 2
