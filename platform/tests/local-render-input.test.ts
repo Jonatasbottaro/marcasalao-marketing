@@ -200,7 +200,7 @@ test('configuracao fora do recorte inicial recebe diagnostico claro', () => {
     assert.ok(secondBeatId)
     const scenarios: readonly { mutate: (pkg: Mutable<CreativeExecutionPackage>) => void; subject: string }[] = [
         { mutate: (pkg) => { pkg.output.fps = 25 }, subject: 'output.fps' },
-        { mutate: (pkg) => { pkg.output.aspectRatio = '16:9' }, subject: 'output.aspectRatio' },
+        { mutate: (pkg) => { pkg.output.aspectRatio = '1:1' }, subject: 'output.aspectRatio' },
         { mutate: (pkg) => { pkg.output.width = 1081 }, subject: 'output.width' },
         { mutate: (pkg) => { pkg.output.plannedContainer = 'webm' }, subject: 'output.plannedContainer' },
         { mutate: (pkg) => { pkg.timeline[1]!.motionIntent = 'parallax-depth' }, subject: `${secondBeatId}.motionIntent` },
@@ -238,8 +238,20 @@ test('checkLocalRenderConfiguration indica suporte e razao quando fora do recort
     assert.equal(valid.unsupportedReason, null)
 
     const invalidPkg = clone(pkg) as Mutable<CreativeExecutionPackage>
-    invalidPkg.output.aspectRatio = '16:9'
+    invalidPkg.output.aspectRatio = '1:1'
     const invalid = checkLocalRenderConfiguration(invalidPkg)
     assert.equal(invalid.supported, false)
     assert.equal(invalid.unsupportedReason, 'output.aspectRatio')
+})
+
+test('geometria horizontal 1920x1080@30 esta dentro do recorte do adaptador', () => {
+    const pkg = clone(readPackage(PACKAGE_FIXTURES[0])) as Mutable<CreativeExecutionPackage>
+    pkg.output.width = 1920
+    pkg.output.height = 1080
+    pkg.output.aspectRatio = '16:9'
+    const result = validateLocalRenderInput(pkg, associationFor(pkg))
+    assert.equal(result.ok, true)
+    const config = checkLocalRenderConfiguration(pkg)
+    assert.equal(config.supported, true)
+    assert.equal(config.unsupportedReason, null)
 })

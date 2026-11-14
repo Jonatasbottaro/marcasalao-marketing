@@ -12,7 +12,7 @@
 
 import type { CreativeExecutionPackage } from './creative-execution-package-contract.js'
 import {
-    LOCAL_RENDER_ASPECT_RATIO,
+    LOCAL_RENDER_ASPECT_RATIOS,
     LOCAL_RENDER_ASSET_EXTENSIONS,
     LOCAL_RENDER_FPS,
     LOCAL_RENDER_INPUT_SCHEMA_VERSION,
@@ -23,6 +23,7 @@ import {
     type LocalRenderInputFailureCode,
     type LocalRenderInputValidationResult,
 } from './local-render-input-contract.js'
+import { LOCAL_VIDEO_GEOMETRIES } from './output-profiles/local-export.js'
 import { inspectRelativePath } from './relative-path.js'
 import { validateCreativeExecutionPackage } from './validate-creative-execution-package.js'
 
@@ -53,10 +54,11 @@ function assetExtensionSupported(assetPath: string): boolean {
 
 function configurationSupported(pkg: CreativeExecutionPackage): string | null {
     const output = pkg.output
-    if (output.aspectRatio !== LOCAL_RENDER_ASPECT_RATIO) return 'output.aspectRatio'
+    if (!(LOCAL_RENDER_ASPECT_RATIOS as readonly string[]).includes(output.aspectRatio)) return 'output.aspectRatio'
     if (output.fps !== LOCAL_RENDER_FPS) return 'output.fps'
     if (!Number.isSafeInteger(output.width) || output.width <= 0 || output.width % 2 !== 0) return 'output.width'
     if (!Number.isSafeInteger(output.height) || output.height <= 0 || output.height % 2 !== 0) return 'output.height'
+    if (!LOCAL_VIDEO_GEOMETRIES.some((g) => g.width === output.width && g.height === output.height)) return 'output.geometry'
     if (output.plannedContainer !== undefined && output.plannedContainer !== 'mp4') return 'output.plannedContainer'
 
     const lastIndex = pkg.timeline.length - 1

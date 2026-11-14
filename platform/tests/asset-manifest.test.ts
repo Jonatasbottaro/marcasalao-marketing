@@ -330,7 +330,7 @@ test('regras de vinculos: beat desconhecido, duplicado, ausente e asset desconhe
 
 test('delegacao para recorte do adaptador local falha com RENDER_CONFIGURATION_UNSUPPORTED', () => {
     const pkg = clone(readPackage(PACKAGE_FIXTURES[0].path)) as Mutable<CreativeExecutionPackage>
-    pkg.output.aspectRatio = '16:9'
+    pkg.output.aspectRatio = '1:1'
     const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
     const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
     assert.equal(result.ok, false)

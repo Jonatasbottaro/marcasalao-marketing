@@ -27,6 +27,7 @@ import {
     readJsonFile,
 } from './cli-input.js'
 import { CATALOG_VERSION, listOutputProfiles } from './output-profiles/catalog.js'
+import { localExportCapabilities, type LocalExportCapabilities } from './output-profiles/local-export.js'
 import type { OutputProfile } from './output-profiles/types.js'
 import { projectAllowedProfiles } from './resolve-output-profile.js'
 import type { ProjectValidationReport, ValidationIssue } from './validation-report.js'
@@ -56,6 +57,8 @@ export interface ListedProfile {
     readonly availability: ProfileAvailability
     readonly blockCode: string | null
     readonly blockReason: string | null
+    /** Exportabilidade local por modulo, da fonte compartilhada do adaptador. */
+    readonly localExport: LocalExportCapabilities
 }
 
 /** Forma JSON estavel da listagem; documentada em platform/README.md. */
@@ -102,6 +105,7 @@ function toListedProfile(
         availability,
         blockCode,
         blockReason,
+        localExport: localExportCapabilities(profile),
     }
 }
 
@@ -155,6 +159,11 @@ function renderHuman(listing: ProfilesListing): string {
             `  destino: ${profile.network}/${profile.publication} | midia: ${profile.mediaKind === 'image' ? 'imagem' : 'video'} | resolucao: ${profile.width}x${profile.height} (${profile.aspectRatio}) | fps: ${profile.fps ?? 'n/a'}`,
         )
         lines.push(`  capacidade de catalogo: ${profile.exportState}`)
+        const localBits = (['video', 'carousel', 'motion'] as const).map((mod) => {
+            const cap = profile.localExport[mod]
+            return `${mod}: ${cap.supported ? 'sim' : `nao (${cap.reason})`}`
+        })
+        lines.push(`  render local por modulo: ${localBits.join(' | ')}`)
         lines.push(`  evidencia da capacidade: ${profile.exportEvidence.length > 0 ? profile.exportEvidence.join(', ') : '(nenhuma)'}`)
         lines.push(`  pendencias de fonte: ${profile.pendingRuleIds.length > 0 ? profile.pendingRuleIds.join(', ') : '(nenhuma)'}`)
         if (profile.blockCode !== null) {

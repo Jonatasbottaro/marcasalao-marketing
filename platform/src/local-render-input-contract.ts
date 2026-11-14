@@ -37,9 +37,10 @@ export const LOCAL_RENDER_TRANSITIONS_IN = ['none', 'cut'] as const
 /** Transicoes de saida suportadas: corte seco ou fade (somente no ultimo beat). */
 export const LOCAL_RENDER_TRANSITIONS_OUT = ['cut', 'fade'] as const
 
-/** Parametros fixos do recorte inicial de prova. */
+/** Parametros fixos do recorte de prova do adaptador local. */
 export const LOCAL_RENDER_FPS = 30
-export const LOCAL_RENDER_ASPECT_RATIO = '9:16'
+/** Proporcoes de video suportadas pelo adaptador local (vertical e horizontal). */
+export const LOCAL_RENDER_ASPECT_RATIOS = ['9:16', '16:9'] as const
 
 /** Ligacao explicita de um beat a um asset local, por caminho relativo. */
 export interface LocalRenderAssetBinding {
