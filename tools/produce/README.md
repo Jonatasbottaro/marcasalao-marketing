@@ -246,3 +246,71 @@ Para adicionar outro provedor, implemente `generate(...)` em `tools/image_adapte
 - `platform/tests/visual-anchor.test.ts`, `image-request.test.ts` e paridade Ajv em `platform/tests/contracts/{visual-anchor,image-request}-schema.test.ts`.
 - `tools/tests/test_studio_media.py`: contratos via ponte, importacao validada, versoes, selecao, concorrencia, checksum, simulador deterministico, Gemini simulado (sem rede), falhas, reinicio, isolamento entre marcas, materializacao no AssetManifest e revisao localizada (render real com `REQUIRE_RENDER=1`).
 - `python tools/ci_media_library_proof.py --port 8797`: prova HTTP completa (import -> ancora -> pedido -> simulador -> Gemini sem chave -> stale -> selecionar/aplicar -> exportar video/carrossel -> AssetManifest -> FFprobe sem audio -> revisao localizada -> midia compartilhada -> arquivo invalido -> ZIP -> reinicio), executada no CI em Ubuntu e Windows junto da suite Python.
+
+## Exportacao multiformato (horizontal 16:9 e carrossel 4:5)
+
+Fonte compartilhada de exportabilidade local: `platform/src/output-profiles/local-export.ts`
+(`localExportCapabilities(profile)` por modulo `video`/`carousel`/`motion`, com motivos
+estaveis `MEDIA_KIND_MISMATCH`, `GEOMETRY_UNSUPPORTED`, `FPS_UNSUPPORTED`,
+`MOTION_VERTICAL_ONLY`). A CLI `content:profiles` expoe `localExport` por perfil;
+`video_studio.list_profiles`, o Planejamento, a biblioteca de midia e os seletores do
+painel consomem a mesma resposta — nenhum segundo dicionario de formatos.
+
+### Video horizontal
+
+- `youtube-video-horizontal`: 1920x1080, 16:9, 30 fps, MP4 H.264, zero faixas de audio.
+  O `OutputPlan` existente resolve a geometria; o adaptador (`render_local.py` /
+  `render_pipeline.py`) renderiza a partir da geometria resolvida do pacote.
+- Enquadramento: `scale=W:H:force_original_aspect_ratio=decrease` + `pad=W:H:(ow-iw)/2:(oh-ih)/2`
+  + `setsar=1` (bandas de preenchimento centralizadas, sem distorcao). No carrossel o pad
+  usa o tom do layout (`0x10141A`).
+- Titulos (`build_title_style`): PlayRes acompanha a geometria; fonte e margem superior
+  escalam por `height/1920`, margens horizontais por `width/1080` — no 9:16 os valores
+  permanecem identicos aos estilos existentes. Legendas (`SUBTITLE_STYLE`): PlayRes
+  explicito 384x288 (espaco SRT do libass), escala uniforme pela altura; margem inferior
+  proporcional, cabendo na base do 16:9 (medicao de quadros nos testes).
+- `--profile youtube-video-horizontal` (CLI) ou seletor do painel exportam apenas aquele
+  destino; falha nele preserva as entregas validas dos demais (lock/promocao por perfil).
+- Motion: restrito a 9:16 nesta rodada. A ponte rejeita `MotionPlan` em destino horizontal
+  com `MOTION_LOCAL_UNSUPPORTED_GEOMETRY` somente naquele perfil; o seletor e a nota da
+  aba Motion explicam o recorte (coordenadas relativas ao quadro final).
+
+### Carrossel 4:5
+
+- `instagram-feed-image-portrait` / `facebook-feed-image-portrait`: 1080x1350.
+  `carousel_layout.measure_card/render_card/_draw_text` recebem a geometria do perfil
+  (sem altura quadrada fixa); `produce_carousel.build_preview` mede overflow por card na
+  geometria resolvida e `_media_rgb` preserva a proporcao da midia (fit + pad).
+- Manifesto (`carousel-manifest.json`) registra `geometry` do perfil; JPEGs numerados na
+  ordem do pedido, ZIP na mesma ordem, hashes conferidos a partir dos bytes finais.
+- Overflow: `--plan-only` lista `overflowCards`; exportar com overflow falha com
+  `CAROUSEL_TEXT_OVERFLOW` indicando o card e preservando o ultimo conjunto valido.
+- No Planejamento, `carouselProfileId` (seletor 1:1 vs 4:5 quando ambos na allowlist)
+  decide o destino aplicado aos editores; pedidos de imagem derivam geometria do perfil
+  (16:9 e 4:5 ja aceitos pelo contrato `ImageRequest` v1) e mostram o reenquadramento da
+  midia atual ao mudar o destino.
+
+### Revisao e ZIP multiformato
+
+Cada entrega e identificada por modalidade + perfil + versao (`review-state.json`).
+Alterar somente o texto de um canal (ex.: YouTube horizontal) marca apenas aquele canal
+como `copy_outdated`, preservando hashes dos MP4s e artefatos dos outros perfis. O ZIP
+reune pecas e textos aprovados de varios destinos com caminhos separados
+(`video/<perfil>/`, `carousel/<perfil>/`, `textos-por-canal/<perfil>/`) e manifesto
+conferido contra os bytes do pacote.
+
+### Comandos reproduziveis
+
+```bash
+python tools/produce_video.py --input <pedido> --profile youtube-video-horizontal --plan-only --json
+python tools/produce_video.py --input <pedido> --profile youtube-video-horizontal --output-dir <entrega> --json
+python tools/produce_carousel.py --input <pedido> --profile instagram-feed-image-portrait --plan-only --json
+python tools/produce_carousel.py --input <pedido> --profile instagram-feed-image-portrait --output-dir <entrega> --json
+python tools/ci_multi_format_proof.py --port 8796   # prova HTTP completa (CI Ubuntu/Windows)
+```
+
+Testes: `platform/tests/local-export.test.ts` (matriz por modulo),
+`platform/tests/local-render-input.test.ts` (geometria horizontal dentro do recorte),
+`tools/tests/test_multi_format.py` (render real, enquadramento, overflow, promocao,
+revisao localizada, ZIP, isolamento entre marcas) e a etapa dedicada no workflow
+`.github/workflows/local-render-validation.yml`.
