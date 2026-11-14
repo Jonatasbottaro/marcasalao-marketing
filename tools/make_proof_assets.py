@@ -67,6 +67,93 @@ def write_scene_png(path, project_id, beat_id, order):
         handle.write(png)
 
 
+RECORDING_SEGMENTS = (
+    {'label': 'A', 'color': (220, 40, 40), 'bars': 1},
+    {'label': 'B', 'color': (40, 190, 60), 'bars': 2},
+    {'label': 'C', 'color': (50, 80, 220), 'bars': 3},
+)
+
+
+def _write_solid_png(path, width, height, color, bars):
+    """PNG de cor solida com faixas brancas horizontais (identificador visual)."""
+    rows = []
+    bar_pitch = height // (bars + 1)
+    for y in range(height):
+        row = bytearray()
+        for x in range(width):
+            pixel = color
+            for bar in range(1, bars + 1):
+                center = bar * bar_pitch
+                if abs(y - center) <= 10 and 60 <= x <= width - 60:
+                    pixel = (235, 235, 235)
+                    break
+            row.extend(pixel)
+        rows.append(b"\x00" + bytes(row))
+    raw = b"".join(rows)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    png = (b"\x89PNG\r\n\x1a\n" + r002_pilot._png_chunk(b"IHDR", ihdr)
+           + r002_pilot._png_chunk(b"IDAT", zlib.compress(raw, 9))
+           + r002_pilot._png_chunk(b"IEND", b""))
+    with open(path, "wb") as handle:
+        handle.write(png)
+
+
+def write_recording_mp4(path, duration_s=12.0, fps=30, gop=90, width=1080, height=1920):
+    """Gravacao ficticia com tres trechos visualmente identificaveis (A/B/C).
+
+    Cada trecho tem cor solida propria e numero de faixas brancas distinto.
+    A codificacao e feita em passada unica com GOP fixo (sem keyframes por
+    deteccao de cena), de modo que as fronteiras de trecho nao coincidem com
+    keyframes: um corte que comece no keyframe errado ou no instante zero
+    produz a cor errada e e detectado pela verificacao de quadros.
+    """
+    parent = os.path.dirname(os.path.abspath(path))
+    os.makedirs(parent, exist_ok=True)
+    segment_s = duration_s / len(RECORDING_SEGMENTS)
+    tmp_files = []
+    concat_path = None
+    try:
+        entries = []
+        for index, segment in enumerate(RECORDING_SEGMENTS):
+            fd, tmp_png = tempfile.mkstemp(prefix=f".recording-{index}-", suffix=".png", dir=parent)
+            os.close(fd)
+            tmp_files.append(tmp_png)
+            _write_solid_png(tmp_png, width, height, segment['color'], segment['bars'])
+            entries.append(f"file '{os.path.basename(tmp_png)}'\nduration {segment_s:.3f}")
+        entries.append(f"file '{os.path.basename(tmp_files[-1])}'")
+        fd, concat_path = tempfile.mkstemp(prefix=".recording-concat-", suffix=".txt", dir=parent)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(entries) + "\n")
+        cmd = [
+            r002_pilot.build_video.get_ffmpeg(),
+            "-y",
+            "-f", "concat",
+            "-safe", "0",
+            "-i", concat_path,
+            "-vf", f"fps={fps},setsar=1",
+            "-t", f"{duration_s:.3f}",
+            "-an",
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-pix_fmt", "yuv420p",
+            "-g", str(gop),
+            "-keyint_min", str(gop),
+            "-sc_threshold", "0",
+            os.path.abspath(path),
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=180, cwd=parent)
+        if res.returncode != 0:
+            raise r002_pilot.build_video.DeliveryError(
+                f"falha ao gerar gravacao ficticia: {res.stderr[-240:]}"
+            )
+    finally:
+        for tmp in tmp_files:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        if concat_path and os.path.exists(concat_path):
+            os.remove(concat_path)
+
+
 def write_scene_mp4(path, project_id, beat_id, order, duration_s=6.0, fps=30):
     """Gera um clipe MP4 sintetico sem audio (H.264/yuv420p) a partir da cena."""
     parent = os.path.dirname(os.path.abspath(path))

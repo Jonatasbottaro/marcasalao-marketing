@@ -151,10 +151,14 @@ def build_asset_manifest(root_real: str, case_abs: str, assets_abs: str,
             assets_by_real[real_path] = asset_entry
             assets_list.append(asset_entry)
 
-        bindings_list.append({
+        binding_entry = {
             'beatId': beat_id,
             'assetId': asset_entry['id'],
-        })
+        }
+        source_start = binding.get('sourceStartMs') or 0
+        if source_start > 0:
+            binding_entry['sourceStartMs'] = source_start
+        bindings_list.append(binding_entry)
 
     manifest_candidate = {
         'schemaVersion': 1,
@@ -247,10 +251,14 @@ def build_asset_manifest_from_registry(root_real: str, case_abs: str, associatio
             assets_by_real[real_path] = asset_entry
             assets_list.append(asset_entry)
 
-        bindings_list.append({
+        binding_entry = {
             'beatId': beat_id,
             'assetId': asset_entry['id'],
-        })
+        }
+        source_start = binding.get('sourceStartMs') or 0
+        if source_start > 0:
+            binding_entry['sourceStartMs'] = source_start
+        bindings_list.append(binding_entry)
 
     manifest_candidate = {
         'schemaVersion': 1,

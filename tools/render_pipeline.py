@@ -318,9 +318,24 @@ def verify_manifest_assets(root, asset_manifest, resolved_bindings):
         asset_id = binding['assetId']
         asset_info = inspected_by_id[asset_id]
         beat_duration_s = binding['durationMs'] / 1000.0
+        source_start_ms = binding.get('sourceStartMs', 0)
         if binding['type'] == 'video':
+            # Duracao da faixa de video (stream) tem prioridade sobre a do
+            # conteiner; _probe_and_extract_media_metadata ja falha com
+            # ASSET_DURATION_INVALID quando nenhuma das duas esta disponivel.
             asset_dur_s = asset_info['_rawDurationSeconds']
-            if asset_dur_s is None or (asset_dur_s + 0.05) < beat_duration_s:
+            if source_start_ms > 0:
+                required_end_s = (source_start_ms + binding['durationMs']) / 1000.0
+                # Tolerancia de 1 ms apenas para ruido de ponto flutuante; o
+                # fim exato na duracao disponivel e aceito.
+                if asset_dur_s is None or required_end_s > asset_dur_s + 0.001:
+                    raise build_video.DeliveryError(
+                        f"SOURCE_CUT_OUT_OF_RANGE: {beat_id} pede fonte "
+                        f"[{source_start_ms}ms -> {source_start_ms + binding['durationMs']}ms], "
+                        f"asset '{asset_id}' tem "
+                        f"{0.0 if asset_dur_s is None else asset_dur_s:.3f}s disponiveis"
+                    )
+            elif asset_dur_s is None or (asset_dur_s + 0.05) < beat_duration_s:
                 raise build_video.DeliveryError(
                     f"ASSET_VIDEO_TOO_SHORT: {beat_id} exige {beat_duration_s:.3f}s, "
                     f"asset '{asset_id}' tem {0.0 if asset_dur_s is None else asset_dur_s:.3f}s"
@@ -333,6 +348,8 @@ def verify_manifest_assets(root, asset_manifest, resolved_bindings):
             'bytes': asset_info['bytes'],
             'sha256': asset_info['sha256'],
             'durationMs': binding['durationMs'],
+            'sourceStartMs': source_start_ms,
+            'sourceEndMs': source_start_ms + binding['durationMs'],
             'width': asset_info['width'],
             'height': asset_info['height'],
             'durationSeconds': asset_info['durationSeconds'],
@@ -469,16 +486,56 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
                 raise build_video.DeliveryError(f'ASSET_HASH_MISMATCH: copia em staging divergiu para {asset_id}')
             staged_by_id[asset_id] = staged_asset
         asset_paths = [staged_by_id[binding['assetId']] for binding in resolved_asset_bindings]
+        cut_infos = [
+            {
+                'beatId': binding['beatId'],
+                'assetId': binding['assetId'],
+                'path': binding['path'],
+                'sha256': binding['sha256'],
+                'durationMs': binding['durationMs'],
+                'sourceStartMs': binding.get('sourceStartMs', 0),
+                'sourceEndMs': binding.get('sourceStartMs', 0) + binding['durationMs'],
+            }
+            for binding in resolved_asset_bindings
+        ]
     else:
-        by_beat = {binding['beatId']: binding['path'] for binding in association['assets']}
+        by_beat = {binding['beatId']: binding for binding in association['assets']}
         asset_paths = []
+        cut_infos = []
         for step in package['timeline']:
-            relative = by_beat[step['beatId']]
+            binding = by_beat[step['beatId']]
+            relative = binding['path']
             absolute = os.path.join(root, relative)
             if not contained(root, absolute) or not os.path.isfile(absolute):
                 raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
-            render_local.probe_asset(root, absolute)
+            info = render_local.probe_asset(root, absolute)
+            source_start_ms = binding.get('sourceStartMs', 0)
+            if source_start_ms > 0:
+                stream = next(s for s in info.get('streams', []) if s.get('codec_type') == 'video')
+                raw_dur = stream.get('duration') or info.get('format', {}).get('duration')
+                try:
+                    asset_dur_s = float(raw_dur)
+                except (TypeError, ValueError):
+                    asset_dur_s = None
+                required_end_s = (source_start_ms + step['durationMs']) / 1000.0
+                if asset_dur_s is None or required_end_s > asset_dur_s + 0.001:
+                    raise build_video.DeliveryError(
+                        f"SOURCE_CUT_OUT_OF_RANGE: {step['beatId']} pede fonte "
+                        f"[{source_start_ms}ms -> {source_start_ms + step['durationMs']}ms], "
+                        f"asset '{relative}' tem "
+                        f"{0.0 if asset_dur_s is None else asset_dur_s:.3f}s disponiveis"
+                    )
             asset_paths.append(absolute)
+            cut_infos.append({
+                'beatId': step['beatId'],
+                'assetId': None,
+                'path': relative,
+                'sha256': sha256_file(absolute),
+                'durationMs': step['durationMs'],
+                'sourceStartMs': source_start_ms,
+                'sourceEndMs': source_start_ms + step['durationMs'],
+            })
+    source_cuts = [info['sourceStartMs'] for info in cut_infos]
 
     package_id = package['packageId']
     names = {
@@ -544,7 +601,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         visual_style, package['output']['width'], package['output']['height']) if visual_style else None
     cmd = render_local.build_render_command(
         package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
-        title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render)
+        title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render,
+        source_cuts=source_cuts)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -645,8 +703,10 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         })
 
     report_assets = binding_reports if (asset_manifest_path and binding_reports) else [
-        {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path)}
-        for step, path in zip(package['timeline'], asset_paths)
+        {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path),
+         'durationMs': step['durationMs'],
+         'sourceStartMs': info['sourceStartMs'], 'sourceEndMs': info['sourceEndMs']}
+        for step, path, info in zip(package['timeline'], asset_paths, cut_infos)
     ]
     if 'motionPlan' in dests and motion:
         report_artifacts.append({
@@ -680,6 +740,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'valid': True,
         },
         'assets': report_assets,
+        'sourceCuts': cut_infos,
         'artifacts': report_artifacts,
         'tools': {
             'ffmpeg': render_local.tool_version(build_video.get_ffmpeg()),
@@ -794,6 +855,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'beatPlanId': package['beatPlanId'],
         'command': command,
         'outputDir': rel(root, output_dir),
+        'sourceCuts': cut_infos,
         'artifacts': manifest_artifacts,
     }
     if assets_path:
