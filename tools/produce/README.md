@@ -202,3 +202,47 @@ Fluxo integrado no Studio local: **Criar trabalho → Preencher ficha → Export
      - `carousel/<perfilId>/<N-card.jpg>` na ordem exata do `carousel-manifest.json`
      - `package-manifest.json` com hashes SHA-256, tamanhos e metadados técnicos conferidos antes da criação e no download.
    - Aba **Planejamento** (`planning.json`, `tools/studio_planning.py` e `tools/llm_adapter.py`): fluxo em 3 etapas (**1. Ideia e briefing** -> **2. Hook, roteiro e cards** -> **3. Aplicação aos editores**) nos modos **Manual**, **Copiar e importar** (`PlanningSuggestion` v1 validado pelo núcleo via `--planning-suggestion`) e **Modelo local opcional** (`POST /v1/chat/completions`, `qwen3:8b`, desativado por padrão), preservando edições manuais, checando políticas por projeto e aplicando alterações sem invalidar MP4s existentes quando somente textos de canal mudam (`copy_outdated`).
+
+## Biblioteca de midia por trabalho (`studio_media.py` + `image_adapters.py`)
+
+Fluxo integrado ao Planejamento: **Planejamento -> Preparar imagem -> Comparar opcoes -> Aplicar -> Exportar -> Revisar -> ZIP**.
+
+### Contratos e estado
+
+- `VisualAnchor` v1 (`platform/src/visual-anchor-contract.ts`, `validate-visual-anchor.ts`, espelho draft-07 `visual-anchor.schema.json` com paridade Ajv): referencia visual reutilizavel dentro do trabalho, vinculada a uma versao de midia pelo ID da versao e pelo SHA-256, com direcao visual, `mustInclude` e `mustAvoid`. Validada pelo nucleo via `node tools/render_bridge.mjs --visual-anchor <doc.json>`.
+- `ImageRequest` v1 (`platform/src/image-request-contract.ts`, `validate-image-request.ts`, espelho draft-07 `image-request.schema.json` com paridade Ajv): pedido visual revisavel derivado do `requiredMediaDescriptor` de uma cena (`video_scene`) ou card (`carousel_card`), com prompt editavel, finalidade, enquadramento, proporcao e geometria derivadas do perfil, vinculo opcional de ancora (`sendToProvider`) e snapshot de contexto (`descriptor` + `contextSha256`). Validado via `node tools/render_bridge.mjs --image-request <doc.json>`. O provedor e escolhido por acao, fora do contrato, para aceitar novos adaptadores sem alterar pedidos existentes.
+- Estado local por trabalho em `.workspace/studio/works/<id>/media-library.json`: assets com versoes imutaveis (ID proprio, SHA-256, dimensoes, formato, origem, licenca, proveniencia), ancoras, pedidos com candidatos/tentativas e selecoes por alvo. Escrita atomica, concorrencia otimista por `expectedLibraryFingerprint` (`HTTP 409`), contencao a raiz e miniaturas servidas apenas por referencias validas da biblioteca (`GET /library-media?work=&asset=&version=`, com conferencia de hash).
+- Trabalhos legados abrem com a biblioteca inicializada deterministicamente a partir das midias ja referenciadas nos rascunhos; arquivos soltos na pasta de midia podem ser cadastrados sem copia (`POST /api/works/media/register`).
+
+### Selecao, proveniencia e revisao localizada
+
+- Cada importacao ou geracao cria uma versao nova; o arquivo de origem e as versoes antigas continuam disponiveis para reabrir trabalhos e conferir entregas anteriores.
+- A selecao alimenta o catalogo de midia do Planejamento (`_build_work_media_catalog`) e o fluxo de previa de diferencas existente; o vinculo chega ao rascunho pelos campos atuais (`mediaId` + `media[]`). O `AssetManifest` do render materializa caminho, origem, licenca e hash da versao selecionada.
+- Ilustracoes geradas (`generated-simulator`, `generated-google-gemini`) ficam distinguiveis de capturas/evidencias (`screenshot`) e de importacoes manuais na biblioteca, na Revisao & Entrega e no manifesto. Materiais do simulador sao marcados como simulados em todos os registros.
+- Mudanca no texto do pedido ou na referencia marca candidatos anteriores como `stale` (contexto anterior). Trocar a versao de uma midia usada por um card invalida somente o carrossel; o video que usa outra versao mantem seu estado. Com `updateLinkedTargets`, todas as pecas consumidoras sao identificadas e atualizadas juntas.
+- Falha de copia, leitura, validacao de conteudo ou checksum divergente preserva a versao valida e os vinculos anteriores.
+
+### Adaptadores de imagem (um por acao confirmada)
+
+1. **Importacao manual** (`POST /api/works/media/import` com `dataBase64` ou `sourcePath` confinado): funciona com o provedor desligado, sem chave e sem rede. Serve para importar materiais gerados em ferramentas externas (ex.: Google Flow), com origem informada (`origin`, `originDetail.tool`) e licenca declarada ou `pending`. Validacao pelo conteudo (PNG/JPEG/WebP por magic bytes), limite de 20 MB e dimensoes ate 16384 px.
+2. **Simulador** (`SimulatorImageAdapter`): PNG deterministico derivado de prompt + geometria + hash da referencia; usado nos testes e na demonstracao guiada. Proveniencia registra `provider: simulator`, `model: simulator-v1`.
+3. **Google Gemini opcional** (`GeminiImageAdapter`): `POST {endpoint}/v1/models/{model}:generateContent` com header `x-goog-api-key`, `generationConfig.responseModalities: ["TEXT","IMAGE"]` e `imageConfig.aspectRatio`; a referencia e enviada como `inline_data` somente quando o pedido marcar `sendToProvider`. Configuracao apenas por ambiente do processo: `GEMINI_API_KEY` (obrigatoria para habilitar), `STUDIO_GEMINI_IMAGE_MODEL` (padrao `gemini-3.1-flash-image`), `STUDIO_GEMINI_IMAGE_ENDPOINT` (padrao `https://generativelanguage.googleapis.com`), `STUDIO_GEMINI_TIMEOUT_SEC` (padrao 120). O painel exibe somente o estado (`GET /api/image/config`), nunca a chave. Diagnosticos em portugues para timeout (`IMAGE_PROVIDER_TIMEOUT`, HTTP 504), falta de credencial (`IMAGE_PROVIDER_NO_CREDENTIAL`, 503), cota (`IMAGE_PROVIDER_QUOTA`), recusa (`IMAGE_PROVIDER_REFUSED`), resposta sem imagem (`IMAGE_PROVIDER_NO_IMAGE`) e arquivo invalido (`IMAGE_PROVIDER_INVALID_FILE`); sem retry automatico — o operador decide nova tentativa.
+
+Para adicionar outro provedor, implemente `generate(...)` em `tools/image_adapters.py`, registre-o em `provider_status()` e acrescente o ramo em `studio_media.generate_candidate`; `VisualAnchor`, `ImageRequest` e os pedidos dos editores nao mudam. A regra vigente de arte do Marca Salao via ComfyUI08 e seu guard de proveniencia seguem valendo para producao oficial e publicacao; este fluxo atende aos candidatos do Studio no escopo autorizado.
+
+### Rotas HTTP novas
+
+- `GET /api/works/media-library?id=` — visao geral (assets/versoes, ancoras, pedidos com candidatos e `stale`, selecoes, arquivos nao cadastrados, provedores).
+- `POST /api/works/media/import` | `POST /api/works/media/register` — importacao e cadastro.
+- `POST /api/works/media/anchor` — criar/atualizar referencia visual.
+- `POST /api/works/media/request/create` | `POST /api/works/media/request/update` — pedido visual.
+- `POST /api/works/media/generate` — geracao confirmada (`confirm: true`, `provider`).
+- `POST /api/works/media/select` — selecao de versao e vinculo (opcional `updateLinkedTargets`).
+- `GET /api/image/config` — estado dos provedores (sem credenciais).
+- `GET /library-media?work=&asset=&version=` — miniatura por referencia valida.
+
+### Testes e prova
+
+- `platform/tests/visual-anchor.test.ts`, `image-request.test.ts` e paridade Ajv em `platform/tests/contracts/{visual-anchor,image-request}-schema.test.ts`.
+- `tools/tests/test_studio_media.py`: contratos via ponte, importacao validada, versoes, selecao, concorrencia, checksum, simulador deterministico, Gemini simulado (sem rede), falhas, reinicio, isolamento entre marcas, materializacao no AssetManifest e revisao localizada (render real com `REQUIRE_RENDER=1`).
+- `python tools/ci_media_library_proof.py --port 8797`: prova HTTP completa (import -> ancora -> pedido -> simulador -> Gemini sem chave -> stale -> selecionar/aplicar -> exportar video/carrossel -> AssetManifest -> FFprobe sem audio -> revisao localizada -> midia compartilhada -> arquivo invalido -> ZIP -> reinicio), executada no CI em Ubuntu e Windows junto da suite Python.

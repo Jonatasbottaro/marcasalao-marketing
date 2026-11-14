@@ -44,7 +44,7 @@ Continuam estritamente bloqueados até autorização específica:
 - combinação BeatPlan × OutputPlan;
 - combinação de OutputPlan e outros planos no Temporal;
 - renderização de campanha real e adaptadores de fornecedores externos;
-- `VisualAnchor`, `AudioPlan` e `RenderPlan`; (`VisualStyle` v1 e `AssetManifest` v1 integrados apenas no pipeline local e contratos internos da `platform`);
+- `AudioPlan` e `RenderPlan`; (`VisualAnchor` v1, `VisualStyle` v1 e `AssetManifest` v1 integrados apenas no pipeline local, na biblioteca de mídia do Studio e em contratos internos da `platform`, sem entrar no Temporal);
 - mídia;
 - fornecedores;
 - TEMPORAL-04;
@@ -198,6 +198,21 @@ Entregas consolidadas nesta etapa:
 - Isolamento multi-marca por projeto, detecção de lacunas e alegações sem evidência, proteção contra aplicação com cena `pending_media`, sugestões no Motion sem desenho automático, bloqueio de sobrescrita silenciosa (HTTP `409`) e alteração localizada apenas no texto de publicação por canal (`copy_outdated`) sem reencode de MP4 (`0` faixas de áudio).
 
 Continua bloqueado até decisão explícita: publicação automática, geração real de campanhas/mídias externas, áudio/TTS, fornecedores externos, Temporal de produção e deploy em nuvem.
+
+## 4j. Biblioteca de mídia por trabalho conectada ao Planejamento — concluído em 14/11/2026
+
+> O titular autorizou em 14/11/2026 a entrega completa: biblioteca de mídia por trabalho com pedidos visuais revisáveis, referências reutilizáveis, comparação e seleção de versões, adaptadores substituíveis (manual, simulador, Google Gemini opcional), fechamento no fluxo existente de exportação/revisão/ZIP, com código, testes, prova no navegador, CI e documentação na mesma rodada e integração à main após os gates. Branch técnica `codex/media-library-v1` a partir do checkpoint `c9601990d4dbb3b291402adb23f17710115b1509`; merge e evidências registrados em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Biblioteca de mídia por trabalho.
+
+Critérios de conclusão atendidos:
+- **Pedido revisável**: `ImageRequest` v1 derivado do `requiredMediaDescriptor` de cena/card, com prompt editável, finalidade, enquadramento, proporção/geometria do perfil e prévia do texto exato enviado ao provedor antes da confirmação; títulos, legendas e CTA permanecem nos campos editáveis da peça.
+- **Referência reutilizável**: `VisualAnchor` v1 vinculado por ID de versão + SHA-256, com direção visual, elementos obrigatórios e a evitar; reutilizável em várias cenas/cards; envio ao provedor decidido por pedido; mudança de texto ou referência marca candidatos anteriores (`stale`).
+- **Biblioteca local**: aba **Mídias** com importação validada pelo conteúdo (PNG/JPEG/WebP, 20 MB, contenção), miniaturas, origem, licença, dimensões, tamanho e SHA-256; versões imutáveis com histórico; associação de arquivos existentes sem cópia; trabalhos legados inicializados deterministicamente.
+- **Seleção e proveniência**: comparação de candidatos, seleção aplicada pelo catálogo de mídia do Planejamento + prévia de diferenças, vínculo no rascunho pelos campos atuais, `AssetManifest` do render com caminho/origem/licença/hash; ilustrações geradas distinguíveis de capturas/evidências; materiais simulados marcados; revisão localizada por peça e mídia compartilhada com identificação de todas as peças consumidoras.
+- **Adaptadores**: importação manual offline (sem rede/chave), simulador determinístico para fixtures/testes/demonstração, Google Gemini opcional pela API oficial com `GEMINI_API_KEY` apenas no ambiente, diagnósticos pt-BR (timeout, credencial, cota, recusa, sem imagem, arquivo inválido), uma chamada por ação confirmada e sem retry automático; Google simulado no CI e comando de teste real documentado.
+- **Fechamento no navegador**: fluxo completo provado nas duas marcas (importar → referência → simulador → comparar → selecionar → aplicar → exportar vídeo/carrossel → revisar → ZIP com hashes conferidos), revisão localizada, mídia compartilhada, imagem inválida, checksum divergente, seleção desatualizada, ausência de chave e recuperação após reinício preservando o ZIP válido anterior; MP4 final inspecionado com FFprobe (zero faixas de áudio).
+- **Gates**: typecheck, testes de contratos (paridade Ajv), suíte da platform e suíte Python com `REQUIRE_RENDER=1`, prova HTTP dedicada no CI em Ubuntu e Windows (`tools/ci_media_library_proof.py`).
+
+Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Temporal de produção e deploy. O adaptador Gemini atende apenas aos candidatos do Studio no escopo autorizado.
 
 ## 5. Separar as decisões editoriais da execução técnica
 
