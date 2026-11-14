@@ -55,6 +55,7 @@ export const VIDEO_REQUEST_MEDIA_REQUIRED_FIELDS = ['id', 'path', 'type', 'origi
 export const VIDEO_REQUEST_SCENE_FIELDS = [
     'id',
     'durationMs',
+    'sourceStartMs',
     'mediaId',
     'caption',
     'narration',
@@ -96,10 +97,19 @@ export interface VideoRequestMedia {
     readonly license?: string
 }
 
-/** Cena ordenada do pedido: duracao, midia, legenda, narracao e titulo opcional. */
+/**
+ * Cena ordenada do pedido: duracao, midia, legenda, narracao e titulo opcional.
+ *
+ * `sourceStartMs` e o inicio explicito do trecho na fonte de video (inteiro
+ * nao negativo em milissegundos). A saida da fonte e derivada:
+ * `sourceStartMs + durationMs`. Cenas de imagem usam apenas `durationMs`.
+ * Pedidos sem o campo partem do inicio da fonte; omitido e zero sao
+ * equivalentes para a versao efetiva da edicao.
+ */
 export interface VideoRequestScene {
     readonly id: string
     readonly durationMs: number
+    readonly sourceStartMs?: number
     readonly mediaId: string
     readonly caption: string
     readonly narration: string
@@ -142,6 +152,8 @@ export type VideoRequestFailureCode =
     | 'VIDEO_REQUEST_SCENE_ID_INVALID'
     | 'VIDEO_REQUEST_SCENE_ID_DUPLICATE'
     | 'VIDEO_REQUEST_SCENE_DURATION_INVALID'
+    | 'VIDEO_REQUEST_SCENE_SOURCE_START_INVALID'
+    | 'VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED'
     | 'VIDEO_REQUEST_SCENE_MEDIA_REFERENCE_INVALID'
     | 'VIDEO_REQUEST_SCENE_CAPTION_INVALID'
     | 'VIDEO_REQUEST_SCENE_NARRATION_INVALID'

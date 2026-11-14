@@ -255,3 +255,41 @@ test('geometria horizontal 1920x1080@30 esta dentro do recorte do adaptador', ()
     assert.equal(config.supported, true)
     assert.equal(config.unsupportedReason, null)
 })
+
+// ---- sourceStartMs: corte por beat na associacao ----
+
+test('associacao aceita corte explicito em asset de video', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0])
+    const association = associationFor(pkg) as Mutable<LocalRenderAssetAssociation>
+    association.assets[0]!.path = '.workspace/tmp/local-render/assets/gravacao.mp4'
+    ;(association.assets[0] as Record<string, unknown>).sourceStartMs = 6200
+    const result = validateLocalRenderInput(pkg, association)
+    assert.equal(result.ok, true)
+    if (result.ok) {
+        assert.equal(result.association.assets[0]!.sourceStartMs, 6200)
+    }
+})
+
+test('corte em asset de imagem e valores invalidos recebem ASSET_SOURCE_START_INVALID', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0])
+    const imageCut = associationFor(pkg) as Mutable<LocalRenderAssetAssociation>
+    ;(imageCut.assets[0] as Record<string, unknown>).sourceStartMs = 1000
+    const r1 = validateLocalRenderInput(pkg, imageCut)
+    assert.equal(r1.ok, false)
+    if (!r1.ok) assert.equal(r1.failureCode, 'ASSET_SOURCE_START_INVALID')
+
+    for (const bad of [-1, 1.5, '6200']) {
+        const association = associationFor(pkg) as Mutable<LocalRenderAssetAssociation>
+        association.assets[0]!.path = '.workspace/tmp/local-render/assets/gravacao.mp4'
+        ;(association.assets[0] as Record<string, unknown>).sourceStartMs = bad
+        const result = validateLocalRenderInput(pkg, association)
+        assert.equal(result.ok, false, `valor ${String(bad)}`)
+        if (!result.ok) assert.equal(result.failureCode, 'ASSET_SOURCE_START_INVALID')
+    }
+})
+
+test('associacao legada sem sourceStartMs continua valida', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0])
+    const result = validateLocalRenderInput(pkg, associationFor(pkg))
+    assert.equal(result.ok, true)
+})

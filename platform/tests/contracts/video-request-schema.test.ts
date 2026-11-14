@@ -52,6 +52,18 @@ test('paridade estrutural: pedidos validos sao aceitos pelo schema e pelo valida
         validRequest(),
         minimal,
         { ...validRequest(), locale: 'pt-BR', visualStyle: { schemaVersion: 1, id: 'estilo-demo', title: { textColor: '#FFFFFF', outlineColor: '#000000', fontSize: 42, marginTop: 160, marginHorizontal: 60 } } },
+        (() => {
+            const r = validRequest()
+            ;(r.media as Array<Record<string, unknown>>).push({ id: 'gravacao-01', path: '.workspace/tmp/prova/gravacao-01.mp4', type: 'video', origin: 'synthetic' })
+            ;(r.scenes as Array<Record<string, unknown>>)[0] = { id: 'abertura', durationMs: 2400, sourceStartMs: 6200, mediaId: 'gravacao-01', caption: 'Legenda', narration: 'Narracao' }
+            return r
+        })(),
+        (() => {
+            const r = validRequest()
+            ;(r.media as Array<Record<string, unknown>>).push({ id: 'gravacao-01', path: '.workspace/tmp/prova/gravacao-01.mp4', type: 'video', origin: 'synthetic' })
+            ;(r.scenes as Array<Record<string, unknown>>)[0] = { id: 'abertura', durationMs: 2400, sourceStartMs: 0, mediaId: 'gravacao-01', caption: 'Legenda', narration: 'Narracao' }
+            return r
+        })(),
     ]
 
     for (const document of validCases) {
@@ -87,6 +99,9 @@ test('paridade estrutural: defeitos de formato sao rejeitados pelo schema e pelo
         { name: 'cenas vazia', document: { ...validRequest(), scenes: [] } },
         { name: 'duracao nao positiva', document: badScene },
         { name: 'motionIntent fora do recorte', document: badMotion },
+        { name: 'sourceStartMs negativo', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: -1 }; return r })() },
+        { name: 'sourceStartMs fracionario', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: 1.5 }; return r })() },
+        { name: 'sourceStartMs textual', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: '6200' }; return r })() },
     ]
 
     for (const testCase of invalidCases) {
@@ -94,5 +109,29 @@ test('paridade estrutural: defeitos de formato sao rejeitados pelo schema e pelo
         assert.strictEqual(schemaResult.valid, false, `Schema deveria rejeitar '${testCase.name}', mas aceitou.`)
         const validatorResult = validateVideoRequest(testCase.document)
         assert.strictEqual(validatorResult.ok, false, `Validador puro deveria rejeitar '${testCase.name}', mas aceitou.`)
+    }
+})
+
+test('regras cruzadas com o cadastro de midias ficam no validador puro, nao no schema', () => {
+    // O schema fechado nao conhece o tipo da midia referenciada: a cena com
+    // sourceStartMs sobre imagem e estruturalmente valida, mas o validador a
+    // rejeita com codigo estavel. Mesmo desenho para a soma representavel.
+    const imageCut = validRequest()
+    ;(imageCut.scenes as Array<Record<string, unknown>>)[0] = { ...(imageCut.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: 1000 }
+    assert.ok(checkSchema(imageCut).valid, 'schema deveria aceitar a estrutura')
+    const rejected = validateVideoRequest(imageCut)
+    assert.ok(!rejected.ok)
+    if (!rejected.ok) {
+        assert.equal(rejected.failureCode, 'VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED')
+    }
+
+    const overflow = validRequest()
+    ;(overflow.media as Array<Record<string, unknown>>).push({ id: 'gravacao-01', path: '.workspace/tmp/prova/gravacao-01.mp4', type: 'video', origin: 'synthetic' })
+    ;(overflow.scenes as Array<Record<string, unknown>>)[0] = { id: 'abertura', durationMs: 2000, sourceStartMs: Number.MAX_SAFE_INTEGER, mediaId: 'gravacao-01', caption: 'Legenda', narration: 'Narracao' }
+    assert.ok(checkSchema(overflow).valid, 'schema deveria aceitar a estrutura')
+    const overflowRejected = validateVideoRequest(overflow)
+    assert.ok(!overflowRejected.ok)
+    if (!overflowRejected.ok) {
+        assert.equal(overflowRejected.failureCode, 'VIDEO_REQUEST_SCENE_SOURCE_START_INVALID')
     }
 })

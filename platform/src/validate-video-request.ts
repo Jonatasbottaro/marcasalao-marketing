@@ -89,7 +89,7 @@ function readMedia(input: unknown, seenIds: Set<string>): { ok: true; media: Vid
     return { ok: true, media }
 }
 
-function readScene(input: unknown, mediaIds: Set<string>, seenIds: Set<string>): { ok: true; scene: VideoRequestScene } | { ok: false; failureCode: VideoRequestFailureCode; subject: string | null } {
+function readScene(input: unknown, mediaById: Map<string, VideoRequestMedia>, seenIds: Set<string>): { ok: true; scene: VideoRequestScene } | { ok: false; failureCode: VideoRequestFailureCode; subject: string | null } {
     if (!isPlainObject(input) || !hasOnlyKnownFields(input, VIDEO_REQUEST_SCENE_FIELDS) || !hasRequiredFields(input, VIDEO_REQUEST_SCENE_REQUIRED_FIELDS)) {
         return { ok: false, failureCode: 'VIDEO_REQUEST_SCENES_INVALID', subject: null }
     }
@@ -102,8 +102,17 @@ function readScene(input: unknown, mediaIds: Set<string>, seenIds: Set<string>):
     if (typeof input.durationMs !== 'number' || !Number.isSafeInteger(input.durationMs) || input.durationMs <= 0) {
         return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_DURATION_INVALID', subject: input.id }
     }
-    if (typeof input.mediaId !== 'string' || !mediaIds.has(input.mediaId)) {
+    if (typeof input.mediaId !== 'string' || !mediaById.has(input.mediaId)) {
         return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_MEDIA_REFERENCE_INVALID', subject: input.id }
+    }
+    if (input.sourceStartMs !== undefined) {
+        if (typeof input.sourceStartMs !== 'number' || !Number.isSafeInteger(input.sourceStartMs) || input.sourceStartMs < 0
+            || !Number.isSafeInteger(input.sourceStartMs + input.durationMs)) {
+            return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_SOURCE_START_INVALID', subject: input.id }
+        }
+        if ((mediaById.get(input.mediaId) as VideoRequestMedia).type !== 'video') {
+            return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED', subject: input.id }
+        }
     }
     if (!isNonEmptyString(input.caption)) {
         return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_CAPTION_INVALID', subject: input.id }
@@ -124,6 +133,7 @@ function readScene(input: unknown, mediaIds: Set<string>, seenIds: Set<string>):
     const scene: VideoRequestScene = {
         id: input.id,
         durationMs: input.durationMs,
+        ...(input.sourceStartMs !== undefined ? { sourceStartMs: input.sourceStartMs } : {}),
         mediaId: input.mediaId,
         caption: input.caption,
         narration: input.narration,
@@ -177,7 +187,7 @@ export function validateVideoRequest(input: unknown): VideoRequestValidationResu
         return fail('VIDEO_REQUEST_MEDIA_INVALID', 'media')
     }
     const media: VideoRequestMedia[] = []
-    const mediaIds = new Set<string>()
+    const mediaById = new Map<string, VideoRequestMedia>()
     const seenMediaIds = new Set<string>()
     for (const entry of input.media) {
         const read = readMedia(entry, seenMediaIds)
@@ -185,7 +195,7 @@ export function validateVideoRequest(input: unknown): VideoRequestValidationResu
             return fail(read.failureCode, read.subject)
         }
         media.push(read.media)
-        mediaIds.add(read.media.id)
+        mediaById.set(read.media.id, read.media)
     }
     if (!Array.isArray(input.scenes) || input.scenes.length === 0) {
         return fail('VIDEO_REQUEST_SCENES_INVALID', 'scenes')
@@ -193,7 +203,7 @@ export function validateVideoRequest(input: unknown): VideoRequestValidationResu
     const scenes: VideoRequestScene[] = []
     const seenSceneIds = new Set<string>()
     for (const entry of input.scenes) {
-        const read = readScene(entry, mediaIds, seenSceneIds)
+        const read = readScene(entry, mediaById, seenSceneIds)
         if (!read.ok) {
             return fail(read.failureCode, read.subject)
         }

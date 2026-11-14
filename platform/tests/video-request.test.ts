@@ -196,3 +196,75 @@ test('rejeita narrativeFunction invalida', () => {
     scenes[0] = { ...scenes[0], narrativeFunction: 'invalida' }
     assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_NARRATIVE_FUNCTION_INVALID')
 })
+
+// ---- sourceStartMs: corte por cena na fonte de video ----
+
+function requestWithVideo(): Record<string, unknown> {
+    const request = validRequest()
+    const media = request.media as Array<Record<string, unknown>>
+    media.push({ id: 'gravacao-01', path: '.workspace/tmp/prova/gravacao-01.mp4', type: 'video', origin: 'synthetic' })
+    return request
+}
+
+test('aceita inicio explicito em cena de video e ecoa o valor', () => {
+    const request = requestWithVideo()
+    const scenes = request.scenes as Array<Record<string, unknown>>
+    scenes[0] = { ...scenes[0], mediaId: 'gravacao-01', sourceStartMs: 6200, durationMs: 2400 }
+    const result = validateVideoRequest(request)
+    assert.ok(result.ok, result.ok ? '' : result.failureCode)
+    if (result.ok) {
+        assert.equal(result.request.scenes[0]?.sourceStartMs, 6200)
+        assert.equal(result.request.scenes[0]?.durationMs, 2400)
+    }
+})
+
+test('aceita inicio zero explicito e pedido legado sem o campo', () => {
+    const request = requestWithVideo()
+    const scenes = request.scenes as Array<Record<string, unknown>>
+    scenes[0] = { ...scenes[0], mediaId: 'gravacao-01', sourceStartMs: 0 }
+    const zero = validateVideoRequest(request)
+    assert.ok(zero.ok)
+    const legacy = requestWithVideo()
+    ;(legacy.scenes as Array<Record<string, unknown>>)[0] = { ...scenes[0], mediaId: 'gravacao-01' }
+    delete (legacy.scenes as Array<Record<string, unknown>>)[0]!.sourceStartMs
+    const omitted = validateVideoRequest(legacy)
+    assert.ok(omitted.ok)
+    if (zero.ok && omitted.ok) {
+        assert.equal(zero.request.scenes[0]?.sourceStartMs, 0)
+        assert.equal(omitted.request.scenes[0]?.sourceStartMs, undefined)
+    }
+})
+
+test('rejeita inicio negativo, fracionario ou nao numerico', () => {
+    for (const bad of [-1, 1.5, '6200', NaN]) {
+        const request = requestWithVideo()
+        const scenes = request.scenes as Array<Record<string, unknown>>
+        scenes[0] = { ...scenes[0], mediaId: 'gravacao-01', sourceStartMs: bad }
+        assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_SOURCE_START_INVALID', `valor ${String(bad)}`)
+    }
+})
+
+test('rejeita soma de inicio e duracao nao representavel', () => {
+    const request = requestWithVideo()
+    const scenes = request.scenes as Array<Record<string, unknown>>
+    scenes[0] = { ...scenes[0], mediaId: 'gravacao-01', sourceStartMs: Number.MAX_SAFE_INTEGER, durationMs: 2000 }
+    assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_SOURCE_START_INVALID')
+})
+
+test('rejeita inicio explicito em cena de imagem (regra cruzada com o cadastro)', () => {
+    const request = validRequest()
+    const scenes = request.scenes as Array<Record<string, unknown>>
+    scenes[0] = { ...scenes[0], sourceStartMs: 1000 }
+    assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED')
+    const zero = validRequest()
+    ;(zero.scenes as Array<Record<string, unknown>>)[0] = { ...scenes[0], sourceStartMs: 0 }
+    assert.equal(codes(zero), 'VIDEO_REQUEST_SCENE_SOURCE_START_NOT_ALLOWED')
+})
+
+test('cena de imagem sem inicio continua valida (pedido legado)', () => {
+    const result = validateVideoRequest(validRequest())
+    assert.ok(result.ok)
+    if (result.ok) {
+        assert.equal(result.request.scenes[0]?.sourceStartMs, undefined)
+    }
+})
