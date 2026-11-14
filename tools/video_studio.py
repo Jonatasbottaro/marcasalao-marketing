@@ -41,6 +41,8 @@ import make_agenda_media
 import make_proof_assets
 import make_request_media
 import render_local
+import delivery_package
+import studio_review
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
@@ -84,9 +86,10 @@ def now_iso():
 
 def atomic_write_json(target, value):
     """Grava JSON de forma atomica com UTF-8, LF e flush+fsync antes de os.replace."""
+    fs = render_local.fs_path
     parent = os.path.dirname(os.path.abspath(target))
-    os.makedirs(parent, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix='.tmp-', suffix='.json', dir=parent)
+    os.makedirs(fs(parent), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix='.tmp-', suffix='.json', dir=fs(parent))
     try:
         with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
             json.dump(value, handle, ensure_ascii=False, indent=2)
@@ -96,10 +99,10 @@ def atomic_write_json(target, value):
                 os.fsync(handle.fileno())
             except OSError:
                 pass
-        os.replace(tmp, target)
+        os.replace(tmp, fs(target))
     except OSError:
-        if os.path.exists(tmp):
-            os.remove(tmp)
+        if os.path.exists(fs(tmp)):
+            os.remove(fs(tmp))
         raise
 
 
@@ -561,12 +564,15 @@ class Studio:
             'videoDraft': f'{base}/drafts/video.request.json',
             'carouselDraft': f'{base}/drafts/carousel.request.json',
             'motionPlan': f'{base}/drafts/motion.plan.json',
+            'editorialFile': f'{base}/editorial.json',
+            'reviewStateFile': f'{base}/review-state.json',
             'videoDeliveryDir': f'{base}/deliveries/video',
             'carouselDeliveryDir': f'{base}/deliveries/carousel',
             'motionDeliveryDir': f'{base}/deliveries/motion',
+            'packageDeliveryDir': f'{base}/deliveries/package',
         }
 
-    def _delivery_badge_summary(self, video_dir, carousel_dir, motion_dir):
+    def _delivery_badge_summary(self, video_dir, carousel_dir, motion_dir, work_id=None):
         v = self.read_delivery(video_dir)
         c = self.read_carousel_delivery(carousel_dir)
         m = self.read_delivery(motion_dir)
@@ -579,10 +585,17 @@ class Studio:
             1 for p in (m.get('index') or {}).get('profiles', [])
             if p.get('lastValidDelivery')
         ) or len(m.get('profiles', []))
+        pkg_valid = False
+        if work_id:
+            try:
+                pkg_valid = bool(delivery_package.read_package_delivery(self, work_id).get('available'))
+            except (ValueError, OSError):
+                pkg_valid = False
         return {
             'videoValidCount': v_valid,
             'carouselValid': c_valid,
             'motionValidCount': m_valid,
+            'packageValid': pkg_valid,
             'videoLastStatus': (v.get('lastExportStatus') or {}).get('status'),
             'carouselLastStatus': (c.get('lastExportStatus') or {}).get('status'),
             'motionLastStatus': (m.get('lastExportStatus') or {}).get('status'),
@@ -594,18 +607,20 @@ class Studio:
             return works
         for entry in sorted(os.listdir(self.works_dir)):
             work_file = os.path.join(self.works_dir, entry, 'work.json')
-            if not os.path.isfile(work_file):
+            if not os.path.isfile(render_local.fs_path(work_file)):
                 continue
             try:
-                with open(work_file, 'r', encoding='utf-8') as handle:
+                with open(render_local.fs_path(work_file), 'r', encoding='utf-8') as handle:
                     work = json.load(handle)
             except (OSError, ValueError):
                 continue
             paths = work.get('paths', {})
+            work_id = work.get('id') or entry
             work['summary'] = self._delivery_badge_summary(
                 paths.get('videoDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/video'),
                 paths.get('carouselDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/carousel'),
                 paths.get('motionDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/motion'),
+                work_id=work_id if KEBAB_CASE_RE.match(str(work_id)) else None,
             )
             works.append(work)
         works.sort(key=lambda w: w.get('updatedAt', ''), reverse=True)
@@ -613,7 +628,7 @@ class Studio:
 
     def _load_json(self, rel_path):
         target = self.confine(rel_path)
-        with open(target, 'r', encoding='utf-8') as handle:
+        with open(render_local.fs_path(target), 'r', encoding='utf-8') as handle:
             return json.load(handle)
 
     def create_work(self, body):
@@ -875,19 +890,21 @@ class Studio:
         })
 
     def open_work(self, work_id):
+        fs = render_local.fs_path
         paths = self.work_paths(work_id)
         work_abs = self.confine_workspace(paths['workFile'])
-        if not os.path.isfile(work_abs):
+        if not os.path.isfile(fs(work_abs)):
             raise ValueError(f'trabalho nao encontrado: {work_id}')
-        with open(work_abs, 'r', encoding='utf-8') as handle:
+        with open(fs(work_abs), 'r', encoding='utf-8') as handle:
             work = json.load(handle)
-        wpaths = work.get('paths', paths)
+        wpaths = studio_review.merged_work_paths(self, work_id, work)
+        work_view = {**work, 'paths': wpaths}
         video_req = self._load_json(wpaths['videoDraft'])
         carousel_req = self._load_json(wpaths['carouselDraft'])
         motion_plan = self._load_json(wpaths['motionPlan'])
         work_media = []
         media_dir_abs = self.confine_workspace(wpaths['mediaDir'])
-        if os.path.isdir(media_dir_abs):
+        if os.path.isdir(fs(media_dir_abs)):
             work_media = self.scan_media(wpaths['mediaDir'])
         deliveries = {
             'video': self.read_delivery(wpaths['videoDeliveryDir']),
@@ -895,27 +912,33 @@ class Studio:
             'motion': self.read_delivery(wpaths['motionDeliveryDir']),
         }
         listing = self.list_profiles(work['project'])
+        review = studio_review.build_review_overview(self, work_id)
+        package_delivery = delivery_package.read_package_delivery(self, work_id)
         return {
-            'work': work,
+            'work': work_view,
             'videoRequest': video_req,
             'carouselRequest': carousel_req,
             'motionPlan': motion_plan,
             'workMedia': work_media,
             'deliveries': deliveries,
             'listing': listing,
+            'review': review,
+            'packageDelivery': package_delivery,
         }
 
     def save_work(self, body):
         if not isinstance(body, dict):
             raise ValueError('payload de trabalho invalido')
+        fs = render_local.fs_path
         work_id = (body.get('workId') or body.get('id') or '').strip()
         paths = self.work_paths(work_id)
         work_abs = self.confine_workspace(paths['workFile'])
-        if not os.path.isfile(work_abs):
+        if not os.path.isfile(fs(work_abs)):
             raise ValueError(f'trabalho nao encontrado: {work_id}')
-        with open(work_abs, 'r', encoding='utf-8') as handle:
+        with open(fs(work_abs), 'r', encoding='utf-8') as handle:
             work = json.load(handle)
-        wpaths = work.get('paths', paths)
+        wpaths = studio_review.merged_work_paths(self, work_id, work)
+        work['paths'] = wpaths
 
         if isinstance(body.get('name'), str) and body['name'].strip():
             work['name'] = body['name'].strip()
@@ -1024,9 +1047,6 @@ class Studio:
                     except OSError:
                         pass
             status = 'completed' if code == 0 else 'failed'
-            job['status'] = status
-            job['result'] = result
-            job['returncode'] = code
             error_summary = None
             if status != 'completed':
                 error_summary = (
@@ -1041,6 +1061,15 @@ class Studio:
                     )
                     or f'exportacao falhou (codigo {code})'
                 )
+            elif job.get('workId') and job.get('exportLineage'):
+                lineage_job = dict(job)
+                lineage_job['status'] = status
+                lineage_job['result'] = result
+                studio_review.record_export_lineage(self, lineage_job)
+
+            job['status'] = status
+            job['result'] = result
+            job['returncode'] = code
             self._write_export_status(job['outputDir'], {
                 'jobId': job['jobId'],
                 'kind': job.get('kind', 'video'),
@@ -1070,6 +1099,7 @@ class Studio:
             self._finalize_job(job)
 
     def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None, work_id=None):
+        export_lineage = None
         if work_id:
             save_payload = {'workId': work_id}
             if kind == 'carousel':
@@ -1078,7 +1108,19 @@ class Studio:
                 save_payload['videoRequest'] = request
                 if motion_plan is not None:
                     save_payload['motionPlan'] = motion_plan
-            self.save_work(save_payload)
+            saved_work = self.save_work(save_payload)['work']
+            req_snapshot = json.loads(json.dumps(request))
+            if isinstance(req_snapshot, dict):
+                req_snapshot['project'] = saved_work['project']
+            plan_snapshot = json.loads(json.dumps(motion_plan)) if motion_plan is not None else None
+            if isinstance(plan_snapshot, dict) and isinstance(req_snapshot, dict) and req_snapshot.get('id'):
+                plan_snapshot['requestId'] = req_snapshot['id']
+            export_lineage = {
+                'modality': 'carousel' if kind == 'carousel' else ('motion' if motion_plan is not None else 'video'),
+                'request': req_snapshot,
+                'motionPlan': plan_snapshot,
+                'mediaOrigins': studio_review._hash_media_list(self, (req_snapshot or {}).get('media', [])),
+            }
 
         output_abs = self.confine_workspace(output_dir_rel)
         out_rel = self.rel(output_abs)
@@ -1104,6 +1146,7 @@ class Studio:
         job = {
             'jobId': job_id, 'proc': proc, 'tmp': tmp, 'plan_tmp': plan_tmp,
             'outputDir': out_rel, 'profile': profile, 'kind': kind, 'workId': work_id,
+            'exportLineage': export_lineage,
             'status': 'running', 'result': None, 'returncode': None,
             'out': out_path, 'err': err_path, 'out_handle': out_handle, 'err_handle': err_handle,
             'startedAt': started_at, 'lock': threading.Lock(),
@@ -1176,17 +1219,18 @@ class Studio:
         return target
 
     def read_carousel_delivery(self, dir_rel):
+        fs = render_local.fs_path
         delivery_abs = self.confine(dir_rel)
         rel_dir = self.rel(delivery_abs)
         index = None
         index_path = os.path.join(delivery_abs, 'index.json')
-        if os.path.isfile(index_path):
-            with open(index_path, 'r', encoding='utf-8') as handle:
+        if os.path.isfile(fs(index_path)):
+            with open(fs(index_path), 'r', encoding='utf-8') as handle:
                 index = json.load(handle)
         manifest = None
         manifest_path = os.path.join(delivery_abs, 'carousel-manifest.json')
-        if os.path.isfile(manifest_path):
-            with open(manifest_path, 'r', encoding='utf-8') as handle:
+        if os.path.isfile(fs(manifest_path)):
+            with open(fs(manifest_path), 'r', encoding='utf-8') as handle:
                 manifest = json.load(handle)
         last_export = self._read_export_status(rel_dir)
         if last_export and last_export.get('status') in ('failed', 'interrupted') and isinstance(index, dict):
@@ -1199,9 +1243,10 @@ class Studio:
         return {'dir': rel_dir, 'index': index, 'manifest': manifest, 'lastExportStatus': last_export}
 
     def verified_carousel_path(self, dir_rel, kind, index=None):
+        fs = render_local.fs_path
         delivery_abs = self.confine(dir_rel)
         manifest_path = os.path.join(delivery_abs, 'carousel-manifest.json')
-        with open(manifest_path, 'r', encoding='utf-8') as handle:
+        with open(fs(manifest_path), 'r', encoding='utf-8') as handle:
             manifest = json.load(handle)
         if kind == 'zip':
             path = manifest.get('zip', {}).get('path')
@@ -1215,9 +1260,42 @@ class Studio:
         if not path:
             raise ValueError('artefato ausente no manifesto')
         target = self.confine(path)
-        if not os.path.isfile(target):
+        if not os.path.isfile(fs(target)):
             raise ValueError('arquivo de artefato ausente')
         return target
+
+    # ---- revisao editorial e pacote ZIP ----
+    def get_review_overview(self, work_id):
+        overview = studio_review.build_review_overview(self, work_id)
+        pkg = delivery_package.read_package_delivery(self, work_id)
+        return {**overview, 'packageDelivery': pkg}
+
+    def save_editorial(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        overview = studio_review.save_editorial(self, work_id, body)
+        pkg = delivery_package.read_package_delivery(self, work_id)
+        return {**overview, 'packageDelivery': pkg}
+
+    def decide_review(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        overview = studio_review.record_review_decision(self, work_id, body)
+        pkg = delivery_package.read_package_delivery(self, work_id)
+        return {**overview, 'packageDelivery': pkg}
+
+    def read_artifact_text(self, work_id, modality, profile_id, kind):
+        return studio_review.read_verified_artifact_text(self, work_id, modality, profile_id, kind)
+
+    def create_package(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        pkg = delivery_package.build_and_promote_package(self, work_id, body)
+        overview = studio_review.build_review_overview(self, work_id)
+        return {**overview, 'packageDelivery': pkg}
+
+    def read_package_delivery(self, work_id):
+        return delivery_package.read_package_delivery(self, work_id)
+
+    def verified_package_download(self, work_id):
+        return delivery_package.verified_package_zip_path(self, work_id)
 
     def source_media_path(self, path_rel):
         """Caminho de midia de origem (imagem) confinado a raiz, para o editor."""
@@ -1393,6 +1471,37 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'works': studio.list_works()})
             elif path == '/api/works/open':
                 self.send_json(200, {'ok': True, **studio.open_work(query.get('id', [''])[0])})
+            elif path == '/api/works/review':
+                self.send_json(200, {'ok': True, **studio.get_review_overview(query.get('id', [''])[0])})
+            elif path == '/api/works/artifact-text':
+                self.send_json(200, {'ok': True, **studio.read_artifact_text(
+                    query.get('id', [''])[0],
+                    query.get('modality', [''])[0],
+                    query.get('profile', [''])[0],
+                    query.get('kind', [''])[0],
+                )})
+            elif path == '/api/works/package':
+                self.send_json(200, {'ok': True, **studio.read_package_delivery(query.get('id', [''])[0])})
+            elif path == '/api/works/package/download':
+                try:
+                    target, download_name = studio.verified_package_download(query.get('id', [''])[0])
+                except (ValueError, OSError) as exc:
+                    self.send_error_json(404, str(exc))
+                    return
+                fs_target = render_local.fs_path(target)
+                size = os.path.getsize(fs_target)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/zip')
+                self.send_header('Content-Disposition', f'attachment; filename="{download_name}"')
+                self.send_header('Content-Length', str(size))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                with open(fs_target, 'rb') as handle:
+                    while True:
+                        chunk = handle.read(65536)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
             elif path == '/api/draft/load':
                 self.send_json(200, {'ok': True, 'request': studio.load_draft(query.get('path', [''])[0])})
             elif path == '/api/export/status':
@@ -1410,7 +1519,7 @@ class StudioHandler(BaseHTTPRequestHandler):
                     self.send_error_json(404, str(exc))
                     return
                 ext = os.path.splitext(target)[1].lower()
-                with open(target, 'rb') as handle:
+                with open(render_local.fs_path(target), 'rb') as handle:
                     body = handle.read()
                 self.send_response(200)
                 self.send_header('Content-Type', CONTENT_TYPES.get(ext, 'application/octet-stream'))
@@ -1419,6 +1528,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.wfile.write(body)
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_review.ReviewVersionConflictError as exc:
+            self.send_json(409, {'ok': False, 'error': str(exc), 'conflict': True})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
@@ -1440,6 +1551,12 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.create_demo_work(body)})
             elif path == '/api/works/save':
                 self.send_json(200, {'ok': True, **studio.save_work(body)})
+            elif path == '/api/works/editorial/save':
+                self.send_json(200, {'ok': True, **studio.save_editorial(body)})
+            elif path == '/api/works/review/decide':
+                self.send_json(200, {'ok': True, **studio.decide_review(body)})
+            elif path == '/api/works/package':
+                self.send_json(200, {'ok': True, **studio.create_package(body)})
             elif path == '/api/draft/save':
                 rel = studio.save_draft(body.get('path', ''), body.get('request'))
                 self.send_json(200, {'ok': True, 'path': rel})
@@ -1462,6 +1579,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'written': studio.generate_media(body.get('request'))})
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_review.ReviewVersionConflictError as exc:
+            self.send_json(409, {'ok': False, 'error': str(exc), 'conflict': True})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:

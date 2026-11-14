@@ -17,8 +17,9 @@ label.inline-check { flex-direction: row; align-items: center; gap: 6px; color: 
 label.inline-check input[type="checkbox"] { min-width: auto; width: 16px; height: 16px; padding: 0; }
 .field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .checks-grid { display: flex; flex-wrap: wrap; gap: 10px 18px; }
-input, select, button { font: inherit; }
-input, select { background: #0d0f13; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 180px; }
+input, select, textarea, button { font: inherit; }
+input, select, textarea { background: #0d0f13; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-width: 180px; }
+textarea { width: 100%; resize: vertical; }
 input[type="number"] { min-width: 90px; }
 button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 button:hover { filter: brightness(1.1); }
@@ -66,3 +67,13 @@ pre { background: #0d0f13; border: 1px solid var(--line); border-radius: 6px; pa
 #c-delivery-output .profile-card img { max-width: 100%; }
 #m-canvas { border: 1px solid var(--line); border-radius: 6px; background: #000; cursor: crosshair; display: block; margin: 8px 0; touch-action: none; }
 #m-delivery-output video { width: 270px; max-width: 100%; border-radius: 6px; background: #000; display: block; margin: 8px 0; }
+button.warn-btn { background: #9e6a03; color: #fff; }
+.review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px 14px; }
+.review-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin: 12px 0; background: #14171d; }
+.review-card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.carousel-strip { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.carousel-strip-item { border: 1px solid var(--line); border-radius: 6px; padding: 6px; background: #0d0f13; width: 140px; text-align: center; font-size: 12px; }
+.carousel-strip-item img { width: 126px; height: 126px; object-fit: cover; border-radius: 4px; display: block; margin: 0 auto 4px; }
+.checklist-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; background: #14171d; }
+.history-box { margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 6px; font-size: 12px; }
+.artifact-viewer { margin-top: 8px; max-height: 220px; }

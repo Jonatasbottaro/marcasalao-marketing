@@ -340,3 +340,139 @@ jobs:
               print(brand, 'motion ok: 1080x1920, 0 audio, motionPlan no manifesto')
           print('motion CI proof ok: contorno animado, duas marcas, sem audio')
           PY
+
+      - name: Prova de Revisao editorial e pacote ZIP de entrega (Studio HTTP em 127.0.0.1)
+        run: |
+          python - <<'PY'
+          import glob, hashlib, json, os, shutil, subprocess, time, urllib.parse, urllib.request, zipfile
+          os.makedirs('.workspace/tmp/ci-zip-chk', exist_ok=True)
+          p = subprocess.Popen(['python', 'tools/video_studio.py', '--port', '8798'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+          base = 'http://127.0.0.1:8798'
+          hdrs = {'Content-Type': 'application/json', 'Origin': base}
+          def call(path, body=None):
+              data = json.dumps(body).encode() if body is not None else None
+              req = urllib.request.Request(base + path, data=data, headers=hdrs if data is not None else {})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.loads(r.read().decode('utf-8'))
+          def wait_export(payload):
+              res = call('/api/export', payload)
+              jid = res['jobId']
+              for _ in range(180):
+                  st = call('/api/export/status?' + urllib.parse.urlencode({'job': jid}))
+                  if st['status'] == 'completed':
+                      return st
+                  if st['status'] in ('failed', 'interrupted'):
+                      raise RuntimeError(f'Export falhou no CI: {st}')
+                  time.sleep(0.5)
+              raise RuntimeError('Timeout esperando exportacao no CI')
+          work_id = 'ci-rev-pkg-work'
+          try:
+              for _ in range(40):
+                  try:
+                      if call('/api/readiness')['readiness']['ready']:
+                          break
+                  except Exception:
+                      time.sleep(0.25)
+              else:
+                  raise RuntimeError('Studio 8798 nao ficou pronto')
+              wk = call('/api/works/create', {
+                  'id': work_id,
+                  'name': 'CI Revisao Entrega ZIP',
+                  'project': 'platform/examples/projects/marca-salao-social.project.json',
+                  'template': 'marca-salao',
+              })
+              paths = wk['work']['paths']
+              wait_export({'workId': work_id, 'kind': 'video', 'profile': 'instagram-reels-video', 'request': wk['videoRequest'], 'outputDir': paths['videoDeliveryDir']})
+              wait_export({'workId': work_id, 'kind': 'carousel', 'request': wk['carouselRequest'], 'outputDir': paths['carouselDeliveryDir']})
+              wait_export({'workId': work_id, 'kind': 'video', 'profile': 'instagram-reels-video', 'request': wk['videoRequest'], 'motionPlan': wk['motionPlan'], 'outputDir': paths['motionDeliveryDir']})
+
+              rev = call('/api/works/review?' + urllib.parse.urlencode({'id': work_id}))
+              assert len(rev['pieces']) >= 3, rev['pieces']
+              v_piece = next(x for x in rev['pieces'] if x['modality'] == 'video' and x['profileId'] == 'instagram-reels-video')
+              m_piece = next(x for x in rev['pieces'] if x['modality'] == 'motion' and x['profileId'] == 'instagram-reels-video')
+              c_piece = next(x for x in rev['pieces'] if x['modality'] == 'carousel')
+              v_sha_before = v_piece['metrics']['videoSha256']
+
+              ed = call('/api/works/editorial/save', {
+                  'workId': work_id,
+                  'briefing': {
+                      'objective': 'Prova CI de Revisao e ZIP',
+                      'audience': 'Gestores de salao',
+                      'coreMessage': 'Revisao vinculada por versao e pacote ZIP atomico',
+                      'supportEvidence': 'Hashes SHA-256 e FFprobe sem audio',
+                      'hook': 'Pacote final validado',
+                      'scriptSummary': 'Abertura -> Demonstracao -> CTA',
+                      'cta': 'Conheca o Marca Salao',
+                  },
+                  'channels': {
+                      'instagram-reels-video': {
+                          'profileId': 'instagram-reels-video',
+                          'title': 'Titulo IG CI',
+                          'postText': 'Legenda IG CI fora do SRT',
+                          'cta': 'Link na bio',
+                          'destinationUrl': 'https://marcasalao.com.br',
+                          'hashtags': '#marcasalao',
+                      },
+                      'instagram-feed-image-square': {
+                          'profileId': 'instagram-feed-image-square',
+                          'title': 'Carrossel CI',
+                          'postText': 'Legenda Carrossel CI',
+                          'cta': 'Link na bio',
+                          'destinationUrl': 'https://marcasalao.com.br',
+                          'hashtags': '#marcasalao',
+                      },
+                  },
+              })
+              for pid in ('instagram-reels-video', 'instagram-feed-image-square'):
+                  ch = next(x for x in ed['channels'] if x['profileId'] == pid)
+                  call('/api/works/review/decide', {'workId': work_id, 'targetType': 'channel', 'profileId': pid, 'expectedCopySha256': ch['copySha256'], 'decision': 'approved_for_local_delivery'})
+              for pc in (v_piece, c_piece, m_piece):
+                  call('/api/works/review/decide', {'workId': work_id, 'targetType': 'piece', 'modality': pc['modality'], 'profileId': pc['profileId'], 'expectedVersionId': pc['deliveryVersionId'], 'expectedDraftFingerprint': pc['currentDraftFingerprint'], 'decision': 'approved_for_local_delivery'})
+
+              # Edicao localizada de texto de canal nao invalida o MP4 nem a aprovacao da peca
+              ed2 = call('/api/works/editorial/save', {'workId': work_id, 'channels': {'instagram-reels-video': {'profileId': 'instagram-reels-video', 'postText': 'Legenda IG CI revisada'}}})
+              ch_ig = next(x for x in ed2['channels'] if x['profileId'] == 'instagram-reels-video')
+              v_after = next(x for x in ed2['pieces'] if x['modality'] == 'video' and x['profileId'] == 'instagram-reels-video')
+              assert ch_ig['status'] == 'copy_outdated', ch_ig
+              assert v_after['status'] == 'approved' and v_after['metrics']['videoSha256'] == v_sha_before, v_after
+              call('/api/works/review/decide', {'workId': work_id, 'targetType': 'channel', 'profileId': 'instagram-reels-video', 'expectedCopySha256': ch_ig['copySha256'], 'decision': 'approved_for_local_delivery'})
+
+              rev_ok = call('/api/works/review?' + urllib.parse.urlencode({'id': work_id}))
+              pkg = call('/api/works/package', {
+                  'workId': work_id,
+                  'pieces': [{'modality': x['modality'], 'profileId': x['profileId'], 'expectedVersionId': x['deliveryVersionId'], 'expectedDraftFingerprint': x['currentDraftFingerprint']} for x in (v_piece, c_piece, m_piece)],
+                  'channels': [{'profileId': pid, 'expectedCopySha256': next(c for c in rev_ok['channels'] if c['profileId'] == pid)['copySha256']} for pid in ('instagram-reels-video', 'instagram-feed-image-square')],
+              })
+              dl_url = base + pkg['packageDelivery']['downloadUrl']
+              zip_path = '.workspace/tmp/ci-zip-chk/entrega.zip'
+              with urllib.request.urlopen(dl_url, timeout=60) as r, open(zip_path, 'wb') as out:
+                  out.write(r.read())
+
+              with zipfile.ZipFile(zip_path, 'r') as z:
+                  names = z.namelist()
+                  assert 'package-manifest.json' in names, names
+                  assert 'briefing/ficha-editorial.json' in names and 'briefing/ficha-editorial.txt' in names, names
+                  assert 'video/instagram-reels-video/primary-output.mp4' in names, names
+                  assert 'motion/instagram-reels-video/primary-output.mp4' in names, names
+                  assert 'motion/instagram-reels-video/motion-plan.json' in names, names
+                  manifest = json.loads(z.read('package-manifest.json').decode('utf-8'))
+                  for item in manifest['files']:
+                      assert hashlib.sha256(z.read(item['archivePath'])).hexdigest() == item['sha256'], item
+                  for idx, mp4_name in enumerate(('video/instagram-reels-video/primary-output.mp4', 'motion/instagram-reels-video/primary-output.mp4')):
+                      tmp_mp4 = f'.workspace/tmp/ci-zip-chk/p_{idx}.mp4'
+                      with open(tmp_mp4, 'wb') as f:
+                          f.write(z.read(mp4_name))
+                      info = json.loads(subprocess.check_output(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', tmp_mp4], text=True))
+                      v = [s for s in info['streams'] if s.get('codec_type') == 'video']
+                      assert len(v) == 1 and int(v[0]['width']) == 1080 and int(v[0]['height']) == 1920
+                      assert sum(1 for s in info['streams'] if s.get('codec_type') == 'audio') == 0
+              print('review & delivery zip CI proof ok: 3 modalidades separadas, SHA-256 e FFprobe sem audio')
+          finally:
+              p.terminate()
+              try:
+                  p.wait(timeout=5)
+              except Exception:
+                  p.kill()
+              shutil.rmtree(f'.workspace/studio/works/{work_id}', ignore_errors=True)
+              shutil.rmtree('.workspace/tmp/ci-zip-chk', ignore_errors=True)
+          PY

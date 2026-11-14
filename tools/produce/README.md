@@ -174,3 +174,30 @@ marque a regiao no canvas e gerencie efeitos em multiplas cenas no mesmo
 ```bash
 python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/motion --json
 ```
+
+## Revisão & Entrega e pacote ZIP final (`studio_review.py` + `delivery_package.py`)
+
+Fluxo integrado no Studio local: **Criar trabalho → Preencher ficha → Exportar → Revisar → Baixar ZIP**.
+
+1. **Ficha editorial e textos por canal (`editorial.json`)**:
+   - Campos do briefing do trabalho (`objective`, `audience`, `coreMessage`, `supportEvidence`, `hook`, `scriptSummary`, `cta`) e textos específicos de publicação por canal (`title`, `postText`, `cta`, `destinationUrl`, `hashtags`).
+   - Trabalhos legados sem `editorial.json` abrem normalmente com a ficha em branco.
+   - **Separação editorial rigorosa**: os textos por canal alimentam apenas `textos-por-canal/<perfilId>/publicacao.{json,txt}` e **não** modificam a legenda queimada/SRT (`.srt`), o roteiro de narração (`.txt`) nem os hashes dos MP4s exportados. Alterar apenas o texto de um canal marca somente aquele canal como `copy_outdated`, preservando intactos os demais canais e as peças já aprovadas.
+
+2. **Vínculo por versão, decisões humanas e histórico (`review-state.json`)**:
+   - Cada exportação feita pelo Studio registra vínculo explícito entre a entrega promovida e o snapshot de entrada (`VideoRequest`, `CarouselRequest`, `MotionPlan` + origens/licenças das mídias).
+   - Entregas anteriores ou criadas externamente sem vínculo aparecem como `unlinked` (**Entrega externa sem vínculo**): é possível pedir ajustes (`changes_requested`), enquanto a aprovação (`approved_for_local_delivery`) fica bloqueada até reexportação pelo Studio.
+   - Decisões suportadas por peça e por texto de canal: `approved_for_local_delivery` e `changes_requested` com observação e histórico completo preservado entre reexportações e reinícios do servidor.
+   - Edições no `MotionPlan` invalidam somente as peças de **Motion** (`draft_outdated`) sem invalidar os Vídeos do mesmo destino; edições no `VideoRequest` sinalizam Vídeo e Motion. Em caso de conflito concorrente ou versão desatualizada, a API responde `HTTP 409` (`conflict: true`).
+   - Falhas de reexportação preservam avisos (`lastAttempt`), o histórico de decisões, a última entrega válida e o último pacote ZIP gerado.
+
+3. **Pacote ZIP de entrega transacional (`Gerar ZIP de entrega`)**:
+   - Checklist interativo de peças e textos por canal com indicação clara do motivo de prontidão ou bloqueio; apenas itens explicitamente aprovados e íntegros (confinação à raiz + existência + SHA-256) são aceitos no empacotamento.
+   - Escrita em staging exclusivo sob lock de promoção (`render_local.acquire_promotion_lock`) e promoção atômica com backup/rollback (`render_local.promote_with_backup`) em `.workspace/studio/works/<id>/deliveries/package/` (`delivery-package.zip`, `package-manifest.json` e `index.json`), preservando o pacote ZIP anterior em falhas de empacotamento ou promoção (`GET /api/works/review`, `POST /api/works/editorial/save`, `POST /api/works/review/decide`, `GET /api/works/artifact-text`, `GET|POST /api/works/package` e `GET /api/works/package/download`).
+   - Estrutura interna padronizada no ZIP:
+     - `briefing/ficha-editorial.{json,txt}`
+     - `textos-por-canal/<perfilId>/publicacao.{json,txt}`
+     - `video/<perfilId>/{primary-output.mp4, subtitles.srt, narration.txt}`
+     - `motion/<perfilId>/{primary-output.mp4, subtitles.srt, narration.txt, motion-plan.json}` (separado de `video/<perfilId>/` mesmo quando o perfil de destino é o mesmo)
+     - `carousel/<perfilId>/<N-card.jpg>` na ordem exata do `carousel-manifest.json`
+     - `package-manifest.json` com hashes SHA-256, tamanhos e metadados técnicos conferidos antes da criação e no download.

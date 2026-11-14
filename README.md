@@ -65,6 +65,7 @@ Na tela inicial (**Trabalhos & Projetos**):
 - Crie e reabra **Trabalhos** persistentes em `.workspace/studio/works/<id>/`: rascunhos, mídias compartilhadas entre Vídeo, Carrossel e Motion e pastas de entrega têm caminhos gerados automaticamente a partir dos IDs, sem digitar caminhos.
 - Veja apenas destinos compatíveis com o projeto (allowlist + catálogo) e com o módulo aberto (**Vídeos** 9:16@30, **Carrosséis** 1:1 ou **Motion** 9:16@30).
 - Feche e reabra o painel retomando textos, estilos, mídias, seleções multi-cena e entregas válidas; tentativas falhas ou interrompidas exibem aviso próprio enquanto preservam `lastValidDelivery`. O servidor escuta somente em `127.0.0.1`, valida Host/Origin e confina tudo à raiz. Guia em [tools/produce/README.md](tools/produce/README.md).
+- Na aba **Revisão & Entrega**, registre a ficha editorial do trabalho (`editorial.json`) e os textos de publicação por canal (separados do `.srt` de legendas e do `.txt` de narração), revise vídeos, carrosséis e motion vinculados à versão da entrega com histórico de decisões (incluindo detecção de entregas legadas/externas `unlinked` e revalidação localizada por canal ou peça) e gere o **pacote ZIP de entrega** transacional com pastas separadas para Vídeo (`video/<perfil>/`) e Motion (`motion/<perfil>/`), `package-manifest.json` e verificação SHA-256.
 
 ### Carrosséis (R003)
 
