@@ -278,21 +278,23 @@ class TextModelAdapter:
 
 
 class ImageProviderExtensionPoint:
-    """Ponto de extensao desacoplado para futuros provedores visuais.
+    """Ponto de extensao desacoplado para provedores visuais.
 
-    Nesta entrega nao ha chamada a API externa de imagem: o planejamento lista os
-    descritores de midia necessarios por cena/card e vincula arquivos locais.
+    A geracao de imagens acontece na biblioteca de midia por trabalho
+    (studio_media.py + image_adapters.py), por acao confirmada do operador:
+    importacao manual, simulador deterministico ou Google Gemini opcional.
+    O adaptador de texto acima permanece independente e inalterado.
     """
 
-    provider_id = 'local-files-only'
-    supports_external_generation = False
+    provider_id = 'media-library'
+    supports_external_generation = True
 
     @staticmethod
     def status():
         return {
-            'providerId': 'local-files-only',
-            'supportsExternalGeneration': False,
-            'message': 'Geracao externa de imagens desabilitada nesta etapa; utilize arquivos locais do trabalho ou descritores pendentes.',
+            'providerId': 'media-library',
+            'supportsExternalGeneration': True,
+            'message': 'Pedidos visuais na biblioteca de midia: importacao manual, simulador e Google Gemini opcional, sempre por acao confirmada.',
         }
 
     @staticmethod

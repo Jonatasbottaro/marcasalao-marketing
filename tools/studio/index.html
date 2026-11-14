@@ -32,6 +32,7 @@
     <nav id="mode-nav">
       <button id="mode-home-btn" class="mode-btn active">Trabalhos &amp; Projetos</button>
       <button id="mode-planning-btn" class="mode-btn">Planejamento</button>
+      <button id="mode-media-btn" class="mode-btn">Mídias</button>
       <button id="mode-video-btn" class="mode-btn">Vídeos</button>
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
@@ -648,6 +649,81 @@
     </section>
   </div>
 
+  <div id="mode-media" hidden>
+    <div id="md-no-work-alert" class="alert-box warn">
+      Abra ou crie um trabalho na aba <strong>Trabalhos &amp; Projetos</strong> para usar a biblioteca de mídias, pedidos visuais e referências.
+    </div>
+    <div id="md-work-content" hidden>
+      <section>
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <h2>Biblioteca de mídias do trabalho</h2>
+          <button id="md-btn-refresh" class="secondary">Atualizar</button>
+        </div>
+        <div id="md-providers" class="row"></div>
+        <div id="md-error-box" class="alert-box err" hidden></div>
+        <div id="md-feedback"></div>
+      </section>
+
+      <section>
+        <h2>Importar imagem autorizada</h2>
+        <p class="muted">O arquivo é validado pelo conteúdo (PNG, JPEG ou WebP), com limite de 20 MB e contenção na pasta do trabalho. Cada importação cria uma nova versão com SHA-256 próprio; as versões antigas continuam disponíveis.</p>
+        <div class="row">
+          <label>Arquivo de imagem <input id="md-import-file" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"></label>
+          <label>Nova versão de mídia existente (opcional)
+            <select id="md-import-asset"><option value="">— criar nova mídia —</option></select>
+          </label>
+          <label>Origem
+            <select id="md-import-origin">
+              <option value="imported-manual">Importação manual</option>
+              <option value="external-tool">Gerada em ferramenta externa</option>
+              <option value="screenshot">Captura / evidência funcional</option>
+              <option value="photo">Foto autorizada</option>
+            </select>
+          </label>
+          <label>Ferramenta (se externa) <input id="md-import-tool" type="text" placeholder="ex.: Google Flow"></label>
+          <label>Licença <input id="md-import-license" type="text" value="pending" placeholder="pending ou licença declarada"></label>
+          <button id="md-btn-import">Importar como nova versão</button>
+        </div>
+        <div class="row">
+          <label>Cadastrar arquivo já existente na pasta de mídia
+            <select id="md-register-select"></select>
+          </label>
+          <button id="md-btn-register" class="secondary">Cadastrar sem copiar</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Mídias e versões</h2>
+        <div id="md-assets-grid" class="media-grid"></div>
+      </section>
+
+      <section>
+        <h2>Referências visuais (VisualAnchor)</h2>
+        <p class="muted">Uma referência é vinculada à versão exata da imagem (ID + SHA-256) e pode ser reutilizada em várias cenas e cards. Cada pedido decide se a referência será enviada ao provedor.</p>
+        <div class="row">
+          <label>Título <input id="md-anchor-title" type="text" placeholder="Referência visual do trabalho"></label>
+          <label>Imagem de referência <select id="md-anchor-asset"></select></label>
+          <label>Versão <select id="md-anchor-version"></select></label>
+        </div>
+        <div class="row">
+          <label style="flex:1;">Direção visual <input id="md-anchor-direction" type="text" placeholder="Estilo, composição e clima da referência"></label>
+        </div>
+        <div class="row">
+          <label style="flex:1;">Elementos que precisam aparecer (separe por ;) <input id="md-anchor-include" type="text"></label>
+          <label style="flex:1;">Elementos a evitar (separe por ;) <input id="md-anchor-avoid" type="text"></label>
+          <button id="md-btn-anchor-save">Salvar referência</button>
+        </div>
+        <div id="md-anchors-list"></div>
+      </section>
+
+      <section>
+        <h2>Pedidos visuais e candidatos</h2>
+        <p class="muted">Pedidos abertos a partir do Planejamento (botão <strong>Preparar imagem</strong> em cenas e cards). Compare candidatos, selecione uma versão e aplique pela prévia de diferenças.</p>
+        <div id="md-requests-list"></div>
+      </section>
+    </div>
+  </div>
+
   <div id="mode-review" hidden>
     <div id="r-no-work-alert" class="alert-box warn">
       Abra ou crie um trabalho na aba <strong>Trabalhos &amp; Projetos</strong> para preencher a ficha editorial, revisar peças e montar o ZIP de entrega.
@@ -706,7 +782,9 @@
   </main>
 
   <div id="toast"></div>
+  <div id="media-dialog-root"></div>
   <script src="/static/app.js"></script>
   <script src="/static/planning.js"></script>
+  <script src="/static/media.js"></script>
 </body>
 </html>

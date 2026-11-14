@@ -1400,7 +1400,10 @@ class StudioPlanningAndLLMAdapterTest(StudioReviewAndDeliveryPackageTest):
         self.assertEqual(st_cfg, 200, cfg_res)
         self.assertFalse(cfg_res["llmConfig"]["enabled"])
         self.assertEqual(cfg_res["llmConfig"]["model"], "qwen3:8b")
-        self.assertFalse(cfg_res["imageExtensionPoint"]["supportsExternalGeneration"])
+        # Geracao de imagem agora existe na biblioteca de midia, por acao confirmada;
+        # o adaptador de texto local continua desligado por padrao.
+        self.assertTrue(cfg_res["imageExtensionPoint"]["supportsExternalGeneration"])
+        self.assertEqual(cfg_res["imageExtensionPoint"]["providerId"], "media-library")
 
         # Legado sem planningFile ou planning.json abre limpo sem migrar forcadamente
         wid_legacy = "t-plan-legacy"

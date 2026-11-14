@@ -614,3 +614,7 @@ jobs:
               shutil.rmtree(f'.workspace/studio/works/{work_id}', ignore_errors=True)
               shutil.rmtree('.workspace/tmp/ci-zip-chk', ignore_errors=True)
           PY
+
+      - name: Prova da biblioteca de midia por trabalho (Studio HTTP em 127.0.0.1)
+        run: |
+          python tools/ci_media_library_proof.py --port 8797
