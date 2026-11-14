@@ -29,6 +29,8 @@ import { serializeCreativeExecutionPackage } from '../platform/dist/src/serializ
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
 import { serializeVisualStyle } from '../platform/dist/src/serialize-visual-style.js'
 import { validateAssetManifest } from '../platform/dist/src/validate-asset-manifest.js'
+import { validateVisualAnchor } from '../platform/dist/src/validate-visual-anchor.js'
+import { validateImageRequest } from '../platform/dist/src/validate-image-request.js'
 import {
     checkLocalRenderConfiguration,
     validateLocalRenderInput,
@@ -487,13 +489,47 @@ function handlePlanningSuggestion(args) {
     process.exit(result.ok ? 0 : 3)
 }
 
+function handleVisualContract(args, flag, validator, resultKey, label) {
+    let docPath = null
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        if (arg === flag && i + 1 < args.length) docPath = args[++i]
+        else if (arg === '--root' && i + 1 < args.length) i++
+        else { console.error(`erro: flag desconhecida na ponte: ${arg}`); process.exit(2) }
+    }
+    if (!docPath) {
+        console.error(`uso: node tools/render_bridge.mjs ${flag} <${label}.json> [--root <raiz>]`)
+        process.exit(2)
+    }
+    let docInput
+    try { docInput = JSON.parse(readFileSync(docPath, 'utf8')) }
+    catch { console.error(`erro: ${label} ilegivel ou JSON invalido`); process.exit(2) }
+
+    const result = validator(docInput)
+    if (result.ok) {
+        console.log(JSON.stringify({ ok: true, [resultKey]: result[resultKey] }))
+        process.exit(0)
+    }
+    console.log(JSON.stringify({
+        ok: false,
+        failureCode: result.failureCode,
+        subject: result.subject,
+        message: `${label} fora do contrato v1 (${result.failureCode}).`,
+    }))
+    process.exit(3)
+}
+
 const rawArgs = process.argv.slice(2)
 if (rawArgs.length === 0) {
     console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json> OU --carousel-request <pedido.json> OU --planning-suggestion <sugestao.json>')
     process.exit(2)
 }
 
-if (rawArgs.includes('--planning-suggestion')) {
+if (rawArgs.includes('--visual-anchor')) {
+    handleVisualContract(rawArgs, '--visual-anchor', validateVisualAnchor, 'anchor', 'ancora visual')
+} else if (rawArgs.includes('--image-request')) {
+    handleVisualContract(rawArgs, '--image-request', validateImageRequest, 'request', 'pedido de imagem')
+} else if (rawArgs.includes('--planning-suggestion')) {
     handlePlanningSuggestion(rawArgs)
 } else if (rawArgs.includes('--carousel-request')) {
     handleCarouselRequest(rawArgs)
