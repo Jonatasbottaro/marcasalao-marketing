@@ -516,6 +516,15 @@
           },
         }),
         el('button', {
+          type: 'button', class: 'secondary', text: 'Preparar imagem',
+          title: 'Abrir pedido visual desta cena (importar, gerar, comparar e aplicar)',
+          onclick: () => {
+            if (window.StudioMedia) {
+              window.StudioMedia.openRequest('video_scene', idInput.value.trim()).catch((e) => toast(e.message));
+            }
+          },
+        }),
+        el('button', {
           type: 'button', class: 'secondary', text: 'Remover',
           onclick: () => {
             syncPlanningFromDOM();
@@ -594,6 +603,15 @@
             syncPlanningFromDOM();
             const arr = planningOverview.planning.creative.carouselCards;
             if (idx < arr.length - 1) { [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]; renderCardsList(); }
+          },
+        }),
+        el('button', {
+          type: 'button', class: 'secondary', text: 'Preparar imagem',
+          title: 'Abrir pedido visual deste card (importar, gerar, comparar e aplicar)',
+          onclick: () => {
+            if (window.StudioMedia) {
+              window.StudioMedia.openRequest('carousel_card', idInput.value.trim()).catch((e) => toast(e.message));
+            }
           },
         }),
         el('button', {
@@ -1493,6 +1511,12 @@
     updateFillModeUI('manual');
     renderPlanningPanel();
   }
+
+  window.StudioPlanningBridge = {
+    save: () => savePlanning(),
+    refresh: () => loadPlanningOverview(),
+    getOverview: () => planningOverview,
+  };
 
   initPlanningUI();
 })();

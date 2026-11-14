@@ -42,7 +42,9 @@ import make_proof_assets
 import make_request_media
 import render_local
 import delivery_package
+import image_adapters
 import llm_adapter
+import studio_media
 import studio_planning
 import studio_review
 
@@ -570,6 +572,7 @@ class Studio:
             'editorialFile': f'{base}/editorial.json',
             'reviewStateFile': f'{base}/review-state.json',
             'planningFile': f'{base}/planning.json',
+            'mediaLibraryFile': f'{base}/media-library.json',
             'videoDeliveryDir': f'{base}/deliveries/video',
             'carouselDeliveryDir': f'{base}/deliveries/carousel',
             'motionDeliveryDir': f'{base}/deliveries/motion',
@@ -919,6 +922,7 @@ class Studio:
         review = studio_review.build_review_overview(self, work_id)
         planning = studio_planning.build_planning_overview(self, work_id)
         package_delivery = delivery_package.read_package_delivery(self, work_id)
+        media_library = studio_media.build_media_overview(self, work_id)
         return {
             'work': work_view,
             'videoRequest': video_req,
@@ -930,6 +934,7 @@ class Studio:
             'review': review,
             'planning': planning,
             'packageDelivery': package_delivery,
+            'mediaLibrary': media_library,
         }
 
     def save_work(self, body):
@@ -1396,6 +1401,44 @@ class Studio:
             raise RuntimeError(res.stderr.strip() or 'falha ao gerar midia ficticia')
         return [line for line in res.stdout.splitlines() if line.strip()]
 
+    # ---- biblioteca de midia por trabalho (pedidos visuais e versoes) ----
+    def get_media_library(self, work_id):
+        return studio_media.build_media_overview(self, work_id)
+
+    def import_work_media(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.import_media(self, work_id, body)
+
+    def register_work_media(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.register_existing_media(self, work_id, body)
+
+    def save_visual_anchor(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.save_anchor(self, work_id, body)
+
+    def create_image_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.create_image_request(self, work_id, body)
+
+    def update_image_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.update_image_request(self, work_id, body)
+
+    def generate_image_candidate(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.generate_candidate(self, work_id, body)
+
+    def select_work_media(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.select_media(self, work_id, body)
+
+    def get_image_providers(self):
+        return {'providers': image_adapters.provider_status()}
+
+    def library_media_file(self, work_id, asset_id, version_id):
+        return studio_media.library_media_path(self, work_id, asset_id, version_id)
+
 
 class StudioHandler(BaseHTTPRequestHandler):
     server_version = 'VideoStudio/1.0'
@@ -1528,6 +1571,25 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.open_work(query.get('id', [''])[0])})
             elif path == '/api/works/planning':
                 self.send_json(200, {'ok': True, **studio.get_planning_overview(query.get('id', [''])[0])})
+            elif path == '/api/works/media-library':
+                self.send_json(200, {'ok': True, **studio.get_media_library(query.get('id', [''])[0])})
+            elif path == '/api/image/config':
+                self.send_json(200, {'ok': True, **studio.get_image_providers()})
+            elif path == '/library-media':
+                try:
+                    target, mime = studio.library_media_file(
+                        query.get('work', [''])[0], query.get('asset', [''])[0], query.get('version', [''])[0])
+                except (ValueError, OSError) as exc:
+                    self.send_error_json(404, str(exc))
+                    return
+                with open(render_local.fs_path(target), 'rb') as handle:
+                    body = handle.read()
+                self.send_response(200)
+                self.send_header('Content-Type', mime)
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(body)
             elif path == '/api/llm/config':
                 self.send_json(200, {'ok': True, **studio.get_llm_config()})
             elif path == '/api/works/review':
@@ -1601,6 +1663,12 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(503, str(exc), {'code': exc.code})
         except llm_adapter.LLMAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
+        except image_adapters.ImageProviderTimeoutError as exc:
+            self.send_error_json(504, str(exc), {'code': exc.code})
+        except image_adapters.ImageProviderUnavailableError as exc:
+            self.send_error_json(503, str(exc), {'code': exc.code})
+        except image_adapters.ImageAdapterError as exc:
+            self.send_error_json(400, str(exc), {'code': exc.code})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
@@ -1638,6 +1706,20 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.preview_planning_diff(body)})
             elif path == '/api/works/planning/apply':
                 self.send_json(200, {'ok': True, **studio.apply_planning_to_editors(body)})
+            elif path == '/api/works/media/import':
+                self.send_json(200, {'ok': True, **studio.import_work_media(body)})
+            elif path == '/api/works/media/register':
+                self.send_json(200, {'ok': True, **studio.register_work_media(body)})
+            elif path == '/api/works/media/anchor':
+                self.send_json(200, {'ok': True, **studio.save_visual_anchor(body)})
+            elif path == '/api/works/media/request/create':
+                self.send_json(200, {'ok': True, **studio.create_image_request(body)})
+            elif path == '/api/works/media/request/update':
+                self.send_json(200, {'ok': True, **studio.update_image_request(body)})
+            elif path == '/api/works/media/generate':
+                self.send_json(200, {'ok': True, **studio.generate_image_candidate(body)})
+            elif path == '/api/works/media/select':
+                self.send_json(200, {'ok': True, **studio.select_work_media(body)})
             elif path == '/api/llm/config':
                 self.send_json(200, {'ok': True, **studio.save_llm_config(body)})
             elif path == '/api/works/review/decide':
@@ -1679,6 +1761,12 @@ class StudioHandler(BaseHTTPRequestHandler):
         except llm_adapter.LLMUnavailableError as exc:
             self.send_error_json(503, str(exc), {'code': exc.code})
         except llm_adapter.LLMAdapterError as exc:
+            self.send_error_json(400, str(exc), {'code': exc.code})
+        except image_adapters.ImageProviderTimeoutError as exc:
+            self.send_error_json(504, str(exc), {'code': exc.code})
+        except image_adapters.ImageProviderUnavailableError as exc:
+            self.send_error_json(503, str(exc), {'code': exc.code})
+        except image_adapters.ImageAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))

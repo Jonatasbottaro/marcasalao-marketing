@@ -1946,7 +1946,20 @@ function renderReviewPanel(review, pkg) {
       }));
     }
     if (p.mediaOrigins && p.mediaOrigins.length) {
-      const originLine = p.mediaOrigins.map((mo) => `${mo.mediaId || 'asset'}: ${mo.origin || 'local'} (${mo.license || 'n/d'})`).join(' | ');
+      const originLabels = {
+        'imported-manual': 'importação manual',
+        'external-tool': 'ferramenta externa (importada)',
+        'generated-simulator': 'ilustração gerada (simulador)',
+        'generated-google-gemini': 'ilustração gerada (Google Gemini)',
+        'synthetic-demo': 'fictícia de demonstração',
+        'studio-work': 'arquivo do trabalho',
+        'screenshot': 'captura / evidência funcional',
+      };
+      const originLine = p.mediaOrigins.map((mo) => {
+        const label = originLabels[mo.origin] || mo.origin || 'local';
+        const kind = String(mo.origin || '').startsWith('generated-') ? ' [ilustração gerada, não é captura/evidência]' : '';
+        return `${mo.mediaId || 'asset'}: ${label}${kind} (${mo.license || 'n/d'})`;
+      }).join(' | ');
       card.append(el('p', { class: 'muted', text: 'Origens de mídia: ' + originLine }));
     }
 

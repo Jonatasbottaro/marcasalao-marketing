@@ -123,7 +123,7 @@ def _allowed_profiles_from_listing(listing):
     return out
 
 
-def _build_work_media_catalog(studio, wpaths, video_req, carousel_req):
+def _build_work_media_catalog(studio, wpaths, video_req, carousel_req, use_library=True):
     scanned = []
     media_dir_abs = studio.confine_workspace(wpaths['mediaDir'])
     if os.path.isdir(render_local.fs_path(media_dir_abs)):
@@ -192,6 +192,9 @@ def _build_work_media_catalog(studio, wpaths, video_req, carousel_req):
             'license': existing.get('license') or 'pending',
         })
 
+    if use_library:
+        import studio_media
+        catalog = studio_media.apply_library_to_catalog(studio, wpaths, catalog)
     return catalog
 
 
@@ -673,12 +676,15 @@ def _ordered_project_media_list(planning_doc, existing_media_list, work_media_ma
         wm = work_media_map.get(mid)
         prev = by_id.get(mid) or {}
         if wm:
+            # Quando a versao selecionada na biblioteca muda o arquivo, a origem
+            # e a licenca acompanham a nova versao (proveniencia do render).
+            same_file = prev.get('path') == wm['path']
             out.append({
                 'id': mid,
                 'path': wm['path'],
                 'type': wm['type'],
-                'origin': prev.get('origin') or wm.get('origin') or 'studio-work',
-                'license': prev.get('license') or wm.get('license') or 'pending',
+                'origin': (prev.get('origin') if same_file else None) or wm.get('origin') or 'studio-work',
+                'license': (prev.get('license') if same_file else None) or wm.get('license') or 'pending',
             })
         elif prev.get('path'):
             out.append(prev)
