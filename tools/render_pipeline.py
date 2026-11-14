@@ -540,7 +540,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
                 'fadeOut': eff['resolvedFadeOutMs'] / 1000.0,
             })
 
-    title_style = render_local.build_title_style(visual_style) if visual_style else None
+    title_style = render_local.build_title_style(
+        visual_style, package['output']['width'], package['output']['height']) if visual_style else None
     cmd = render_local.build_render_command(
         package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
         title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render)

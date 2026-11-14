@@ -29,6 +29,8 @@ import { serializeCreativeExecutionPackage } from '../platform/dist/src/serializ
 import { serializeTextOverlayPlan } from '../platform/dist/src/serialize-text-overlay-plan.js'
 import { serializeVisualStyle } from '../platform/dist/src/serialize-visual-style.js'
 import { validateAssetManifest } from '../platform/dist/src/validate-asset-manifest.js'
+import { findOutputProfile } from '../platform/dist/src/output-profiles/catalog.js'
+import { localExportCapabilities } from '../platform/dist/src/output-profiles/local-export.js'
 import { validateVisualAnchor } from '../platform/dist/src/validate-visual-anchor.js'
 import { validateImageRequest } from '../platform/dist/src/validate-image-request.js'
 import {
@@ -376,6 +378,18 @@ function handleVideoRequest(args) {
     if (result.ok && motionInput !== null) {
         for (const profile of result.profiles) {
             if (profile.status !== 'compiled') continue
+            const catalogProfile = findOutputProfile(profile.profileId)
+            const motionCap = catalogProfile ? localExportCapabilities(catalogProfile).motion : null
+            if (!motionCap || !motionCap.supported) {
+                profile.status = 'failed'
+                profile.failureCode = 'MOTION_LOCAL_UNSUPPORTED_GEOMETRY'
+                profile.errors = [{
+                    code: 'MOTION_LOCAL_UNSUPPORTED_GEOMETRY',
+                    path: profile.profileId,
+                    message: 'Motion local disponivel apenas em 9:16 nesta rodada; o contorno usa coordenadas relativas ao quadro final e exige configuracao propria para outro enquadramento.',
+                }]
+                continue
+            }
             const resolution = resolveMotionPlan(profile.package, motionInput)
             if (resolution.ok) {
                 profile.motion = { requestId: resolution.requestId, effects: resolution.effects }
@@ -436,6 +450,16 @@ function handleCarouselRequest(args) {
     }
     if (resolution.plan.mediaKind !== 'image') {
         console.log(JSON.stringify({ ok: false, requestId: request.id, profileId, failureCode: 'CAROUSEL_PROFILE_NOT_IMAGE' }))
+        process.exit(3)
+    }
+    const carouselProfile = findOutputProfile(profileId)
+    const carouselCap = carouselProfile ? localExportCapabilities(carouselProfile).carousel : null
+    if (!carouselCap || !carouselCap.supported) {
+        console.log(JSON.stringify({
+            ok: false, requestId: request.id, profileId,
+            failureCode: 'CAROUSEL_LOCAL_UNSUPPORTED_GEOMETRY',
+            errors: [{ code: 'CAROUSEL_LOCAL_UNSUPPORTED_GEOMETRY', path: profileId, message: 'Geometria sem render local de carrossel nesta rodada (suportados: 1:1 1080x1080 e 4:5 1080x1350).' }],
+        }))
         process.exit(3)
     }
     const mediaById = new Map(request.media.map((m) => [m.id, m]))

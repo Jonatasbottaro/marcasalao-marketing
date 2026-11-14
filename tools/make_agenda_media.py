@@ -34,7 +34,7 @@ def write_agenda_png(path):
         ratio = y / (HEIGHT - 1)
         row = bytes(tuple(int(carousel_layout.BG_TOP[c] + (carousel_layout.BG_BOTTOM[c] - carousel_layout.BG_TOP[c]) * ratio) for c in range(3)))
         rgb[y * WIDTH * 3:(y + 1) * WIDTH * 3] = row * WIDTH
-    carousel_layout._draw_text(rgb, WIDTH, 60, 60, 'AGENDA DO DIA', 6, carousel_layout.TEXT_COLOR)
+    carousel_layout._draw_text(rgb, WIDTH, 60, 60, 'AGENDA DO DIA', 6, carousel_layout.TEXT_COLOR, HEIGHT)
     for i, slot in enumerate(SLOTS):
         y = ROW_START + i * (ROW_H + ROW_GAP)
         # faixa de fundo levemente mais clara
@@ -44,7 +44,7 @@ def write_agenda_png(path):
                 rgb[idx] = min(255, rgb[idx] + 18)
                 rgb[idx + 1] = min(255, rgb[idx + 1] + 18)
                 rgb[idx + 2] = min(255, rgb[idx + 2] + 22)
-        carousel_layout._draw_text(rgb, WIDTH, 80, y + 40, slot + '  CLIENTE', 5, carousel_layout.TEXT_COLOR)
+        carousel_layout._draw_text(rgb, WIDTH, 80, y + 40, slot + '  CLIENTE', 5, carousel_layout.TEXT_COLOR, HEIGHT)
     with open(path, 'wb') as handle:
         handle.write(carousel_layout.encode_png(WIDTH, HEIGHT, rgb))
     return path

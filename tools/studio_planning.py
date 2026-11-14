@@ -500,6 +500,11 @@ def _load_planning_doc(studio, work_id, work_doc, wpaths, editorial, listing, wo
         'recommendedProfiles': rec_profiles,
     }
 
+    carousel_ids = [p['id'] for p in allowed_profiles if p.get('localExportCarousel')]
+    carousel_profile_id = str(raw.get('carouselProfileId') or '').strip()
+    if carousel_profile_id not in carousel_ids:
+        carousel_profile_id = ''
+
     doc = {
         'schemaVersion': 1,
         'workId': work_id,
@@ -508,6 +513,7 @@ def _load_planning_doc(studio, work_id, work_doc, wpaths, editorial, listing, wo
         'ideaText': str(raw.get('ideaText') or '').strip(),
         'briefing': plan_brief,
         'briefingExtended': briefing_ext,
+        'carouselProfileId': carousel_profile_id,
         'gaps': [str(g).strip() for g in (raw.get('gaps') or []) if str(g).strip()],
         'questions': _normalize_questions(raw.get('questions')),
         'claims': _normalize_claims(raw.get('claims'), media_ids, is_marca_salao),
@@ -539,6 +545,7 @@ def _compute_context_fingerprints(planning_doc, editorial, video_req, carousel_r
         'ideaText': planning_doc['ideaText'],
         'briefing': planning_doc['briefing'],
         'briefingExtended': planning_doc['briefingExtended'],
+        'carouselProfileId': planning_doc.get('carouselProfileId') or '',
         'questions': planning_doc['questions'],
         'claims': planning_doc['claims'],
         'creative': planning_doc['creative'],
@@ -784,7 +791,8 @@ def _build_target_drafts_from_planning(studio, work_doc, wpaths, planning_doc, e
 
     allowed_carousel_ids = [p['id'] for p in allowed_profiles if p.get('localExportCarousel')]
     rec_carousel_profile = next((pid for pid in ext['recommendedProfiles'] if pid in allowed_carousel_ids), None)
-    target_carousel_profile = rec_carousel_profile or (
+    chosen_carousel = planning_doc.get('carouselProfileId') or ''
+    target_carousel_profile = (chosen_carousel if chosen_carousel in allowed_carousel_ids else None) or rec_carousel_profile or (
         carousel_req.get('profile') if carousel_req.get('profile') in allowed_carousel_ids else None
     ) or (allowed_carousel_ids[0] if allowed_carousel_ids else None)
 
@@ -1140,6 +1148,12 @@ def save_planning(studio, work_id, body):
                 ] or _default_recommended_profiles(allowed_profiles)
         if isinstance(body.get('gaps'), list):
             planning_doc['gaps'] = [str(g).strip() for g in body['gaps'] if str(g).strip()]
+        if 'carouselProfileId' in body:
+            allowed_carousel = {p['id'] for p in allowed_profiles if p.get('localExportCarousel')}
+            requested = str(body.get('carouselProfileId') or '').strip()
+            if requested and requested not in allowed_carousel:
+                raise ValueError(f'perfil de carrossel "{requested}" nao e permitido/compativel neste projeto')
+            planning_doc['carouselProfileId'] = requested
         if isinstance(body.get('questions'), list):
             planning_doc['questions'] = _normalize_questions(body['questions'])
         if isinstance(body.get('claims'), list):

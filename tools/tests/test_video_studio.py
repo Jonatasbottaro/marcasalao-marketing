@@ -134,8 +134,27 @@ class StudioHttpTest(StudioTestBase):
         self.assertEqual(status, 200)
         profiles = {p["id"]: p for p in data["listing"]["profiles"]}
         for pid in ("instagram-reels-video", "facebook-reels-video", "youtube-shorts"):
-            self.assertTrue(profiles[pid]["localExport"], pid)
+            self.assertTrue(profiles[pid]["localExportVideo"], pid)
+            self.assertTrue(profiles[pid]["localExport"]["video"]["supported"], pid)
             self.assertEqual(profiles[pid]["availability"], "allowed")
+        # Horizontal habilitado no allowlist deste projeto e suportado pelo adaptador.
+        horiz = profiles["youtube-video-horizontal"]
+        self.assertEqual(horiz["availability"], "allowed")
+        self.assertTrue(horiz["localExportVideo"])
+        self.assertEqual((horiz["width"], horiz["height"]), (1920, 1080))
+        # Motion permanece apenas no vertical nesta rodada.
+        self.assertFalse(horiz["localExportMotion"])
+        self.assertEqual(horiz["localExport"]["motion"]["reason"], "MOTION_VERTICAL_ONLY")
+        self.assertTrue(profiles["instagram-reels-video"]["localExportMotion"])
+        # Retrato 4:5 conhecido, mas fora do allowlist deste projeto.
+        portrait = profiles["instagram-feed-image-portrait"]
+        self.assertEqual(portrait["availability"], "blocked")
+        self.assertFalse(portrait["localExportCarousel"])
+        self.assertTrue(portrait["localExport"]["carousel"]["supported"])
+        # Imagem 9:16 de stories: conhecida, porem sem render local de carrossel.
+        stories_img = profiles["instagram-stories-image"]
+        self.assertFalse(stories_img["localExport"]["carousel"]["supported"])
+        self.assertEqual(stories_img["localExport"]["carousel"]["reason"], "GEOMETRY_UNSUPPORTED")
 
     def test_draft_save_load_roundtrip(self):
         rel = f".workspace/tmp/t_studio/{self._testMethodName}/draft.json"
@@ -482,11 +501,16 @@ class StudioWorkspaceLifecycleTest(StudioTestBase):
         self.assertEqual(by_id[pid]["source"], "registered")
         self.assertEqual(by_id["marca-salao"]["source"], "example")
 
-        # Filtragem por modulo
+        # Filtragem por modulo (horizontal agora e exportavel em Video; Motion segue 9:16)
         status, v_prof = self.request("GET", f"/api/profiles?project={proj_rel}&module=video")
         self.assertEqual(status, 200)
         v_ids = [p["id"] for p in v_prof["listing"]["compatibleProfiles"]]
-        self.assertEqual(set(v_ids), {"instagram-reels-video", "youtube-shorts"})
+        self.assertEqual(set(v_ids), {"instagram-reels-video", "youtube-shorts", "youtube-video-horizontal"})
+
+        status, m_prof = self.request("GET", f"/api/profiles?project={proj_rel}&module=motion")
+        self.assertEqual(status, 200)
+        m_ids = [p["id"] for p in m_prof["listing"]["compatibleProfiles"]]
+        self.assertEqual(set(m_ids), {"instagram-reels-video", "youtube-shorts"})
 
         status, c_prof = self.request("GET", f"/api/profiles?project={proj_rel}&module=carousel")
         self.assertEqual(status, 200)

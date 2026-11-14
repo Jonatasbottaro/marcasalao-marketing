@@ -467,18 +467,13 @@ class Studio:
             raise ValueError(msg or 'projeto rejeitado ao consultar perfis')
         for profile in listing.get('profiles', []):
             allowed = profile.get('availability') == 'allowed'
-            video_ok = (
-                allowed
-                and profile.get('mediaKind') == 'video'
-                and profile.get('aspectRatio') == '9:16'
-                and profile.get('fps') == 30
-            )
-            carousel_ok = (
-                allowed
-                and profile.get('mediaKind') == 'image'
-                and profile.get('aspectRatio') == '1:1'
-            )
-            motion_ok = video_ok
+            # Fonte compartilhada: a exportabilidade local por modulo vem do
+            # catalogo + adaptador (platform/output-profiles/local-export.ts),
+            # nunca de um segundo dicionario de formatos aqui.
+            local = profile.get('localExport') or {}
+            video_ok = allowed and bool((local.get('video') or {}).get('supported'))
+            carousel_ok = allowed and bool((local.get('carousel') or {}).get('supported'))
+            motion_ok = allowed and bool((local.get('motion') or {}).get('supported'))
             modules = []
             if video_ok:
                 modules.append('video')
@@ -486,7 +481,7 @@ class Studio:
                 modules.append('carousel')
             if motion_ok:
                 modules.append('motion')
-            profile['localExport'] = video_ok
+            profile['localExport'] = local
             profile['localExportVideo'] = video_ok
             profile['localExportCarousel'] = carousel_ok
             profile['localExportMotion'] = motion_ok

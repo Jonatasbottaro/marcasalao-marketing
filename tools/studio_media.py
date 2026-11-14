@@ -437,6 +437,64 @@ def build_media_overview(studio, work_id):
         return _overview_payload(studio, work_id, wpaths, library, on_disk, video_req, carousel_req)
 
 
+def _request_framing(studio, library, req, video_req, carousel_req, wpaths=None):
+    """Como a midia atual do alvo sera enquadrada no quadro do pedido.
+
+    Regra do adaptador: scale com force_original_aspect_ratio=decrease + pad
+    centralizado + setsar=1 (bandas de preenchimento, sem distorcao).
+    """
+    target = req['target']
+    asset_id = None
+    selection = next((s for s in library.get('selections') or []
+                      if s['targetKind'] == target['kind'] and s['targetId'] == target['id']), None)
+    if selection:
+        asset_id = selection['assetId']
+    else:
+        if target['kind'] == 'video_scene':
+            scene = next((s for s in (video_req or {}).get('scenes') or [] if s.get('id') == target['id']), None)
+            asset_id = (scene or {}).get('mediaId')
+        else:
+            card = next((c for c in (carousel_req or {}).get('cards') or [] if c.get('id') == target['id']), None)
+            asset_id = (card or {}).get('mediaId')
+    if not asset_id and wpaths:
+        # Alvo ainda nao aplicado aos editores: usa o roteiro do Planejamento.
+        raw = studio_review._read_json_safe(studio.confine_workspace(wpaths['planningFile'])) or {}
+        creative = raw.get('creative') or {}
+        if target['kind'] == 'video_scene':
+            scene = next((s for s in creative.get('videoScenes') or [] if s.get('id') == target['id']), None)
+            asset_id = (scene or {}).get('mediaId')
+        else:
+            card = next((c for c in creative.get('carouselCards') or [] if c.get('id') == target['id']), None)
+            asset_id = (card or {}).get('mediaId')
+    asset = _find_asset(library, asset_id) if asset_id else None
+    version = _find_version(asset, asset.get('selectedVersionId')) if asset else None
+    geometry = req.get('geometry') or {}
+    out = {
+        'rule': 'fit-center-pad',
+        'targetWidth': geometry.get('width'),
+        'targetHeight': geometry.get('height'),
+        'mediaWidth': None,
+        'mediaHeight': None,
+        'bands': None,
+    }
+    if not version or version.get('missing'):
+        return out
+    mw, mh = version.get('width'), version.get('height')
+    out['mediaWidth'], out['mediaHeight'] = mw, mh
+    tw, th = geometry.get('width'), geometry.get('height')
+    if not mw or not mh or not tw or not th:
+        return out
+    fit = min(tw / mw, th / mh)
+    dw, dh = mw * fit, mh * fit
+    if dw < tw - 1:
+        out['bands'] = 'verticais (pillarbox)'
+    elif dh < th - 1:
+        out['bands'] = 'horizontais (letterbox)'
+    else:
+        out['bands'] = 'nenhuma (proporcao identica)'
+    return out
+
+
 def _overview_payload(studio, work_id, wpaths, library, on_disk, video_req, carousel_req):
     requests_view = []
     for entry in library['requests']:
@@ -455,6 +513,7 @@ def _overview_payload(studio, work_id, wpaths, library, on_disk, video_req, caro
             'currentContextSha256': current_sha,
             'contextOutdated': any(c['stale'] for c in candidates),
             'providerTextPreview': image_adapters.build_provider_text(req, anchor_doc),
+            'framing': _request_framing(studio, library, req, video_req, carousel_req, wpaths),
         })
     assets_view = []
     for asset in library['assets']:
@@ -700,6 +759,9 @@ def _profile_for_target(studio, body, target_kind, planning_doc, allowed_profile
         candidates = [p for p in allowed_profiles if p.get('localExportVideo')]
     else:
         candidates = [p for p in allowed_profiles if p.get('localExportCarousel')]
+        chosen = planning_doc.get('carouselProfileId') or ''
+        if not requested and chosen:
+            requested = chosen
     if requested:
         match = next((p for p in candidates if p['id'] == requested), None)
         if not match:
@@ -792,7 +854,7 @@ def update_image_request(studio, work_id, body):
         raise ValueError('payload de atualizacao invalido')
     request_id = str(body.get('requestId') or '').strip()
     with studio_review._STATE_LOCK:
-        work_doc, wpaths, video_req, carousel_req, _, _ = studio_review._read_work_core(studio, work_id)
+        work_doc, wpaths, video_req, carousel_req, _, listing = studio_review._read_work_core(studio, work_id)
         library, _ = load_library(studio, work_id, work_doc, wpaths, video_req, carousel_req)
         _check_expected(library, body)
         entry = _find_request(library, request_id)
@@ -805,6 +867,16 @@ def update_image_request(studio, work_id, body):
             req['purpose'] = _clean_text(body.get('purpose'), 'purpose', max_len=300)
         if 'framing' in body:
             req['framing'] = _clean_text(body.get('framing'), 'framing', max_len=300)
+        if 'profileId' in body and str(body.get('profileId') or '').strip() != req['profileId']:
+            planning_doc, allowed_profiles = _planning_context(studio, work_id, work_doc, wpaths, listing)
+            profile = _profile_for_target(studio, body, req['target']['kind'], planning_doc, allowed_profiles)
+            aspect = profile.get('aspectRatio')
+            if aspect not in ASPECT_GEOMETRY:
+                raise ValueError(f'proporcao do perfil "{profile["id"]}" ({aspect}) nao suportada para pedido de imagem')
+            width, height = ASPECT_GEOMETRY[aspect]
+            req['profileId'] = profile['id']
+            req['aspectRatio'] = aspect
+            req['geometry'] = {'width': width, 'height': height}
         if 'anchorId' in body or 'sendAnchorToProvider' in body:
             anchor_id = str(body.get('anchorId') if 'anchorId' in body else (req.get('anchor') or {}).get('anchorId') or '').strip()
             send = body.get('sendAnchorToProvider')

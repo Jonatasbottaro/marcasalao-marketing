@@ -74,8 +74,11 @@ def run_bridge_carousel(root, input_path, profile=None):
 def build_preview(verdict):
     cards = []
     overflow_cards = []
+    geometry = verdict.get('geometry') or {}
+    width = geometry.get('width', carousel_layout.WIDTH)
+    height = geometry.get('height', carousel_layout.HEIGHT)
     for card in verdict['cards']:
-        measured = carousel_layout.measure_card(card)
+        measured = carousel_layout.measure_card(card, width, height)
         entry = dict(card)
         entry['overflow'] = measured['overflow']
         entry['totalHeight'] = measured['totalHeight']
@@ -95,8 +98,16 @@ def build_preview(verdict):
 
 
 def _media_rgb(ffmpeg, media_abs, width, height, staging, card_id):
+    """Decodifica a midia no quadro do perfil preservando a proporcao.
+
+    Mesma regra de enquadramento do video: scale com
+    force_original_aspect_ratio=decrease + pad centralizado (bandas de
+    preenchimento) + setsar=1; a imagem nunca e distorcida.
+    """
     raw_path = os.path.join(staging, f'.media-{card_id}.raw')
-    cmd = [ffmpeg, '-y', '-i', media_abs, '-vf', f'scale={width}:{height}',
+    cmd = [ffmpeg, '-y', '-i', media_abs, '-vf',
+           f'scale={width}:{height}:force_original_aspect_ratio=decrease,'
+           f'pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:color=0x10141A,setsar=1',
            '-f', 'rawvideo', '-pix_fmt', 'rgb24', raw_path]
     res = subprocess.run(cmd, capture_output=True, text=True, timeout=render_local.RENDER_TIMEOUT_SECONDS)
     if res.returncode != 0:

@@ -214,6 +214,20 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Temporal de produção e deploy. O adaptador Gemini atende apenas aos candidatos do Studio no escopo autorizado.
 
+## 4k. Exportação multiformato no Studio local (horizontal 16:9 e carrossel 4:5) — concluído em 14/11/2026
+
+> O titular autorizou em 14/11/2026 a entrega completa: YouTube horizontal no editor de Vídeos e feed retrato 4:5 no editor de Carrosséis, com mídia preparada para o quadro escolhido, prévia, exportação, revisão e ZIP, mais código, testes, prova em navegador, CI e documentação na mesma rodada e integração à main após os gates. Branch técnica `codex/multi-format-export-v1` a partir do checkpoint `68b2721cb0d08a28b015b52ec25a56af89708f25`; merge e evidências registrados em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Exportação multiformato.
+
+Critérios de conclusão atendidos:
+- **Fonte compartilhada** de exportabilidade local por módulo (catálogo + allowlist + limites do adaptador), coerente entre CLI, API, Planejamento, biblioteca e seletores; distingue perfil desconhecido, fora da allowlist e conhecido sem render local, preservando regras/avisos de publicação por contexto.
+- **Vídeo horizontal** 1920×1080@30 H.264 sem áudio, com enquadramento fit+pad documentado, títulos/legendas encaixados no 16:9 e estilos 9:16 preservados; exportação por perfil com falha isolada; Motion restrito a 9:16 com explicação no seletor e na prévia.
+- **Carrossel 4:5** 1080×1350 com layout/manifesto pela geometria, overflow por card na prévia, imagens com proporção preservada, JPEGs na ordem + ZIP + hashes dos bytes finais; conjunto válido preservado em falha.
+- **Planejamento/Mídias**: escolha por modalidade (1:1 vs 4:5), geometria do pedido de imagem pelo perfil, nota de reenquadramento ao mudar destino, reuso de versão ou novo candidato, prévia do quadro efetivo offline.
+- **Revisão/ZIP**: identificação por modalidade/perfil/versão; texto-only do horizontal invalida só aquele canal; ZIP reúne vertical + horizontal + 4:5 + textos aprovados com manifesto conferido.
+- **Provas**: FFprobe das duas geometrias (30 fps, H.264, 0 áudio), dimensões/hashes dos JPEGs, aceite no navegador nas duas marcas (allowlist ausente bloqueia; projeto fictício habilita), falha no horizontal preserva vertical, reinício recupera destinos/revisões/ZIP; gates typecheck/contratos/platform/Python `REQUIRE_RENDER=1` e etapa CI dedicada em Ubuntu/Windows.
+
+Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Motion em outros enquadramentos, Temporal de produção e deploy.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

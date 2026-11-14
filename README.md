@@ -92,9 +92,41 @@ python tools/ci_media_library_proof.py --port 8797
 
 **Adicionar outro adaptador.** Implemente uma classe em `tools/image_adapters.py` com `generate(prompt, geometry, ...)` retornando `{bytes, format, width, height, provider, model, simulated}`, registre o provedor em `provider_status()` e acrescente o ramo em `studio_media.generate_candidate`. Os contratos `VisualAnchor`/`ImageRequest` e os pedidos dos editores não mudam. A regra vigente de arte do Marca Salão via ComfyUI08 e seu guard de proveniência continuam valendo para o fluxo de produção oficial e publicação da marca; este adaptador atende ao fluxo de candidatos do Studio dentro do escopo autorizado.
 
+### Exportação multiformato (YouTube horizontal 16:9 e Carrossel 4:5)
+
+Além dos verticais 9:16 e do carrossel quadrado 1:1, o Studio local exporta **`youtube-video-horizontal` (1920×1080, 16:9, 30 fps, MP4 H.264)** e **`instagram-feed-image-portrait` (1080×1350, 4:5)**, sempre respeitando a allowlist do projeto. A exportabilidade local por módulo vem de uma **fonte compartilhada** (`platform/src/output-profiles/local-export.ts`), consumida pela CLI de perfis, pela API do Studio, pelo Planejamento, pela biblioteca de mídias e pelos seletores do painel — não há segundo dicionário de formatos. Perfis conhecidos sem render local mostram o motivo (geometria/fps fora do adaptador, ou Motion restrito ao vertical).
+
+- **Vídeo horizontal**: selecione `youtube-video-horizontal` na tabela de perfis do editor de Vídeos (ou em `profiles` do `VideoRequest`) junto dos verticais; cada destino mantém pacote, pasta de entrega, relatório e estado de revisão próprios. Exporte apenas um perfil com `--profile` ou pelo seletor do painel. Uma falha no horizontal aparece naquele perfil e preserva as entregas válidas dos demais.
+- **Enquadramento padrão**: `scale=<W>:<H>:force_original_aspect_ratio=decrease` + `pad` centralizado + `setsar=1` — a mídia nunca é distorcida; as áreas de preenchimento (letterbox/pillarbox) ficam em preto no vídeo e no tom do layout no carrossel. Títulos e margens escalam com a geometria (fonte/margem superior pela altura, margens horizontais pela largura), preservando os estilos existentes de 9:16; legendas queimadas mantêm proporção da altura e cabem na base do 16:9 (comprovado por medição de quadros nos testes).
+- **Carrossel 4:5**: no Planejamento, escolha 1:1 ou 4:5 quando ambos estiverem na allowlist (seletor de formato do carrossel); o layout usa a geometria do perfil na medição de texto, margens, quebra de linha, desenho e manifesto. Texto que ultrapassa a área útil indica o card na prévia (`overflowCards`) e bloqueia a exportação preservando o conjunto válido anterior.
+- **Motion permanece 9:16 nesta rodada**: o seletor e a prévia explicam o recorte; um `MotionPlan` enviado a um destino horizontal falha somente naquele perfil com `MOTION_LOCAL_UNSUPPORTED_GEOMETRY` (o contorno usa coordenadas relativas ao quadro final e exige configuração própria para outro enquadramento).
+- **Pedidos de imagem**: a geometria do `ImageRequest` deriva do perfil selecionado (16:9 → 1920×1080, 4:5 → 1080×1350); ao mudar o destino, o diálogo mostra as dimensões da mídia atual e como ela será enquadrada, permitindo reaproveitar a versão existente ou preparar um candidato para o novo quadro (o contexto do pedido é atualizado e candidatos anteriores ficam marcados).
+- **ZIP multiformato**: a aba Revisão & Entrega reúne vídeo vertical + horizontal + carrossel 4:5 + textos aprovados no mesmo pacote, com caminhos separados por modalidade/perfil e manifesto conferido contra os bytes do ZIP.
+
+```bash
+# Prévia e exportação horizontal por CLI (projeto com o perfil na allowlist):
+python tools/produce_video.py --input <pedido.video-request.json> --profile youtube-video-horizontal --plan-only --json
+python tools/produce_video.py --input <pedido.video-request.json> --profile youtube-video-horizontal --output-dir .workspace/archives/horizontal --json
+# Carrossel 4:5:
+python tools/produce_carousel.py --input <pedido.carousel-request.json> --profile instagram-feed-image-portrait --plan-only --json
+python tools/produce_carousel.py --input <pedido.carousel-request.json> --profile instagram-feed-image-portrait --output-dir .workspace/archives/carrossel-4x5 --json
+# Prova HTTP completa (CI e local): vertical + horizontal + 4:5 + ZIP + reinício
+python tools/ci_multi_format_proof.py --port 8796
+```
+
+Matriz de formatos efetivamente comprovada nesta rodada (render real + FFprobe + navegador):
+
+| Módulo | Perfil | Geometria | FPS | Áudio | Estado |
+| --- | --- | --- | --- | --- | --- |
+| Vídeo | `instagram-reels-video`, `facebook-reels-video`, `youtube-shorts` | 1080×1920 (9:16) | 30 | 0 faixas | comprovado |
+| Vídeo | `youtube-video-horizontal` | 1920×1080 (16:9) | 30 | 0 faixas | comprovado |
+| Carrossel | `instagram-feed-image-square`, `facebook-feed-image-square` | 1080×1080 (1:1) | — | — | comprovado |
+| Carrossel | `instagram-feed-image-portrait`, `facebook-feed-image-portrait` | 1080×1350 (4:5) | — | — | comprovado |
+| Motion | perfis de vídeo 9:16 | 1080×1920 | 30 | 0 faixas | comprovado (horizontal bloqueado com diagnóstico) |
+
 ### Carrosséis (R003)
 
-Na aba **Carrosséis** do painel (ou dentro de um trabalho ativo), edite capa, conteúdo e fechamento com CTA reaproveitando a pasta de mídias do trabalho, confira a **prévia sem FFmpeg**, exporte os JPEGs 1080×1080 e baixe o ZIP. Pela CLI:
+Na aba **Carrosséis** do painel (ou dentro de um trabalho ativo), edite capa, conteúdo e fechamento com CTA reaproveitando a pasta de mídias do trabalho, confira a **prévia sem FFmpeg**, exporte os JPEGs 1080×1080 (1:1) ou 1080×1350 (4:5, quando o projeto permitir `instagram-feed-image-portrait`) e baixe o ZIP. Pela CLI:
 
 ```bash
 python tools/make_request_media.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json
@@ -115,7 +147,7 @@ python tools/video_studio.py --port 8765   # aba Motion: selecionar cena, marcar
 python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/motion --json
 ```
 
-O plano (`MotionPlan v1`) define região relativa, cor, espessura e intervalo por cena (`effects[]`); a prévia (`--plan-only`) resolve os tempos absolutos sem FFmpeg. O contorno é aplicado antes dos títulos/legenda, com entrada/saída suaves; o MP4 sai sem áudio, com SRT e narração. O plano canônico vai para o manifesto com hash.
+O plano (`MotionPlan v1`) define região relativa, cor, espessura e intervalo por cena (`effects[]`); a prévia (`--plan-only`) resolve os tempos absolutos sem FFmpeg. O contorno é aplicado antes dos títulos/legenda, com entrada/saída suaves; o MP4 sai sem áudio, com SRT e narração. O plano canônico vai para o manifesto com hash. **Nesta rodada o Motion local está disponível apenas em 9:16**: o seletor do painel exclui os demais formatos e explica o recorte; enviar um `MotionPlan` a um destino horizontal falha somente naquele perfil (`MOTION_LOCAL_UNSUPPORTED_GEOMETRY`), preservando as entregas válidas dos demais.
 
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.

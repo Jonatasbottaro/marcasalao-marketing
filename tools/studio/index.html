@@ -115,15 +115,7 @@
         <div class="row">
           <div>
             <span class="field-label">Destinos permitidos (allowlist)</span>
-            <div id="proj-profiles-boxes" class="checks-grid">
-              <label class="inline-check"><input type="checkbox" value="instagram-reels-video" checked> instagram-reels-video (Vídeo 9:16)</label>
-              <label class="inline-check"><input type="checkbox" value="facebook-reels-video" checked> facebook-reels-video (Vídeo 9:16)</label>
-              <label class="inline-check"><input type="checkbox" value="youtube-shorts" checked> youtube-shorts (Vídeo 9:16)</label>
-              <label class="inline-check"><input type="checkbox" value="instagram-feed-image-square" checked> instagram-feed-image-square (Carrossel 1:1)</label>
-              <label class="inline-check"><input type="checkbox" value="facebook-feed-image-square"> facebook-feed-image-square (Carrossel 1:1)</label>
-              <label class="inline-check"><input type="checkbox" value="vertical-social"> vertical-social (Compatibilidade)</label>
-              <label class="inline-check"><input type="checkbox" value="youtube-video-horizontal"> youtube-video-horizontal (16:9 catálogo)</label>
-            </div>
+            <div id="proj-profiles-boxes" class="checks-grid"></div>
           </div>
         </div>
         <div class="row">
@@ -230,6 +222,10 @@
       <h2>5. Prévia (sem FFmpeg)</h2>
       <button id="btn-preview">Gerar prévia</button>
       <div id="preview-output"></div>
+      <div class="row" style="align-items: flex-start; gap: 12px; margin-top: 8px;">
+        <canvas id="preview-frame-canvas" width="270" height="480" style="border: 1px solid var(--line); border-radius: 6px; background: #000;"></canvas>
+        <div id="preview-frame-info" class="muted"></div>
+      </div>
     </section>
 
     <section id="sec-export">
@@ -325,6 +321,10 @@
       <h2>5. Prévia (sem FFmpeg)</h2>
       <button id="c-btn-preview">Gerar prévia</button>
       <div id="c-preview-output"></div>
+      <div class="row" style="align-items: flex-start; gap: 12px; margin-top: 8px;">
+        <canvas id="c-preview-frame-canvas" width="216" height="270" style="border: 1px solid var(--line); border-radius: 6px; background: #000;"></canvas>
+        <div id="c-preview-frame-info" class="muted"></div>
+      </div>
     </section>
 
     <section>
@@ -530,6 +530,12 @@
       </div>
 
       <h3 style="margin-top: 14px;">Cards do carrossel</h3>
+      <div class="row" style="margin-bottom: 6px;">
+        <label>Formato do carrossel (allowlist do projeto)
+          <select id="p-carousel-profile"></select>
+        </label>
+        <span id="p-carousel-profile-info" class="muted"></span>
+      </div>
       <div id="p-cards-list"></div>
       <div class="row" style="margin-top: 6px;">
         <button id="p-btn-add-card" type="button" class="secondary">Adicionar card</button>
@@ -638,6 +644,7 @@
         <button id="m-btn-export">Exportar com Motion</button>
         <button id="m-btn-load-delivery" class="secondary">Atualizar entrega</button>
       </div>
+      <p id="m-motion-note" class="muted"></p>
       <details class="advanced-paths">
         <summary>Pasta de entrega automática (.workspace/…)</summary>
         <div class="row">

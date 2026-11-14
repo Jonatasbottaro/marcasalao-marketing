@@ -162,6 +162,20 @@ function setMode(mode) {
 }
 
 // ---- Projetos e Cadastro ----
+async function renderProjectProfileBoxes() {
+  const box = $('#proj-profiles-boxes');
+  if (!box || box.childElementCount) return;
+  const data = await api('/api/profiles');
+  const defaults = new Set(['instagram-reels-video', 'facebook-reels-video', 'youtube-shorts', 'instagram-feed-image-square']);
+  for (const p of data.listing.profiles) {
+    const mods = (p.compatibleModules || []).join('/') || 'sem render local';
+    const label = `${p.id} (${p.aspectRatio} ${p.width}×${p.height} — ${mods})`;
+    const chk = el('input', { type: 'checkbox', value: p.id });
+    if (defaults.has(p.id)) chk.checked = true;
+    box.append(el('label', { class: 'inline-check' }, chk, ` ${label}`));
+  }
+}
+
 async function loadProjects() {
   const data = await api('/api/projects');
   allProjects = data.projects || [];
@@ -430,7 +444,7 @@ function renderProfiles() {
     tbody.append(el('tr', {}, el('td', {
       colspan: '7',
       class: 'muted',
-      text: 'Nenhum destino compatível com Vídeo 9:16@30 neste projeto. Marque perfis compatíveis ou "Mostrar perfis fora do recorte".',
+      text: 'Nenhum destino compatível com Vídeo local (9:16 ou 16:9 @30) neste projeto. Marque perfis compatíveis ou "Mostrar perfis fora do recorte".',
     })));
     return;
   }
@@ -454,8 +468,13 @@ function renderProfiles() {
         ? el('span', { class: 'badge err', text: p.blockCode || 'bloqueado' })
         : el('span', { class: 'badge muted', text: 'não consultado' });
     const local = p.localExportVideo
-      ? el('span', { class: 'badge ok', text: '9:16@30 compatível' })
-      : el('span', { class: 'badge muted', text: 'fora do recorte Vídeo' });
+      ? el('span', { class: 'badge ok', text: `${p.aspectRatio}@${p.fps} compatível` })
+      : el('span', {
+          class: 'badge muted',
+          text: (p.localExport && p.localExport.video && p.localExport.video.reason)
+            ? `sem render local (${p.localExport.video.reason})`
+            : 'fora do recorte Vídeo',
+        });
     tbody.append(el('tr', {}, [
       el('td', {}, cb),
       el('td', { text: p.id }),
@@ -473,7 +492,11 @@ function renderExportProfileOptions() {
   const current = sel.value;
   sel.innerHTML = '';
   sel.append(el('option', { value: '', text: 'Todos os perfis selecionados' }));
-  for (const id of draft.profiles) sel.append(el('option', { value: id, text: id }));
+  for (const id of draft.profiles) {
+    const p = catalog.find((x) => x.id === id);
+    const label = p ? `${id} — ${p.width}×${p.height} (${p.aspectRatio})` : id;
+    sel.append(el('option', { value: id, text: label }));
+  }
   if (draft.profiles.includes(current)) sel.value = current;
 }
 
@@ -667,6 +690,14 @@ async function preview() {
     out.innerHTML = '';
     if (r.status !== 'preview') { out.append(el('pre', { text: JSON.stringify(r, null, 2) })); return; }
     out.append(el('p', { text: `Pedido ${r.requestId} — ${r.profiles.length} perfil(is). Mídias: ${r.media.map((m) => m.id).join(', ') || '—'}` }));
+    const chosen = $('#export-profile').value;
+    const frameProfile = r.profiles.find((p) => p.status === 'compiled' && p.profileId === chosen)
+      || r.profiles.find((p) => p.status === 'compiled');
+    if (frameProfile) {
+      const firstMedia = (frameProfile.beats || []).map((b) => b.mediaId).find((id) => id);
+      const mediaEntry = (draft.media || []).find((m) => m.id === firstMedia);
+      drawEffectiveFrame('#preview-frame-canvas', '#preview-frame-info', frameProfile.geometry, mediaEntry ? mediaEntry.path : null);
+    }
     for (const p of r.profiles) {
       if (p.status !== 'compiled') {
         out.append(el('div', { class: 'profile-card' }, [
@@ -857,12 +888,12 @@ function renderCProfileOptions() {
   const compat = cCatalog.filter((x) => x.localExportCarousel);
   sel.innerHTML = '';
   if (!compat.length) {
-    sel.append(el('option', { value: cdraft?.profile || '', text: 'Nenhum perfil 1:1 permitido neste projeto' }));
-    $('#c-profile-info').textContent = 'Nenhum perfil de imagem 1:1 permitido pela allowlist deste projeto.';
+    sel.append(el('option', { value: cdraft?.profile || '', text: 'Nenhum perfil 1:1 ou 4:5 permitido neste projeto' }));
+    $('#c-profile-info').textContent = 'Nenhum perfil de carrossel local (1:1 1080×1080 ou 4:5 1080×1350) permitido pela allowlist deste projeto.';
     return;
   }
   for (const p of compat) {
-    sel.append(el('option', { value: p.id, text: `${p.id} — ${p.width}×${p.height} (${p.network})` }));
+    sel.append(el('option', { value: p.id, text: `${p.id} — ${p.width}×${p.height} (${p.aspectRatio}, ${p.network})` }));
   }
   if (compat.some((p) => p.id === cdraft.profile)) {
     sel.value = cdraft.profile;
@@ -1010,7 +1041,46 @@ async function cPreview() {
     if (r.overflowCards && r.overflowCards.length) {
       out.append(el('p', { class: 'badge err', text: 'Cards a ajustar: ' + r.overflowCards.join(', ') }));
     }
+    const firstWithMedia = (r.cards || []).find((c) => c.mediaId);
+    const mediaEntry = firstWithMedia ? (cdraft.media || []).find((m) => m.id === firstWithMedia.mediaId) : null;
+    drawEffectiveFrame('#c-preview-frame-canvas', '#c-preview-frame-info', r.geometry, mediaEntry ? mediaEntry.path : null);
   } catch (err) { out.innerHTML = ''; out.append(el('pre', { text: 'Erro: ' + err.message })); }
+}
+
+// Quadro efetivo antes do render: midia ajustada a proporcao do perfil com
+// bandas de preenchimento centralizadas (mesma regra do adaptador: fit + pad).
+function drawEffectiveFrame(canvasSel, infoSel, geometry, mediaPath) {
+  const cv = $(canvasSel);
+  const info = $(infoSel);
+  if (!cv || !geometry) return;
+  const maxW = 320;
+  const scale = Math.min(maxW / geometry.width, 480 / geometry.height);
+  cv.width = Math.round(geometry.width * scale);
+  cv.height = Math.round(geometry.height * scale);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  const finish = (img, natural) => {
+    let bands = 'nenhuma (proporção idêntica)';
+    if (img) {
+      const fit = Math.min(cv.width / natural.width, cv.height / natural.height);
+      const dw = natural.width * fit;
+      const dh = natural.height * fit;
+      ctx.drawImage(img, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+      if (dw < cv.width - 1) bands = 'verticais (pillarbox)';
+      else if (dh < cv.height - 1) bands = 'horizontais (letterbox)';
+    }
+    if (info) {
+      info.textContent = `Quadro efetivo ${geometry.width}×${geometry.height} (${geometry.aspectRatio || ''}). `
+        + (img ? `Mídia ${natural.width}×${natural.height} ajustada com preservação de proporção; bandas de preenchimento: ${bands}. ` : 'Sem mídia nesta peça: fundo do layout. ')
+        + 'Enquadramento do render: scale fit + pad centralizado + setsar=1.';
+    }
+  };
+  if (!mediaPath) { finish(null, null); return; }
+  const img = new Image();
+  img.onload = () => finish(img, { width: img.naturalWidth, height: img.naturalHeight });
+  img.onerror = () => finish(null, null);
+  img.src = '/source-media?path=' + encodeURIComponent(mediaPath);
 }
 
 async function cExport() {
@@ -1272,11 +1342,21 @@ function populateMProfiles() {
   const sel = $('#m-profile-select');
   const prev = sel.value;
   sel.innerHTML = '';
-  const list = (mreq && mreq.profiles && mreq.profiles.length)
-    ? mreq.profiles
-    : catalog.filter((p) => p.localExportMotion).map((p) => p.id);
-  for (const p of list) sel.append(el('option', { value: p, text: p }));
+  const motionIds = new Set(catalog.filter((p) => p.localExportMotion).map((p) => p.id));
+  const requested = (mreq && mreq.profiles && mreq.profiles.length) ? mreq.profiles : [...motionIds];
+  const list = requested.filter((id) => motionIds.has(id));
+  const excluded = requested.filter((id) => !motionIds.has(id));
+  for (const id of list) {
+    const p = catalog.find((x) => x.id === id);
+    sel.append(el('option', { value: id, text: p ? `${id} — ${p.width}×${p.height} (${p.aspectRatio})` : id }));
+  }
   if (list.includes(prev)) sel.value = prev;
+  const note = $('#m-motion-note');
+  if (note) {
+    note.textContent = excluded.length
+      ? `Motion disponível apenas em 9:16 nesta rodada. Perfis do pedido sem Motion: ${excluded.join(', ')} — o contorno usa coordenadas relativas ao quadro final e exige configuração própria para outro enquadramento.`
+      : 'Motion disponível apenas em 9:16 nesta rodada; o contorno usa coordenadas relativas ao quadro final.';
+  }
 }
 
 function currentMedia() {
@@ -1509,6 +1589,7 @@ async function init() {
   draft = emptyDraft();
   await loadReadiness();
   await loadProjects();
+  await renderProjectProfileBoxes();
   await loadWorks();
   await loadExamples();
   renderAll();

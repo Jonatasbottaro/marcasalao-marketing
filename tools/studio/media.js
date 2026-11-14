@@ -420,6 +420,28 @@
     if (req && req.anchor) anchorSel.value = req.anchor.anchorId;
     const sendCheck = el('input', { type: 'checkbox', class: 'md-req-send-anchor' });
     if (req && req.anchor && req.anchor.sendToProvider) sendCheck.checked = true;
+    const framingNote = el('p', { class: 'muted md-req-framing-note' });
+    profileSel.addEventListener('change', () => updateFramingNote());
+    function updateFramingNote() {
+      const pid = profileSel.value;
+      const prof = (planning.allowedProfiles || []).find((p) => p.id === pid);
+      const framing = entry ? entry.framing : null;
+      const mw = framing && framing.mediaWidth;
+      const mh = framing && framing.mediaHeight;
+      if (!prof) { framingNote.textContent = ''; return; }
+      let text = `Destino ${pid}: quadro ${prof.width}×${prof.height} (${prof.aspectRatio}). `;
+      if (mw && mh) {
+        const fit = Math.min(prof.width / mw, prof.height / mh);
+        const dw = mw * fit, dh = mh * fit;
+        const bands = dw < prof.width - 1 ? 'bandas verticais (pillarbox)' : (dh < prof.height - 1 ? 'bandas horizontais (letterbox)' : 'sem bandas');
+        text += `Mídia atual ${mw}×${mh} será enquadrada com preservação de proporção (fit + pad centralizado): ${bands}. `;
+        text += 'Reaproveite a versão existente ou prepare um candidato para o novo quadro; o contexto do pedido será atualizado.';
+      } else {
+        text += 'Nenhuma mídia selecionada ainda para este alvo.';
+      }
+      framingNote.textContent = text;
+    }
+    updateFramingNote();
 
     body.append(
       el('p', { class: 'muted', text: `Descritor da peça: ${descriptor || '(vazio)'}` }),
@@ -430,6 +452,7 @@
         el('label', {}, 'Enquadramento ', framingInput),
         el('label', {}, 'Perfil (proporção) ', profileSel),
       ),
+      framingNote,
       el('div', { class: 'row' },
         el('label', {}, 'Referência visual ', anchorSel),
         el('label', { class: 'row' }, sendCheck, ' Enviar referência ao provedor'),
@@ -518,7 +541,7 @@
       data = await post('/api/works/media/request/update', {
         workId: currentWork.id,
         requestId: st.entry.request.id,
-        prompt, purpose, framing, anchorId, sendAnchorToProvider,
+        prompt, purpose, framing, profileId, anchorId, sendAnchorToProvider,
         expectedLibraryFingerprint: st.lib.libraryFingerprint,
       });
     } else {
