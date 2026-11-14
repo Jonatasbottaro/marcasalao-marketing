@@ -41,4 +41,4 @@ JPEGs do carrossel (ambas as marcas): 1080×1350, hashes do manifesto conferidos
 - Prova HTTP dedicada: `python tools/ci_multi_format_proof.py --port 8796` (local + etapa CI Ubuntu/Windows).
 - Resultados separados: simulador (testes + demonstração), servidor de teste (prova HTTP), chamada real externa: nenhuma nesta rodada.
 
-Links de jobs CI e SHA de merge: registrados na atualização documental pós-merge em `ESTADO-ATUAL.md` e no handoff da sessão.
+Links de jobs CI e SHA de merge: merge commit `bff2e46` (PR #9, branch `codex/multi-format-export-v1`, HEAD `6c48f20`). CI pós-merge no SHA `bff2e46`: `Validar contratos da platform` run [43631007343](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43631007343) — 4/4 jobs verdes (Ubuntu/Windows × Node 22/24); `Validar render local de prova` run [43631007337](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43631007337) — Ubuntu e Windows com a etapa dedicada `Prova da exportacao multiformato (horizontal 16:9 e carrossel 4:5, Studio HTTP)`.

@@ -216,7 +216,7 @@ Continua bloqueado até decisão explícita: publicação/agendamento, fluxo ofi
 
 ## 4k. Exportação multiformato no Studio local (horizontal 16:9 e carrossel 4:5) — concluído em 14/11/2026
 
-> O titular autorizou em 14/11/2026 a entrega completa: YouTube horizontal no editor de Vídeos e feed retrato 4:5 no editor de Carrosséis, com mídia preparada para o quadro escolhido, prévia, exportação, revisão e ZIP, mais código, testes, prova em navegador, CI e documentação na mesma rodada e integração à main após os gates. Branch técnica `codex/multi-format-export-v1` a partir do checkpoint `68b2721cb0d08a28b015b52ec25a56af89708f25`; merge e evidências registrados em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Exportação multiformato.
+> O titular autorizou em 14/11/2026 a entrega completa: YouTube horizontal no editor de Vídeos e feed retrato 4:5 no editor de Carrosséis, com mídia preparada para o quadro escolhido, prévia, exportação, revisão e ZIP, mais código, testes, prova em navegador, CI e documentação na mesma rodada e integração à main após os gates. **Integrada na main pelo merge commit `bff2e46` (PR #9)**, branch técnica `codex/multi-format-export-v1` (HEAD `6c48f20`) a partir do checkpoint `68b2721cb0d08a28b015b52ec25a56af89708f25`; merge e evidências registrados em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Exportação multiformato.
 
 Critérios de conclusão atendidos:
 - **Fonte compartilhada** de exportabilidade local por módulo (catálogo + allowlist + limites do adaptador), coerente entre CLI, API, Planejamento, biblioteca e seletores; distingue perfil desconhecido, fora da allowlist e conhecido sem render local, preservando regras/avisos de publicação por contexto.
