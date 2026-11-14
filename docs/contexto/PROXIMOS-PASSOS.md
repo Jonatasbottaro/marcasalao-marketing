@@ -228,6 +228,19 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Motion em outros enquadramentos, Temporal de produção e deploy.
 
+## 4l. Edição de gravações e cortes por cena no Video Studio — concluído em 14/11/2026
+
+> O titular autorizou em 14/11/2026 a entrega completa: importar uma gravação, escolher trechos para várias cenas, alterar a ordem, conferir a duração e exportar para Reels e YouTube horizontal, com a mesma gravação reutilizável em qualquer cena, no padrão MP4 sem áudio + SRT + narração TXT. **Integrada na main pelo merge commit `74e9b54` (PR #10)**, branch técnica `codex/recording-cuts-v1` (HEAD `cb4c7e5`) a partir do checkpoint `566c05ac890362c030059501ff26a72aa42e7700`; merge e evidências registrados em [ESTADO-ATUAL.md](ESTADO-ATUAL.md), seção Edição de gravações e cortes por cena.
+
+Critérios de conclusão atendidos:
+- **Corte no próprio pedido**: `sourceStartMs` opcional por cena de vídeo no `VideoRequest v1`, saída derivada, imagem só duração, legado parte de zero, omitido ≡ zero na versão efetiva; schema fechado + corpus Ajv; prévia `--plan-only` distingue janela da fonte e posição na montagem sem FFmpeg.
+- **Importação e edição no navegador**: MP4 H.264 em blocos (limite 256 MiB) com FFprobe e promoção conjunta arquivo + registro; versões preservadas; player mudo com Marcar entrada/saída, campos editáveis, Reproduzir trecho, duração disponível/posição na montagem e erro junto da cena; duplicar/reordenar preservando a janela; salvar/recarregar/reiniciar recupera as escolhas; seek por HTTP Range.
+- **Render real**: intervalos por `beatId` via `AssetManifest`, fonte inspecionada/copiada uma vez por render; fim exato aceito e além do arquivo → `SOURCE_CUT_OUT_OF_RANGE` (cena, intervalo, duração); seek preciso entre keyframes com timestamps reiniciados; título/legenda/Motion nos tempos da montagem; `sourceCuts` com identidade e hash da fonte no manifesto/relatório; falha preserva a última entrega válida.
+- **Revisão/ZIP**: mudança de início → `draft_outdated` em vídeo e Motion (carrossel independente intacto); reexportação de um perfil muda só o MP4 (fonte/SRT/TXT e outros perfis preservados, comprovado por hashes); ZIP com `sourceCuts` e hashes conferidos.
+- **Provas**: fixture de 3 trechos identificáveis com GOP de 3 s; dois trechos com início > 0, trecho reaproveitado e imagem estática; Chromium real (importação, cortes, reordenação, reinício, Reels + horizontal, revisão, ZIP); FFprobe das duas geometrias (30 fps, H.264, 0 áudio, 7,6 s) e quadros verificados por cor do trecho; reexportação com hashes previstos e falha controlada; regressões (legado, entrada negativa/fracionária, corte em imagem, mídia ausente, fim exato/além, troca de mídia, persistência, seek, falha de render) e fluxos existentes de Motion/carrossel/multiformato; gates platform 985/985 + Python 225/225 `REQUIRE_RENDER=1` e etapa CI dedicada em Ubuntu/Windows.
+
+Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Motion em outros enquadramentos, Temporal de produção e deploy.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.
