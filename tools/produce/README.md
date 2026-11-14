@@ -193,7 +193,7 @@ Fluxo integrado no Studio local: **Criar trabalho → Preencher ficha → Export
 
 3. **Pacote ZIP de entrega transacional (`Gerar ZIP de entrega`)**:
    - Checklist interativo de peças e textos por canal com indicação clara do motivo de prontidão ou bloqueio; apenas itens explicitamente aprovados e íntegros (confinação à raiz + existência + SHA-256) são aceitos no empacotamento.
-   - Escrita em staging exclusivo sob lock de promoção (`render_local.acquire_promotion_lock`) e promoção atômica com backup/rollback (`render_local.promote_with_backup`), preservando o pacote ZIP anterior em falhas de empacotamento ou promoção.
+   - Escrita em staging exclusivo sob lock de promoção (`render_local.acquire_promotion_lock`) e promoção atômica com backup/rollback (`render_local.promote_with_backup`) em `.workspace/studio/works/<id>/deliveries/package/` (`delivery-package.zip`, `package-manifest.json` e `index.json`), preservando o pacote ZIP anterior em falhas de empacotamento ou promoção (`GET /api/works/review`, `POST /api/works/editorial/save`, `POST /api/works/review/decide`, `GET /api/works/artifact-text`, `GET|POST /api/works/package` e `GET /api/works/package/download`).
    - Estrutura interna padronizada no ZIP:
      - `briefing/ficha-editorial.{json,txt}`
      - `textos-por-canal/<perfilId>/publicacao.{json,txt}`

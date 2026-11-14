@@ -346,7 +346,7 @@ jobs:
           python - <<'PY'
           import glob, hashlib, json, os, shutil, subprocess, time, urllib.parse, urllib.request, zipfile
           os.makedirs('.workspace/tmp/ci-zip-chk', exist_ok=True)
-          p = subprocess.Popen(['python', 'tools/video_studio.py', '--port', '8798'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+          p = subprocess.Popen(['python', 'tools/video_studio.py', '--port', '8798'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
           base = 'http://127.0.0.1:8798'
           hdrs = {'Content-Type': 'application/json', 'Origin': base}
           def call(path, body=None):
@@ -378,13 +378,13 @@ jobs:
               wk = call('/api/works/create', {
                   'id': work_id,
                   'name': 'CI Revisao Entrega ZIP',
-                  'project': 'platform/examples/projects/marca-salao.project.json',
+                  'project': 'platform/examples/projects/marca-salao-social.project.json',
                   'template': 'marca-salao',
               })
               paths = wk['work']['paths']
               wait_export({'workId': work_id, 'kind': 'video', 'profile': 'instagram-reels-video', 'request': wk['videoRequest'], 'outputDir': paths['videoDeliveryDir']})
               wait_export({'workId': work_id, 'kind': 'carousel', 'request': wk['carouselRequest'], 'outputDir': paths['carouselDeliveryDir']})
-              wait_export({'workId': work_id, 'kind': 'motion', 'profile': 'instagram-reels-video', 'request': wk['videoRequest'], 'motionPlan': wk['motionPlan'], 'outputDir': paths['motionDeliveryDir']})
+              wait_export({'workId': work_id, 'kind': 'video', 'profile': 'instagram-reels-video', 'request': wk['videoRequest'], 'motionPlan': wk['motionPlan'], 'outputDir': paths['motionDeliveryDir']})
 
               rev = call('/api/works/review?' + urllib.parse.urlencode({'id': work_id}))
               assert len(rev['pieces']) >= 3, rev['pieces']
