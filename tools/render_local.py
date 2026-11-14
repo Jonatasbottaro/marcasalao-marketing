@@ -48,6 +48,7 @@ PROBE_TIMEOUT_SECONDS = 30
 VERSION_TIMEOUT_SECONDS = 15
 PROMOTION_LOCK_NAME = '.local-render-promotion.lock'
 SUBTITLE_STYLE = (
+    'PlayResX=384,PlayResY=288,'
     'Fontname=Arial,Fontsize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,'
     'BackColour=&H80000000,Bold=1,Outline=2,Shadow=1,Alignment=2,MarginV=60'
 )
@@ -68,22 +69,32 @@ def hex_to_ass_color(hex_str: str) -> str:
     return '&H00FFFFFF'
 
 
-def build_title_style(visual_style: dict | None = None) -> str:
-    """Gera o estilo ASS para titulos superiores baseado em VisualStyle v1 ou padrao."""
+def build_title_style(visual_style: dict | None = None, width: int = 1080, height: int = 1920) -> str:
+    """Gera o estilo ASS para titulos superiores baseado em VisualStyle v1 ou padrao.
+
+    O PlayRes acompanha a geometria resolvida do perfil. Fonte e margem superior
+    escalam pela altura (referencia 1920 do vertical); margens horizontais escalam
+    pela largura (referencia 1080), preservando a fracao do quadro ocupada. No
+    9:16 os valores permanecem identicos aos estilos existentes.
+    """
     if not visual_style:
-        return TITLE_STYLE
+        if (width, height) == (1080, 1920):
+            return TITLE_STYLE
+        visual_style = {}
     title = visual_style.get('title', {})
     text_color = title.get('textColor', '#FFFFFF')
     outline_color = title.get('outlineColor', '#000000')
-    font_size = title.get('fontSize', 42)
-    margin_top = title.get('marginTop', 160)
-    margin_h = title.get('marginHorizontal', 60)
+    scale_v = height / 1920.0
+    scale_h = width / 1080.0
+    font_size = max(8, round(title.get('fontSize', 42) * scale_v))
+    margin_top = max(8, round(title.get('marginTop', 160) * scale_v))
+    margin_h = max(8, round(title.get('marginHorizontal', 60) * scale_h))
 
     ass_primary = hex_to_ass_color(text_color)
     ass_outline = hex_to_ass_color(outline_color)
 
     return (
-        'PlayResX=1080,PlayResY=1920,Fontname=Arial,'
+        f'PlayResX={width},PlayResY={height},Fontname=Arial,'
         f'Fontsize={font_size},'
         f'PrimaryColour={ass_primary},'
         f'OutlineColour={ass_outline},'
@@ -93,6 +104,17 @@ def build_title_style(visual_style: dict | None = None) -> str:
         f'MarginL={margin_h},'
         f'MarginR={margin_h}'
     )
+
+
+def build_subtitle_style(width: int = 1080, height: int = 1920) -> str:
+    """Estilo ASS das legendas queimadas, em unidades do espaco SRT do libass.
+
+    O libass converte SRT com PlayRes 384x288 e escala uniformemente pela altura
+    do quadro; declarar o PlayRes explicitamente torna a regra deterministica.
+    A margem inferior e a fonte permanecem proporcionais a altura, cabendo tanto
+    no 9:16 quanto no 16:9 (comprovado por medicao de quadros nos testes).
+    """
+    return SUBTITLE_STYLE
 
 
 class RenderInputError(Exception):
@@ -370,7 +392,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
         last_label = f'[vm{i}]'
 
     if title_srt_path and os.path.exists(title_srt_path) and os.path.getsize(title_srt_path) > 0:
-        style_to_use = title_style or TITLE_STYLE
+        style_to_use = title_style or build_title_style(None, width, height)
         clean_title_srt = title_srt_path.replace('\\', '/').replace(':', '\\:')
         chains.append(f"{last_label}subtitles='{clean_title_srt}':force_style='{style_to_use}'[vtitles]")
         last_label = '[vtitles]'

@@ -618,3 +618,7 @@ jobs:
       - name: Prova da biblioteca de midia por trabalho (Studio HTTP em 127.0.0.1)
         run: |
           python tools/ci_media_library_proof.py --port 8797
+
+      - name: Prova da exportacao multiformato (horizontal 16:9 e carrossel 4:5, Studio HTTP)
+        run: |
+          python tools/ci_multi_format_proof.py --port 8796

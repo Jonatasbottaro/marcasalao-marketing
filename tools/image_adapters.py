@@ -178,10 +178,10 @@ class SimulatorImageAdapter:
                 rgb[idx + 1] = accent[1]
                 rgb[idx + 2] = accent[2]
         scale = max(2, min(6, width // 220))
-        carousel_layout._draw_text(rgb, width, 40, 40, 'IMAGEM SIMULADA', scale, (255, 255, 255))
+        carousel_layout._draw_text(rgb, width, 40, 40, 'IMAGEM SIMULADA', scale, (255, 255, 255), height)
         label = hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:12].upper()
-        carousel_layout._draw_text(rgb, width, 40, 40 + scale * 12, f'PROMPT {label}', max(2, scale - 1), (255, 255, 255))
-        carousel_layout._draw_text(rgb, width, 40, height - 40 - scale * 8, f'{width}X{height}', max(2, scale - 1), (255, 255, 255))
+        carousel_layout._draw_text(rgb, width, 40, 40 + scale * 12, f'PROMPT {label}', max(2, scale - 1), (255, 255, 255), height)
+        carousel_layout._draw_text(rgb, width, 40, height - 40 - scale * 8, f'{width}X{height}', max(2, scale - 1), (255, 255, 255), height)
         data = carousel_layout.encode_png(width, height, rgb)
         return {
             'bytes': data,

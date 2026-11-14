@@ -898,6 +898,25 @@
     if ($('#p-llm-timeout') && cfg.timeoutSec != null) $('#p-llm-timeout').value = String(cfg.timeoutSec);
   }
 
+  function renderCarouselProfileSelect() {
+    const sel = $('#p-carousel-profile');
+    const info = $('#p-carousel-profile-info');
+    if (!sel) return;
+    const compat = (planningOverview?.allowedProfiles || []).filter((p) => p.localExportCarousel);
+    const current = planningOverview?.planning?.carouselProfileId || '';
+    sel.innerHTML = '';
+    sel.append(el('option', { value: '', text: 'Automático (recomendado pelo briefing)' }));
+    for (const p of compat) {
+      sel.append(el('option', { value: p.id, text: `${p.id} — ${p.width}×${p.height} (${p.aspectRatio})` }));
+    }
+    sel.value = compat.some((p) => p.id === current) ? current : '';
+    if (info) {
+      info.textContent = compat.length
+        ? `Formatos locais de carrossel permitidos: ${compat.map((p) => `${p.aspectRatio} ${p.width}×${p.height}`).join(' · ')}.`
+        : 'Nenhum formato local de carrossel (1:1 ou 4:5) permitido neste projeto.';
+    }
+  }
+
   function renderPlanningPanel() {
     renderWorkBanner();
     const pl = planningOverview?.planning;
@@ -914,6 +933,7 @@
       $('#p-b-tone').value = pl.briefingExtended?.tone || '';
       $('#p-b-hook').value = pl.briefing?.hook || '';
       $('#p-b-script').value = pl.creative?.scriptSummary || pl.briefing?.scriptSummary || '';
+      renderCarouselProfileSelect();
     } else {
       for (const id of ['p-idea-text', 'p-b-product', 'p-b-audience', 'p-b-objective', 'p-b-core', 'p-b-evidence', 'p-b-cta', 'p-b-tone', 'p-b-hook', 'p-b-script']) {
         if ($('#' + id)) $('#' + id).value = '';
@@ -1081,6 +1101,7 @@
       questions: pl.questions,
       claims: pl.claims,
       creative: pl.creative,
+      carouselProfileId: pl.carouselProfileId || '',
       markCreativeChecked: Boolean(opts.markCreativeChecked),
     };
     const data = await pRequest('POST', '/api/works/planning/save', payload);
@@ -1469,6 +1490,12 @@
         motionIntent: 'none',
       });
       renderScenesList();
+    });
+
+    $('#p-carousel-profile')?.addEventListener('change', (ev) => {
+      if (!planningOverview) return;
+      planningOverview.planning.carouselProfileId = ev.target.value;
+      savePlanning().catch(() => {});
     });
 
     $('#p-btn-add-card')?.addEventListener('click', () => {

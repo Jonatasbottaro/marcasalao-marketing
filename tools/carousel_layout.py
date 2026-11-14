@@ -142,7 +142,10 @@ def measure_card(card, width=WIDTH, height=HEIGHT, margin=MARGIN):
     }
 
 
-def _draw_text(canvas, width, x, y, text, scale, color):
+def _draw_text(canvas, width, x, y, text, scale, color, height=None):
+    """Desenha texto bitmap; `height` limita o canvas (padrao: quadrado 1080)."""
+    if height is None:
+        height = HEIGHT
     cx = x
     for ch in _norm(text):
         glyph = _FONT.get(ch, _FONT['?'])
@@ -154,7 +157,7 @@ def _draw_text(canvas, width, x, y, text, scale, color):
                         for dx in range(scale):
                             px = cx + col * scale + dx
                             py = y + row * scale + dy
-                            if 0 <= px < width and 0 <= py < HEIGHT:
+                            if 0 <= px < width and 0 <= py < height:
                                 idx = (py * width + px) * 3
                                 canvas[idx:idx + 3] = bytes(color)
         cx += char_width(scale)
@@ -186,13 +189,13 @@ def render_card(card, media_rgb=None, width=WIDTH, height=HEIGHT, margin=MARGIN)
         y = (height - measured['totalHeight']) // 2
         for line in measured['titleLines']:
             lw = text_width(line, TITLE_SCALE)
-            _draw_text(canvas, width, (width - lw) // 2, y, line, TITLE_SCALE, TEXT_COLOR)
+            _draw_text(canvas, width, (width - lw) // 2, y, line, TITLE_SCALE, TEXT_COLOR, height)
             y += char_height(TITLE_SCALE) + LINE_GAP_FACTOR * TITLE_SCALE
         if measured['bodyLines']:
             y += char_height(TITLE_SCALE)
             for line in measured['bodyLines']:
                 lw = text_width(line, BODY_SCALE)
-                _draw_text(canvas, width, (width - lw) // 2, y, line, BODY_SCALE, TEXT_COLOR)
+                _draw_text(canvas, width, (width - lw) // 2, y, line, BODY_SCALE, TEXT_COLOR, height)
                 y += char_height(BODY_SCALE) + LINE_GAP_FACTOR * BODY_SCALE
     return canvas, measured['overflow']
 
