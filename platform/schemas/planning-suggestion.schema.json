@@ -1,0 +1,230 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PlanningSuggestion",
+  "description": "Contrato declarativo PlanningSuggestion v1: sugestoes estruturadas por etapa (briefing ou creative) para o Studio.",
+  "oneOf": [
+    { "$ref": "#/definitions/briefingStage" },
+    { "$ref": "#/definitions/creativeStage" }
+  ],
+  "definitions": {
+    "kebabCase": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "question"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabCase" },
+        "dimension": {
+          "type": "string",
+          "enum": ["product", "audience", "objective", "coreMessage", "supportEvidence", "cta", "tone", "channels"]
+        },
+        "question": { "$ref": "#/definitions/nonEmptyString" },
+        "suggestedAnswer": { "type": "string" }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "status", "requiresConfirmation"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabCase" },
+        "statement": { "$ref": "#/definitions/nonEmptyString" },
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "hypothesis", "pending_validation"]
+        },
+        "requiresConfirmation": { "type": "boolean" },
+        "evidenceMediaId": { "$ref": "#/definitions/kebabCase" },
+        "warning": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "briefingStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "stage",
+        "product",
+        "objective",
+        "audience",
+        "coreMessage",
+        "supportEvidence",
+        "cta",
+        "tone",
+        "recommendedProfiles",
+        "gaps",
+        "questions",
+        "claims"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "stage": { "type": "string", "const": "briefing" },
+        "product": { "type": "string" },
+        "objective": { "type": "string" },
+        "audience": { "type": "string" },
+        "coreMessage": { "type": "string" },
+        "supportEvidence": { "type": "string" },
+        "cta": { "type": "string" },
+        "tone": { "type": "string" },
+        "recommendedProfiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/kebabCase" }
+        },
+        "gaps": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/nonEmptyString" }
+        },
+        "questions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/question" }
+        },
+        "claims": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/claim" }
+        }
+      }
+    },
+    "hookOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabCase" },
+        "text": { "$ref": "#/definitions/nonEmptyString" },
+        "angle": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "videoScene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "objective",
+        "narrativeFunction",
+        "durationMs",
+        "titleOverlay",
+        "caption",
+        "narration",
+        "requiredMediaDescriptor"
+      ],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabCase" },
+        "objective": { "$ref": "#/definitions/nonEmptyString" },
+        "narrativeFunction": {
+          "type": "string",
+          "enum": ["hook", "context", "problem", "demonstration", "explanation", "proof", "transition", "cta", "closing"]
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000
+        },
+        "titleOverlay": { "$ref": "#/definitions/nonEmptyString" },
+        "caption": { "$ref": "#/definitions/nonEmptyString" },
+        "narration": { "$ref": "#/definitions/nonEmptyString" },
+        "requiredMediaDescriptor": { "$ref": "#/definitions/nonEmptyString" },
+        "mediaId": { "$ref": "#/definitions/kebabCase" },
+        "motionIntent": {
+          "type": "string",
+          "enum": ["none", "slow-zoom"]
+        }
+      }
+    },
+    "carouselCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role", "title"],
+      "properties": {
+        "id": { "$ref": "#/definitions/kebabCase" },
+        "role": { "type": "string", "enum": ["cover", "content", "cta"] },
+        "title": { "$ref": "#/definitions/nonEmptyString" },
+        "body": { "type": "string" },
+        "requiredMediaDescriptor": { "type": "string" },
+        "mediaId": { "$ref": "#/definitions/kebabCase" }
+      }
+    },
+    "channelCopy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profileId", "title", "postText", "cta", "destinationUrl", "hashtags"],
+      "properties": {
+        "profileId": { "$ref": "#/definitions/kebabCase" },
+        "title": { "type": "string" },
+        "postText": { "$ref": "#/definitions/nonEmptyString" },
+        "cta": { "$ref": "#/definitions/nonEmptyString" },
+        "destinationUrl": { "type": "string" },
+        "hashtags": { "type": "string" },
+        "flags": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/nonEmptyString" }
+        }
+      }
+    },
+    "motionSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sceneId", "targetElement"],
+      "properties": {
+        "sceneId": { "$ref": "#/definitions/kebabCase" },
+        "targetElement": { "$ref": "#/definitions/nonEmptyString" },
+        "suggestedColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+        "suggestedStartMs": { "type": "integer", "minimum": 0 },
+        "suggestedEndMs": { "type": "integer", "minimum": 1 },
+        "note": { "$ref": "#/definitions/nonEmptyString" }
+      }
+    },
+    "creativeStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "stage",
+        "hookOptions",
+        "scriptSummary",
+        "videoScenes",
+        "carouselCards",
+        "channelCopies"
+      ],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "stage": { "type": "string", "const": "creative" },
+        "hookOptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/hookOption" }
+        },
+        "selectedHookId": { "$ref": "#/definitions/kebabCase" },
+        "scriptSummary": { "$ref": "#/definitions/nonEmptyString" },
+        "videoScenes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/videoScene" }
+        },
+        "carouselCards": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/definitions/carouselCard" }
+        },
+        "channelCopies": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/channelCopy" }
+        },
+        "motionSuggestions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/motionSuggestion" }
+        }
+      }
+    }
+  }
+}

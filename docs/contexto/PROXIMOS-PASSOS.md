@@ -191,6 +191,12 @@ Entregas consolidadas nesta etapa:
 - rotas no servidor HTTP (`tools/video_studio.py`) e nova aba **Revisão & Entrega** (`tools/studio/{index.html,style.css,app.js}`) com player de MP4, strip de carrossel, inspetor verificado de `.srt`/`.txt`, checklist ao vivo, separação física `video/<profileId>/` vs. `motion/<profileId>/` no ZIP e download direto;
 - suítes automatizadas (`926/926` da `platform` e `146/146` Python com `REQUIRE_RENDER=1`), prova E2E em Google Chrome real via CDP (Marca Salão, edições isoladas, falha + reinício, trabalho legado `unlinked` bloqueado e Multitrack Hub) e prova HTTP de empacotamento ZIP integrada ao CI (`.github/workflows/local-render-validation.yml`).
 
+## 4i. Aba Planejamento no Studio local — concluído em 14/11/2026
+
+- Contrato `PlanningSuggestion` v1 integrado ao núcleo da `platform` (`platform/src/planning-suggestion-contract.ts`, `platform/src/validate-planning-suggestion.ts`, `platform/schemas/planning-suggestion.schema.json`) e exposto pela ponte (`--planning-suggestion`).
+- Aba **Planejamento** (`tools/studio/planning.js` + `tools/studio_planning.py` + `tools/llm_adapter.py`) operando em fluxo em 3 etapas (**1. Ideia e briefing** -> **2. Hook, roteiro e cards** -> **3. Aplicação aos editores**) nos modos **Manual**, **Copiar e importar** e **Modelo local opcional** (`POST /v1/chat/completions`, `qwen3:8b`, desativado por padrão, preservando rascunhos e ZIPs válidos em caso de erro/timeout).
+- Isolamento multi-marca por projeto, detecção de lacunas e alegações sem evidência, proteção contra aplicação com cena `pending_media`, sugestões no Motion sem desenho automático, bloqueio de sobrescrita silenciosa (HTTP `409`) e alteração localizada apenas no texto de publicação por canal (`copy_outdated`) sem reencode de MP4 (`0` faixas de áudio).
+
 Continua bloqueado até decisão explícita: publicação automática, geração real de campanhas/mídias externas, áudio/TTS, fornecedores externos, Temporal de produção e deploy em nuvem.
 
 ## 5. Separar as decisões editoriais da execução técnica

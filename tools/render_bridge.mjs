@@ -21,6 +21,7 @@ import path from 'node:path'
 import { createCreativeExecutionPackageFromCase } from '../platform/dist/src/creative-execution-packages.js'
 import { compileVideoRequest } from '../platform/dist/src/compile-video-request.js'
 import { validateCarouselRequest } from '../platform/dist/src/validate-carousel-request.js'
+import { validatePlanningSuggestion } from '../platform/dist/src/validate-planning-suggestion.js'
 import { resolveOutputPlan } from '../platform/dist/src/resolve-output-profile.js'
 import { resolveMotionPlan } from '../platform/dist/src/resolve-motion-plan.js'
 import { serializeAssetManifest } from '../platform/dist/src/serialize-asset-manifest.js'
@@ -455,13 +456,46 @@ function handleCarouselRequest(args) {
     process.exit(0)
 }
 
+function handlePlanningSuggestion(args) {
+    let suggestionPath = null
+    let projectRel = null
+    let rootDir = process.cwd()
+
+    for (let i = 0; i < args.length; i++) {
+        const arg = args[i]
+        if (arg === '--planning-suggestion' && i + 1 < args.length) suggestionPath = args[++i]
+        else if (arg === '--project' && i + 1 < args.length) projectRel = args[++i]
+        else if (arg === '--root' && i + 1 < args.length) rootDir = args[++i]
+        else { console.error(`erro: flag desconhecida na ponte: ${arg}`); process.exit(2) }
+    }
+    if (!suggestionPath) {
+        console.error('uso: node tools/render_bridge.mjs --planning-suggestion <sugestao.json> [--project <projeto.json>] [--root <raiz>]')
+        process.exit(2)
+    }
+    let suggestionInput
+    try { suggestionInput = JSON.parse(readFileSync(suggestionPath, 'utf8')) }
+    catch { console.error('erro: sugestao de planejamento ilegivel ou JSON invalido'); process.exit(2) }
+
+    let projectInput
+    if (projectRel) {
+        try { projectInput = JSON.parse(readFileSync(path.resolve(rootDir, projectRel), 'utf8')) }
+        catch { console.error('erro: ProjectManifest informado ilegivel ou ausente'); process.exit(2) }
+    }
+
+    const result = validatePlanningSuggestion(suggestionInput, projectInput)
+    console.log(JSON.stringify(result))
+    process.exit(result.ok ? 0 : 3)
+}
+
 const rawArgs = process.argv.slice(2)
 if (rawArgs.length === 0) {
-    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json> OU --carousel-request <pedido.json>')
+    console.error('uso: node tools/render_bridge.mjs <package.json> <assets.json> OU --case <caso.pipeline.json> OU --video-request <pedido.json> OU --carousel-request <pedido.json> OU --planning-suggestion <sugestao.json>')
     process.exit(2)
 }
 
-if (rawArgs.includes('--carousel-request')) {
+if (rawArgs.includes('--planning-suggestion')) {
+    handlePlanningSuggestion(rawArgs)
+} else if (rawArgs.includes('--carousel-request')) {
     handleCarouselRequest(rawArgs)
 } else if (rawArgs.includes('--video-request')) {
     handleVideoRequest(rawArgs)

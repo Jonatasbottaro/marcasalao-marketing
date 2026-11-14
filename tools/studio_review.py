@@ -99,6 +99,7 @@ def merged_work_paths(studio, work_id, work_doc=None):
         **base,
         'editorialFile': base.get('editorialFile') or f'{work_dir}/editorial.json',
         'reviewStateFile': base.get('reviewStateFile') or f'{work_dir}/review-state.json',
+        'planningFile': base.get('planningFile') or f'{work_dir}/planning.json',
         'packageDeliveryDir': base.get('packageDeliveryDir') or f'{work_dir}/deliveries/package',
     }
     if isinstance(work_doc, dict) and isinstance(work_doc.get('paths'), dict):

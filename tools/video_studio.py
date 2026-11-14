@@ -42,6 +42,8 @@ import make_proof_assets
 import make_request_media
 import render_local
 import delivery_package
+import llm_adapter
+import studio_planning
 import studio_review
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
@@ -61,6 +63,7 @@ REQUIRED_PLATFORM_MODULES = (
     'compile-video-request.js',
     'validate-carousel-request.js',
     'validate-motion-plan.js',
+    'validate-planning-suggestion.js',
 )
 BRAND_EXAMPLES = {
     'marca-salao': {
@@ -566,6 +569,7 @@ class Studio:
             'motionPlan': f'{base}/drafts/motion.plan.json',
             'editorialFile': f'{base}/editorial.json',
             'reviewStateFile': f'{base}/review-state.json',
+            'planningFile': f'{base}/planning.json',
             'videoDeliveryDir': f'{base}/deliveries/video',
             'carouselDeliveryDir': f'{base}/deliveries/carousel',
             'motionDeliveryDir': f'{base}/deliveries/motion',
@@ -913,6 +917,7 @@ class Studio:
         }
         listing = self.list_profiles(work['project'])
         review = studio_review.build_review_overview(self, work_id)
+        planning = studio_planning.build_planning_overview(self, work_id)
         package_delivery = delivery_package.read_package_delivery(self, work_id)
         return {
             'work': work_view,
@@ -923,6 +928,7 @@ class Studio:
             'deliveries': deliveries,
             'listing': listing,
             'review': review,
+            'planning': planning,
             'packageDelivery': package_delivery,
         }
 
@@ -1297,6 +1303,52 @@ class Studio:
     def verified_package_download(self, work_id):
         return delivery_package.verified_package_zip_path(self, work_id)
 
+    # ---- planejamento por etapas e adaptador local de modelo ----
+    def get_planning_overview(self, work_id):
+        return studio_planning.build_planning_overview(self, work_id)
+
+    def save_planning(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.save_planning(self, work_id, body)
+
+    def build_planning_prompt(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        stage = (body.get('stage') or 'briefing').strip() if isinstance(body, dict) else 'briefing'
+        return studio_planning.build_stage_prompt(self, work_id, stage)
+
+    def import_planning_suggestion(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.validate_and_stage_suggestion(self, work_id, body, mode='import')
+
+    def generate_planning_suggestion(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.generate_with_local_model(self, work_id, body)
+
+    def accept_planning_suggestion(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.accept_suggestion(self, work_id, body)
+
+    def preview_planning_diff(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.preview_editors_diff(self, work_id, body)
+
+    def apply_planning_to_editors(self, body):
+        work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        return studio_planning.apply_planning_to_editors(self, work_id, body)
+
+    def get_llm_config(self):
+        return {
+            'llmConfig': llm_adapter.load_llm_config(self),
+            'imageExtensionPoint': llm_adapter.ImageProviderExtensionPoint.status(),
+        }
+
+    def save_llm_config(self, body):
+        cfg = llm_adapter.save_llm_config(self, body)
+        return {
+            'llmConfig': cfg,
+            'imageExtensionPoint': llm_adapter.ImageProviderExtensionPoint.status(),
+        }
+
     def source_media_path(self, path_rel):
         """Caminho de midia de origem (imagem) confinado a raiz, para o editor."""
         target = self.confine(path_rel)
@@ -1362,8 +1414,11 @@ class StudioHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_error_json(self, code, message):
-        self.send_json(code, {'ok': False, 'error': message})
+    def send_error_json(self, code, message, extra=None):
+        payload = {'ok': False, 'error': message}
+        if isinstance(extra, dict) and extra:
+            payload.update(extra)
+        self.send_json(code, payload)
 
     def read_body(self):
         length = int(self.headers.get('Content-Length', 0))
@@ -1471,6 +1526,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'works': studio.list_works()})
             elif path == '/api/works/open':
                 self.send_json(200, {'ok': True, **studio.open_work(query.get('id', [''])[0])})
+            elif path == '/api/works/planning':
+                self.send_json(200, {'ok': True, **studio.get_planning_overview(query.get('id', [''])[0])})
+            elif path == '/api/llm/config':
+                self.send_json(200, {'ok': True, **studio.get_llm_config()})
             elif path == '/api/works/review':
                 self.send_json(200, {'ok': True, **studio.get_review_overview(query.get('id', [''])[0])})
             elif path == '/api/works/artifact-text':
@@ -1529,7 +1588,19 @@ class StudioHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error_json(404, 'rota desconhecida')
         except studio_review.ReviewVersionConflictError as exc:
-            self.send_json(409, {'ok': False, 'error': str(exc), 'conflict': True})
+            self.send_error_json(409, str(exc), {'conflict': True})
+        except studio_planning.PlanningValidationError as exc:
+            self.send_error_json(400, str(exc), {
+                'failureCode': exc.failure_code,
+                'subject': exc.subject,
+                'stage': exc.stage,
+            })
+        except llm_adapter.LLMTimeoutError as exc:
+            self.send_error_json(504, str(exc), {'code': exc.code})
+        except llm_adapter.LLMUnavailableError as exc:
+            self.send_error_json(503, str(exc), {'code': exc.code})
+        except llm_adapter.LLMAdapterError as exc:
+            self.send_error_json(400, str(exc), {'code': exc.code})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
@@ -1553,6 +1624,22 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.save_work(body)})
             elif path == '/api/works/editorial/save':
                 self.send_json(200, {'ok': True, **studio.save_editorial(body)})
+            elif path == '/api/works/planning/save':
+                self.send_json(200, {'ok': True, **studio.save_planning(body)})
+            elif path == '/api/works/planning/prompt':
+                self.send_json(200, {'ok': True, **studio.build_planning_prompt(body)})
+            elif path == '/api/works/planning/import':
+                self.send_json(200, {'ok': True, **studio.import_planning_suggestion(body)})
+            elif path == '/api/works/planning/generate':
+                self.send_json(200, {'ok': True, **studio.generate_planning_suggestion(body)})
+            elif path == '/api/works/planning/accept-suggestion':
+                self.send_json(200, {'ok': True, **studio.accept_planning_suggestion(body)})
+            elif path == '/api/works/planning/diff':
+                self.send_json(200, {'ok': True, **studio.preview_planning_diff(body)})
+            elif path == '/api/works/planning/apply':
+                self.send_json(200, {'ok': True, **studio.apply_planning_to_editors(body)})
+            elif path == '/api/llm/config':
+                self.send_json(200, {'ok': True, **studio.save_llm_config(body)})
             elif path == '/api/works/review/decide':
                 self.send_json(200, {'ok': True, **studio.decide_review(body)})
             elif path == '/api/works/package':
@@ -1580,7 +1667,19 @@ class StudioHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error_json(404, 'rota desconhecida')
         except studio_review.ReviewVersionConflictError as exc:
-            self.send_json(409, {'ok': False, 'error': str(exc), 'conflict': True})
+            self.send_error_json(409, str(exc), {'conflict': True})
+        except studio_planning.PlanningValidationError as exc:
+            self.send_error_json(400, str(exc), {
+                'failureCode': exc.failure_code,
+                'subject': exc.subject,
+                'stage': exc.stage,
+            })
+        except llm_adapter.LLMTimeoutError as exc:
+            self.send_error_json(504, str(exc), {'code': exc.code})
+        except llm_adapter.LLMUnavailableError as exc:
+            self.send_error_json(503, str(exc), {'code': exc.code})
+        except llm_adapter.LLMAdapterError as exc:
+            self.send_error_json(400, str(exc), {'code': exc.code})
         except (ValueError, OSError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
