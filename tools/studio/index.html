@@ -31,6 +31,7 @@
 
     <nav id="mode-nav">
       <button id="mode-home-btn" class="mode-btn active">Trabalhos &amp; Projetos</button>
+      <button id="mode-planning-btn" class="mode-btn">Planejamento</button>
       <button id="mode-video-btn" class="mode-btn">Vídeos</button>
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
@@ -354,6 +355,237 @@
     </section>
   </div>
 
+  <!-- ================= Planejamento ================= -->
+  <div id="mode-planning" hidden>
+    <section>
+      <div class="row" style="justify-content: space-between;">
+        <div>
+          <h2>Planejamento por etapas</h2>
+          <p class="muted">Esclareça a intenção e lacunas antes de gerar roteiros, cards e textos por canal.</p>
+        </div>
+        <div class="row">
+          <span id="p-stage-badge" class="badge muted">Sem trabalho</span>
+          <button id="p-btn-refresh" class="secondary">Atualizar estado</button>
+          <button id="p-btn-save">Salvar planejamento</button>
+        </div>
+      </div>
+      <div id="p-work-banner" class="alert-box">Abra ou crie um trabalho em <strong>Trabalhos &amp; Projetos</strong> para planejar.</div>
+      <div id="p-recheck-banner" class="alert-box warn" hidden></div>
+      <div id="p-error-box" class="alert-box err" hidden></div>
+      <div class="row planning-stepper" style="margin-top: 10px;">
+        <button id="p-stage-btn-briefing" type="button" class="secondary p-stage-btn">1. Ideia e briefing</button>
+        <button id="p-stage-btn-creative" type="button" class="secondary p-stage-btn">2. Hook, roteiro e cards</button>
+        <button id="p-stage-btn-apply" type="button" class="secondary p-stage-btn">3. Aplicação aos editores</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Modo de preenchimento</h2>
+      <div class="row planning-mode-row">
+        <label class="inline-check"><input type="radio" name="p-fill-mode" id="p-fill-mode-manual" value="manual" checked> Manual (direto no painel)</label>
+        <label class="inline-check"><input type="radio" name="p-fill-mode" id="p-fill-mode-import" value="import"> Copiar e importar (JSON validado)</label>
+        <label class="inline-check"><input type="radio" name="p-fill-mode" id="p-fill-mode-local-llm" value="local-llm"> Modelo local opcional (/v1/chat/completions)</label>
+      </div>
+      <p id="p-fill-mode-help" class="muted" style="margin-top: 6px;">Modo Manual: edite as etapas 1 e 2 diretamente abaixo e salve no trabalho.</p>
+
+      <div id="p-panel-import" class="planning-subpanel" hidden>
+        <div class="row">
+          <label>Etapa do prompt/importação
+            <select id="p-import-stage">
+              <option value="briefing">Etapa 1 — Ideia, lacunas, perguntas e briefing</option>
+              <option value="creative">Etapa 2 — Hook, roteiro, cenas, cards, canais e Motion</option>
+            </select>
+          </label>
+          <button id="p-btn-build-prompt" type="button">Gerar prompt da etapa</button>
+          <button id="p-btn-copy-prompt" type="button" class="secondary">Copiar prompt</button>
+        </div>
+        <label style="margin-top: 8px;">Prompt estrito da etapa (somente contexto autorizado desta etapa)
+          <textarea id="p-prompt-output" rows="6" readonly placeholder="Clique em &quot;Gerar prompt da etapa&quot; para montar o contexto enxuto."></textarea>
+        </label>
+        <label style="margin-top: 8px;">Cole o JSON PlanningSuggestion v1 retornado
+          <textarea id="p-import-json" rows="7" placeholder="{&quot;schemaVersion&quot;:1,&quot;stage&quot;:&quot;briefing&quot;,...}"></textarea>
+        </label>
+        <div class="row" style="margin-top: 8px;">
+          <button id="p-btn-validate-import" type="button">Validar JSON e visualizar diferença</button>
+        </div>
+      </div>
+
+      <div id="p-panel-local-llm" class="planning-subpanel" hidden>
+        <div id="p-image-ext-note" class="alert-box" style="margin-bottom: 10px;">Ponto de extensão de imagem desacoplado: somente arquivos locais do trabalho são vinculados nesta entrega.</div>
+        <div class="editorial-grid">
+          <label class="inline-check" style="grid-column: 1 / -1;"><input id="p-llm-enabled" type="checkbox"> Ativar adaptador de modelo de texto local (padrão desativado)</label>
+          <label>Endpoint compatível com /v1/chat/completions <input id="p-llm-endpoint" type="text" placeholder="http://127.0.0.1:11434/v1/chat/completions"></label>
+          <label>Modelo local <input id="p-llm-model" type="text" placeholder="qwen3:8b"></label>
+          <label>Timeout (segundos) <input id="p-llm-timeout" type="number" min="1" max="300" step="1" value="15"></label>
+        </div>
+        <div class="row" style="margin-top: 8px;">
+          <button id="p-btn-save-llm" type="button" class="secondary">Salvar config do modelo</button>
+          <label>Etapa para gerar
+            <select id="p-llm-stage">
+              <option value="briefing">Etapa 1 — Briefing e perguntas</option>
+              <option value="creative">Etapa 2 — Hook, roteiro, cards e canais</option>
+            </select>
+          </label>
+          <button id="p-btn-generate-llm" type="button">Gerar sugestão com modelo local</button>
+        </div>
+        <div id="p-llm-status" class="muted" style="margin-top: 6px;"></div>
+      </div>
+
+      <div id="p-staged-box" class="planning-subpanel planning-staged" hidden>
+        <div class="row" style="justify-content: space-between;">
+          <strong id="p-staged-title">Sugestão validada aguardando aceite</strong>
+          <button id="p-btn-discard-staged" type="button" class="secondary">Ocultar prévia</button>
+        </div>
+        <div id="p-staged-warnings" style="margin-top: 6px;"></div>
+        <div id="p-staged-diff" style="margin-top: 8px;"></div>
+        <div class="row" style="margin-top: 8px;">
+          <label class="inline-check"><input id="p-accept-preserve-questions" type="checkbox" checked> Preservar respostas já preenchidas</label>
+          <label class="inline-check"><input id="p-accept-preserve-hooks" type="checkbox"> Preservar hook atual</label>
+          <label class="inline-check"><input id="p-accept-preserve-scenes" type="checkbox"> Preservar cenas já existentes</label>
+          <label class="inline-check"><input id="p-accept-preserve-cards" type="checkbox"> Preservar cards já existentes</label>
+          <label class="inline-check"><input id="p-accept-preserve-channels" type="checkbox"> Preservar textos de canal já editados</label>
+        </div>
+        <div class="row" style="margin-top: 8px;">
+          <button id="p-btn-accept-staged" type="button">Incorporar sugestão ao rascunho</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="p-stage1-section">
+      <h2>Etapa 1 — Ideia original, lacunas e briefing</h2>
+      <label>Ideia em texto livre
+        <textarea id="p-idea-text" rows="4" placeholder="Ex.: Mostrar em 3 cenas curtas como acompanhar horários confirmados sem prometer envio automático de lembretes..."></textarea>
+      </label>
+
+      <div id="p-analysis-grid" class="planning-analysis-grid" style="margin-top: 10px;">
+        <div class="planning-card">
+          <h3>O que já está claro</h3>
+          <div id="p-dims-filled"></div>
+        </div>
+        <div class="planning-card">
+          <h3>Lacunas identificadas</h3>
+          <div id="p-dims-gaps"></div>
+          <div id="p-briefing-warnings" style="margin-top: 8px;"></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 14px;">Briefing estruturado</h3>
+      <div class="editorial-grid">
+        <label>Produto / serviço <input id="p-b-product" type="text" placeholder="O que está sendo apresentado"></label>
+        <label>Público-alvo <input id="p-b-audience" type="text" placeholder="Quem precisa ver/ler"></label>
+        <label>Objetivo <input id="p-b-objective" type="text" placeholder="Resultado esperado da peça"></label>
+        <label>Mensagem principal <input id="p-b-core" type="text" placeholder="Ideia central"></label>
+        <label>Evidência / prova de apoio <input id="p-b-evidence" type="text" placeholder="Tela, fluxo real ou prova verificável"></label>
+        <label>CTA geral <input id="p-b-cta" type="text" placeholder="Chamada para ação sem prometer botão em imagem"></label>
+        <label>Tom de voz <input id="p-b-tone" type="text" placeholder="Prático, direto, sem jargão"></label>
+      </div>
+      <div style="margin-top: 10px;">
+        <strong>Canais e perfis permitidos pelo projeto</strong>
+        <div id="p-b-profiles-list" class="row" style="margin-top: 6px;"></div>
+      </div>
+
+      <h3 style="margin-top: 14px;">Perguntas de esclarecimento (Blank Page)</h3>
+      <div id="p-questions-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-question" type="button" class="secondary">Adicionar pergunta</button>
+      </div>
+
+      <h3 style="margin-top: 14px;">Afirmações e evidências</h3>
+      <p class="muted">Toda promessa numérica, comercial ou sensível à política da marca precisa de evidência vinculada ou confirmação explícita antes da aprovação.</p>
+      <div id="p-claims-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-claim" type="button" class="secondary">Adicionar afirmação</button>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <button id="p-btn-save-stage1" type="button">Salvar Etapa 1</button>
+        <button id="p-btn-go-stage2" type="button" class="secondary">Avançar para Etapa 2 (Hook, roteiro e cards)</button>
+      </div>
+    </section>
+
+    <section id="p-stage2-section">
+      <h2>Etapa 2 — Hook, roteiro, cenas, cards e canais</h2>
+      <p class="muted">Contrato sem áudio em vídeo local (<code>-an</code>): <strong>caption</strong> alimenta a legenda visual (.srt), <strong>narration</strong> fica em roteiro externo (.txt) e <strong>postText</strong> é o texto de publicação.</p>
+
+      <div class="row" style="justify-content: space-between; margin-top: 6px;">
+        <span class="muted">Mídias locais disponíveis no trabalho: <strong id="p-media-count">0</strong></span>
+        <button id="p-btn-rescan-media" type="button" class="secondary">Atualizar mídias do trabalho</button>
+      </div>
+
+      <h3 style="margin-top: 12px;">Opções de hook e gancho ativo</h3>
+      <div id="p-hooks-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-hook" type="button" class="secondary">Adicionar opção de hook</button>
+      </div>
+      <div class="editorial-grid" style="margin-top: 10px;">
+        <label>Gancho (hook) selecionado <input id="p-b-hook" type="text" placeholder="Frase de abertura escolhida"></label>
+        <label style="grid-column: 1 / -1;">Resumo do roteiro <textarea id="p-b-script" rows="3" placeholder="Síntese narrativa separada por cenas"></textarea></label>
+      </div>
+
+      <h3 style="margin-top: 14px;">Cenas do vídeo (IDs preservados no Motion)</h3>
+      <div id="p-scenes-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-scene" type="button" class="secondary">Adicionar cena</button>
+      </div>
+
+      <h3 style="margin-top: 14px;">Cards do carrossel</h3>
+      <div id="p-cards-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-card" type="button" class="secondary">Adicionar card</button>
+      </div>
+
+      <h3 style="margin-top: 14px;">Textos por canal permitido</h3>
+      <div id="p-channels-list" class="editorial-channels-grid"></div>
+
+      <h3 style="margin-top: 14px;">Sugestões de destaque para Motion (opcional)</h3>
+      <p class="muted">As sugestões apenas apontam cena e elemento; o destaque só entra no <code>MotionPlan</code> depois de você marcar a região no canvas do Motion.</p>
+      <div id="p-motion-suggestions-list"></div>
+      <div class="row" style="margin-top: 6px;">
+        <button id="p-btn-add-motion-sug" type="button" class="secondary">Adicionar sugestão Motion</button>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <button id="p-btn-save-stage2" type="button">Salvar Etapa 2</button>
+        <button id="p-btn-mark-checked" type="button" class="secondary">Confirmar reconferência da Etapa 2</button>
+        <button id="p-btn-go-stage3" type="button" class="secondary">Ir para Etapa 3 (Aplicação aos editores)</button>
+      </div>
+    </section>
+
+    <section id="p-stage3-section">
+      <h2>Etapa 3 — Diferença e aplicação aos editores</h2>
+      <div class="row">
+        <label class="inline-check"><input id="p-apply-briefing" type="checkbox" checked> Aplicar briefing na Ficha Editorial</label>
+        <label class="inline-check"><input id="p-apply-video" type="checkbox" checked> Aplicar cenas em Vídeos</label>
+        <label class="inline-check"><input id="p-apply-carousel" type="checkbox" checked> Aplicar cards em Carrosséis</label>
+        <label class="inline-check"><input id="p-apply-motion" type="checkbox" checked> Sincronizar cenas no Motion</label>
+      </div>
+      <div style="margin-top: 8px;">
+        <strong>Aplicar textos nos canais:</strong>
+        <div id="p-apply-channels-list" class="row" style="margin-top: 4px;"></div>
+      </div>
+      <details style="margin-top: 10px;">
+        <summary>Preservar itens já editados manualmente nos editores (não sobrescrever selecionados)</summary>
+        <div id="p-preserve-items-box" style="margin-top: 8px;"></div>
+      </details>
+
+      <div class="row" style="margin-top: 12px;">
+        <button id="p-btn-diff" type="button" class="secondary">Ver diferença antes de aplicar</button>
+        <button id="p-btn-apply" type="button">Aplicar selecionados aos editores</button>
+        <button id="p-btn-open-video" type="button" class="secondary">Abrir Vídeos</button>
+        <button id="p-btn-open-carousel" type="button" class="secondary">Abrir Carrosséis</button>
+        <button id="p-btn-open-motion" type="button" class="secondary">Abrir vídeo no Motion</button>
+        <button id="p-btn-open-review" type="button" class="secondary">Ir para Revisão &amp; Entrega</button>
+      </div>
+      <div id="p-diff-output" style="margin-top: 10px;"></div>
+      <div id="p-apply-result" style="margin-top: 10px;"></div>
+    </section>
+
+    <section>
+      <h2>Histórico de sugestões do planejamento</h2>
+      <div id="p-history-box"></div>
+    </section>
+  </div>
+
   <!-- ================= Motion ================= -->
   <div id="mode-motion" hidden>
     <section>
@@ -364,6 +596,7 @@
         <button id="m-btn-save-work">Salvar no trabalho</button>
       </div>
       <div id="m-effects-summary" class="effects-pills"></div>
+      <div id="m-planning-suggestions" class="planning-motion-box"></div>
       <details class="advanced-paths">
         <summary>Exemplo Motion avulso e caminhos</summary>
         <div class="row">
@@ -474,5 +707,6 @@
 
   <div id="toast"></div>
   <script src="/static/app.js"></script>
+  <script src="/static/planning.js"></script>
 </body>
 </html>

@@ -1293,5 +1293,682 @@ class StudioReviewAndDeliveryPackageTest(StudioTestBase):
         self.assertTrue(pkg_res["packageDelivery"]["available"])
 
 
+class _MockLLMServer:
+    """Servidor HTTP local /v1/chat/completions em processo para testes deterministas."""
+
+    def __init__(self, handler_fn):
+        self.requests = []
+        outer = self
+
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, fmt, *args):
+                pass
+
+            def do_POST(self):
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length) if length else b"{}"
+                payload = json.loads(raw.decode("utf-8"))
+                outer.requests.append({"path": self.path, "payload": payload})
+                code, resp_obj = handler_fn(self.path, payload, len(outer.requests))
+                if isinstance(resp_obj, bytes):
+                    body = resp_obj
+                else:
+                    body = json.dumps(resp_obj, ensure_ascii=False).encode("utf-8")
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        self.endpoint = f"http://127.0.0.1:{self.port}/v1/chat/completions"
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def close(self):
+        self.server.shutdown()
+        self.server.server_close()
+
+
+class StudioPlanningAndLLMAdapterTest(StudioReviewAndDeliveryPackageTest):
+    PROJECT_MTH = "platform/examples/projects/multitrack-hub-social.project.json"
+
+    def _backup_llm_config(self):
+        cfg_path = os.path.join(STUDIO_ROOT, ".workspace", "studio", "llm-config.json")
+        existed = os.path.isfile(cfg_path)
+        prev = None
+        if existed:
+            with open(cfg_path, "rb") as handle:
+                prev = handle.read()
+
+        def restore():
+            if existed:
+                with open(cfg_path, "wb") as handle:
+                    handle.write(prev)
+            elif os.path.isfile(cfg_path):
+                os.remove(cfg_path)
+
+        self.addCleanup(restore)
+
+    def _cleanup_project(self, pid):
+        pfile = os.path.join(STUDIO_ROOT, ".workspace", "studio", "projects", f"{pid}.project.json")
+        pdir = os.path.join(STUDIO_ROOT, ".workspace", "studio", "projects", pid)
+        if os.path.isfile(pfile):
+            os.remove(pfile)
+        if os.path.isdir(pdir):
+            shutil.rmtree(render_local.fs_path(pdir, force=True), ignore_errors=True)
+
+    def _create_work_with_media(self, wid, project=PROJECT_MS, template="blank"):
+        self.addCleanup(self._cleanup_work, wid)
+        self._cleanup_work(wid)
+        st, created = self.request("POST", "/api/works/create", {
+            "id": wid,
+            "name": f"Trabalho {wid}",
+            "project": project,
+            "template": template,
+        })
+        self.assertEqual(st, 200, created)
+        media_dir = created["work"]["paths"]["mediaDir"]
+        st_m, gen = self.request("POST", "/api/media/generate", {
+            "request": {
+                "schemaVersion": 1,
+                "id": f"{wid}-media-gen",
+                "project": project,
+                "title": "Media base",
+                "locale": "pt-BR",
+                "profiles": [created["listing"]["profiles"][0]["id"]],
+                "media": [
+                    {"id": "img-capa", "path": f"{media_dir}/img-capa.png", "type": "image", "origin": "studio-test", "license": "proprietary"},
+                    {"id": "img-prova", "path": f"{media_dir}/img-prova.png", "type": "image", "origin": "studio-test", "license": "proprietary"},
+                ],
+                "scenes": [
+                    {"id": "s1", "durationMs": 2000, "mediaId": "img-capa", "caption": "S1", "narration": "S1", "narrativeFunction": "hook", "motionIntent": "none"},
+                    {"id": "s2", "durationMs": 2000, "mediaId": "img-prova", "caption": "S2", "narration": "S2", "narrativeFunction": "proof", "motionIntent": "none"},
+                ],
+            }
+        })
+        self.assertEqual(st_m, 200, gen)
+        _, reopened = self.request("GET", f"/api/works/open?id={wid}")
+        return reopened
+
+    def test_manual_planning_multi_brand_isolation_and_legacy_work(self):
+        self._backup_llm_config()
+        st_cfg, cfg_res = self.request("GET", "/api/llm/config")
+        self.assertEqual(st_cfg, 200, cfg_res)
+        self.assertFalse(cfg_res["llmConfig"]["enabled"])
+        self.assertEqual(cfg_res["llmConfig"]["model"], "qwen3:8b")
+        self.assertFalse(cfg_res["imageExtensionPoint"]["supportsExternalGeneration"])
+
+        # Legado sem planningFile ou planning.json abre limpo sem migrar forcadamente
+        wid_legacy = "t-plan-legacy"
+        self.addCleanup(self._cleanup_work, wid_legacy)
+        self._cleanup_work(wid_legacy)
+        st, _ = self.request("POST", "/api/works/create", {
+            "id": wid_legacy, "name": "Legado Planejamento", "project": PROJECT_MS, "template": "blank",
+        })
+        self.assertEqual(st, 200)
+        wfile = os.path.join(STUDIO_ROOT, ".workspace", "studio", "works", wid_legacy, "work.json")
+        wdoc = read_json(wfile)
+        wdoc["paths"].pop("planningFile", None)
+        with open(render_local.fs_path(wfile), "w", encoding="utf-8", newline="\n") as h:
+            json.dump(wdoc, h, ensure_ascii=False, indent=2)
+        st_open, leg_open = self.request("GET", f"/api/works/open?id={wid_legacy}")
+        self.assertEqual(st_open, 200, leg_open)
+        self.assertEqual(len(leg_open["planning"]["planning"]["questions"]), 8)
+
+        # Dois trabalhos de marcas distintas + projeto restrito para isolar allowlist
+        w_ms = self._create_work_with_media("t-plan-ms", PROJECT_MS)
+        w_mth = self._create_work_with_media("t-plan-mth", self.PROJECT_MTH)
+        ms_profiles = {p["id"] for p in w_ms["planning"]["allowedProfiles"]}
+        mth_profiles = {p["id"] for p in w_mth["planning"]["allowedProfiles"]}
+        ms_expected = {
+            p["id"] for p in w_ms["listing"]["profiles"]
+            if p.get("availability") == "allowed" and (p.get("localExportVideo") or p.get("localExportCarousel") or p.get("localExportMotion"))
+        }
+        mth_expected = {
+            p["id"] for p in w_mth["listing"]["profiles"]
+            if p.get("availability") == "allowed" and (p.get("localExportVideo") or p.get("localExportCarousel") or p.get("localExportMotion"))
+        }
+        self.assertEqual(ms_profiles, ms_expected)
+        self.assertEqual(mth_profiles, mth_expected)
+        self.assertIn("youtube-shorts", ms_profiles)
+
+        restricted_proj_rel = ".workspace/studio/projects/t-plan-restricted.project.json"
+        self.addCleanup(self._cleanup_project, "t-plan-restricted")
+        self._cleanup_project("t-plan-restricted")
+        st_rp, rp_res = self.request("POST", "/api/projects/create", {
+            "schemaVersion": 1,
+            "id": "t-plan-restricted",
+            "name": "Projeto Somente Quadrado",
+            "locale": "pt-BR",
+            "timezone": "America/Sao_Paulo",
+            "brandTheme": "t-plan-restricted",
+            "assetRoot": ".workspace/studio/projects/t-plan-restricted/assets",
+            "contentPolicies": {
+                "requireApprovedBriefing": True,
+                "requireApprovedScript": True,
+                "prohibitPersonalData": True,
+                "requireFunctionalEvidence": True,
+            },
+            "outputProfiles": ["instagram-feed-image-square"],
+        })
+        self.assertEqual(st_rp, 200, rp_res)
+        w_res = self._create_work_with_media("t-plan-rest", restricted_proj_rel)
+        rest_profiles = {p["id"] for p in w_res["planning"]["allowedProfiles"]}
+        self.assertEqual(rest_profiles, {"instagram-feed-image-square"})
+        self.assertNotIn("youtube-shorts", rest_profiles)
+
+        # Marca Salao: texto com afirmacao nao comprovada e proibida gera alerta claro
+        st_ms, ov_ms = self.request("POST", "/api/works/planning/save", {
+            "workId": "t-plan-ms",
+            "ideaText": "Mostrar agenda confirmada sem depender de mensagem automatica ou lembrete no WhatsApp.",
+            "briefing": {
+                "objective": "Ensinar a conferir horarios no Marca Salao",
+                "audience": "Donos de salao",
+                "coreMessage": "Agenda visual evita conflitos de horario",
+                "supportEvidence": "Tela real de agenda do salao",
+                "cta": "Conheca o Marca Salao",
+            },
+            "briefingExtended": {"product": "Marca Salao", "tone": "Direto"},
+            "claims": [
+                {"id": "c-1", "statement": "Envio automatico de lembrete reduz falta em 100%", "status": "hypothesis", "evidenceMediaId": "img-prova"},
+            ],
+        })
+        self.assertEqual(st_ms, 200, ov_ms)
+        joined_warn = " ".join(ov_ms["analysis"]["warnings"]).lower()
+        self.assertIn("marca salao", joined_warn)
+        self.assertTrue(ov_ms["planning"]["claims"][0]["requiresConfirmation"])
+
+        # Multitrack Hub nao sofre contaminacao com dados do Marca Salao
+        st_mth, ov_mth = self.request("POST", "/api/works/planning/save", {
+            "workId": "t-plan-mth",
+            "ideaText": "Catalogo organizado por tom e BPM para bandas.",
+            "briefing": {
+                "objective": "Levar bandas ao catalogo Multitrack Hub",
+                "audience": "Equipes de louvor e audio",
+                "coreMessage": "Encontre multitracks organizadas em segundos",
+                "supportEvidence": "Busca do catalogo multitrackhub.com.br",
+                "cta": "Acesse multitrackhub.com.br",
+            },
+            "briefingExtended": {"product": "Multitrack Hub", "tone": "Pratico"},
+        })
+        self.assertEqual(st_mth, 200, ov_mth)
+        self.assertNotEqual(ov_mth["work"]["id"], ov_ms["work"]["id"])
+        self.assertNotIn("Marca Salao", json.dumps(ov_mth["planning"], ensure_ascii=False))
+
+    def test_copy_import_prompts_validation_diff_and_error_diagnostics(self):
+        self._backup_llm_config()
+        wid = "t-plan-import"
+        self._create_work_with_media(wid, PROJECT_MS)
+
+        # Prompt Etapa 1 tem apenas contexto de briefing/lacunas
+        st_p1, p1 = self.request("POST", "/api/works/planning/prompt", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_p1, 200, p1)
+        self.assertEqual(p1["stage"], "briefing")
+        self.assertIn("PlanningSuggestion v1", p1["promptText"])
+        self.assertNotIn("carouselCards", p1["promptText"])
+
+        # Salva resposta do operador para preservar no aceite
+        st_sv, ov_sv = self.request("POST", "/api/works/planning/save", {
+            "workId": wid,
+            "ideaText": "Video curto sobre horarios do salao",
+            "questions": [{"dimension": "audience", "question": "Quem assiste?", "answer": "Donos e recepcao de salao"}],
+        })
+        self.assertEqual(st_sv, 200, ov_sv)
+
+        # Rejeicoes com diagnostico em portugues
+        bad_payloads = [
+            ({"workId": wid, "stage": "briefing", "rawText": "nao eh json"}, 400, None),
+            ({"workId": wid, "stage": "briefing", "rawText": json.dumps({"schemaVersion": 1, "stage": "creative", "hookOptions": [{"id": "h1", "text": "t", "angle": "a"}], "selectedHookId": "h1", "scriptSummary": "s", "videoScenes": [], "carouselCards": [], "channelCopies": []})}, 400, "PLANNING_STAGE_MISMATCH"),
+            ({"workId": wid, "stage": "briefing", "rawText": json.dumps({"schemaVersion": 1, "stage": "briefing", "product": "P", "audience": "A", "objective": "O", "coreMessage": "M", "supportEvidence": "E", "cta": "C", "tone": "T", "recommendedProfiles": ["tiktok-proibido"], "gaps": [], "questions": [], "claims": []})}, 400, "PLANNING_PROFILE_NOT_ALLOWED"),
+            ({"workId": wid, "stage": "briefing", "rawText": json.dumps({"schemaVersion": 1, "stage": "briefing", "product": "P", "audience": "A", "objective": "O", "coreMessage": "M", "supportEvidence": "E", "cta": "C", "tone": "T", "recommendedProfiles": ["youtube-shorts"], "gaps": [], "questions": [], "claims": [], "extraProibido": 1})}, 400, None),
+            ({"workId": wid, "stage": "creative", "rawText": json.dumps({"schemaVersion": 1, "stage": "creative", "hookOptions": [{"id": "h1", "text": "Hook 1", "angle": "dor"}], "selectedHookId": "hook-inexistente", "scriptSummary": "Resumo", "videoScenes": [], "carouselCards": [], "channelCopies": []})}, 400, "PLANNING_SELECTED_HOOK_UNKNOWN"),
+        ]
+        for payload, expected_st, expected_fc in bad_payloads:
+            st_bad, d_bad = self.request("POST", "/api/works/planning/import", payload)
+            self.assertEqual(st_bad, expected_st, d_bad)
+            if expected_fc:
+                self.assertEqual(d_bad.get("failureCode"), expected_fc, d_bad)
+
+        # Importacao valida com markdown ```json``` e diferenca previa
+        sug_b = {
+            "schemaVersion": 1,
+            "stage": "briefing",
+            "product": "Marca Salao",
+            "audience": "Profissionais de beleza",
+            "objective": "Simplificar consulta de horarios",
+            "coreMessage": "Visualize horarios sem caderno",
+            "supportEvidence": "Captura real da tela de agenda",
+            "cta": "Conheca o Marca Salao",
+            "tone": "Direto",
+            "recommendedProfiles": ["youtube-shorts", "instagram-feed-image-square"],
+            "gaps": [],
+            "questions": [
+                {"id": "q-audience", "dimension": "audience", "question": "Quem?", "suggestedAnswer": "Profissionais"},
+                {"id": "q-objective", "dimension": "objective", "question": "Objetivo?", "suggestedAnswer": "Simplificar"},
+            ],
+            "claims": [],
+        }
+        st_imp, imp = self.request("POST", "/api/works/planning/import", {
+            "workId": wid,
+            "stage": "briefing",
+            "rawText": f"Aqui esta:\n```json\n{json.dumps(sug_b, ensure_ascii=False)}\n```",
+            "expectedContextFingerprint": ov_sv["fingerprints"]["contextFingerprint"],
+        })
+        self.assertEqual(st_imp, 200, imp)
+        self.assertTrue(imp["diffPreview"]["changedFields"])
+        # Antes do aceite, objetivo continua vazio no rascunho
+        self.assertEqual(imp["overview"]["planning"]["briefing"]["objective"], "")
+
+        # Aceita preservando a resposta do operador em audience
+        st_acc, acc = self.request("POST", "/api/works/planning/accept-suggestion", {
+            "workId": wid,
+            "suggestionId": imp["suggestionRecord"]["suggestionId"],
+            "expectedContextFingerprint": imp["overview"]["fingerprints"]["contextFingerprint"],
+            "preserveQuestions": True,
+        })
+        self.assertEqual(st_acc, 200, acc)
+        self.assertEqual(acc["planning"]["briefing"]["objective"], "Simplificar consulta de horarios")
+        aud_q = next(q for q in acc["planning"]["questions"] if q["dimension"] == "audience")
+        self.assertEqual(aud_q["answer"], "Donos e recepcao de salao")
+
+    def test_local_llm_adapter_success_errors_and_preserving_valid_deliveries(self):
+        self._backup_llm_config()
+        wid = "t-plan-llm"
+        opened = self._create_work_with_media(wid, PROJECT_MS, template="marca-salao")
+        paths = opened["work"]["paths"]
+
+        # Gera ZIP previo valido se ffmpeg estiver disponivel para provar preservacao em falha do LLM
+        prior_zip_sha = None
+        if HAS_FFMPEG:
+            creq = opened["carouselRequest"]
+            _, jc = self.request("POST", "/api/export", {
+                "request": creq, "outputDir": paths["carouselDeliveryDir"],
+                "profile": creq["profile"], "kind": "carousel", "workId": wid,
+            })
+            self.assertEqual(self._poll_job(jc["jobId"])["status"], "completed")
+            _, rev = self.request("POST", "/api/works/editorial/save", {
+                "workId": wid,
+                "briefing": {"objective": "Base previa", "cta": "Conheca o Marca Salao"},
+                "channels": {creq["profile"]: {"postText": "Texto valido anterior", "cta": "Acesse pelo link na bio", "destinationUrl": "https://marcasalao.com.br"}},
+            })
+            car = next(p for p in rev["pieces"] if p["modality"] == "carousel")
+            ch = next(c for c in rev["channels"] if c["profileId"] == creq["profile"])
+            self.request("POST", "/api/works/review/decide", {
+                "workId": wid, "targetType": "piece", "modality": "carousel", "profileId": car["profileId"],
+                "expectedVersionId": car["deliveryVersionId"], "expectedDraftFingerprint": car["currentDraftFingerprint"],
+                "decision": "approved_for_local_delivery", "note": "ok",
+            })
+            self.request("POST", "/api/works/review/decide", {
+                "workId": wid, "targetType": "channel", "profileId": ch["profileId"],
+                "expectedCopySha256": ch["copySha256"], "decision": "approved_for_local_delivery", "note": "ok",
+            })
+            _, pkg = self.request("POST", "/api/works/package", {
+                "workId": wid, "pieces": [{"modality": "carousel", "profileId": car["profileId"]}],
+                "channels": [{"profileId": ch["profileId"]}],
+            })
+            prior_zip_sha = pkg["packageDelivery"]["lastValidDelivery"]["zipSha256"]
+
+        # Salva ideia manual antes de testar LLM
+        self.request("POST", "/api/works/planning/save", {"workId": wid, "ideaText": "Ideia do operador que nao pode se perder."})
+
+        # LLM desabilitado por padrao bloqueia chamada
+        st_off, d_off = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_off, 400, d_off)
+        self.assertEqual(d_off.get("code"), "LLM_DISABLED")
+
+        # Mock /v1/chat/completions para sucesso e modos de falha
+        mode_box = {"mode": "ok-briefing"}
+
+        def mock_handler(path, payload, count):
+            self.assertEqual(path, "/v1/chat/completions")
+            m = mode_box["mode"]
+            if m == "timeout":
+                time.sleep(1.1)
+                return 504, {"error": "mock timeout"}
+            if m == "empty":
+                return 200, {"model": payload.get("model"), "choices": [{"message": {"content": ""}}]}
+            if m == "bad-json":
+                return 200, {"model": payload.get("model"), "choices": [{"message": {"content": "Desculpe, nao consegui gerar JSON."}}]}
+            if m == "bad-contract":
+                return 200, {"model": payload.get("model"), "choices": [{"message": {"content": json.dumps({"schemaVersion": 1, "stage": "briefing", "recommendedProfiles": ["perfil-proibido"]})}}]}
+            if m == "ok-briefing":
+                content = {
+                    "schemaVersion": 1,
+                    "stage": "briefing",
+                    "product": "Marca Salao",
+                    "audience": "Donos de salao",
+                    "objective": "Mostrar agenda diaria sem caderno",
+                    "coreMessage": "Horarios organizados em uma tela",
+                    "supportEvidence": "Captura real do painel de horarios",
+                    "cta": "Conheca o Marca Salao",
+                    "tone": "Pratico",
+                    "recommendedProfiles": ["youtube-shorts", "instagram-feed-image-square"],
+                    "gaps": ["Definir tela principal da cena 2"],
+                    "questions": [{"id": "q-objective", "dimension": "objective", "question": "Foco principal?", "suggestedAnswer": "Agilidade"}],
+                    "claims": [],
+                }
+                return 200, {"model": payload.get("model"), "choices": [{"message": {"content": json.dumps(content, ensure_ascii=False)}}]}
+            raise AssertionError(m)
+
+        mock = _MockLLMServer(mock_handler)
+        self.addCleanup(mock.close)
+
+        # Configura endpoint e qwen3:8b
+        st_sc, cfg_saved = self.request("POST", "/api/llm/config", {
+            "enabled": True, "endpoint": mock.endpoint, "model": "qwen3:8b", "timeoutSec": 5.0,
+        })
+        self.assertEqual(st_sc, 200, cfg_saved)
+
+        # 1) Sucesso na Etapa 1
+        st_ok, gen_ok = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_ok, 200, gen_ok)
+        self.assertEqual(gen_ok["llmResponseMeta"]["model"], "qwen3:8b")
+        self.assertEqual(mock.requests[0]["payload"]["model"], "qwen3:8b")
+
+        # 2) Timeout -> 504 + LLM_TIMEOUT
+        mode_box["mode"] = "timeout"
+        st_to, d_to = self.request("POST", "/api/works/planning/generate", {
+            "workId": wid, "stage": "briefing", "llmConfig": {"enabled": True, "endpoint": mock.endpoint, "model": "qwen3:8b", "timeoutSec": 0.3},
+        })
+        self.assertEqual(st_to, 504, d_to)
+        self.assertEqual(d_to.get("code"), "LLM_TIMEOUT")
+
+        # 3) Resposta vazia -> 400 + LLM_EMPTY_RESPONSE
+        mode_box["mode"] = "empty"
+        st_em, d_em = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_em, 400, d_em)
+        self.assertEqual(d_em.get("code"), "LLM_EMPTY_RESPONSE")
+
+        # 4) JSON invalido -> 400 + LLM_INVALID_JSON
+        mode_box["mode"] = "bad-json"
+        st_bj, d_bj = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_bj, 400, d_bj)
+        self.assertEqual(d_bj.get("code"), "LLM_INVALID_JSON")
+
+        # 5) Fora do contrato PlanningSuggestion -> 400
+        mode_box["mode"] = "bad-contract"
+        st_bc, d_bc = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        self.assertEqual(st_bc, 400, d_bc)
+
+        # 6) Porta fechada -> 503 + LLM_UNAVAILABLE
+        s_dead = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s_dead.bind(("127.0.0.1", 0))
+        dead_port = s_dead.getsockname()[1]
+        s_dead.close()
+        st_un, d_un = self.request("POST", "/api/works/planning/generate", {
+            "workId": wid, "stage": "briefing",
+            "llmConfig": {"enabled": True, "endpoint": f"http://127.0.0.1:{dead_port}/v1/chat/completions", "model": "qwen3:8b", "timeoutSec": 8.0},
+        })
+        self.assertEqual(st_un, 503, d_un)
+        self.assertEqual(d_un.get("code"), "LLM_UNAVAILABLE")
+
+        # Todas as falhas preservaram o rascunho de planejamento e o ZIP previo
+        _, after_err = self.request("GET", f"/api/works/planning?id={wid}")
+        self.assertEqual(after_err["planning"]["ideaText"], "Ideia do operador que nao pode se perder.")
+        if prior_zip_sha:
+            _, pkg_after = self.request("GET", f"/api/works/package?id={wid}")
+            self.assertEqual(pkg_after["lastValidDelivery"]["zipSha256"], prior_zip_sha)
+
+    def test_pending_media_preserve_recheck_and_409_conflicts(self):
+        self._backup_llm_config()
+        wid = "t-plan-state"
+        opened = self._create_work_with_media(wid, PROJECT_MS)
+
+        # Salva Stage 1 e Stage 2 com cena 2 sem midia selecionada
+        self.request("POST", "/api/works/planning/save", {
+            "workId": wid,
+            "currentStage": "creative",
+            "ideaText": "Agenda simples",
+            "briefing": {"objective": "Obj 1", "audience": "Saloes", "coreMessage": "Msg 1", "supportEvidence": "Tela", "hook": "Hook A", "scriptSummary": "Roteiro", "cta": "Conheca o Marca Salao"},
+            "briefingExtended": {"product": "Marca Salao", "tone": "Direto", "recommendedProfiles": ["youtube-shorts", "instagram-feed-image-square"]},
+            "creative": {
+                "hookOptions": [{"id": "h-a", "text": "Hook A", "angle": "dor"}],
+                "selectedHookId": "h-a",
+                "scriptSummary": "Roteiro",
+                "videoScenes": [
+                    {"id": "cena-1", "durationMs": 3000, "titleOverlay": "Cena 1", "caption": "Cap 1", "narration": "Nar 1", "requiredMediaDescriptor": "Tela 1", "mediaId": "img-capa", "motionIntent": "none"},
+                    {"id": "cena-2", "durationMs": 3000, "titleOverlay": "Cena 2", "caption": "Cap 2", "narration": "Nar 2", "requiredMediaDescriptor": "Tela 2 obrigatoria", "mediaId": "", "motionIntent": "none"},
+                ],
+                "carouselCards": [
+                    {"id": "card-1", "role": "cover", "title": "Capa", "body": "Subtitulo", "requiredMediaDescriptor": "", "mediaId": ""},
+                    {"id": "card-2", "role": "cta", "title": "Fechamento", "body": "Conheca o Marca Salao", "requiredMediaDescriptor": "", "mediaId": ""},
+                ],
+                "channelCopies": {
+                    "youtube-shorts": {"postText": "Veja https://marcasalao.com.br", "cta": "Link na descricao", "destinationUrl": "https://marcasalao.com.br"},
+                },
+            },
+            "markCreativeChecked": True,
+        })
+
+        # Aplicar sem midia em cena-2 deixa Video pending_media e nao escreve video.request invalido
+        _, ov_now = self.request("GET", f"/api/works/planning?id={wid}")
+        self.assertFalse(ov_now["analysis"]["creativeNeedsRecheck"])
+        st_ap, ap_res = self.request("POST", "/api/works/planning/apply", {
+            "workId": wid,
+            "expectedContextFingerprint": ov_now["fingerprints"]["contextFingerprint"],
+            "applyBriefing": True, "applyVideo": True, "applyCarousel": True, "applyMotionSync": False,
+            "channelsToApply": ["youtube-shorts"],
+        })
+        self.assertEqual(st_ap, 200, ap_res)
+        self.assertEqual(ap_res["applied"]["video"]["status"], "pending_media")
+        self.assertEqual(ap_res["applied"]["video"]["pendingScenes"], ["cena-2"])
+        self.assertEqual(ap_res["applied"]["carousel"]["status"], "applied")
+
+        # Alterar briefing marca creativeNeedsRecheck = True ate reconferencia
+        _, ov_chg = self.request("POST", "/api/works/planning/save", {
+            "workId": wid,
+            "briefing": {"objective": "Obj 2 alterado"},
+        })
+        self.assertTrue(ov_chg["analysis"]["creativeNeedsRecheck"])
+        _, ov_chk = self.request("POST", "/api/works/planning/save", {
+            "workId": wid,
+            "creative": ov_chg["planning"]["creative"],
+            "markCreativeChecked": True,
+        })
+        self.assertFalse(ov_chk["analysis"]["creativeNeedsRecheck"])
+
+        # Edicao concorrente nos editores dispara HTTP 409 ao tentar aplicar com fingerprint antigo
+        stale_fp = ov_chk["fingerprints"]["contextFingerprint"]
+        stale_drafts_fp = ov_chk["fingerprints"]["draftsSha256"]
+        mod_vreq = dict(opened["videoRequest"])
+        mod_vreq["title"] = "Edicao concorrente no editor Video"
+        self.request("POST", "/api/works/save", {"workId": wid, "videoRequest": mod_vreq})
+        st_409, d409 = self.request("POST", "/api/works/planning/apply", {
+            "workId": wid,
+            "expectedContextFingerprint": stale_fp,
+            "expectedDraftsSha256": stale_drafts_fp,
+            "applyBriefing": True, "applyVideo": False, "applyCarousel": False, "applyMotionSync": False,
+            "channelsToApply": [],
+        })
+        self.assertEqual(st_409, 409, d409)
+        self.assertTrue(d409.get("conflict"))
+
+    def test_end_to_end_planning_motion_export_localized_copy_and_zip(self):
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg/FFprobe ausentes")
+            raise unittest.SkipTest("FFmpeg/FFprobe indisponiveis")
+
+        import delivery_package
+
+        self._backup_llm_config()
+        wid = "t-plan-e2e"
+        opened = self._create_work_with_media(wid, PROJECT_MS)
+        paths = opened["work"]["paths"]
+
+        def mock_creative_handler(path, payload, count):
+            if count == 1:
+                sug = {
+                    "schemaVersion": 1, "stage": "briefing",
+                    "product": "Marca Salao", "audience": "Gestores de salao", "objective": "Apresentar agenda clara",
+                    "coreMessage": "Controle seus horarios em segundos", "supportEvidence": "Tela real do trabalho",
+                    "cta": "Conheca o Marca Salao", "tone": "Objetivo",
+                    "recommendedProfiles": ["youtube-shorts", "instagram-feed-image-square"],
+                    "gaps": [], "questions": [], "claims": [],
+                }
+            else:
+                sug = {
+                    "schemaVersion": 1, "stage": "creative",
+                    "hookOptions": [
+                        {"id": "hook-1", "text": "Ainda usa caderno?", "angle": "dor"},
+                        {"id": "hook-2", "text": "Veja seus horarios do dia em 1 tela", "angle": "demonstracao"},
+                    ],
+                    "selectedHookId": "hook-2",
+                    "scriptSummary": "Cena 1 abre com a visao do dia e Cena 2 detalha o horario.",
+                    "videoScenes": [
+                        {"id": "cena-abertura", "objective": "Gancho", "narrativeFunction": "hook", "durationMs": 2000, "titleOverlay": "Agenda em 1 tela", "caption": "Horarios do dia claros", "narration": "Veja seus horarios do dia sem complicacao.", "requiredMediaDescriptor": "Capa agenda", "motionIntent": "none"},
+                        {"id": "cena-detalhe", "objective": "Prova", "narrativeFunction": "demonstration", "durationMs": 2500, "titleOverlay": "Tudo organizado", "caption": "Confirmados na tela", "narration": "Acompanhe cada atendimento facilmente.", "requiredMediaDescriptor": "Tela de horarios", "motionIntent": "none"},
+                    ],
+                    "carouselCards": [
+                        {"id": "c-capa", "role": "cover", "title": "Agenda em 1 tela", "body": "Sem complicacao", "requiredMediaDescriptor": ""},
+                        {"id": "c-passo", "role": "content", "title": "Tudo no horario", "body": "Organizacao diaria", "requiredMediaDescriptor": ""},
+                    ],
+                    "channelCopies": [
+                        {"profileId": "youtube-shorts", "title": "Agenda no Marca Salao", "postText": "Confira em https://marcasalao.com.br", "cta": "Acesse pelo link da descricao", "destinationUrl": "https://marcasalao.com.br", "hashtags": "#MarcaSalao"},
+                        {"profileId": "instagram-feed-image-square", "title": "", "postText": "Organize sua rotina no Marca Salao.", "cta": "Acesse pelo link na bio", "destinationUrl": "https://marcasalao.com.br", "hashtags": "#Salao"},
+                    ],
+                    "motionSuggestions": [
+                        {"sceneId": "cena-detalhe", "targetElement": "Bloco horario confirmado", "suggestedColor": "#FFD700", "suggestedStartMs": 300, "suggestedEndMs": 2000, "note": "Marcar no canvas"},
+                    ],
+                }
+            return 200, {"model": payload.get("model"), "choices": [{"message": {"content": json.dumps(sug, ensure_ascii=False)}}]}
+
+        mock = _MockLLMServer(mock_creative_handler)
+        self.addCleanup(mock.close)
+        self.request("POST", "/api/llm/config", {"enabled": True, "endpoint": mock.endpoint, "model": "qwen3:8b", "timeoutSec": 10.0})
+
+        # Etapa 1 e 2 via modelo local + vinculacao local das midias pelo operador
+        self.request("POST", "/api/works/planning/save", {"workId": wid, "ideaText": "Demonstrar organizacao de horarios."})
+        _, g1 = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "briefing"})
+        _, ov1 = self.request("POST", "/api/works/planning/accept-suggestion", {
+            "workId": wid, "suggestionId": g1["suggestionRecord"]["suggestionId"],
+        })
+        _, g2 = self.request("POST", "/api/works/planning/generate", {"workId": wid, "stage": "creative"})
+        _, ov2 = self.request("POST", "/api/works/planning/accept-suggestion", {
+            "workId": wid, "suggestionId": g2["suggestionRecord"]["suggestionId"],
+        })
+
+        # Seleciona midias locais para cena-abertura e cena-detalhe + reordena card
+        cr = ov2["planning"]["creative"]
+        cr["videoScenes"][0]["mediaId"] = "img-capa"
+        cr["videoScenes"][1]["mediaId"] = "img-prova"
+        cr["carouselCards"] = [cr["carouselCards"][1], cr["carouselCards"][0]]
+        _, ov3 = self.request("POST", "/api/works/planning/save", {"workId": wid, "creative": cr, "markCreativeChecked": True})
+
+        # Aplica tudo nos editores
+        st_ap, ap = self.request("POST", "/api/works/planning/apply", {
+            "workId": wid,
+            "expectedContextFingerprint": ov3["fingerprints"]["contextFingerprint"],
+            "applyBriefing": True, "applyVideo": True, "applyCarousel": True, "applyMotionSync": True,
+            "channelsToApply": ["youtube-shorts", "instagram-feed-image-square"],
+        })
+        self.assertEqual(st_ap, 200, ap)
+        self.assertEqual(ap["applied"]["video"]["status"], "applied")
+        self.assertEqual(ap["applied"]["carousel"]["status"], "applied")
+        self.assertEqual(ap["applied"]["motion"]["sceneIds"], ["cena-abertura", "cena-detalhe"])
+        # Sugestao Motion nao cria retangulo automatico no MotionPlan
+        self.assertEqual(ap["workData"]["motionPlan"]["effects"], [])
+
+        # Operador marca região no Motion na cena-detalhe e exporta Video, Carrossel e Motion
+        mplan = {
+            "schemaVersion": 1,
+            "requestId": ap["workData"]["videoRequest"]["id"],
+            "effects": [{"sceneId": "cena-detalhe", "region": {"x": 0.15, "y": 0.25, "w": 0.5, "h": 0.3}, "color": "#FFD700", "thickness": 6, "startMs": 300, "endMs": 2000}],
+        }
+        self.request("POST", "/api/works/save", {"workId": wid, "motionPlan": mplan})
+
+        _, jv = self.request("POST", "/api/export", {
+            "request": ap["workData"]["videoRequest"], "outputDir": paths["videoDeliveryDir"],
+            "profile": "youtube-shorts", "kind": "video", "workId": wid,
+        })
+        _, jc = self.request("POST", "/api/export", {
+            "request": ap["workData"]["carouselRequest"], "outputDir": paths["carouselDeliveryDir"],
+            "profile": "instagram-feed-image-square", "kind": "carousel", "workId": wid,
+        })
+        _, jm = self.request("POST", "/api/export", {
+            "request": ap["workData"]["videoRequest"], "outputDir": paths["motionDeliveryDir"],
+            "profile": "youtube-shorts", "kind": "video", "motionPlan": mplan, "workId": wid,
+        })
+        self.assertEqual(self._poll_job(jv["jobId"])["status"], "completed")
+        self.assertEqual(self._poll_job(jc["jobId"])["status"], "completed")
+        self.assertEqual(self._poll_job(jm["jobId"])["status"], "completed")
+
+        # Aprova pecas e canais -> gera ZIP v1
+        _, rev = self.request("GET", f"/api/works/review?id={wid}")
+        v_p = next(p for p in rev["pieces"] if p["pieceKey"] == "video:youtube-shorts")
+        c_p = next(p for p in rev["pieces"] if p["pieceKey"] == "carousel:instagram-feed-image-square")
+        m_p = next(p for p in rev["pieces"] if p["pieceKey"] == "motion:youtube-shorts")
+        mp4_sha_v1 = v_p["metrics"]["videoSha256"]
+        self.assertEqual(v_p["metrics"]["audioStreams"], 0)
+        for p in (v_p, c_p, m_p):
+            st_d, rev = self.request("POST", "/api/works/review/decide", {
+                "workId": wid, "targetType": "piece", "modality": p["modality"], "profileId": p["profileId"],
+                "expectedVersionId": p["deliveryVersionId"], "expectedDraftFingerprint": p["currentDraftFingerprint"],
+                "decision": "approved_for_local_delivery", "note": "Aprovado e2e",
+            })
+            self.assertEqual(st_d, 200, rev)
+        for ch in rev["channels"]:
+            st_dc, rev = self.request("POST", "/api/works/review/decide", {
+                "workId": wid, "targetType": "channel", "profileId": ch["profileId"],
+                "expectedCopySha256": ch["copySha256"], "decision": "approved_for_local_delivery", "note": "Copy aprovada",
+            })
+            self.assertEqual(st_dc, 200, rev)
+        st_pkg1, pkg1 = self.request("POST", "/api/works/package", {
+            "workId": wid,
+            "pieces": [
+                {"modality": "video", "profileId": "youtube-shorts"},
+                {"modality": "carousel", "profileId": "instagram-feed-image-square"},
+                {"modality": "motion", "profileId": "youtube-shorts"},
+            ],
+            "channels": [{"profileId": "youtube-shorts"}, {"profileId": "instagram-feed-image-square"}],
+        })
+        self.assertEqual(st_pkg1, 200, pkg1)
+        self.assertTrue(pkg1["packageDelivery"]["available"])
+
+        # Ajustar somente texto do canal youtube-shorts via Planejamento gera apenas copy_outdated sem re-render MP4
+        _, ov_pre = self.request("GET", f"/api/works/planning?id={wid}")
+        cr2 = ov_pre["planning"]["creative"]
+        cr2["channelCopies"]["youtube-shorts"]["postText"] = "Texto revisado para YouTube Shorts: https://marcasalao.com.br"
+        _, ov_post = self.request("POST", "/api/works/planning/save", {"workId": wid, "creative": cr2})
+        _, ap_ch = self.request("POST", "/api/works/planning/apply", {
+            "workId": wid,
+            "expectedContextFingerprint": ov_post["fingerprints"]["contextFingerprint"],
+            "applyBriefing": False, "applyVideo": False, "applyCarousel": False, "applyMotionSync": False,
+            "channelsToApply": ["youtube-shorts"],
+        })
+        self.assertEqual(ap_ch["applied"]["video"]["status"], "skipped")
+        rev_after = ap_ch["workData"]["review"]
+        yt_ch = next(c for c in rev_after["channels"] if c["profileId"] == "youtube-shorts")
+        ig_ch = next(c for c in rev_after["channels"] if c["profileId"] == "instagram-feed-image-square")
+        self.assertEqual(yt_ch["status"], "copy_outdated")
+        self.assertEqual(ig_ch["status"], "approved")
+        v_p2 = next(p for p in rev_after["pieces"] if p["pieceKey"] == "video:youtube-shorts")
+        self.assertEqual(v_p2["status"], "approved")
+        self.assertEqual(v_p2["metrics"]["videoSha256"], mp4_sha_v1)
+
+        # Reaprova apenas o canal atualizado e baixa ZIP v2 valido
+        self.request("POST", "/api/works/review/decide", {
+            "workId": wid, "targetType": "channel", "profileId": "youtube-shorts",
+            "expectedCopySha256": yt_ch["copySha256"], "decision": "approved_for_local_delivery", "note": "Reaprovado",
+        })
+        st_pkg2, pkg2 = self.request("POST", "/api/works/package", {
+            "workId": wid,
+            "pieces": [
+                {"modality": "video", "profileId": "youtube-shorts"},
+                {"modality": "carousel", "profileId": "instagram-feed-image-square"},
+            ],
+            "channels": [{"profileId": "youtube-shorts"}, {"profileId": "instagram-feed-image-square"}],
+        })
+        self.assertEqual(st_pkg2, 200, pkg2)
+        st_dl, ctype, zip_bytes = self._fetch_raw(f"/api/works/package/download?id={wid}")
+        self.assertEqual(st_dl, 200)
+        self.assertEqual(ctype, "application/zip")
+        self.assertEqual(delivery_package._sha256_bytes(zip_bytes), pkg2["packageDelivery"]["lastValidDelivery"]["zipSha256"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1004,6 +1004,15 @@ const MOTION_PLAN_SCHEMA_FILES = [
     'motion-plan.schema.json',
 ]
 
+/** Sugestoes versionadas de planejamento PlanningSuggestion v1 (aba Planejamento). */
+const PLANNING_SUGGESTION_SOURCE_FILES = [
+    'planning-suggestion-contract.ts',
+    'validate-planning-suggestion.ts',
+]
+const PLANNING_SUGGESTION_SCHEMA_FILES = [
+    'planning-suggestion.schema.json',
+]
+
 /** Arquivos que ja existiam na main apos o R001 e seguem intactos. */
 const PREEXISTING_SOURCE_FILES = [
     'cli-input.ts',
@@ -1148,6 +1157,8 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
         ['schemas', CAROUSEL_REQUEST_SCHEMA_FILES],
         ['src', MOTION_PLAN_SOURCE_FILES],
         ['schemas', MOTION_PLAN_SCHEMA_FILES],
+        ['src', PLANNING_SUGGESTION_SOURCE_FILES],
+        ['schemas', PLANNING_SUGGESTION_SCHEMA_FILES],
     ] as const) {
         for (const file of relative) {
             assert.ok(
@@ -1159,12 +1170,12 @@ test('nenhum contrato fora do escopo desta fatia foi criado', () => {
 
     assert.deepEqual(
         sourceFiles,
-        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES, ...VISUAL_STYLE_SOURCE_FILES, ...ASSET_MANIFEST_SOURCE_FILES, ...VIDEO_REQUEST_SOURCE_FILES, ...CAROUSEL_REQUEST_SOURCE_FILES, ...MOTION_PLAN_SOURCE_FILES].sort(),
+        [...PREEXISTING_SOURCE_FILES, ...BEAT_PLAN_SOURCE_FILES, ...PIPELINE_SOURCE_FILES, ...CASE_SOURCE_FILES, ...EXECUTION_PACKAGE_SOURCE_FILES, ...SIMULATED_EXECUTION_SOURCE_FILES, ...LOCAL_RENDER_INPUT_SOURCE_FILES, ...TEXT_OVERLAY_PLAN_SOURCE_FILES, ...VISUAL_STYLE_SOURCE_FILES, ...ASSET_MANIFEST_SOURCE_FILES, ...VIDEO_REQUEST_SOURCE_FILES, ...CAROUSEL_REQUEST_SOURCE_FILES, ...MOTION_PLAN_SOURCE_FILES, ...PLANNING_SUGGESTION_SOURCE_FILES].sort(),
         'src/ so pode conter os contratos da main mais os arquivos desta fatia',
     )
     assert.deepEqual(
         schemaFiles,
-        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES, ...VISUAL_STYLE_SCHEMA_FILES, ...ASSET_MANIFEST_SCHEMA_FILES, ...VIDEO_REQUEST_SCHEMA_FILES, ...CAROUSEL_REQUEST_SCHEMA_FILES, ...MOTION_PLAN_SCHEMA_FILES].sort(),
+        [...PREEXISTING_SCHEMA_FILES, ...BEAT_PLAN_SCHEMA_FILES, ...EXECUTION_PACKAGE_SCHEMA_FILES, ...SIMULATED_EXECUTION_SCHEMA_FILES, ...TEXT_OVERLAY_PLAN_SCHEMA_FILES, ...VISUAL_STYLE_SCHEMA_FILES, ...ASSET_MANIFEST_SCHEMA_FILES, ...VIDEO_REQUEST_SCHEMA_FILES, ...CAROUSEL_REQUEST_SCHEMA_FILES, ...MOTION_PLAN_SCHEMA_FILES, ...PLANNING_SUGGESTION_SCHEMA_FILES].sort(),
         'schemas/ so pode conter os espelhos da main mais o do BeatPlan',
     )
 

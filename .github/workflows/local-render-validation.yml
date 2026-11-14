@@ -344,7 +344,8 @@ jobs:
       - name: Prova de Revisao editorial e pacote ZIP de entrega (Studio HTTP em 127.0.0.1)
         run: |
           python - <<'PY'
-          import glob, hashlib, json, os, shutil, subprocess, time, urllib.parse, urllib.request, zipfile
+          import glob, hashlib, json, os, shutil, subprocess, threading, time, urllib.parse, urllib.request, zipfile
+          from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
           os.makedirs('.workspace/tmp/ci-zip-chk', exist_ok=True)
           p = subprocess.Popen(['python', 'tools/video_studio.py', '--port', '8798'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
           base = 'http://127.0.0.1:8798'
@@ -467,6 +468,143 @@ jobs:
                       assert len(v) == 1 and int(v[0]['width']) == 1080 and int(v[0]['height']) == 1920
                       assert sum(1 for s in info['streams'] if s.get('codec_type') == 'audio') == 0
               print('review & delivery zip CI proof ok: 3 modalidades separadas, SHA-256 e FFprobe sem audio')
+
+              # Prova da aba Planejamento (prompt, import estrito, modelo local mock /v1/chat/completions, diff e apply sem alterar MP4)
+              cfg_res = call('/api/llm/config')
+              assert cfg_res['llmConfig']['enabled'] is False and cfg_res['llmConfig']['model'] == 'qwen3:8b', cfg_res
+              ov0 = call('/api/works/planning?' + urllib.parse.urlencode({'id': work_id}))
+              ov1 = call('/api/works/planning/save', {
+                  'workId': work_id,
+                  'expectedContextFingerprint': ov0['fingerprints']['contextFingerprint'],
+                  'ideaText': 'Ideia CI para planejamento da agenda Marca Salao.',
+                  'briefing': {
+                      'objective': 'Prova CI de Planejamento',
+                      'audience': 'Gestores de salao',
+                      'coreMessage': 'Agenda diaria organizada em uma tela',
+                      'supportEvidence': 'Captura real da agenda',
+                      'hook': 'Hook CI inicial',
+                      'scriptSummary': 'Abertura -> Demonstracao',
+                      'cta': 'Conheca o Marca Salao',
+                  },
+                  'briefingExtended': {
+                      'product': 'Marca Salao',
+                      'tone': 'Direto',
+                      'recommendedProfiles': ['instagram-reels-video', 'instagram-feed-image-square'],
+                  },
+                  'questions': ov0['planning']['questions'],
+                  'claims': [],
+                  'creative': ov0['planning']['creative'],
+              })
+              pr1 = call('/api/works/planning/prompt', {'workId': work_id, 'stage': 'briefing'})
+              assert 'PlanningSuggestion v1' in pr1['promptText'], pr1
+              stage1_json = {
+                  'schemaVersion': 1,
+                  'stage': 'briefing',
+                  'product': 'Marca Salao',
+                  'audience': 'Donas e recepcionistas de salao',
+                  'objective': 'Mostrar agenda diaria organizada em uma tela',
+                  'coreMessage': 'Evite conflitos de horario com visao clara do dia',
+                  'supportEvidence': 'Tela real da agenda',
+                  'cta': 'Conheca o Marca Salao',
+                  'tone': 'Pratico e direto',
+                  'recommendedProfiles': ['instagram-reels-video', 'instagram-feed-image-square'],
+                  'gaps': [],
+                  'questions': [{'id': 'q-1', 'dimension': 'audience', 'question': 'Quem atende na recepcao?', 'suggestedAnswer': 'Equipe do salao'}],
+                  'claims': [{'id': 'c-1', 'statement': 'Horarios organizados em uma tela', 'status': 'confirmed', 'requiresConfirmation': False}],
+              }
+              imp1 = call('/api/works/planning/import', {
+                  'workId': work_id,
+                  'stage': 'briefing',
+                  'expectedContextFingerprint': ov1['fingerprints']['contextFingerprint'],
+                  'rawText': json.dumps(stage1_json, ensure_ascii=False),
+              })
+              assert imp1['suggestionRecord']['stage'] == 'briefing', imp1
+
+              stage2_json = {
+                  'schemaVersion': 1,
+                  'stage': 'creative',
+                  'hookOptions': [
+                      {'id': 'hook-1', 'text': 'Hook CI 1', 'angle': 'dor'},
+                      {'id': 'hook-2', 'text': 'Hook CI 2', 'angle': 'clareza'},
+                  ],
+                  'selectedHookId': 'hook-2',
+                  'scriptSummary': 'Cena 1 abertura e Cena 2 demonstracao.',
+                  'videoScenes': [
+                      {'id': 'cena-1', 'objective': 'Abertura', 'narrativeFunction': 'hook', 'durationMs': 2000, 'titleOverlay': 'Agenda clara', 'caption': 'Horarios do dia', 'narration': 'Veja os horarios do dia.', 'requiredMediaDescriptor': 'Capa', 'motionIntent': 'none'},
+                      {'id': 'cena-2', 'objective': 'Prova', 'narrativeFunction': 'demonstration', 'durationMs': 2000, 'titleOverlay': 'Sem papel', 'caption': 'Consulta rapida', 'narration': 'Confira atendimentos sem confusao.', 'requiredMediaDescriptor': 'Tela', 'motionIntent': 'none'},
+                  ],
+                  'carouselCards': [
+                      {'id': 'card-1', 'role': 'cover', 'title': 'Agenda clara no salao', 'body': 'Visao em uma tela', 'requiredMediaDescriptor': ''},
+                      {'id': 'card-2', 'role': 'cta', 'title': 'Conheca o Marca Salao', 'body': 'marcasalao.com.br', 'requiredMediaDescriptor': ''},
+                  ],
+                  'channelCopies': [
+                      {'profileId': 'instagram-reels-video', 'title': 'Titulo IG Planejado CI', 'postText': 'Legenda IG via Planejamento CI', 'cta': 'Acesse o link na bio', 'destinationUrl': 'https://marcasalao.com.br', 'hashtags': '#MarcaSalao'},
+                  ],
+                  'motionSuggestions': [
+                      {'sceneId': 'cena-2', 'targetElement': 'Horario em destaque', 'suggestedColor': '#FFD700', 'suggestedStartMs': 300, 'suggestedEndMs': 1700, 'note': 'Marcar no canvas Motion'},
+                  ],
+              }
+              llm_calls = []
+              class MockLlmHandler(BaseHTTPRequestHandler):
+                  def log_message(self, fmt, *args):
+                      pass
+                  def do_POST(self):
+                      n = int(self.headers.get('Content-Length', 0))
+                      body = json.loads((self.rfile.read(n) if n else b'{}').decode('utf-8'))
+                      llm_calls.append(body)
+                      out = json.dumps({'model': 'qwen3:8b', 'choices': [{'message': {'content': json.dumps(stage2_json, ensure_ascii=False)}}]}).encode('utf-8')
+                      self.send_response(200)
+                      self.send_header('Content-Type', 'application/json')
+                      self.send_header('Content-Length', str(len(out)))
+                      self.end_headers()
+                      self.wfile.write(out)
+
+              llm_srv = ThreadingHTTPServer(('127.0.0.1', 0), MockLlmHandler)
+              threading.Thread(target=llm_srv.serve_forever, daemon=True).start()
+              try:
+                  llm_port = llm_srv.server_address[1]
+                  gen2 = call('/api/works/planning/generate', {
+                      'workId': work_id,
+                      'stage': 'creative',
+                      'expectedContextFingerprint': imp1['overview']['fingerprints']['contextFingerprint'],
+                      'llmConfig': {'enabled': True, 'endpoint': f'http://127.0.0.1:{llm_port}/v1/chat/completions', 'model': 'qwen3:8b', 'timeoutSec': 10.0},
+                  })
+                  assert gen2['suggestionRecord']['stage'] == 'creative' and len(llm_calls) == 1, gen2
+                  ov2 = call('/api/works/planning/accept-suggestion', {
+                      'workId': work_id,
+                      'suggestionId': gen2['suggestionRecord']['suggestionId'],
+                      'expectedContextFingerprint': gen2['overview']['fingerprints']['contextFingerprint'],
+                  })
+                  diff_res = call('/api/works/planning/diff', {
+                      'workId': work_id,
+                      'applyBriefing': True,
+                      'applyVideo': False,
+                      'applyCarousel': False,
+                      'applyMotionSync': False,
+                      'channelsToApply': ['instagram-reels-video'],
+                  })
+                  assert 'editorsDiff' in diff_res, diff_res
+                  app_res = call('/api/works/planning/apply', {
+                      'workId': work_id,
+                      'expectedContextFingerprint': ov2['fingerprints']['contextFingerprint'],
+                      'expectedEditorialBriefingSha256': ov2['fingerprints']['editorialBriefingSha256'],
+                      'expectedDraftsSha256': ov2['fingerprints']['draftsSha256'],
+                      'applyBriefing': True,
+                      'applyVideo': False,
+                      'applyCarousel': False,
+                      'applyMotionSync': False,
+                      'channelsToApply': ['instagram-reels-video'],
+                  })
+                  assert app_res['applied']['channels']['instagram-reels-video']['status'] == 'applied', app_res
+                  rev_plan = call('/api/works/review?' + urllib.parse.urlencode({'id': work_id}))
+                  ch_ig2 = next(x for x in rev_plan['channels'] if x['profileId'] == 'instagram-reels-video')
+                  v_after2 = next(x for x in rev_plan['pieces'] if x['modality'] == 'video' and x['profileId'] == 'instagram-reels-video')
+                  assert ch_ig2['status'] == 'copy_outdated', ch_ig2
+                  assert v_after2['status'] == 'approved' and v_after2['metrics']['videoSha256'] == v_sha_before, v_after2
+                  print('planning CI proof ok: prompt, import, mock /v1/chat/completions, accept, diff, apply localizado')
+              finally:
+                  llm_srv.shutdown()
+                  llm_srv.server_close()
           finally:
               p.terminate()
               try:
