@@ -225,23 +225,74 @@ jobs:
 
       - name: Prova do painel local Video Studio (HTTP em 127.0.0.1)
         run: |
-          python tools/video_studio.py --port 8799 > .workspace/tmp/studio-ci.log 2>&1 &
-          STUDIO_PID=$!
-          sleep 3
-          curl -sf http://127.0.0.1:8799/ > /dev/null
-          curl -sf http://127.0.0.1:8799/api/projects | python -c "import sys,json; d=json.load(sys.stdin); assert d['ok'] and any(p['id']=='marca-salao' for p in d['projects'])"
-          curl -sf "http://127.0.0.1:8799/api/profiles?project=platform/examples/projects/marca-salao-social.project.json" | python -c "import sys,json; d=json.load(sys.stdin); ps={p['id']:p for p in d['listing']['profiles']}; assert all(ps[x]['localExport'] for x in ('instagram-reels-video','facebook-reels-video','youtube-shorts'))"
+          python tools/video_studio.py --check --json
           python - <<'PY'
-          import json, urllib.request
-          req = json.load(open('tools/produce/examples/marca-salao-social-reel.video-request.json'))
-          body = json.dumps({'request': req}).encode()
-          r = urllib.request.Request('http://127.0.0.1:8799/api/preview', data=body,
-                                     headers={'Content-Type': 'application/json', 'Origin': 'http://127.0.0.1:8799'})
-          d = json.load(urllib.request.urlopen(r, timeout=60))
-          assert d['ok'] and d['result']['status'] == 'preview' and len(d['result']['profiles']) == 3
-          print('studio preview ok: 3 perfis, sem FFmpeg')
+          import json, os, shutil, subprocess, time, urllib.parse, urllib.request
+          p = subprocess.Popen(['python', 'tools/video_studio.py', '--port', '8799'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+          base = 'http://127.0.0.1:8799'
+          hdrs = {'Content-Type': 'application/json', 'Origin': base}
+          def call(path, body=None):
+              data = json.dumps(body).encode() if body is not None else None
+              req = urllib.request.Request(base + path, data=data, headers=hdrs if data is not None else {})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.loads(r.read().decode('utf-8'))
+          demo_id = None
+          try:
+              for _ in range(40):
+                  try:
+                      rd = call('/api/readiness')
+                      if rd['ok'] and rd['readiness']['ready']:
+                          break
+                  except Exception:
+                      time.sleep(0.25)
+              else:
+                  raise RuntimeError('Studio nao ficou pronto na porta 8799')
+              with urllib.request.urlopen(base + '/', timeout=15) as r:
+                  html = r.read().decode('utf-8')
+                  assert 'Trabalhos &amp; Projetos' in html or 'Trabalhos' in html
+              projs = call('/api/projects')
+              assert projs['ok'] and any(x['id'] == 'marca-salao' for x in projs['projects'])
+              created = call('/api/projects/create', {
+                  'schemaVersion': 1, 'id': 'ci-studio-proj', 'name': 'CI Studio',
+                  'locale': 'pt-BR', 'timezone': 'America/Sao_Paulo',
+                  'brandTheme': 'ci-studio', 'assetRoot': '.workspace/studio/projects/ci-studio-proj/assets',
+                  'contentPolicies': {'requireApprovedBriefing': True, 'requireApprovedScript': True, 'prohibitPersonalData': True, 'requireFunctionalEvidence': True},
+                  'outputProfiles': ['instagram-reels-video', 'facebook-reels-video', 'youtube-shorts', 'instagram-feed-image-square'],
+              })
+              proj_path = created['path']
+              v_prof = call('/api/profiles?' + urllib.parse.urlencode({'project': proj_path, 'module': 'video'}))['listing']['compatibleProfiles']
+              c_prof = call('/api/profiles?' + urllib.parse.urlencode({'project': proj_path, 'module': 'carousel'}))['listing']['compatibleProfiles']
+              m_prof = call('/api/profiles?' + urllib.parse.urlencode({'project': proj_path, 'module': 'motion'}))['listing']['compatibleProfiles']
+              assert {x['id'] for x in v_prof} == {'instagram-reels-video', 'facebook-reels-video', 'youtube-shorts'}
+              assert [x['id'] for x in c_prof] == ['instagram-feed-image-square']
+              assert {x['id'] for x in m_prof} == {'instagram-reels-video', 'facebook-reels-video', 'youtube-shorts'}
+              wk = call('/api/works/create', {'id': 'ci-studio-work', 'name': 'CI Work', 'project': proj_path, 'template': 'marca-salao'})
+              assert wk['ok'] and wk['work']['id'] == 'ci-studio-work'
+              wk['videoRequest']['title'] = 'CI Work Editado'
+              saved = call('/api/works/save', {'workId': 'ci-studio-work', 'videoRequest': wk['videoRequest'], 'carouselRequest': wk['carouselRequest'], 'motionPlan': wk['motionPlan']})
+              assert saved['ok']
+              reopened = call('/api/works/open?id=ci-studio-work')
+              assert reopened['ok'] and reopened['videoRequest']['title'] == 'CI Work Editado' and len(reopened['motionPlan']['effects']) == 1
+              prev = call('/api/preview', {'request': reopened['videoRequest'], 'motionPlan': reopened['motionPlan']})
+              assert prev['ok'] and prev['result']['status'] == 'preview' and len(prev['result']['profiles']) == 3
+              demo = call('/api/works/demo', {'brand': 'multitrack-hub'})
+              assert demo['ok'] and demo['work']['projectId'] == 'multitrack-hub'
+              demo_id = demo['work']['id']
+              print('studio v1 CI HTTP proof ok: readiness, projects, modules, work save/open, preview & demo')
+          finally:
+              p.terminate()
+              try:
+                  p.wait(timeout=5)
+              except Exception:
+                  p.kill()
+              for rel in ['.workspace/studio/projects/ci-studio-proj.project.json']:
+                  if os.path.isfile(rel):
+                      os.remove(rel)
+              for wid in [x for x in ('ci-studio-work', demo_id) if x]:
+                  d = f'.workspace/studio/works/{wid}'
+                  if os.path.isdir(d):
+                      shutil.rmtree(d, ignore_errors=True)
           PY
-          kill $STUDIO_PID || true
 
       - name: Prova de exportacao de carrossel (R003, JPEG 1080x1080 + ZIP)
         run: |

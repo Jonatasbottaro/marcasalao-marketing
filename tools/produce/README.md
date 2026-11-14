@@ -90,36 +90,49 @@ transicoes `cut` e `fade` (fade apenas no ultimo beat).
 ## Painel local (Video Studio)
 
 `tools/video_studio.py` serve um painel HTML/CSS/JS em `127.0.0.1` sobre o mesmo
-pipeline, para criar, revisar e exportar pelo navegador:
+pipeline, com cadastro de projetos, trabalhos persistentes, midias compartilhadas
+e retomada apos fechar e reabrir o servidor:
 
 ```bash
-python tools/video_studio.py --port 8765   # abra http://127.0.0.1:8765
+python tools/video_studio.py --check --json   # diagnostica Python, Node, build, FFmpeg e FFprobe
+python tools/video_studio.py --port 8765      # abra http://127.0.0.1:8765
 ```
 
 Fluxo no painel:
-1. **Projeto e destinos** — selecione o `ProjectManifest`; os perfis vem do
-   catalogo + allowlist, com resolucao, FPS e disponibilidade de exportacao local
-   (9:16@30). Marque Instagram Reels, Facebook Reels e YouTube Shorts.
-2. **Rascunho** — carregue um exemplo (Marca Salao / Multitrack Hub), salve e
-   reabra o pedido (`VideoRequest v1`) em `.workspace/`.
-3. **Midias** — escaneie uma pasta de trabalho dentro da raiz ou gere midia
-   ficticia do rascunho; origem e licenca declarada ou `pending`; reutilize a
-   mesma midia em varias cenas.
-4. **Cenas** — adicione, edite, remova e reordene; duracao, legenda, titulo
-   sobreposto e narracao em campos proprios.
-5. **Previa** — `produce_video.py --plan-only --json`: linha do tempo, duracao
-   total, avisos e erros por perfil, sem FFmpeg.
-6. **Exportacao** — `produce_video.py` em segundo plano; resultado por perfil ao
-   terminar.
-7. **Entrega** — assista ao MP4 no painel e baixe MP4/SRT/TXT por referencias
-   verificadas nos manifestos; reexporte somente um perfil.
+1. **Prontidao e demonstracao guiada** — a barra superior consulta `/api/readiness`
+   e aponta eventuais faltas com instrucao direta; em 1 clique, **Demonstracao
+   guiada** cria um trabalho completo para Marca Salao ou Multitrack Hub.
+2. **Projetos (`ProjectManifest` v1)** — cadastre novos projetos pelo formulario
+   (`POST /api/projects/create`), validados pelo nucleo da `platform` e salvos
+   em `.workspace/studio/projects/<id>.project.json`, com distincao visual entre
+   projetos cadastrados e exemplos versionados.
+3. **Trabalhos persistentes e retomada** — crie (`POST /api/works/create`) ou
+   reabra (`GET /api/works/open`) trabalhos em `.workspace/studio/works/<id>/`.
+   Rascunhos (`video.video-request.json`, `carousel.carousel-request.json`,
+   `motion.motion-plan.json`), pasta `media/` compartilhada e `deliveries/` sao
+   derivados automaticamente sem digitar caminhos (o modo avulso legado fica
+   recolhido em detalhe opcional). Escritas usam substituicao atomica.
+4. **Destinos filtrados por projeto e modulo** — `/api/profiles?project=...&module=video|carousel|motion`
+   exibe apenas os destinos permitidos pela allowlist e compativeis com o editor
+   aberto (9:16@30 para Video/Motion, 1:1 para Carrossel).
+5. **Midias, Cenas, Carrossel e Motion multi-cena** — importe midias da pasta
+   do trabalho para reutilizacao entre pecas, edite `VideoRequest`, `CarouselRequest`
+   ou contornos `MotionPlan` em multiplas cenas sem zoom (alternando entre cenas
+   sem perder alteracoes) e salve pelo botao **Salvar trabalho** (`/api/works/save`).
+6. **Previa, exportacao e preservacao em falha/reinicio** — conferencia de previa
+   sem FFmpeg (`/api/preview`), exportacao em segundo plano (`/api/export`) e
+   registro persistente de status em `.workspace/studio/export-status/`. O painel
+   separa `lastAttempt` (`failed`, ou `interrupted` quando um job ativo e
+   encontrado orfao apos reiniciar o servidor) de `lastValidDelivery`: erros
+   aparecem claramente sem apagar ou esconder a ultima entrega valida.
 
 Seguranca: escuta apenas `127.0.0.1`; valida Host e Origin nas escritas; confina
-entradas/saidas a raiz (rascunhos e entregas em `.workspace/`); serve arquivos
-apenas por referencias dos manifestos promovidos; processos com argumentos
-estruturados. O indice separa `lastAttempt` (tentativa mais recente) de
-`lastValidDelivery` (ultima entrega valida): uma reexportacao que falha mostra o
-erro e continua permitindo abrir a entrega anterior, com hashes preservados.
+entradas/saidas a raiz (`.workspace/`); serve arquivos verificados pelos
+manifestos ou imagens da pasta autorizada de origem (`/source-media`); processos
+com argumentos estruturados e caminhos longos do Windows tratados por
+`render_local.fs_path`. O painel registra o historico em `.workspace/studio/export-status/`
+e separa `lastAttempt` de `lastValidDelivery`: qualquer reexportacao que falha
+ou e interrompida exibe aviso proprio e preserva a ultima entrega valida.
 
 ## Carrosséis (R003)
 
@@ -149,5 +162,15 @@ python tools/produce_carousel.py --input tools/produce/examples/marca-salao-caro
   (`lastAttempt`/`lastValidDelivery`). Promocao do conjunto sob lock com backup;
   falha preserva a ultima entrega valida; remover card e reexportar reflete a
   nova ordem no conjunto ativo e no ZIP.
-- **Painel**: editor de cards (adicionar/reordenar/remover), previa, exportacao,
-  imagens na ordem do manifesto com download individual e do ZIP.
+- **Painel**: integrado ao trabalho ativo (caminhos e midias compartilhadas) ou
+  em rascunho avulso; editor de cards, previa, exportacao, miniaturas na ordem e ZIP.
+
+## Motion (aba e CLI)
+
+Na aba **Motion**, selecione qualquer cena sem `slow-zoom` em `#m-scene-select`,
+marque a regiao no canvas e gerencie efeitos em multiplas cenas no mesmo
+`MotionPlan` (`effects[]`). Pela CLI:
+
+```bash
+python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/motion --json
+```

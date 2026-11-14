@@ -70,8 +70,7 @@ def overlaps(a, b):
 
 
 def write_text(path, text):
-    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
-        handle.write(text)
+    render_local.write_text(path, text)
 
 
 def run_bridge_case(root, case_path, assets_path=None, asset_manifest_path=None,
@@ -118,12 +117,13 @@ def check_destination_collision(output_dir, expected_case_id):
     manifesto pertencer a outro caso ou o destino contiver arquivos
     desconhecidos, bloqueia antes de qualquer render.
     """
-    if not os.path.exists(output_dir):
+    fs = render_local.fs_path
+    if not os.path.exists(fs(output_dir)):
         return
     manifest_path = os.path.join(output_dir, 'delivery-manifest.json')
-    if os.path.isfile(manifest_path):
+    if os.path.isfile(fs(manifest_path)):
         try:
-            with open(manifest_path, 'r', encoding='utf-8') as handle:
+            with open(fs(manifest_path), 'r', encoding='utf-8') as handle:
                 existing = json.load(handle)
             existing_case = existing.get('caseId')
             if existing_case and existing_case != expected_case_id:
@@ -137,14 +137,14 @@ def check_destination_collision(output_dir, expected_case_id):
             raise DeliveryCollisionError('destino contem manifesto de entrega ilegivel ou invalido')
     else:
         entries = [
-            name for name in os.listdir(output_dir)
+            name for name in os.listdir(fs(output_dir))
             if name != render_local.PROMOTION_LOCK_NAME and not name.startswith('.')
         ]
         if entries:
             for name in entries:
                 if name.endswith('.json'):
                     try:
-                        with open(os.path.join(output_dir, name), 'r', encoding='utf-8') as handle:
+                        with open(fs(os.path.join(output_dir, name)), 'r', encoding='utf-8') as handle:
                             data = json.load(handle)
                         other_case = data.get('caseId')
                         if other_case and other_case != expected_case_id:
@@ -519,6 +519,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     if asset_manifest_path and canonical_asset_manifest_json:
         write_text(staging_paths['assetManifest'], canonical_asset_manifest_json)
 
+    fs = render_local.fs_path
     motion_render = []
     if motion:
         write_text(staging_paths['motionPlan'], json.dumps(motion['plan'], ensure_ascii=False, indent=2) + '\n')
@@ -530,7 +531,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
                     eff['region']['w'] * m_width, eff['region']['h'] * m_height)
             hexcolor = eff['color'].lstrip('#')
             rgba = (int(hexcolor[0:2], 16), int(hexcolor[2:4], 16), int(hexcolor[4:6], 16), 255)
-            r002_pilot.write_outline_png(png, rect, eff['thickness'], rgba, 0, m_width, m_height)
+            r002_pilot.write_outline_png(fs(png), rect, eff['thickness'], rgba, 0, m_width, m_height)
             motion_render.append({
                 'png': png,
                 'start': eff['absoluteStartMs'] / 1000.0,
@@ -560,10 +561,10 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     inspection = build_video.validate_mp4(
         staging_paths['video'], output['width'], output['height'], output['fps'], duration_s,
         timeout=render_local.PROBE_TIMEOUT_SECONDS)
-    srt_errors = srt_validate.validate_srt_file(staging_paths['srt'], duration_s)
+    srt_errors = srt_validate.validate_srt_file(fs(staging_paths['srt']), duration_s)
     if srt_errors:
         raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
-    with open(staging_paths['narration'], 'rb') as handle:
+    with open(fs(staging_paths['narration']), 'rb') as handle:
         narration_bytes = handle.read()
     if not narration_bytes.decode('utf-8').strip():
         raise build_video.DeliveryError('narracao vazia ou nao UTF-8')
@@ -589,28 +590,28 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'kind': 'execution-package',
             'path': rel(root, dests['package']),
             'sha256': sha256_file(staging_paths['package']),
-            'bytes': os.path.getsize(staging_paths['package']),
+            'bytes': os.path.getsize(fs(staging_paths['package'])),
         },
         {
             'id': 'video',
             'kind': 'primary-output',
             'path': rel(root, dests['video']),
             'sha256': sha256_file(staging_paths['video']),
-            'bytes': os.path.getsize(staging_paths['video']),
+            'bytes': os.path.getsize(fs(staging_paths['video'])),
         },
         {
             'id': 'srt',
             'kind': 'captions',
             'path': rel(root, dests['srt']),
             'sha256': sha256_file(staging_paths['srt']),
-            'bytes': os.path.getsize(staging_paths['srt']),
+            'bytes': os.path.getsize(fs(staging_paths['srt'])),
         },
         {
             'id': 'narration',
             'kind': 'narration-script',
             'path': rel(root, dests['narration']),
             'sha256': sha256_file(staging_paths['narration']),
-            'bytes': os.path.getsize(staging_paths['narration']),
+            'bytes': os.path.getsize(fs(staging_paths['narration'])),
         },
     ]
     if 'textOverlayPlan' in dests:
@@ -619,7 +620,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'kind': 'text-overlay-plan',
             'path': rel(root, dests['textOverlayPlan']),
             'sha256': sha256_file(staging_paths['textOverlayPlan']),
-            'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
+            'bytes': os.path.getsize(fs(staging_paths['textOverlayPlan'])),
         })
     if 'visualStyle' in dests:
         report_artifacts.append({
@@ -628,7 +629,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'kind': 'visual-style',
             'path': rel(root, dests['visualStyle']),
             'sha256': sha256_file(staging_paths['visualStyle']),
-            'bytes': os.path.getsize(staging_paths['visualStyle']),
+            'bytes': os.path.getsize(fs(staging_paths['visualStyle'])),
         })
     if 'assetManifest' in dests and asset_manifest:
         report_artifacts.append({
@@ -639,7 +640,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'kind': 'asset-manifest',
             'path': rel(root, dests['assetManifest']),
             'sha256': sha256_file(staging_paths['assetManifest']),
-            'bytes': os.path.getsize(staging_paths['assetManifest']),
+            'bytes': os.path.getsize(fs(staging_paths['assetManifest'])),
         })
 
     report_assets = binding_reports if (asset_manifest_path and binding_reports) else [
@@ -652,7 +653,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'kind': 'motion-plan',
             'path': rel(root, dests['motionPlan']),
             'sha256': sha256_file(staging_paths['motionPlan']),
-            'bytes': os.path.getsize(staging_paths['motionPlan']),
+            'bytes': os.path.getsize(fs(staging_paths['motionPlan'])),
         })
 
     report = {
@@ -700,7 +701,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'bindingCount': len(asset_manifest['bindings']),
             'path': rel(root, dests['assetManifest']),
             'sha256': sha256_file(staging_paths['assetManifest']),
-            'bytes': os.path.getsize(staging_paths['assetManifest']),
+            'bytes': os.path.getsize(fs(staging_paths['assetManifest'])),
         }
     if motion:
         report['motion'] = {
@@ -720,32 +721,32 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'id': 'package',
             'path': rel(root, dests['package']),
             'sha256': sha256_file(staging_paths['package']),
-            'bytes': os.path.getsize(staging_paths['package']),
+            'bytes': os.path.getsize(fs(staging_paths['package'])),
         },
         'video': {
             'id': 'video',
             'path': rel(root, dests['video']),
             'sha256': sha256_file(staging_paths['video']),
-            'bytes': os.path.getsize(staging_paths['video']),
+            'bytes': os.path.getsize(fs(staging_paths['video'])),
             'ffprobe': inspection,
         },
         'srt': {
             'id': 'srt',
             'path': rel(root, dests['srt']),
             'sha256': sha256_file(staging_paths['srt']),
-            'bytes': os.path.getsize(staging_paths['srt']),
+            'bytes': os.path.getsize(fs(staging_paths['srt'])),
         },
         'narration': {
             'id': 'narration',
             'path': rel(root, dests['narration']),
             'sha256': sha256_file(staging_paths['narration']),
-            'bytes': os.path.getsize(staging_paths['narration']),
+            'bytes': os.path.getsize(fs(staging_paths['narration'])),
         },
         'report': {
             'id': 'report',
             'path': rel(root, dests['report']),
             'sha256': sha256_file(staging_paths['report']),
-            'bytes': os.path.getsize(staging_paths['report']),
+            'bytes': os.path.getsize(fs(staging_paths['report'])),
         },
     }
     if 'textOverlayPlan' in dests:
@@ -753,7 +754,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'id': 'textOverlayPlan',
             'path': rel(root, dests['textOverlayPlan']),
             'sha256': sha256_file(staging_paths['textOverlayPlan']),
-            'bytes': os.path.getsize(staging_paths['textOverlayPlan']),
+            'bytes': os.path.getsize(fs(staging_paths['textOverlayPlan'])),
         }
     if 'visualStyle' in dests:
         manifest_artifacts['visualStyle'] = {
@@ -761,7 +762,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'styleId': visual_style['id'],
             'path': rel(root, dests['visualStyle']),
             'sha256': sha256_file(staging_paths['visualStyle']),
-            'bytes': os.path.getsize(staging_paths['visualStyle']),
+            'bytes': os.path.getsize(fs(staging_paths['visualStyle'])),
         }
     if 'assetManifest' in dests and asset_manifest:
         manifest_artifacts['assetManifest'] = {
@@ -771,14 +772,14 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'assetCount': len(asset_manifest['assets']),
             'path': rel(root, dests['assetManifest']),
             'sha256': sha256_file(staging_paths['assetManifest']),
-            'bytes': os.path.getsize(staging_paths['assetManifest']),
+            'bytes': os.path.getsize(fs(staging_paths['assetManifest'])),
         }
     if 'motionPlan' in dests and motion:
         manifest_artifacts['motionPlan'] = {
             'id': 'motionPlan',
             'path': rel(root, dests['motionPlan']),
             'sha256': sha256_file(staging_paths['motionPlan']),
-            'bytes': os.path.getsize(staging_paths['motionPlan']),
+            'bytes': os.path.getsize(fs(staging_paths['motionPlan'])),
         }
 
     manifest = {
@@ -813,9 +814,9 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         render_local.promote_with_backup(staging_paths, dests, backup_dir)
     finally:
         os.remove(lock)
-    shutil.rmtree(backup_dir, ignore_errors=True)
+    shutil.rmtree(fs(backup_dir, force=True), ignore_errors=True)
     if staging_created:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(fs(staging, force=True), ignore_errors=True)
 
     summary = {
         'status': 'completed',
