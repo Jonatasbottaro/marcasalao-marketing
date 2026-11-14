@@ -56,14 +56,14 @@ PROJECT_MS_REL = "platform/examples/projects/marca-salao-social.project.json"
 
 
 def write_json(path, value):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+    os.makedirs(render_local.fs_path(os.path.dirname(path)), exist_ok=True)
+    with open(render_local.fs_path(path), "w", encoding="utf-8", newline="\n") as handle:
         json.dump(value, handle, ensure_ascii=False, indent=2)
         handle.write("\n")
 
 
 def read_json(path):
-    with open(path, "r", encoding="utf-8") as handle:
+    with open(render_local.fs_path(path), "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -172,9 +172,9 @@ class ProduceTestBase(unittest.TestCase):
         self.output_dir = os.path.join(self.dir, "entrega")
 
     def tearDown(self):
-        shutil.rmtree(self.dir, ignore_errors=True)
+        shutil.rmtree(render_local.fs_path(self.dir, force=True), ignore_errors=True)
         assets = os.path.join(MAIN_ROOT, self.media_rel.replace("/", os.sep))
-        shutil.rmtree(assets, ignore_errors=True)
+        shutil.rmtree(render_local.fs_path(assets, force=True), ignore_errors=True)
 
     def rel(self, path):
         return os.path.relpath(path, MAIN_ROOT).replace(os.sep, "/")
@@ -221,7 +221,7 @@ class ExportRealTest(ProduceTestBase):
         self.assertTrue(os.path.isfile(index_path))
         for profile in completed:
             profile_dir = os.path.join(self.output_dir, profile["profileId"])
-            mp4s = [f for f in os.listdir(profile_dir) if f.endswith("-primary-output.mp4")]
+            mp4s = [f for f in os.listdir(render_local.fs_path(profile_dir)) if f.endswith("-primary-output.mp4")]
             self.assertEqual(len(mp4s), 1)
             info = build_video.probe_media(os.path.join(profile_dir, mp4s[0]))
             streams = info["streams"]
@@ -329,7 +329,7 @@ class IndexRegressionTest(unittest.TestCase):
         os.makedirs(self.dir, exist_ok=True)
 
     def tearDown(self):
-        shutil.rmtree(self.dir, ignore_errors=True)
+        shutil.rmtree(render_local.fs_path(self.dir, force=True), ignore_errors=True)
 
     def completed(self, profile="youtube-shorts"):
         return {
@@ -409,7 +409,7 @@ class MotionTest(unittest.TestCase):
         self.output = os.path.join(self.dir, "entrega")
 
     def tearDown(self):
-        shutil.rmtree(self.dir, ignore_errors=True)
+        shutil.rmtree(render_local.fs_path(self.dir, force=True), ignore_errors=True)
 
     def rel(self, p):
         return os.path.relpath(p, MAIN_ROOT).replace(os.sep, "/")
@@ -436,7 +436,7 @@ class MotionTest(unittest.TestCase):
         self.assertIn("motionPlan", manifest["artifacts"])
         mp = manifest["artifacts"]["motionPlan"]
         self.assertEqual(render_local.sha256_file(os.path.join(MAIN_ROOT, mp["path"])), mp["sha256"])
-        report_files = [f for f in os.listdir(profile_dir) if f.endswith("-execution-report.json")]
+        report_files = [f for f in os.listdir(render_local.fs_path(profile_dir)) if f.endswith("-execution-report.json")]
         report = read_json(os.path.join(profile_dir, report_files[0]))
         self.assertEqual(report["motion"]["effects"][0]["absoluteStartMs"], 500)
         self.assertEqual(report["motion"]["effects"][0]["region"]["x"], 0.06)

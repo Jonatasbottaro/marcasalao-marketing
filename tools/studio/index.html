@@ -8,24 +8,152 @@
 </head>
 <body>
   <header>
-    <h1>Video Studio</h1>
-    <p class="sub">Criar, revisar e exportar vídeo pelo navegador — pipeline local, sem áudio, rascunhos editoriais.</p>
+    <div class="header-top">
+      <div>
+        <h1>Video Studio</h1>
+        <p class="sub">Projetos, trabalhos persistentes, vídeos (9:16), carrosséis (1:1) e motion — pipeline local sem áudio.</p>
+      </div>
+      <div id="readiness-banner" class="readiness-pill muted">Verificando ambiente…</div>
+    </div>
+
+    <div id="readiness-details" hidden></div>
+
+    <div id="active-work-bar" class="work-bar" hidden>
+      <div>
+        <strong id="active-work-title">Nenhum trabalho aberto</strong>
+        <span id="active-work-meta" class="muted"></span>
+      </div>
+      <div class="work-bar-actions">
+        <button id="btn-save-work" class="ok-btn">Salvar trabalho</button>
+        <button id="btn-work-home" class="secondary">Trocar / Novo trabalho</button>
+      </div>
+    </div>
+
     <nav id="mode-nav">
-      <button id="mode-video-btn" class="mode-btn active">Vídeos</button>
+      <button id="mode-home-btn" class="mode-btn active">Trabalhos &amp; Projetos</button>
+      <button id="mode-video-btn" class="mode-btn">Vídeos</button>
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
     </nav>
   </header>
 
   <main>
-  <div id="mode-video">
+  <!-- ================= Trabalhos & Projetos ================= -->
+  <div id="mode-home">
+    <section id="sec-demo">
+      <h2>Primeira execução e demonstração guiada</h2>
+      <p class="muted">Crie com 1 clique um trabalho completo usando exemplos fictícios versionados para testar Vídeo vertical, Carrossel quadrado e Motion no navegador, sem digitar caminhos.</p>
+      <div class="row">
+        <button id="btn-demo-marca-salao">Demonstração guiada — Marca Salão</button>
+        <button id="btn-demo-multitrack" class="secondary">Demonstração guiada — Multitrack Hub</button>
+        <button id="btn-refresh-readiness" class="secondary">Reverificar ambiente</button>
+      </div>
+      <div id="demo-feedback"></div>
+    </section>
+
+    <section id="sec-works-list">
+      <h2>Trabalhos recentes (retomada)</h2>
+      <p class="muted">Feche o painel e reabra qualquer trabalho depois mantendo rascunhos, mídias, últimas tentativas e entregas válidas.</p>
+      <table id="works-table">
+        <thead>
+          <tr><th>ID</th><th>Trabalho</th><th>Projeto</th><th>Vídeo</th><th>Carrossel</th><th>Motion</th><th>Atualizado</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="sec-work-create">
+      <h2>Criar novo trabalho</h2>
+      <div class="row">
+        <label>Nome do trabalho
+          <input id="work-name" type="text" placeholder="Ex.: Campanha Demonstrativa Abril">
+        </label>
+        <label>ID do trabalho (kebab-case)
+          <input id="work-id" type="text" placeholder="campanha-demonstrativa-abril">
+        </label>
+        <label>Projeto
+          <select id="work-project"></select>
+        </label>
+        <label>Modelo inicial
+          <select id="work-template">
+            <option value="marca-salao">Modelo fictício Marca Salão (3 módulos prontos)</option>
+            <option value="multitrack-hub">Modelo fictício Multitrack Hub (3 módulos prontos)</option>
+            <option value="blank">Trabalho em branco com estrutura e mídia inicial</option>
+          </select>
+        </label>
+        <button id="btn-create-work">Criar e abrir trabalho</button>
+      </div>
+      <p id="work-paths-preview" class="muted"></p>
+      <div id="work-create-feedback"></div>
+    </section>
+
+    <section id="sec-projects-register">
+      <h2>Projetos (<code>ProjectManifest</code> v1)</h2>
+      <p class="muted">Cadastre um projeto válido sem editar JSON (validado pelo núcleo da platform) ou use os exemplos versionados.</p>
+      <table id="projects-table">
+        <thead>
+          <tr><th>ID</th><th>Nome</th><th>Origem</th><th>Locale</th><th>Destinos permitidos</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <fieldset id="project-form-fieldset">
+        <legend>Cadastrar novo projeto</legend>
+        <div class="row">
+          <label>Nome do projeto <input id="proj-name" type="text" placeholder="Estúdio Aurora"></label>
+          <label>ID (kebab-case) <input id="proj-id" type="text" placeholder="estudio-aurora"></label>
+          <label>Locale <input id="proj-locale" type="text" value="pt-BR"></label>
+          <label>Timezone <input id="proj-tz" type="text" value="America/Sao_Paulo"></label>
+        </div>
+        <div class="row">
+          <label>Tema da marca (<code>brandTheme</code>) <input id="proj-theme" type="text" placeholder="estudio-aurora"></label>
+          <label>Raiz de assets (<code>assetRoot</code>) <input id="proj-asset-root" type="text" placeholder=".workspace/studio/projects/estudio-aurora/assets"></label>
+        </div>
+        <div class="row">
+          <div>
+            <span class="field-label">Destinos permitidos (allowlist)</span>
+            <div id="proj-profiles-boxes" class="checks-grid">
+              <label class="inline-check"><input type="checkbox" value="instagram-reels-video" checked> instagram-reels-video (Vídeo 9:16)</label>
+              <label class="inline-check"><input type="checkbox" value="facebook-reels-video" checked> facebook-reels-video (Vídeo 9:16)</label>
+              <label class="inline-check"><input type="checkbox" value="youtube-shorts" checked> youtube-shorts (Vídeo 9:16)</label>
+              <label class="inline-check"><input type="checkbox" value="instagram-feed-image-square" checked> instagram-feed-image-square (Carrossel 1:1)</label>
+              <label class="inline-check"><input type="checkbox" value="facebook-feed-image-square"> facebook-feed-image-square (Carrossel 1:1)</label>
+              <label class="inline-check"><input type="checkbox" value="vertical-social"> vertical-social (Compatibilidade)</label>
+              <label class="inline-check"><input type="checkbox" value="youtube-video-horizontal"> youtube-video-horizontal (16:9 catálogo)</label>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <span class="field-label">Políticas editoriais</span>
+            <div class="checks-grid">
+              <label class="inline-check"><input id="proj-pol-briefing" type="checkbox" checked> Exigir briefing aprovado</label>
+              <label class="inline-check"><input id="proj-pol-script" type="checkbox" checked> Exigir roteiro aprovado</label>
+              <label class="inline-check"><input id="proj-pol-pii" type="checkbox" checked> Proibir dados pessoais</label>
+              <label class="inline-check"><input id="proj-pol-evidence" type="checkbox" checked> Exigir evidência funcional</label>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <button id="btn-create-project">Validar e cadastrar projeto</button>
+        </div>
+        <div id="proj-create-feedback"></div>
+      </fieldset>
+    </section>
+  </div>
+
+  <!-- ================= Vídeos ================= -->
+  <div id="mode-video" hidden>
     <section id="sec-project">
-      <h2>1. Projeto e destinos</h2>
+      <h2>1. Projeto e destinos compatíveis com Vídeo</h2>
       <div class="row">
         <label>ProjectManifest
           <select id="project-select"></select>
         </label>
         <button id="btn-load-profiles">Carregar perfis</button>
+        <label class="inline-check">
+          <input id="video-show-all-profiles" type="checkbox"> Mostrar perfis fora do recorte de Vídeo
+        </label>
       </div>
       <table id="profiles-table">
         <thead><tr><th>Usar</th><th>Perfil</th><th>Destino</th><th>Resolução</th><th>FPS</th><th>Allowlist</th><th>Exportação local</th></tr></thead>
@@ -34,22 +162,12 @@
     </section>
 
     <section id="sec-draft">
-      <h2>2. Rascunho (VideoRequest v1)</h2>
-      <div class="row">
-        <label>Exemplo
-          <select id="example-select"></select>
-        </label>
-        <button id="btn-load-example">Carregar exemplo</button>
-        <label>Caminho do rascunho (.workspace/…)
-          <input id="draft-path" type="text" placeholder=".workspace/tmp/video-studio/drafts/meu-pedido.json">
-        </label>
-        <button id="btn-save-draft">Salvar</button>
-        <button id="btn-open-draft">Reabrir</button>
-      </div>
+      <h2>2. Dados do vídeo (<code>VideoRequest</code> v1)</h2>
       <div class="row">
         <label>Id do pedido <input id="req-id" type="text"></label>
         <label>Título do vídeo <input id="req-title" type="text"></label>
         <label>Locale <input id="req-locale" type="text"></label>
+        <button id="btn-save-video-work">Salvar no trabalho</button>
       </div>
       <fieldset id="style-fields">
         <legend>VisualStyle (títulos sobrepostos)</legend>
@@ -62,17 +180,37 @@
           <label>Margem lateral <input id="style-horiz" type="number" min="0" max="400"></label>
         </div>
       </fieldset>
+      <details class="advanced-paths">
+        <summary>Caminhos automáticos e modo avulso legado</summary>
+        <div class="row">
+          <label>Exemplo
+            <select id="example-select"></select>
+          </label>
+          <button id="btn-load-example" class="secondary">Carregar exemplo</button>
+          <label>Caminho do rascunho (.workspace/…)
+            <input id="draft-path" type="text" placeholder=".workspace/tmp/video-studio/drafts/meu-pedido.json">
+          </label>
+          <button id="btn-save-draft" class="secondary">Salvar avulso</button>
+          <button id="btn-open-draft" class="secondary">Reabrir avulso</button>
+        </div>
+      </details>
     </section>
 
     <section id="sec-media">
-      <h2>3. Mídias (cadastro reutilizável)</h2>
+      <h2>3. Mídias (cadastro reutilizável do trabalho)</h2>
       <div class="row">
-        <label>Pasta de trabalho (.workspace/…)
-          <input id="media-folder" type="text" placeholder=".workspace/tmp/video-studio/media">
-        </label>
-        <button id="btn-scan-media">Escanear pasta</button>
-        <button id="btn-generate-media">Gerar mídia fictícia do rascunho</button>
+        <button id="btn-scan-work-media">Importar mídias da pasta do trabalho</button>
+        <button id="btn-generate-media" class="secondary">Gerar mídia fictícia do rascunho</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Escanear pasta específica (.workspace/…)</summary>
+        <div class="row">
+          <label>Pasta de trabalho (.workspace/…)
+            <input id="media-folder" type="text" placeholder=".workspace/tmp/video-studio/media">
+          </label>
+          <button id="btn-scan-media" class="secondary">Escanear pasta</button>
+        </div>
+      </details>
       <table id="media-table">
         <thead><tr><th>Id</th><th>Tipo</th><th>Caminho</th><th>Origem</th><th>Licença</th><th></th></tr></thead>
         <tbody></tbody>
@@ -94,61 +232,83 @@
     <section id="sec-export">
       <h2>6. Exportação</h2>
       <div class="row">
-        <label>Pasta de entrega (.workspace/…)
-          <input id="output-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
-        </label>
         <label>Perfil
-          <select id="export-profile"><option value="">Todos os perfis do rascunho</option></select>
+          <select id="export-profile"><option value="">Todos os perfis selecionados</option></select>
         </label>
-        <button id="btn-export">Exportar</button>
+        <button id="btn-export">Exportar vídeo</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Pasta de entrega automática (.workspace/…)</summary>
+        <div class="row">
+          <label>Pasta de entrega (.workspace/…)
+            <input id="output-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
+          </label>
+        </div>
+      </details>
       <div id="export-status"></div>
     </section>
 
     <section id="sec-delivery">
-      <h2>7. Entrega — assistir e baixar</h2>
+      <h2>7. Entrega — última tentativa e entrega válida</h2>
       <div class="row">
-        <label>Pasta de entrega
-          <input id="delivery-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
-        </label>
-        <button id="btn-load-delivery">Abrir entrega</button>
+        <button id="btn-load-delivery" class="secondary">Atualizar entregas</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Abrir outra pasta de entrega</summary>
+        <div class="row">
+          <label>Pasta de entrega
+            <input id="delivery-dir" type="text" placeholder=".workspace/archives/video-studio/entrega">
+          </label>
+        </div>
+      </details>
       <div id="delivery-output"></div>
     </section>
   </div>
 
+  <!-- ================= Carrosséis ================= -->
   <div id="mode-carousel" hidden>
     <section>
-      <h2>1. Projeto e perfil de imagem</h2>
+      <h2>1. Projeto e destino compatível com Carrossel</h2>
       <div class="row">
         <label>ProjectManifest <select id="c-project-select"></select></label>
-        <button id="c-btn-load-profiles">Carregar perfis</button>
+        <label>Perfil de imagem compatível <select id="c-profile-select"></select></label>
+        <button id="c-btn-load-profiles" class="secondary">Atualizar perfis</button>
       </div>
       <p id="c-profile-info" class="muted"></p>
     </section>
 
     <section>
-      <h2>2. Rascunho (CarouselRequest v1)</h2>
-      <div class="row">
-        <label>Exemplo <select id="c-example-select"></select></label>
-        <button id="c-btn-load-example">Carregar exemplo</button>
-        <label>Caminho (.workspace/…) <input id="c-draft-path" type="text"></label>
-        <button id="c-btn-save-draft">Salvar</button>
-        <button id="c-btn-open-draft">Reabrir</button>
-      </div>
+      <h2>2. Dados do carrossel (<code>CarouselRequest</code> v1)</h2>
       <div class="row">
         <label>Id do pedido <input id="c-req-id" type="text"></label>
         <label>Título <input id="c-req-title" type="text"></label>
+        <button id="c-btn-save-work">Salvar no trabalho</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Caminhos automáticos e modo avulso legado</summary>
+        <div class="row">
+          <label>Exemplo <select id="c-example-select"></select></label>
+          <button id="c-btn-load-example" class="secondary">Carregar exemplo</button>
+          <label>Caminho (.workspace/…) <input id="c-draft-path" type="text"></label>
+          <button id="c-btn-save-draft" class="secondary">Salvar avulso</button>
+          <button id="c-btn-open-draft" class="secondary">Reabrir avulso</button>
+        </div>
+      </details>
     </section>
 
     <section>
-      <h2>3. Mídias (cadastro reutilizável)</h2>
+      <h2>3. Mídias (cadastro reutilizável do trabalho)</h2>
       <div class="row">
-        <label>Pasta (.workspace/…) <input id="c-media-folder" type="text"></label>
-        <button id="c-btn-scan-media">Escanear pasta</button>
-        <button id="c-btn-generate-media">Gerar mídia fictícia</button>
+        <button id="c-btn-scan-work-media">Importar mídias da pasta do trabalho</button>
+        <button id="c-btn-generate-media" class="secondary">Gerar mídia fictícia</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Escanear pasta específica (.workspace/…)</summary>
+        <div class="row">
+          <label>Pasta (.workspace/…) <input id="c-media-folder" type="text"></label>
+          <button id="c-btn-scan-media" class="secondary">Escanear pasta</button>
+        </div>
+      </details>
       <table id="c-media-table"><thead><tr><th>Id</th><th>Tipo</th><th>Caminho</th><th>Origem</th><th>Licença</th><th></th></tr></thead><tbody></tbody></table>
     </section>
 
@@ -167,46 +327,65 @@
     <section>
       <h2>6. Exportação</h2>
       <div class="row">
-        <label>Pasta de entrega (.workspace/…) <input id="c-output-dir" type="text"></label>
         <button id="c-btn-export">Exportar carrossel</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Pasta de entrega automática (.workspace/…)</summary>
+        <div class="row">
+          <label>Pasta de entrega (.workspace/…) <input id="c-output-dir" type="text"></label>
+        </div>
+      </details>
       <div id="c-export-status"></div>
     </section>
 
     <section>
-      <h2>7. Entrega — imagens e ZIP</h2>
+      <h2>7. Entrega — última tentativa, imagens e ZIP</h2>
       <div class="row">
-        <label>Pasta de entrega <input id="c-delivery-dir" type="text"></label>
-        <button id="c-btn-load-delivery">Abrir entrega</button>
+        <button id="c-btn-load-delivery" class="secondary">Atualizar entrega</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Abrir outra pasta de entrega</summary>
+        <div class="row">
+          <label>Pasta de entrega <input id="c-delivery-dir" type="text"></label>
+        </div>
+      </details>
       <div id="c-delivery-output"></div>
     </section>
   </div>
 
+  <!-- ================= Motion ================= -->
   <div id="mode-motion" hidden>
     <section>
-      <h2>1. Pedido de vídeo e cena</h2>
+      <h2>1. Pedido de vídeo do trabalho e cenas</h2>
       <div class="row">
-        <label>Exemplo Motion <select id="m-example-select"></select></label>
-        <button id="m-btn-load-example">Carregar exemplo</button>
-        <label>Cena <select id="m-scene-select"></select></label>
+        <label>Cena do vídeo <select id="m-scene-select"></select></label>
+        <button id="m-btn-sync-work" class="secondary">Sincronizar vídeo do trabalho</button>
+        <button id="m-btn-save-work">Salvar no trabalho</button>
       </div>
-      <div class="row">
-        <label>Caminho do plano (.workspace/…) <input id="m-plan-path" type="text"></label>
-        <button id="m-btn-save-plan">Salvar plano</button>
-        <button id="m-btn-open-plan">Reabrir plano</button>
-      </div>
+      <div id="m-effects-summary" class="effects-pills"></div>
+      <details class="advanced-paths">
+        <summary>Exemplo Motion avulso e caminhos</summary>
+        <div class="row">
+          <label>Exemplo Motion <select id="m-example-select"></select></label>
+          <button id="m-btn-load-example" class="secondary">Carregar exemplo</button>
+          <label>Caminho do plano (.workspace/…) <input id="m-plan-path" type="text"></label>
+          <button id="m-btn-save-plan" class="secondary">Salvar plano avulso</button>
+          <button id="m-btn-open-plan" class="secondary">Reabrir plano avulso</button>
+        </div>
+      </details>
     </section>
 
     <section>
       <h2>2. Marcar região sobre a prévia enquadrada</h2>
-      <p class="muted">Arraste sobre a imagem para marcar o retângulo do contorno (coordenadas relativas ao quadro final).</p>
+      <p class="muted">Cada cena (sem zoom) preserva o seu próprio contorno. Arraste sobre a imagem para definir o retângulo da cena selecionada.</p>
       <canvas id="m-canvas" width="270" height="480"></canvas>
       <div class="row">
         <label>Início (ms) <input id="m-start" type="number" min="0" value="500"></label>
         <label>Fim (ms) <input id="m-end" type="number" min="1" value="3000"></label>
         <label>Cor <input id="m-color" type="text" value="#FFD700"></label>
         <label>Espessura <input id="m-thickness" type="number" min="1" max="40" value="6"></label>
+        <button id="m-btn-enable-scene" class="secondary">Ativar contorno nesta cena</button>
+        <button id="m-btn-remove-scene" class="secondary">Remover desta cena</button>
       </div>
       <p id="m-region-info" class="muted"></p>
     </section>
@@ -218,12 +397,18 @@
     </section>
 
     <section>
-      <h2>4. Exportar e assistir</h2>
+      <h2>4. Exportação e entrega Motion</h2>
       <div class="row">
-        <label>Pasta de entrega (.workspace/…) <input id="m-output-dir" type="text"></label>
-        <label>Perfil <select id="m-profile-select"></select></label>
+        <label>Perfil compatível <select id="m-profile-select"></select></label>
         <button id="m-btn-export">Exportar com Motion</button>
+        <button id="m-btn-load-delivery" class="secondary">Atualizar entrega</button>
       </div>
+      <details class="advanced-paths">
+        <summary>Pasta de entrega automática (.workspace/…)</summary>
+        <div class="row">
+          <label>Pasta de entrega (.workspace/…) <input id="m-output-dir" type="text"></label>
+        </div>
+      </details>
       <div id="m-export-status"></div>
       <div id="m-delivery-output"></div>
     </section>

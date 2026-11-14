@@ -169,6 +169,18 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores, publicação, Temporal e deploy. Aprovação editorial e publicação seguem o processo vigente.
 
+## 4g. Primeira versão utilizável do Studio local (Projetos, Trabalhos e retomada) — concluído em 13/11/2026
+
+> O titular autorizou fechar a primeira versão utilizável do Studio local com cadastro de projetos, trabalhos persistentes, produção e retomada de Vídeo, Carrossel e Motion, testes, prova em navegador, CI e documentação na mesma entrega (branch `codex/studio-usable-v1`). Comandos: `python tools/video_studio.py --check --json` e `python tools/video_studio.py --port 8765`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md).
+
+Critérios de conclusão atendidos:
+- **Projetos (`ProjectManifest` v1)**: formulário no painel valida o manifesto pelo núcleo da `platform` antes da gravação em `.workspace/studio/projects/`, exibe badge diferenciando projetos cadastrados de exemplos versionados e filtra automaticamente os destinos pelo catálogo + allowlist + módulo aberto (`video`, `carousel`, `motion`);
+- **Trabalhos persistentes e mídias compartilhadas**: tela inicial **Trabalhos & Projetos** lista trabalhos recentes com `Reabrir`, cria trabalhos novos (`POST /api/works/create`) e demonstração guiada em 1 clique (**Marca Salão** / **Multitrack Hub**), derivando automaticamente rascunhos, pasta `media/` compartilhada e pastas `deliveries/` dentro de `.workspace/studio/works/<id>/` sem digitar caminhos nem editar JSON;
+- **Retomada integral entre reinícios**: documentos de Vídeos (`VideoRequest`), Carrosséis (`CarouselRequest`) e Motion (`MotionPlan` multi-cena com alternância entre cenas sem zoom via `#m-scene-select` e `#m-effects-summary`) são gravados de forma atômica; fechar e reiniciar o servidor HTTP mantém mídias, alterações não exportadas, histórico de `lastAttempt` (incluindo detecção `interrupted` de jobs órfãos e alertas `failed`) e `lastValidDelivery` preservada;
+- **Compatibilidade Windows & Gates**: tratamento transparente de caminhos longos no Windows (`render_local.fs_path`), `926/926` testes da `platform`, `143/143` testes Python com `REQUIRE_RENDER=1`, prova end-to-end em navegador Google Chrome real via CDP e prova HTTP ampliada no CI (Ubuntu e Windows). API pública da `platform` inalterada.
+
+Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores externos, áudio/TTS, publicação, Temporal de produção e deploy. O painel local destina-se apenas a criação e revisão local.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

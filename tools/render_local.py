@@ -108,12 +108,25 @@ class InputFileError(Exception):
     """Uso, caminho ou arquivo de entrada invalido."""
 
 
+def fs_path(path, force=False):
+    """Normaliza caminhos locais no Windows com \\\\?\\ acima de 247 chars (ou force=True)."""
+    value = str(path)
+    if os.name != 'nt' or value.startswith('\\\\?\\'):
+        return value
+    abs_path = os.path.abspath(value)
+    if not force and len(abs_path) < 248:
+        return value
+    if abs_path.startswith('\\\\'):
+        return '\\\\?\\UNC\\' + abs_path.lstrip('\\')
+    return '\\\\?\\' + abs_path
+
+
 def contained(root, path):
     return r002_pilot.contained(root, path)
 
 
 def sha256_file(path):
-    return r002_pilot.sha256_file(path)
+    return r002_pilot.sha256_file(fs_path(path))
 
 
 def rel(root, path):
@@ -236,8 +249,8 @@ def prepare_staging(root, output_dir, package_path, assets_path, staging_arg):
 
 def acquire_promotion_lock(output_dir):
     """Exclusao de promocao por destino; disputa recebe diagnostico claro."""
-    os.makedirs(output_dir, exist_ok=True)
-    lock = os.path.join(output_dir, PROMOTION_LOCK_NAME)
+    os.makedirs(fs_path(output_dir), exist_ok=True)
+    lock = fs_path(os.path.join(output_dir, PROMOTION_LOCK_NAME))
     try:
         handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
@@ -410,7 +423,7 @@ def artifact_names(package):
 
 
 def write_text(path, text):
-    with open(path, 'w', encoding='utf-8', newline='\n') as handle:
+    with open(fs_path(path), 'w', encoding='utf-8', newline='\n') as handle:
         handle.write(text)
 
 
@@ -420,26 +433,26 @@ def promote_with_backup(staging_paths, dests, backup_dir):
     Se a propria restauracao falhar, o backup permanece intacto para
     diagnostico e o erro informa onde ele esta.
     """
-    os.makedirs(backup_dir, exist_ok=True)
+    os.makedirs(fs_path(backup_dir), exist_ok=True)
     backups = {}
     for name, dest in dests.items():
-        if os.path.exists(dest):
+        if os.path.exists(fs_path(dest)):
             backup = os.path.join(backup_dir, os.path.basename(dest))
-            shutil.copyfile(dest, backup)
+            shutil.copyfile(fs_path(dest), fs_path(backup))
             backups[name] = backup
     promoted = []
     try:
         for name, dest in dests.items():
-            os.makedirs(os.path.dirname(dest), exist_ok=True)
-            os.replace(staging_paths[name], dest)
+            os.makedirs(fs_path(os.path.dirname(dest)), exist_ok=True)
+            os.replace(fs_path(staging_paths[name]), fs_path(dest))
             promoted.append(name)
     except OSError:
         try:
             for name in promoted:
                 if name in backups:
-                    os.replace(backups[name], dests[name])
+                    os.replace(fs_path(backups[name]), fs_path(dests[name]))
                 else:
-                    os.remove(dests[name])
+                    os.remove(fs_path(dests[name]))
         except OSError:
             raise build_video.DeliveryError(
                 f'restauracao falhou; backup preservado para diagnostico em {backup_dir}')
@@ -502,10 +515,10 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     inspection = build_video.validate_mp4(
         staging_paths['video'], output['width'], output['height'], output['fps'], duration_s,
         timeout=PROBE_TIMEOUT_SECONDS)
-    srt_errors = srt_validate.validate_srt_file(staging_paths['srt'], duration_s)
+    srt_errors = srt_validate.validate_srt_file(fs_path(staging_paths['srt']), duration_s)
     if srt_errors:
         raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
-    with open(staging_paths['narration'], 'rb') as handle:
+    with open(fs_path(staging_paths['narration']), 'rb') as handle:
         narration_bytes = handle.read()
     if not narration_bytes.decode('utf-8').strip():
         raise build_video.DeliveryError('narracao vazia ou nao UTF-8')
@@ -548,7 +561,7 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
                 'kind': kind,
                 'path': rel(root, dests[key]),
                 'sha256': sha256_file(staging_paths[key]),
-                'bytes': os.path.getsize(staging_paths[key]),
+                'bytes': os.path.getsize(fs_path(staging_paths[key])),
             }
             for key, kind in (('video', 'primary-output'), ('srt', 'captions'),
                               ('narration', 'narration-script'))
@@ -567,9 +580,9 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         promote_with_backup(staging_paths, dests, backup_dir)
     finally:
         os.remove(lock)
-    shutil.rmtree(backup_dir, ignore_errors=True)
+    shutil.rmtree(fs_path(backup_dir, force=True), ignore_errors=True)
     if staging_created:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(fs_path(staging, force=True), ignore_errors=True)
 
     return {
         'adapter': ADAPTER_ID,

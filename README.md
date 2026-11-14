@@ -51,18 +51,24 @@ Cada perfil entrega MP4 sem áudio, SRT, narração em TXT, pacote canônico, in
 
 ### Painel local (Video Studio)
 
-Para criar, revisar e exportar pelo navegador, abra o painel local:
+Para criar, revisar, retomar e exportar pelo navegador, confira o ambiente e abra o painel local:
 
 ```bash
+python tools/video_studio.py --check
 python tools/video_studio.py --port 8765
 # abra http://127.0.0.1:8765
 ```
 
-No painel: selecione o `ProjectManifest`, carregue os perfis (Reels/Shorts 9:16@30), carregue um exemplo (Marca Salão ou Multitrack Hub), cadastre/escaneie mídias de uma pasta em `.workspace/`, edite as cenas (duração, legenda, título, narração), confira a **prévia sem FFmpeg** e **exporte**. Ao terminar, assista ao MP4 no painel e baixe MP4/SRT/TXT; reexporte apenas um perfil após corrigir uma cena. As entregas ficam em `.workspace/archives/video-studio/<pedido>/` (um subdiretório por perfil + `index.json`). O painel escuta só em `127.0.0.1`, valida Host/Origin e confina tudo à raiz; uma reexportação que falha preserva a última entrega válida. Guia em [tools/produce/README.md](tools/produce/README.md).
+Na tela inicial (**Trabalhos & Projetos**):
+- Confira a prontidão do ambiente (`5/5` verificações de Python, Node, build da `platform`, FFmpeg e FFprobe) ou execute uma **Demonstração guiada** em 1 clique (**Marca Salão** ou **Multitrack Hub**).
+- Cadastre projetos (`ProjectManifest` v1) validados pelo núcleo sem editar JSON, distinguindo projetos cadastrados dos exemplos versionados.
+- Crie e reabra **Trabalhos** persistentes em `.workspace/studio/works/<id>/`: rascunhos, mídias compartilhadas entre Vídeo, Carrossel e Motion e pastas de entrega têm caminhos gerados automaticamente a partir dos IDs, sem digitar caminhos.
+- Veja apenas destinos compatíveis com o projeto (allowlist + catálogo) e com o módulo aberto (**Vídeos** 9:16@30, **Carrosséis** 1:1 ou **Motion** 9:16@30).
+- Feche e reabra o painel retomando textos, estilos, mídias, seleções multi-cena e entregas válidas; tentativas falhas ou interrompidas exibem aviso próprio enquanto preservam `lastValidDelivery`. O servidor escuta somente em `127.0.0.1`, valida Host/Origin e confina tudo à raiz. Guia em [tools/produce/README.md](tools/produce/README.md).
 
 ### Carrosséis (R003)
 
-O mesmo painel tem a aba **Carrosséis**: escolha o projeto, monte os cards (capa, conteúdo, fechamento com CTA), confira a ordem, exporte os JPEGs 1080×1080 e baixe o ZIP. Pela CLI:
+Na aba **Carrosséis** do painel (ou dentro de um trabalho ativo), edite capa, conteúdo e fechamento com CTA reaproveitando a pasta de mídias do trabalho, confira a **prévia sem FFmpeg**, exporte os JPEGs 1080×1080 e baixe o ZIP. Pela CLI:
 
 ```bash
 python tools/make_request_media.py --input tools/produce/examples/marca-salao-carousel.carousel-request.json
@@ -74,16 +80,16 @@ A entrega traz JPEGs numerados (`01-capa.jpg`, …), `carousel.zip` na mesma ord
 
 ### Motion (contorno animado)
 
-A aba **Motion** do painel destaca uma região da cena com um contorno animado. Caminho mais curto:
+A aba **Motion** permite configurar contorno animado por cena sem zoom (`MotionPlan` v1) reaproveitando o vídeo e as mídias do trabalho ativo, com prévia visual no canvas e troca de cenas preservada. Caminho mais curto:
 
 ```bash
 python tools/make_agenda_media.py --output .workspace/tmp/motion-demo/assets/marca-salao/agenda.png
-python tools/video_studio.py --port 8765   # aba Motion: carregar exemplo, marcar região, exportar
+python tools/video_studio.py --port 8765   # aba Motion: selecionar cena, marcar região, salvar/exportar
 # ou pela CLI:
 python tools/produce_video.py --input tools/produce/examples/marca-salao-motion.video-request.json --motion-plan tools/produce/examples/marca-salao-motion.motion-plan.json --output-dir .workspace/archives/motion --json
 ```
 
-O plano (`MotionPlan v1`) define região relativa, cor, espessura e intervalo por cena; a prévia (`--plan-only`) resolve os tempos absolutos sem FFmpeg. O contorno é aplicado antes dos títulos/legenda, com entrada/saida suaves; o MP4 sai sem áudio, com SRT e narração. O plano canônico vai para o manifesto com hash.
+O plano (`MotionPlan v1`) define região relativa, cor, espessura e intervalo por cena (`effects[]`); a prévia (`--plan-only`) resolve os tempos absolutos sem FFmpeg. O contorno é aplicado antes dos títulos/legenda, com entrada/saída suaves; o MP4 sai sem áudio, com SRT e narração. O plano canônico vai para o manifesto com hash.
 
 ## Workflow
 Ver `WORKFLOW.md` para passo a passo completo e `AGENTS.md` para as regras do projeto.
