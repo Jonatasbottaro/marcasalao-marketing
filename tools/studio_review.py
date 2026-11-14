@@ -186,6 +186,17 @@ def _effective_video_slice(video_req, profile_id=None):
         src['profileSelected'] = profile_id in profiles
     else:
         src['profiles'] = list(profiles)
+    scenes = src.get('scenes')
+    if isinstance(scenes, list):
+        # Versao efetiva da edicao: inicio omitido e zero sao equivalentes.
+        normalized = []
+        for scene in scenes:
+            if isinstance(scene, dict) and 'sourceStartMs' in scene:
+                scene = dict(scene)
+                if not scene.get('sourceStartMs'):
+                    del scene['sourceStartMs']
+            normalized.append(scene)
+        src['scenes'] = normalized
     return src
 
 
@@ -468,6 +479,7 @@ def record_export_lineage(studio, job):
                     'requestSnapshot': req_snapshot,
                     'motionPlanSnapshot': motion_snapshot,
                     'mediaOrigins': media_origins,
+                    'sourceCuts': manifest.get('sourceCuts') or [],
                     'artifacts': core_artifacts,
                 })
                 updated_keys.append(piece_key)
@@ -545,6 +557,7 @@ def _inspect_video_or_motion_piece(
             'lastAttempt': last_attempt,
             'lastValidDelivery': (index_entry or {}).get('lastValidDelivery'),
             'mediaOrigins': _merge_media_origins(None, None, request_doc),
+            'sourceCuts': [],
             'metrics': {},
             'artifacts': {},
             'currentDecision': None,
@@ -694,6 +707,7 @@ def _inspect_video_or_motion_piece(
         'lastAttempt': last_attempt,
         'lastValidDelivery': (index_entry or {}).get('lastValidDelivery'),
         'mediaOrigins': media_origins,
+        'sourceCuts': manifest.get('sourceCuts') or [],
         'metrics': metrics,
         'artifacts': verified_artifacts,
         'currentDecision': current_decision,

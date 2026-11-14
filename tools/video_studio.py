@@ -1350,10 +1350,10 @@ class Studio:
         }
 
     def source_media_path(self, path_rel):
-        """Caminho de midia de origem (imagem) confinado a raiz, para o editor."""
+        """Caminho de midia de origem (imagem ou gravacao) confinado a raiz, para o editor."""
         target = self.confine(path_rel)
-        if os.path.splitext(target)[1].lower() not in IMAGE_EXTENSIONS:
-            raise ValueError('midia de origem deve ser imagem')
+        if os.path.splitext(target)[1].lower() not in IMAGE_EXTENSIONS + VIDEO_EXTENSIONS:
+            raise ValueError('midia de origem deve ser imagem ou video')
         if not os.path.isfile(target):
             raise ValueError('midia de origem ausente')
         return target
@@ -1433,6 +1433,21 @@ class Studio:
 
     def library_media_file(self, work_id, asset_id, version_id):
         return studio_media.library_media_path(self, work_id, asset_id, version_id)
+
+    # ---- importacao de gravacoes MP4 (blocos, FFprobe, promocao conjunta) ----
+    def start_video_import(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.start_video_import(self, work_id, body)
+
+    def chunk_video_import(self, body):
+        return studio_media.chunk_video_import(self, body)
+
+    def finish_video_import(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_media.finish_video_import(self, work_id, body)
+
+    def cancel_video_import(self, body):
+        return studio_media.cancel_video_import(self, body)
 
 
 class StudioHandler(BaseHTTPRequestHandler):
@@ -1537,6 +1552,54 @@ class StudioHandler(BaseHTTPRequestHandler):
                 remaining -= len(chunk)
 
     # ---- rotas ----
+    def serve_file_ranges(self, target):
+        """Serve arquivo com suporte a Range (206) para o player avancar/voltar."""
+        fs = render_local.fs_path
+        size = os.path.getsize(fs(target))
+        ext = os.path.splitext(target)[1].lower()
+        content_type = CONTENT_TYPES.get(ext, 'application/octet-stream')
+        range_header = self.headers.get('Range')
+        start, end = 0, size - 1
+        partial = False
+        if range_header:
+            match = re.match(r'^bytes=(\d*)-(\d*)$', range_header.strip())
+            if not match or (not match.group(1) and not match.group(2)):
+                self.send_response(416)
+                self.send_header('Content-Range', f'bytes */{size}')
+                self.end_headers()
+                return
+            if match.group(1):
+                start = int(match.group(1))
+                end = int(match.group(2)) if match.group(2) else size - 1
+            else:
+                suffix = int(match.group(2))
+                start = max(0, size - suffix)
+            if start >= size or end < start:
+                self.send_response(416)
+                self.send_header('Content-Range', f'bytes */{size}')
+                self.end_headers()
+                return
+            end = min(end, size - 1)
+            partial = True
+        length = end - start + 1
+        self.send_response(206 if partial else 200)
+        self.send_header('Content-Type', content_type)
+        self.send_header('Accept-Ranges', 'bytes')
+        self.send_header('Content-Length', str(length))
+        if partial:
+            self.send_header('Content-Range', f'bytes {start}-{end}/{size}')
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        with open(fs(target), 'rb') as handle:
+            handle.seek(start)
+            remaining = length
+            while remaining > 0:
+                chunk = handle.read(min(65536, remaining))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -1634,14 +1697,7 @@ class StudioHandler(BaseHTTPRequestHandler):
                 except (ValueError, OSError) as exc:
                     self.send_error_json(404, str(exc))
                     return
-                ext = os.path.splitext(target)[1].lower()
-                with open(render_local.fs_path(target), 'rb') as handle:
-                    body = handle.read()
-                self.send_response(200)
-                self.send_header('Content-Type', CONTENT_TYPES.get(ext, 'application/octet-stream'))
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
+                self.serve_file_ranges(target)
             else:
                 self.send_error_json(404, 'rota desconhecida')
         except studio_review.ReviewVersionConflictError as exc:
@@ -1703,6 +1759,14 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.apply_planning_to_editors(body)})
             elif path == '/api/works/media/import':
                 self.send_json(200, {'ok': True, **studio.import_work_media(body)})
+            elif path == '/api/works/media/import-video/start':
+                self.send_json(200, {'ok': True, **studio.start_video_import(body)})
+            elif path == '/api/works/media/import-video/chunk':
+                self.send_json(200, {'ok': True, **studio.chunk_video_import(body)})
+            elif path == '/api/works/media/import-video/finish':
+                self.send_json(200, {'ok': True, **studio.finish_video_import(body)})
+            elif path == '/api/works/media/import-video/cancel':
+                self.send_json(200, {'ok': True, **studio.cancel_video_import(body)})
             elif path == '/api/works/media/register':
                 self.send_json(200, {'ok': True, **studio.register_work_media(body)})
             elif path == '/api/works/media/anchor':

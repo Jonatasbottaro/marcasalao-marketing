@@ -33,6 +33,7 @@
   const MODES_ALL = ['home', 'planning', 'video', 'carousel', 'motion', 'media', 'review'];
   const ORIGIN_LABELS = {
     'imported-manual': 'Importação manual',
+    'imported-recording': 'Gravação importada',
     'external-tool': 'Ferramenta externa (importada)',
     'generated-simulator': 'Ilustração gerada — simulador',
     'generated-google-gemini': 'Ilustração gerada — Google Gemini',
@@ -131,10 +132,12 @@
           selected && selected.simulated ? el('span', { class: 'badge warn', text: 'SIMULADA' }) : null,
         ),
         selected && !selected.missing
-          ? el('img', { class: 'media-thumb', src: thumbUrl(asset.id, selected.versionId), alt: asset.name || asset.id, loading: 'lazy' })
+          ? (selected.kind === 'video'
+            ? el('video', { class: 'media-thumb', src: thumbUrl(asset.id, selected.versionId), muted: true, preload: 'metadata', controls: true })
+            : el('img', { class: 'media-thumb', src: thumbUrl(asset.id, selected.versionId), alt: asset.name || asset.id, loading: 'lazy' }))
           : el('div', { class: 'badge err', text: 'arquivo ausente' }),
         el('p', { class: 'muted', text: asset.name || '' }),
-        selected ? el('p', { class: 'timeline', text: `${selected.width}×${selected.height} · ${selected.bytes} bytes · ${selected.format || ''} · sha256 ${(selected.sha256 || '').slice(0, 12)}…` }) : null,
+        selected ? el('p', { class: 'timeline', text: `${selected.width}×${selected.height} · ${selected.bytes} bytes · ${selected.format || ''}${selected.kind === 'video' ? ` · ${selected.durationSeconds}s · ${selected.codec || ''}` : ''} · sha256 ${(selected.sha256 || '').slice(0, 12)}…` }) : null,
         selected ? el('p', { class: 'muted', text: `Origem: ${originLabel(selected.origin)} · Licença: ${selected.license || 'pending'}` }) : null,
         el('p', { class: 'muted', text: `Peças vinculadas: ${consumerText}` }),
         el('label', {}, 'Versão exibida ', versionSel),

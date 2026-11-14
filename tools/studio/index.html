@@ -195,8 +195,11 @@
       <h2>3. Mídias (cadastro reutilizável do trabalho)</h2>
       <div class="row">
         <button id="btn-scan-work-media">Importar mídias da pasta do trabalho</button>
+        <button id="btn-import-recording" class="secondary">Importar gravação MP4 (H.264)</button>
+        <input id="recording-file" type="file" accept=".mp4,video/mp4" hidden>
         <button id="btn-generate-media" class="secondary">Gerar mídia fictícia do rascunho</button>
       </div>
+      <p class="muted" id="recording-import-note">Gravações entram na biblioteca do trabalho com SHA-256, duração e dimensões verificados por FFprobe (limite de 256 MiB, envio em blocos). O mesmo arquivo pode ser recortado em várias cenas.</p>
       <details class="advanced-paths">
         <summary>Escanear pasta específica (.workspace/…)</summary>
         <div class="row">

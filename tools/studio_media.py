@@ -24,6 +24,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import uuid
@@ -34,6 +35,12 @@ import studio_review
 
 LIBRARY_SCHEMA_VERSION = 1
 CATEGORIES = ('illustration', 'screenshot', 'photo', 'logo', 'other')
+# Importacao de gravacoes MP4 H.264: limite documentado de 256 MiB por arquivo,
+# escrita em blocos de ate 4 MiB na area temporaria da tarefa antes da promocao.
+MAX_VIDEO_IMPORT_BYTES = 256 * 1024 * 1024
+VIDEO_IMPORT_CHUNK_BYTES = 4 * 1024 * 1024
+VIDEO_IMPORT_DIR_REL = '.workspace/tmp/studio-video-imports'
+_VIDEO_IMPORT_SESSIONS = {}
 ASPECT_GEOMETRY = {
     '9:16': (1080, 1920),
     '1:1': (1080, 1080),
@@ -42,6 +49,7 @@ ASPECT_GEOMETRY = {
 }
 ORIGIN_LABELS = {
     'imported-manual': 'Importacao manual',
+    'imported-recording': 'Gravacao importada',
     'external-tool': 'Ferramenta externa (importada)',
     'generated-simulator': 'Ilustracao gerada (simulador)',
     'generated-google-gemini': 'Ilustracao gerada (Google Gemini)',
@@ -113,7 +121,7 @@ def _legacy_created_at(studio, rel_path):
         return '1970-01-01T00:00:00Z'
 
 
-def _version_from_existing_file(studio, rel_path, origin, license_value, category):
+def _version_from_existing_file(studio, rel_path, origin, license_value, category, media_type='image'):
     version = {
         'versionId': _legacy_version_id(rel_path),
         'path': rel_path,
@@ -125,23 +133,37 @@ def _version_from_existing_file(studio, rel_path, origin, license_value, categor
         'candidateId': None,
         'provenance': None,
         'missing': True,
+        'kind': media_type,
     }
     try:
         abs_path = studio.confine(rel_path)
         fs = render_local.fs_path(abs_path)
         if os.path.isfile(fs):
-            with open(fs, 'rb') as handle:
-                data = handle.read()
-            info = image_adapters.inspect_image_bytes(data)
-            version.update({
-                'sha256': render_local.sha256_file(abs_path),
-                'bytes': info['bytes'],
-                'width': info['width'],
-                'height': info['height'],
-                'format': info['format'],
-                'missing': False,
-            })
-    except (ValueError, OSError):
+            if media_type == 'video':
+                info = inspect_video_file(abs_path, root=studio.root)
+                version.update({
+                    'sha256': render_local.sha256_file(abs_path),
+                    'bytes': os.path.getsize(fs),
+                    'width': info['width'],
+                    'height': info['height'],
+                    'format': 'mp4',
+                    'codec': info['codec'],
+                    'durationSeconds': info['durationSeconds'],
+                    'missing': False,
+                })
+            else:
+                with open(fs, 'rb') as handle:
+                    data = handle.read()
+                info = image_adapters.inspect_image_bytes(data)
+                version.update({
+                    'sha256': render_local.sha256_file(abs_path),
+                    'bytes': info['bytes'],
+                    'width': info['width'],
+                    'height': info['height'],
+                    'format': info['format'],
+                    'missing': False,
+                })
+    except (ValueError, OSError, RuntimeError):
         pass
     return version
 
@@ -161,7 +183,9 @@ def _initialize_legacy_library(studio, work_id, wpaths, video_req, carousel_req)
             seen_paths.add(item['path'])
             origin = item.get('origin') or 'studio-work'
             license_value = item.get('license') or 'pending'
-            version = _version_from_existing_file(studio, item['path'], origin, license_value, _category_for(origin))
+            media_type = item.get('type') if item.get('type') in ('image', 'video') else 'image'
+            version = _version_from_existing_file(studio, item['path'], origin, license_value,
+                                                  _category_for(origin), media_type=media_type)
             assets.append({
                 'id': mid,
                 'name': os.path.basename(item['path']),
@@ -384,6 +408,7 @@ def _create_version(studio, wpaths, asset_id, data, origin, license_value,
         'width': info['width'],
         'height': info['height'],
         'format': info['format'],
+        'kind': 'image',
         'origin': origin,
         'license': license_value,
         'simulated': bool(simulated),
@@ -412,6 +437,200 @@ def _read_import_bytes(studio, body):
         raise ValueError(f'imagem acima do limite de {image_adapters.MAX_IMAGE_BYTES // (1024 * 1024)} MB')
     with open(render_local.fs_path(abs_path), 'rb') as handle:
         return handle.read(), os.path.basename(abs_path)
+
+
+# ---------------------------------------------------------------------------
+# Importacao de gravacoes MP4 H.264 (blocos + FFprobe + promocao conjunta)
+# ---------------------------------------------------------------------------
+
+def inspect_video_file(abs_path, root=None):
+    """Valida o conteudo com FFprobe: MP4 H.264, dimensoes pares, duracao > 0."""
+    import build_video
+    try:
+        render_local.ensure_video_tools(root or os.getcwd())
+    except build_video.DeliveryError:
+        pass
+    try:
+        info = render_local.probe_asset(os.path.dirname(abs_path), abs_path)
+    except build_video.DeliveryError as exc:
+        raise ValueError(f'gravacao ilegivel pelo FFprobe: {exc}')
+    streams = info.get('streams', [])
+    video = next((s for s in streams if s.get('codec_type') == 'video'), None)
+    if not video:
+        raise ValueError('gravacao sem faixa de video')
+    if video.get('codec_name') != 'h264':
+        raise ValueError(f'codec de video nao suportado: {video.get("codec_name")} (use MP4 H.264)')
+    format_name = (info.get('format', {}).get('format_name') or '')
+    if 'mp4' not in format_name:
+        raise ValueError(f'conteiner nao suportado: {format_name} (use MP4)')
+    width, height = int(video.get('width') or 0), int(video.get('height') or 0)
+    if width <= 0 or height <= 0 or width % 2 or height % 2:
+        raise ValueError(f'dimensoes invalidas: {width}x{height}')
+    raw_dur = video.get('duration') or info.get('format', {}).get('duration')
+    try:
+        duration_s = float(raw_dur)
+    except (TypeError, ValueError):
+        raise ValueError('duracao da gravacao indisponivel')
+    if duration_s <= 0:
+        raise ValueError('duracao da gravacao invalida')
+    return {'width': width, 'height': height, 'codec': 'h264', 'durationSeconds': round(duration_s, 3)}
+
+
+def _video_import_session_dir(studio, upload_id):
+    return studio.confine(os.path.join(VIDEO_IMPORT_DIR_REL, upload_id))
+
+
+def start_video_import(studio, work_id, body):
+    if not isinstance(body, dict):
+        raise ValueError('payload de importacao de gravacao invalido')
+    with studio_review._STATE_LOCK:
+        work_doc, wpaths, video_req, carousel_req, _, _ = studio_review._read_work_core(studio, work_id)
+        library, _ = load_library(studio, work_id, work_doc, wpaths, video_req, carousel_req)
+        _check_expected(library, body)
+        file_name = _clean_text(body.get('fileName') or 'gravacao.mp4', 'fileName')
+        if not file_name.lower().endswith('.mp4'):
+            raise ValueError('a gravacao deve ser um arquivo .mp4 (H.264)')
+        total = body.get('totalBytes')
+        if not isinstance(total, int) or total < 1 or total > MAX_VIDEO_IMPORT_BYTES:
+            raise ValueError(f'tamanho invalido: a gravacao deve ter entre 1 byte e '
+                             f'{MAX_VIDEO_IMPORT_BYTES // (1024 * 1024)} MiB')
+        asset_id = str(body.get('assetId') or '').strip() or None
+        if asset_id:
+            if not KEBAB_RE.match(asset_id):
+                raise ValueError('assetId deve usar kebab-case')
+            if not _find_asset(library, asset_id):
+                raise ValueError(f'midia "{asset_id}" nao encontrada na biblioteca deste trabalho')
+        upload_id = f'up-{uuid.uuid4().hex[:12]}'
+        session_dir = _video_import_session_dir(studio, upload_id)
+        os.makedirs(render_local.fs_path(session_dir), exist_ok=True)
+        _VIDEO_IMPORT_SESSIONS[upload_id] = {
+            'workId': work_id,
+            'fileName': file_name,
+            'totalBytes': total,
+            'received': 0,
+            'origin': _clean_text(body.get('origin') or 'imported-manual', 'origin'),
+            'license': _clean_text(body.get('license') or 'pending', 'license'),
+            'assetId': asset_id,
+            'partPath': os.path.join(session_dir, 'payload.part'),
+        }
+        return {'uploadId': upload_id, 'chunkBytes': VIDEO_IMPORT_CHUNK_BYTES,
+                'maxBytes': MAX_VIDEO_IMPORT_BYTES}
+
+
+def chunk_video_import(studio, body):
+    if not isinstance(body, dict):
+        raise ValueError('payload de bloco invalido')
+    upload_id = str(body.get('uploadId') or '')
+    with studio_review._STATE_LOCK:
+        session = _VIDEO_IMPORT_SESSIONS.get(upload_id)
+        if not session:
+            raise ValueError('upload desconhecido ou expirado; reinicie a importacao')
+        offset = body.get('offset')
+        if not isinstance(offset, int) or offset != session['received']:
+            raise ValueError(f'bloco fora de ordem: esperado offset {session["received"]}')
+        try:
+            data = base64.b64decode(body.get('dataBase64') or '', validate=True)
+        except (ValueError, TypeError):
+            raise ValueError('bloco base64 invalido')
+        if not data or len(data) > VIDEO_IMPORT_CHUNK_BYTES:
+            raise ValueError(f'bloco deve ter entre 1 byte e {VIDEO_IMPORT_CHUNK_BYTES // (1024 * 1024)} MiB')
+        if session['received'] + len(data) > session['totalBytes']:
+            raise ValueError('blocos excedem o tamanho declarado da gravacao')
+        with open(render_local.fs_path(session['partPath']), 'ab') as handle:
+            handle.write(data)
+        session['received'] += len(data)
+        return {'received': session['received'], 'totalBytes': session['totalBytes']}
+
+
+def cancel_video_import(studio, body):
+    upload_id = str((body or {}).get('uploadId') or '')
+    with studio_review._STATE_LOCK:
+        session = _VIDEO_IMPORT_SESSIONS.pop(upload_id, None)
+        if session:
+            shutil.rmtree(render_local.fs_path(os.path.dirname(session['partPath']), force=True),
+                          ignore_errors=True)
+        return {'cancelled': bool(session)}
+
+
+def finish_video_import(studio, work_id, body):
+    """Promove o arquivo e o registro da biblioteca juntos, ou recupera o estado anterior."""
+    import shutil as _shutil
+    upload_id = str((body or {}).get('uploadId') or '')
+    with studio_review._STATE_LOCK:
+        session = _VIDEO_IMPORT_SESSIONS.get(upload_id)
+        if not session or session['workId'] != work_id:
+            raise ValueError('upload desconhecido para este trabalho; reinicie a importacao')
+        if session['received'] != session['totalBytes']:
+            raise ValueError(f'upload incompleto: {session["received"]} de {session["totalBytes"]} bytes')
+        part_path = session['partPath']
+        try:
+            info = inspect_video_file(part_path, root=studio.root)
+        except ValueError:
+            _VIDEO_IMPORT_SESSIONS.pop(upload_id, None)
+            _shutil.rmtree(render_local.fs_path(os.path.dirname(part_path), force=True), ignore_errors=True)
+            raise
+        work_doc, wpaths, video_req, carousel_req, _, _ = studio_review._read_work_core(studio, work_id)
+        library, _ = load_library(studio, work_id, work_doc, wpaths, video_req, carousel_req)
+        asset_id = session['assetId']
+        if asset_id:
+            asset = _find_asset(library, asset_id)
+        else:
+            asset_id = _unique_asset_id(library, _slug(os.path.splitext(session['fileName'])[0]))
+            asset = {
+                'id': asset_id,
+                'name': session['fileName'],
+                'category': 'other',
+                'createdAt': _now(),
+                'versions': [],
+                'selectedVersionId': None,
+            }
+            library['assets'].append(asset)
+        version_id = _new_version_id()
+        rel = f"{wpaths['mediaDir']}/library/{asset_id}/{version_id}.mp4"
+        target = studio.confine_workspace(rel)
+        fs = render_local.fs_path
+        os.makedirs(fs(os.path.dirname(target)), exist_ok=True)
+        sha = render_local.sha256_file(part_path)
+        size = os.path.getsize(fs(part_path))
+        version = {
+            'versionId': version_id,
+            'path': rel,
+            'sha256': sha,
+            'bytes': size,
+            'width': info['width'],
+            'height': info['height'],
+            'format': 'mp4',
+            'kind': 'video',
+            'codec': info['codec'],
+            'durationSeconds': info['durationSeconds'],
+            'origin': session['origin'],
+            'license': session['license'],
+            'simulated': False,
+            'createdAt': _now(),
+            'requestId': None,
+            'candidateId': None,
+            'provenance': {'provider': 'import-video', 'model': None, 'prompt': None,
+                           'params': {'fileName': session['fileName']}, 'anchor': None,
+                           'resultSha256': sha},
+            'missing': False,
+        }
+        asset['versions'].append(version)
+        if not asset.get('selectedVersionId'):
+            asset['selectedVersionId'] = version_id
+        # Promocao conjunta: move o arquivo verificado e grava a biblioteca; se a
+        # gravacao do registro falhar, o arquivo promovido e removido e o estado
+        # anterior da biblioteca permanece intacto.
+        os.replace(fs(part_path), fs(target))
+        try:
+            save_library(studio, wpaths, library)
+        except OSError:
+            if os.path.exists(fs(target)):
+                os.remove(fs(target))
+            raise
+        _VIDEO_IMPORT_SESSIONS.pop(upload_id, None)
+        _shutil.rmtree(render_local.fs_path(os.path.dirname(part_path), force=True), ignore_errors=True)
+        overview = _overview_payload(studio, work_id, wpaths, library, True, video_req, carousel_req)
+        return {'assetId': asset_id, 'versionId': version_id, 'version': version, 'overview': overview}
 
 
 # ---------------------------------------------------------------------------
@@ -1038,18 +1257,19 @@ def generate_candidate(studio, work_id, body):
 # ---------------------------------------------------------------------------
 
 def _set_draft_media_link(req, asset_id, version):
+    media_type = version.get('kind') or 'image'
     media = req.setdefault('media', [])
     entry = next((m for m in media if m.get('id') == asset_id), None)
     if entry:
         entry['path'] = version['path']
-        entry['type'] = 'image'
+        entry['type'] = media_type
         entry['origin'] = version['origin']
         entry['license'] = version['license']
     else:
         media.append({
             'id': asset_id,
             'path': version['path'],
-            'type': 'image',
+            'type': media_type,
             'origin': version['origin'],
             'license': version['license'],
         })
@@ -1198,7 +1418,7 @@ def apply_library_to_catalog(studio, wpaths, catalog):
                 'id': asset['id'],
                 'name': asset.get('name') or asset['id'],
                 'path': selected['path'],
-                'type': 'image',
+                'type': selected.get('kind') or 'image',
                 'bytes': selected.get('bytes') or 0,
                 'origin': selected['origin'],
                 'license': selected['license'],
@@ -1226,5 +1446,7 @@ def library_media_path(studio, work_id, asset_id, version_id):
         raise ValueError('arquivo da versao ausente')
     if render_local.sha256_file(abs_path) != version.get('sha256'):
         raise ValueError('checksum divergente; miniatura bloqueada para esta versao')
+    if version.get('kind') == 'video':
+        return abs_path, 'video/mp4'
     mime = image_adapters.mime_for_format(version.get('format') or 'png')
     return abs_path, mime
