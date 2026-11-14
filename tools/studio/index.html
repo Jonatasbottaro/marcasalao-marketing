@@ -34,6 +34,7 @@
       <button id="mode-video-btn" class="mode-btn">Vídeos</button>
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
+      <button id="mode-review-btn" class="mode-btn">Revisão &amp; Entrega</button>
     </nav>
   </header>
 
@@ -412,6 +413,62 @@
       <div id="m-export-status"></div>
       <div id="m-delivery-output"></div>
     </section>
+  </div>
+
+  <div id="mode-review" hidden>
+    <div id="r-no-work-alert" class="alert-box warn">
+      Abra ou crie um trabalho na aba <strong>Trabalhos &amp; Projetos</strong> para preencher a ficha editorial, revisar peças e montar o ZIP de entrega.
+    </div>
+
+    <div id="r-work-content" hidden>
+      <div id="r-legacy-banner"></div>
+
+      <section id="r-briefing-section">
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0;">1. Ficha editorial do trabalho</h2>
+          <button id="btn-r-refresh" class="secondary">Atualizar revisão</button>
+        </div>
+        <p class="muted">Registro local do briefing e da linha editorial deste trabalho. Trabalhos legados iniciam com a ficha em branco.</p>
+        <div class="review-grid">
+          <label>Objetivo <input id="r-brief-objective" placeholder="Ex.: gerar agendamentos ou leads" /></label>
+          <label>Público-alvo <input id="r-brief-audience" placeholder="Ex.: donos de salões de beleza" /></label>
+          <label>Mensagem principal <textarea id="r-brief-core" rows="2" placeholder="Ideia central da campanha"></textarea></label>
+          <label>Prova / argumento de apoio <textarea id="r-brief-evidence" rows="2" placeholder="Evidência ou demonstração usada na peça"></textarea></label>
+          <label>Gancho (hook) <input id="r-brief-hook" placeholder="Primeira frase / impacto inicial" /></label>
+          <label>CTA geral <input id="r-brief-cta" placeholder="Chamada para ação principal" /></label>
+          <label style="grid-column: 1 / -1;">Resumo do roteiro <textarea id="r-brief-script" rows="3" placeholder="Síntese narrativa fora dos pixels renderizados"></textarea></label>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <button id="btn-r-save-editorial">Salvar ficha editorial e textos por canal</button>
+        </div>
+        <div id="r-editorial-feedback"></div>
+      </section>
+
+      <section id="r-channels-section">
+        <h2>2. Textos de publicação por canal</h2>
+        <div class="alert-box ok" id="r-separation-note">
+          Separação editorial: títulos de post, legendas sociais, CTA, URL de destino e hashtags abaixo são usados apenas na publicação por canal. Eles <strong>não</strong> alteram a legenda queimada (<code>.srt</code>), o roteiro de narração (<code>.txt</code>) nem disparam reencode do vídeo.
+        </div>
+        <div id="r-channels-list"></div>
+      </section>
+
+      <section id="r-pieces-section">
+        <h2>3. Peças exportadas para revisão</h2>
+        <p class="muted">Cada decisão humana fica vinculada à versão exata da entrega e ao snapshot dos documentos de entrada. Renders técnicos permanecem pendentes até revisão humana.</p>
+        <div id="r-pieces-list"></div>
+      </section>
+
+      <section id="r-package-section">
+        <h2>4. Montar e baixar pacote ZIP de entrega</h2>
+        <p class="muted">Apenas peças e textos por canal explicitamente aprovados para entrega local são aceitos no ZIP final. Vídeo e Motion do mesmo destino são gravados em pastas separadas.</p>
+        <div id="r-package-checklist"></div>
+        <div class="row" style="margin-top: 12px;">
+          <button id="btn-r-build-package" class="ok-btn">Gerar ZIP de entrega</button>
+        </div>
+        <div id="r-package-status"></div>
+        <div id="r-package-result"></div>
+      </section>
+    </div>
   </div>
   </main>
 

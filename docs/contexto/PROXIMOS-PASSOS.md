@@ -171,7 +171,7 @@ Continua bloqueado até decisão explícita: produção de campanhas reais, míd
 
 ## 4g. Primeira versão utilizável do Studio local (Projetos, Trabalhos e retomada) — concluído em 13/11/2026
 
-> O titular autorizou fechar a primeira versão utilizável do Studio local com cadastro de projetos, trabalhos persistentes, produção e retomada de Vídeo, Carrossel e Motion, testes, prova em navegador, CI e documentação na mesma entrega (branch `codex/studio-usable-v1`). Comandos: `python tools/video_studio.py --check --json` e `python tools/video_studio.py --port 8765`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md).
+> O titular autorizou fechar a primeira versão utilizável do Studio local com cadastro de projetos, trabalhos persistentes, produção e retomada de Vídeo, Carrossel e Motion, testes, prova em navegador, CI e documentação na mesma entrega (branch `codex/studio-usable-v1`, integrada na `main` em `52640845e8e194ed3697ff37faa3b4722cf162bd`). Comandos: `python tools/video_studio.py --check --json` e `python tools/video_studio.py --port 8765`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md).
 
 Critérios de conclusão atendidos:
 - **Projetos (`ProjectManifest` v1)**: formulário no painel valida o manifesto pelo núcleo da `platform` antes da gravação em `.workspace/studio/projects/`, exibe badge diferenciando projetos cadastrados de exemplos versionados e filtra automaticamente os destinos pelo catálogo + allowlist + módulo aberto (`video`, `carousel`, `motion`);
@@ -180,6 +180,18 @@ Critérios de conclusão atendidos:
 - **Compatibilidade Windows & Gates**: tratamento transparente de caminhos longos no Windows (`render_local.fs_path`), `926/926` testes da `platform`, `143/143` testes Python com `REQUIRE_RENDER=1`, prova end-to-end em navegador Google Chrome real via CDP e prova HTTP ampliada no CI (Ubuntu e Windows). API pública da `platform` inalterada.
 
 Continua bloqueado até decisão explícita: produção de campanhas reais, mídia real, fornecedores externos, áudio/TTS, publicação, Temporal de produção e deploy. O painel local destina-se apenas a criação e revisão local.
+
+## 4h. Revisão editorial e pacote ZIP de entrega no Studio local — concluído em 14/11/2026
+
+> O titular autorizou acrescentar **Revisão & Entrega** ao Studio local (branch `codex/studio-review-delivery-v1` sobre `52640845e8e194ed3697ff37faa3b4722cf162bd`), reunindo ficha editorial, textos por canal fora de `.srt`/narração, revisão humana vinculada por versão e montagem transacional de ZIP final de entrega. Comandos: `python tools/video_studio.py --check --json` e `python tools/video_studio.py --port 8765`. Detalhes em [tools/produce/README.md](../../tools/produce/README.md).
+
+Entregas consolidadas nesta etapa:
+
+- módulos dedicados `tools/studio_review.py` (estado editorial em `editorial.json`, histórico e vínculos em `review-state.json`, invalidação localizada `copy_outdated`/`draft_outdated`/`reexported_pending`, bloqueio de entregas `unlinked`, preservação de falhas/entregas válidas após reinício e concorrência otimista HTTP `409`) e `tools/delivery_package.py` (`packages/<packageId>/delivery.zip` + `package-manifest.json` com bloqueio e promoção atômicos e verificação SHA-256 na criação e no download);
+- rotas no servidor HTTP (`tools/video_studio.py`) e nova aba **Revisão & Entrega** (`tools/studio/{index.html,style.css,app.js}`) com player de MP4, strip de carrossel, inspetor verificado de `.srt`/`.txt`, checklist ao vivo, separação física `video/<profileId>/` vs. `motion/<profileId>/` no ZIP e download direto;
+- suítes automatizadas (`926/926` da `platform` e `146/146` Python com `REQUIRE_RENDER=1`), prova E2E em Google Chrome real via CDP (Marca Salão, edições isoladas, falha + reinício, trabalho legado `unlinked` bloqueado e Multitrack Hub) e prova HTTP de empacotamento ZIP integrada ao CI (`.github/workflows/local-render-validation.yml`).
+
+Continua bloqueado até decisão explícita: publicação automática, geração real de campanhas/mídias externas, áudio/TTS, fornecedores externos, Temporal de produção e deploy em nuvem.
 
 ## 5. Separar as decisões editoriais da execução técnica
 

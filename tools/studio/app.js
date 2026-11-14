@@ -17,6 +17,14 @@ let mDrag = null;
 let mPollTimer = null;
 let mCurrentSceneId = null;
 let mStandaloneOverride = false;
+let reviewState = null;
+let reviewSyncSeq = 0;
+
+async function apiDetailed(path, opts = {}) {
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({ ok: false, error: 'resposta ilegível' }));
+  return { status: res.status, ok: res.ok && data.ok !== false, data };
+}
 
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, attrs = {}, children = []) => {
@@ -132,16 +140,21 @@ function setMode(mode) {
   $('#mode-video').hidden = mode !== 'video';
   $('#mode-carousel').hidden = mode !== 'carousel';
   $('#mode-motion').hidden = mode !== 'motion';
+  $('#mode-review').hidden = mode !== 'review';
   $('#mode-home-btn').classList.toggle('active', mode === 'home');
   $('#mode-video-btn').classList.toggle('active', mode === 'video');
   $('#mode-carousel-btn').classList.toggle('active', mode === 'carousel');
   $('#mode-motion-btn').classList.toggle('active', mode === 'motion');
+  $('#mode-review-btn').classList.toggle('active', mode === 'review');
   if (mode === 'motion') {
     if (currentWork && !mStandaloneOverride) {
       syncDraftFields();
       syncMotionFromDraft();
     }
     drawMotionCanvas();
+  }
+  if (mode === 'review' && currentWork) {
+    loadReviewOverview().catch((e) => toast(e.message));
   }
   if (mode === 'home') {
     loadWorks().catch(() => {});
@@ -306,8 +319,9 @@ function applyOpenedWork(data) {
   catalog = (data.listing && data.listing.profiles) || [];
   cCatalog = catalog;
 
-  for (const sel of ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status']) {
-    $(sel).innerHTML = '';
+  for (const sel of ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status', '#r-editorial-feedback', '#r-package-status']) {
+    const node = $(sel);
+    if (node) node.innerHTML = '';
   }
 
   renderActiveWorkBar();
@@ -323,6 +337,7 @@ function applyOpenedWork(data) {
     renderCarouselDeliveryPayload(data.deliveries.carousel, p.carouselDeliveryDir);
     renderVideoDeliveryPayload('#m-delivery-output', data.deliveries.motion, p.motionDeliveryDir, 'motion');
   }
+  renderReviewPanel(data.review || null, data.packageDelivery || null);
   loadWorks().catch(() => {});
 }
 
@@ -366,8 +381,10 @@ async function saveWork(silent = false) {
   };
   const data = await post('/api/works/save', payload);
   currentWork = data.work;
+  if (!mStandaloneOverride) mreq = JSON.parse(JSON.stringify(draft));
   renderActiveWorkBar();
   if (!silent) toast('Trabalho salvo em disco com segurança.');
+  if (!$('#mode-review').hidden) loadReviewOverview().catch(() => {});
   loadWorks().catch(() => {});
   return data;
 }
@@ -731,6 +748,7 @@ function renderExportResult(data, outputDir) {
   }
   $('#delivery-dir').value = outputDir;
   loadDelivery();
+  if (currentWork && !$('#mode-review').hidden) loadReviewOverview().catch(() => {});
   loadWorks().catch(() => {});
 }
 
@@ -1029,6 +1047,7 @@ function cPoll(jobId, outputDir) {
     if (d.status !== 'completed') status.append(el('div', { class: 'alert-box err', text: r.error || JSON.stringify(r) }));
     $('#c-delivery-dir').value = outputDir;
     loadCDelivery();
+    if (currentWork && !$('#mode-review').hidden) loadReviewOverview().catch(() => {});
     loadWorks().catch(() => {});
   };
   tick();
@@ -1426,6 +1445,7 @@ function mPoll(jobId, outputDir) {
     status.innerHTML = '';
     status.append(el('p', {}, el('span', { class: d.status === 'completed' ? 'badge ok' : 'badge err', text: d.status })));
     await loadMDelivery(outputDir);
+    if (currentWork && !$('#mode-review').hidden) loadReviewOverview().catch(() => {});
     loadWorks().catch(() => {});
   };
   tick();
@@ -1563,10 +1583,518 @@ async function init() {
   $('#mode-video-btn').addEventListener('click', () => setMode('video'));
   $('#mode-carousel-btn').addEventListener('click', () => setMode('carousel'));
   $('#mode-motion-btn').addEventListener('click', () => setMode('motion'));
+  $('#mode-review-btn').addEventListener('click', () => setMode('review'));
+  $('#btn-r-refresh').addEventListener('click', () => loadReviewOverview().catch((e) => toast(e.message)));
+  $('#btn-r-save-editorial').addEventListener('click', () => saveEditorialSheet().catch((e) => toast(e.message)));
+  $('#btn-r-build-package').addEventListener('click', () => buildPackageZip().catch((e) => toast(e.message)));
 
   await initCarousel();
   await initMotion();
   setMode('home');
+}
+
+// ---- Revisão & Entrega ----
+function reviewStatusClass(status) {
+  if (status === 'approved') return 'ok';
+  if (status === 'changes_requested' || status === 'unavailable') return 'err';
+  if (status === 'draft_outdated' || status === 'copy_outdated' || status === 'unlinked' || status === 'reexported_pending' || status === 'pending_review') return 'warn';
+  return 'muted';
+}
+
+async function loadReviewOverview() {
+  const seq = ++reviewSyncSeq;
+  if (!currentWork) {
+    renderReviewPanel(null, null);
+    return null;
+  }
+  const d = await api('/api/works/review?id=' + encodeURIComponent(currentWork.id));
+  if (seq === reviewSyncSeq) {
+    renderReviewPanel(d, d.packageDelivery || null);
+  }
+  return d;
+}
+
+function collectBriefingFromUI() {
+  return {
+    objective: ($('#r-brief-objective')?.value || '').trim(),
+    audience: ($('#r-brief-audience')?.value || '').trim(),
+    coreMessage: ($('#r-brief-core')?.value || '').trim(),
+    supportEvidence: ($('#r-brief-evidence')?.value || '').trim(),
+    hook: ($('#r-brief-hook')?.value || '').trim(),
+    scriptSummary: ($('#r-brief-script')?.value || '').trim(),
+    cta: ($('#r-brief-cta')?.value || '').trim(),
+  };
+}
+
+function readChannelCardInputs(card) {
+  const pid = card.getAttribute('data-channel-id');
+  const getVal = (f) => (card.querySelector(`[data-ch-field="${f}"]`)?.value || '').trim();
+  return {
+    profileId: pid,
+    title: getVal('title'),
+    postText: getVal('postText'),
+    cta: getVal('cta'),
+    destinationUrl: getVal('destinationUrl'),
+    hashtags: getVal('hashtags'),
+  };
+}
+
+function collectChannelsFromUI() {
+  const out = {};
+  document.querySelectorAll('#r-channels-list [data-channel-id]').forEach((card) => {
+    const entry = readChannelCardInputs(card);
+    out[entry.profileId] = entry;
+  });
+  return out;
+}
+
+async function saveEditorialSheet() {
+  if (!currentWork) return;
+  const seq = ++reviewSyncSeq;
+  const feedback = $('#r-editorial-feedback');
+  feedback.innerHTML = '';
+  try {
+    const d = await post('/api/works/editorial/save', {
+      workId: currentWork.id,
+      briefing: collectBriefingFromUI(),
+      channels: collectChannelsFromUI(),
+    });
+    if (seq === reviewSyncSeq) renderReviewPanel(d, d.packageDelivery || null);
+    feedback.append(el('div', { class: 'alert-box ok', text: 'Ficha editorial e textos por canal salvos atomicamente.' }));
+    toast('Ficha editorial salva.');
+  } catch (err) {
+    feedback.append(el('div', { class: 'alert-box err', text: err.message }));
+    toast(err.message);
+  }
+}
+
+async function saveSingleChannelCopy(card) {
+  if (!currentWork) return;
+  const seq = ++reviewSyncSeq;
+  const entry = readChannelCardInputs(card);
+  const feedback = card.querySelector('.r-ch-feedback');
+  if (feedback) feedback.innerHTML = '';
+  try {
+    const d = await post('/api/works/editorial/save', {
+      workId: currentWork.id,
+      channels: { [entry.profileId]: entry },
+    });
+    if (seq === reviewSyncSeq) renderReviewPanel(d, d.packageDelivery || null);
+    toast(`Texto do canal ${entry.profileId} salvo.`);
+  } catch (err) {
+    if (feedback) feedback.append(el('div', { class: 'alert-box err', text: err.message }));
+    toast(err.message);
+  }
+}
+
+async function decideReviewTarget(payload, cardFeedback) {
+  if (!currentWork) return;
+  const seq = ++reviewSyncSeq;
+  if (cardFeedback) cardFeedback.innerHTML = '';
+  const { status, ok, data } = await apiDetailed('/api/works/review/decide', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workId: currentWork.id, ...payload }),
+  });
+  if (!ok) {
+    if (cardFeedback) {
+      cardFeedback.append(el('div', {
+        class: 'alert-box err',
+        text: (status === 409 ? 'Conflito de versão (HTTP 409): ' : 'Bloqueado: ') + (data.error || 'falha na revisão'),
+      }));
+    }
+    if (status === 409) await loadReviewOverview().catch(() => {});
+    toast(data.error || 'Falha na revisão');
+    return;
+  }
+  if (seq === reviewSyncSeq) renderReviewPanel(data, data.packageDelivery || null);
+  toast('Decisão de revisão registrada.');
+}
+
+async function inspectArtifactText(piece, kind, targetPre) {
+  if (!currentWork) return;
+  targetPre.hidden = false;
+  targetPre.textContent = 'Carregando e verificando SHA-256…';
+  try {
+    const d = await api(
+      `/api/works/artifact-text?id=${encodeURIComponent(currentWork.id)}`
+      + `&modality=${encodeURIComponent(piece.modality)}`
+      + `&profile=${encodeURIComponent(piece.profileId)}`
+      + `&kind=${encodeURIComponent(kind)}`
+    );
+    targetPre.textContent = `Arquivo: ${d.path}\nSHA-256: ${d.sha256}\n\n${d.content}`;
+  } catch (err) {
+    targetPre.textContent = 'Erro ao carregar artefato: ' + err.message;
+  }
+}
+
+async function buildPackageZip() {
+  if (!currentWork) return;
+  const seq = ++reviewSyncSeq;
+  const statusBox = $('#r-package-status');
+  statusBox.innerHTML = '<p class="muted">Validando integridade e empacotando ZIP…</p>';
+  const pieces = [];
+  document.querySelectorAll('#r-package-checklist input[data-pkg-type="piece"]:checked').forEach((chk) => {
+    pieces.push({
+      modality: chk.getAttribute('data-modality'),
+      profileId: chk.getAttribute('data-profile'),
+      expectedVersionId: chk.getAttribute('data-expected-version') || null,
+      expectedDraftFingerprint: chk.getAttribute('data-expected-draft') || null,
+    });
+  });
+  const channels = [];
+  document.querySelectorAll('#r-package-checklist input[data-pkg-type="channel"]:checked').forEach((chk) => {
+    channels.push({
+      profileId: chk.getAttribute('data-profile'),
+      expectedCopySha256: chk.getAttribute('data-expected-copy') || null,
+    });
+  });
+
+  const { status, ok, data } = await apiDetailed('/api/works/package', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workId: currentWork.id, pieces, channels }),
+  });
+  statusBox.innerHTML = '';
+  if (!ok) {
+    statusBox.append(el('div', {
+      class: 'alert-box err',
+      text: (status === 409 ? 'Conflito de versão (HTTP 409): ' : 'Empacotamento bloqueado: ') + (data.error || 'erro'),
+    }));
+    await loadReviewOverview().catch(() => {});
+    toast(data.error || 'Falha ao gerar ZIP');
+    return;
+  }
+  statusBox.append(el('div', { class: 'alert-box ok', text: 'Pacote ZIP de entrega gerado, validado e promovido atomicamente.' }));
+  if (seq === reviewSyncSeq) renderReviewPanel(data, data.packageDelivery || null);
+  loadWorks().catch(() => {});
+  toast('Pacote ZIP de entrega pronto para download.');
+}
+
+function renderHistoryDetails(items, isChannel) {
+  if (!items || !items.length) return null;
+  const box = el('details', { class: 'history-box' }, [
+    el('summary', { text: `Histórico de decisões (${items.length})` }),
+  ]);
+  for (const h of items.slice().reverse()) {
+    const ver = isChannel ? `copy ${(h.copySha256 || '').slice(0, 10)}` : `versão ${h.deliveryVersionId || 'n/d'}`;
+    box.append(el('div', {
+      text: `• ${h.decidedAt || ''} — ${h.decisionLabel || h.decision} [${ver}]` + (h.note ? ` — Nota: ${h.note}` : ''),
+    }));
+  }
+  return box;
+}
+
+function renderReviewPanel(review, pkg) {
+  const noWork = $('#r-no-work-alert');
+  const content = $('#r-work-content');
+  if (!currentWork || !review) {
+    noWork.hidden = false;
+    content.hidden = true;
+    reviewState = null;
+    return;
+  }
+  noWork.hidden = true;
+  content.hidden = false;
+  reviewState = { ...review, packageDelivery: pkg || null };
+
+  const legacyBanner = $('#r-legacy-banner');
+  legacyBanner.innerHTML = '';
+  const hasUnlinked = (review.pieces || []).some((p) => p.status === 'unlinked');
+  if (review.legacyWork || hasUnlinked) {
+    legacyBanner.append(el('div', {
+      class: 'alert-box warn',
+      text: 'Trabalho legado ou com entrega anterior sem vínculo gravado ao rascunho atual: a ficha iniciou vazia e entregas não vinculadas exigem reexportação pelo Studio antes da aprovação.',
+    }));
+  }
+
+  const b = (review.editorial && review.editorial.briefing) || {};
+  $('#r-brief-objective').value = b.objective || '';
+  $('#r-brief-audience').value = b.audience || '';
+  $('#r-brief-core').value = b.coreMessage || '';
+  $('#r-brief-evidence').value = b.supportEvidence || '';
+  $('#r-brief-hook').value = b.hook || '';
+  $('#r-brief-script').value = b.scriptSummary || '';
+  $('#r-brief-cta').value = b.cta || '';
+
+  // Textos por canal
+  const chList = $('#r-channels-list');
+  chList.innerHTML = '';
+  const channels = review.channels || [];
+  if (!channels.length) {
+    chList.append(el('p', { class: 'muted', text: 'Nenhum destino selecionado nos rascunhos deste trabalho.' }));
+  }
+  for (const ch of channels) {
+    const card = el('div', { class: 'review-card', 'data-channel-id': ch.profileId });
+    const fb = el('div', { class: 'r-ch-feedback' });
+    const noteInput = el('input', {
+      'data-ch-note': ch.profileId,
+      placeholder: 'Observação da revisão do texto do canal (opcional)',
+      value: (ch.currentDecision && ch.currentDecision.note) || '',
+    });
+    const dirtyNote = el('span', { class: 'badge muted', text: 'texto salvo', hidden: 'hidden' });
+
+    const grid = el('div', { class: 'review-grid' }, [
+      el('label', {}, ['Título do post (quando aplicável)', el('input', { 'data-ch-field': 'title', value: ch.title || '' })]),
+      el('label', {}, ['CTA do canal', el('input', { 'data-ch-field': 'cta', value: ch.cta || '' })]),
+      el('label', {}, ['URL de destino', el('input', { 'data-ch-field': 'destinationUrl', value: ch.destinationUrl || '' })]),
+      el('label', {}, ['Hashtags (opcional)', el('input', { 'data-ch-field': 'hashtags', value: ch.hashtags || '' })]),
+      el('label', { style: 'grid-column: 1 / -1;' }, ['Texto / legenda de publicação', el('textarea', { 'data-ch-field': 'postText', rows: '3' }, ch.postText || '')]),
+    ]);
+    grid.querySelector('textarea').value = ch.postText || '';
+    grid.querySelectorAll('[data-ch-field]').forEach((inp) => {
+      inp.addEventListener('input', () => { dirtyNote.hidden = false; dirtyNote.textContent = 'alterado localmente — salve antes de aprovar'; });
+    });
+
+    card.append(
+      el('div', { class: 'review-card-head' }, [
+        el('div', {}, [
+          el('strong', { text: `${ch.profileLabel || ch.profileId} ` }),
+          el('span', { class: 'muted', text: `(${ch.profileId}${ch.network ? ' · ' + ch.network : ''})` }),
+        ]),
+        el('div', {}, [
+          el('span', { class: 'badge ' + reviewStatusClass(ch.status), text: ch.statusLabel }),
+          el('span', { class: 'badge muted', text: 'copy ' + (ch.copySha256 || '').slice(0, 8) }),
+          dirtyNote,
+        ]),
+      ]),
+      el('p', { class: 'muted', text: ch.readyReason || '' }),
+      grid,
+      el('div', { class: 'row', style: 'margin-top: 8px;' }, [
+        el('button', {
+          class: 'secondary',
+          'data-ch-action': 'save',
+          text: 'Salvar texto deste canal',
+          onclick: () => saveSingleChannelCopy(card),
+        }),
+        noteInput,
+        el('button', {
+          class: 'ok-btn',
+          'data-ch-action': 'approve',
+          text: 'Aprovar texto do canal',
+          onclick: () => decideReviewTarget({
+            targetType: 'channel',
+            profileId: ch.profileId,
+            expectedCopySha256: ch.copySha256,
+            decision: 'approved_for_local_delivery',
+            note: noteInput.value,
+          }, fb),
+        }),
+        el('button', {
+          class: 'warn-btn',
+          'data-ch-action': 'changes',
+          text: 'Pedir ajuste no texto',
+          onclick: () => decideReviewTarget({
+            targetType: 'channel',
+            profileId: ch.profileId,
+            expectedCopySha256: ch.copySha256,
+            decision: 'changes_requested',
+            note: noteInput.value,
+          }, fb),
+        }),
+      ]),
+      fb,
+    );
+    const hist = renderHistoryDetails(ch.decisionHistory, true);
+    if (hist) card.append(hist);
+    chList.append(card);
+  }
+
+  // Peças exportadas
+  const pList = $('#r-pieces-list');
+  pList.innerHTML = '';
+  const pieces = review.pieces || [];
+  if (!pieces.length) {
+    pList.append(el('p', { class: 'muted', text: 'Nenhuma peça selecionada ou exportada ainda.' }));
+  }
+  for (const p of pieces) {
+    const card = el('div', { class: 'review-card', 'data-piece-key': p.pieceKey });
+    const fb = el('div', { class: 'r-piece-feedback' });
+    const m = p.metrics || {};
+    const metricBits = [];
+    if (m.width && m.height) metricBits.push(`${m.width}×${m.height}`);
+    if (m.fps) metricBits.push(`${m.fps} fps`);
+    if (m.durationSec != null) metricBits.push(`${Number(m.durationSec).toFixed(1)}s`);
+    if (m.audioStreams != null) metricBits.push(`${m.audioStreams} áudios`);
+    if (m.cardCount != null) metricBits.push(`${m.cardCount} cards`);
+    if (p.deliveryVersionId) metricBits.push(`versão ${p.deliveryVersionId}`);
+    if (m.videoSha256) metricBits.push(`MP4 sha256 ${m.videoSha256.slice(0, 10)}`);
+
+    card.append(
+      el('div', { class: 'review-card-head' }, [
+        el('div', {}, [
+          el('span', { class: 'badge muted', text: p.modalityLabel }),
+          el('strong', { text: `${p.profileLabel || p.profileId} ` }),
+          el('span', { class: 'muted', text: `(${p.profileId})` }),
+        ]),
+        el('span', { class: 'badge ' + reviewStatusClass(p.status), text: p.statusLabel }),
+      ]),
+      el('p', { class: 'muted', text: p.readyReason || '' }),
+      metricBits.length ? el('p', { class: 'timeline', text: metricBits.join(' · ') }) : null,
+    );
+
+    if (p.lastAttempt && p.lastAttempt.status && p.lastAttempt.status !== 'completed') {
+      card.append(el('div', {
+        class: 'alert-box err',
+        text: `Última tentativa (${p.lastAttempt.status}): ${p.lastAttempt.error || 'erro na exportação'}. Última entrega válida e decisões anteriores foram preservadas.`,
+      }));
+    }
+    if (p.integrityErrors && p.integrityErrors.length) {
+      card.append(el('div', {
+        class: 'alert-box err',
+        text: 'Integridade: ' + p.integrityErrors.join('; '),
+      }));
+    }
+    if (p.mediaOrigins && p.mediaOrigins.length) {
+      const originLine = p.mediaOrigins.map((mo) => `${mo.mediaId || 'asset'}: ${mo.origin || 'local'} (${mo.license || 'n/d'})`).join(' | ');
+      card.append(el('p', { class: 'muted', text: 'Origens de mídia: ' + originLine }));
+    }
+
+    if (p.modality === 'carousel' && p.cards && p.cards.length) {
+      const strip = el('div', { class: 'carousel-strip' });
+      for (const c of p.cards) {
+        strip.append(el('div', { class: 'carousel-strip-item' }, [
+          c.ok ? el('img', { src: `${c.url}&v=${encodeURIComponent(c.sha256 || '')}`, alt: c.file || '' }) : el('div', { class: 'badge err', text: 'ausente' }),
+          el('div', { text: `#${c.order} ${c.file || c.id}` }),
+        ]));
+      }
+      card.append(strip);
+    } else if (p.artifacts && p.artifacts.video && p.artifacts.video.ok) {
+      const vUrl = `${p.artifacts.video.url}&v=${encodeURIComponent(p.metrics?.videoSha256 || p.deliveryVersionId || '')}`;
+      card.append(el('video', { controls: '', preload: 'metadata', src: vUrl }));
+      const viewer = el('pre', { class: 'artifact-viewer', hidden: 'hidden' });
+      card.append(
+        el('div', { class: 'row' }, [
+          el('button', { class: 'secondary', text: 'Inspecionar legendas (.srt)', onclick: () => inspectArtifactText(p, 'srt', viewer) }),
+          el('button', { class: 'secondary', text: 'Inspecionar narração (.txt)', onclick: () => inspectArtifactText(p, 'narration', viewer) }),
+        ]),
+        viewer,
+      );
+    }
+
+    const noteInput = el('input', {
+      'data-piece-note': p.pieceKey,
+      placeholder: 'Observação da revisão desta peça (opcional)',
+      value: (p.currentDecision && p.currentDecision.note) || '',
+    });
+    card.append(
+      el('div', { class: 'row', style: 'margin-top: 8px;' }, [
+        noteInput,
+        el('button', {
+          class: 'ok-btn',
+          'data-piece-action': 'approve',
+          text: 'Aprovar para entrega local',
+          disabled: p.status === 'no_delivery' ? 'disabled' : null,
+          onclick: () => decideReviewTarget({
+            targetType: 'piece',
+            modality: p.modality,
+            profileId: p.profileId,
+            expectedVersionId: p.deliveryVersionId,
+            expectedDraftFingerprint: p.currentDraftFingerprint,
+            decision: 'approved_for_local_delivery',
+            note: noteInput.value,
+          }, fb),
+        }),
+        el('button', {
+          class: 'warn-btn',
+          'data-piece-action': 'changes',
+          text: 'Pedir ajuste',
+          disabled: p.status === 'no_delivery' ? 'disabled' : null,
+          onclick: () => decideReviewTarget({
+            targetType: 'piece',
+            modality: p.modality,
+            profileId: p.profileId,
+            expectedVersionId: p.deliveryVersionId,
+            expectedDraftFingerprint: p.currentDraftFingerprint,
+            decision: 'changes_requested',
+            note: noteInput.value,
+          }, fb),
+        }),
+      ]),
+      fb,
+    );
+    const hist = renderHistoryDetails(p.decisionHistory, false);
+    if (hist) card.append(hist);
+    pList.append(card);
+  }
+
+  // Checklist do ZIP
+  const chkBox = $('#r-package-checklist');
+  chkBox.innerHTML = '';
+  for (const p of pieces) {
+    const chk = el('input', {
+      type: 'checkbox',
+      'data-pkg-type': 'piece',
+      'data-modality': p.modality,
+      'data-profile': p.profileId,
+      'data-expected-version': p.deliveryVersionId || '',
+      'data-expected-draft': p.currentDraftFingerprint || '',
+      checked: p.readyForPackage ? 'checked' : null,
+    });
+    chkBox.append(el('div', { class: 'checklist-row' }, [
+      el('label', { class: 'inline-check' }, [chk, el('span', { text: `[${p.modalityLabel}] ${p.profileId}` })]),
+      el('div', {}, [
+        el('span', { class: 'badge ' + reviewStatusClass(p.status), text: p.readyForPackage ? 'Pronto' : p.statusLabel }),
+        el('span', { class: 'muted', text: p.readyReason }),
+      ]),
+    ]));
+  }
+  for (const ch of channels) {
+    const chk = el('input', {
+      type: 'checkbox',
+      'data-pkg-type': 'channel',
+      'data-profile': ch.profileId,
+      'data-expected-copy': ch.copySha256 || '',
+      checked: ch.readyForPackage ? 'checked' : null,
+    });
+    chkBox.append(el('div', { class: 'checklist-row' }, [
+      el('label', { class: 'inline-check' }, [chk, el('span', { text: `[Texto de canal] ${ch.profileId}` })]),
+      el('div', {}, [
+        el('span', { class: 'badge ' + reviewStatusClass(ch.status), text: ch.readyForPackage ? 'Pronto' : ch.statusLabel }),
+        el('span', { class: 'muted', text: ch.readyReason }),
+      ]),
+    ]));
+  }
+
+  // Resultado persistido do pacote ZIP
+  const resBox = $('#r-package-result');
+  resBox.innerHTML = '';
+  if (pkg && pkg.lastAttempt && pkg.lastAttempt.status === 'failed') {
+    resBox.append(el('div', {
+      class: 'alert-box err',
+      text: `Última tentativa de empacotamento ZIP falhou: ${pkg.lastAttempt.error || 'erro'}. O último pacote ZIP válido (quando existente) foi preservado.`,
+    }));
+  }
+  if (pkg && pkg.available && pkg.lastValidDelivery) {
+    const lv = pkg.lastValidDelivery;
+    const man = pkg.manifest || {};
+    resBox.append(el('div', { class: 'review-card' }, [
+      el('div', { class: 'review-card-head' }, [
+        el('strong', { text: `Pacote ZIP promovido: ${lv.packageId}` }),
+        el('span', { class: 'badge ok', text: 'ZIP íntegro' }),
+      ]),
+      el('p', {
+        class: 'timeline',
+        text: `${lv.zipBytes} bytes · SHA-256 ${lv.zipSha256} · Modalidades: ${(lv.modalities || []).join(', ') || 'apenas textos'} · Destinos: ${(lv.profiles || []).join(', ')}`,
+      }),
+      el('p', {}, [
+        el('a', {
+          id: 'btn-r-download-zip',
+          href: pkg.downloadUrl,
+          download: `${currentWork.id}-${lv.packageId}.zip`,
+          text: `Baixar ZIP de entrega (${lv.packageId}.zip)`,
+        }),
+      ]),
+      el('pre', { text: JSON.stringify(man.files || [], null, 2) }),
+    ]));
+  } else if (pkg && pkg.lastValidDelivery && !pkg.available) {
+    resBox.append(el('div', {
+      class: 'alert-box err',
+      text: 'Pacote ZIP anterior indisponível: ' + (pkg.zipError || 'erro de integridade'),
+    }));
+  } else {
+    resBox.append(el('p', { class: 'muted', text: 'Nenhum pacote ZIP de entrega gerado ainda neste trabalho.' }));
+  }
 }
 
 init();
