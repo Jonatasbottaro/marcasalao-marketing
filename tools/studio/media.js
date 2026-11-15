@@ -37,6 +37,7 @@
     'external-tool': 'Ferramenta externa (importada)',
     'generated-simulator': 'Ilustração gerada — simulador',
     'generated-google-gemini': 'Ilustração gerada — Google Gemini',
+    'generated-google-gemini-video': 'Clipe gerado por API — Google Gemini',
     'synthetic-demo': 'Fictícia de demonstração',
     'studio-work': 'Arquivo do trabalho',
     'screenshot': 'Captura / evidência funcional',
@@ -337,6 +338,7 @@
     renderAnchorControls();
     renderRegisterSelect();
     renderRequestsList();
+    renderVideoPanel();
   }
 
   // ---- dialogo de pedido visual (Preparar imagem) ----
@@ -756,6 +758,256 @@
     mdFeedback(`Referência visual salva: ${data.anchorId}. Use-a nos pedidos visuais das cenas e cards.`);
   }
 
+  // ---- clipes por API (texto para video, Gemini Omni Flash) ----
+
+  let videoData = null;
+  let videoLoadSeq = 0;
+  let videoPollTimer = null;
+
+  function stopVideoPoll() {
+    if (videoPollTimer) { clearTimeout(videoPollTimer); videoPollTimer = null; }
+  }
+
+  function scheduleVideoPoll() {
+    stopVideoPoll();
+    const anyProcessing = ((videoData && videoData.requests) || []).some((r) => r.status === 'processing');
+    const panel = $('#mode-media');
+    if (!anyProcessing || !panel || panel.hidden) return;
+    videoPollTimer = setTimeout(() => { loadVideoRequests().catch(() => {}); }, 3000);
+  }
+
+  async function loadVideoRequests() {
+    const seq = ++videoLoadSeq;
+    if (!currentWork) { videoData = null; renderVideoPanel(); return null; }
+    const data = await api('/api/works/video-requests?id=' + encodeURIComponent(currentWork.id));
+    if (seq === videoLoadSeq) {
+      videoData = data;
+      renderVideoPanel();
+      scheduleVideoPoll();
+    }
+    return data;
+  }
+
+  function videoStatusBadge(status) {
+    const labels = (videoData && videoData.options && videoData.options.statusLabels) || {};
+    const cls = status === 'ready' || status === 'imported' ? 'ok'
+      : status === 'failed' ? 'err'
+      : status === 'processing' ? 'ok' : 'warn';
+    return el('span', { class: 'badge ' + cls, text: labels[status] || status });
+  }
+
+  function renderVideoPanel() {
+    const connBox = $('#md-video-conn');
+    const listBox = $('#md-video-requests');
+    if (!connBox || !listBox) return;
+    connBox.innerHTML = '';
+    listBox.innerHTML = '';
+    if (!currentWork) return;
+    const conn = videoData && videoData.videoConnection;
+    if (conn) {
+      connBox.append(el('span', {
+        class: 'badge ok',
+        text: `Conexão de vídeo: ${conn.connectionName} (${conn.connectionId}) · modelo ${conn.model}`,
+      }));
+    } else {
+      connBox.append(el('span', {
+        class: 'badge warn',
+        text: 'Nenhuma conexão de vídeo selecionada para o projeto — configure na aba Conexões (a mesma conexão Google pode atender imagem e vídeo).',
+      }));
+    }
+    const requests = (videoData && videoData.requests) || [];
+    if (!requests.length) {
+      listBox.append(el('p', { class: 'muted', text: 'Nenhum pedido de clipe ainda. Use "Gerar clipe" para descrever o vídeo e confirmar o envio ao fornecedor.' }));
+      return;
+    }
+    for (const r of requests) {
+      const card = el('div', { class: 'media-card', 'data-video-request-id': r.id, style: 'margin-bottom:10px;' });
+      const lastAttempt = (r.attempts || [])[r.attempts.length - 1] || null;
+      card.append(...[
+        el('div', { class: 'row', style: 'justify-content: space-between; align-items:center;' }, [
+          el('strong', { text: r.id }),
+          videoStatusBadge(r.status),
+        ]),
+        el('div', { class: 'muted', text: `${r.model} · conexão ${r.connectionName || r.connectionId} · ${r.params.durationSeconds}s · ${r.params.aspectRatio} · ${r.params.resolution}` }),
+        el('div', { text: r.prompt.length > 220 ? r.prompt.slice(0, 220) + '…' : r.prompt }),
+        r.remoteInteractionId ? el('div', { class: 'muted', text: `ID remoto: ${r.remoteInteractionId}${r.remoteFileId ? ' · arquivo ' + r.remoteFileId : ''}` }) : null,
+        lastAttempt && lastAttempt.error ? el('div', { class: 'alert-box ' + (r.status === 'failed' ? 'err' : 'warn'), text: `${lastAttempt.code || ''} ${lastAttempt.error}`.trim() }) : null,
+        r.status === 'imported' && r.imported ? el('div', { class: 'muted', text: `Biblioteca: mídia ${r.imported.assetId} · versão ${r.imported.versionId} (selecione na cena pela aba Vídeos)` }) : null,
+        r.status === 'ready' && r.result ? el('div', { class: 'muted', text: `Resultado recebido: ${(r.result.bytes / (1024 * 1024)).toFixed(2)} MiB · SHA-256 ${r.result.sha256.slice(0, 16)}…` }) : null,
+      ].filter(Boolean));
+      const actions = el('div', { class: 'row', style: 'margin-top:6px;' });
+      if (r.status === 'awaiting') {
+        actions.append(el('button', { text: 'Confirmar envio', onclick: () => openVideoConfirmDialog(r, false).catch(mdShowError) }));
+      }
+      if (r.status === 'processing' || (r.status === 'uncertain' && r.remoteInteractionId)) {
+        actions.append(el('button', {
+          class: 'secondary', text: 'Acompanhar',
+          onclick: async () => {
+            try {
+              await post('/api/works/video-requests/check', { workId: currentWork.id, requestId: r.id });
+              await loadVideoRequests();
+            } catch (e) { mdShowError(e); }
+          },
+        }));
+      }
+      if (r.status === 'ready') {
+        actions.append(el('button', {
+          text: 'Importar na Biblioteca',
+          onclick: async () => {
+            try {
+              const data = await post('/api/works/video-requests/import', { workId: currentWork.id, requestId: r.id });
+              if (data.overview) { mediaOverview = data.overview; renderMediaPanel(); }
+              await loadVideoRequests();
+              mdFeedback(data.deduplicated
+                ? `Clipe já importado: mesma versão ${data.versionId} recuperada.`
+                : `Clipe importado sem áudio: mídia ${data.assetId}, versão ${data.versionId}. Disponível para seleção nas cenas.`);
+            } catch (e) { mdShowError(e); }
+          },
+        }));
+      }
+      if (r.status === 'failed' || r.status === 'uncertain') {
+        actions.append(el('button', { class: 'warn-btn', text: 'Reenviar (nova submissão)', onclick: () => openVideoConfirmDialog(r, true).catch(mdShowError) }));
+      }
+      card.append(actions);
+      listBox.append(card);
+    }
+  }
+
+  function closeVideoDialog() {
+    const root = $('#media-dialog-root');
+    if (root) root.innerHTML = '';
+  }
+
+  function videoNoticeBoxes(notices) {
+    return [
+      el('div', { class: 'alert-box warn', text: notices.retention }),
+      el('div', { class: 'alert-box warn', text: notices.billing }),
+      el('div', { class: 'alert-box ok', text: notices.audio }),
+    ];
+  }
+
+  async function openVideoGenerateDialog() {
+    if (!currentWork) { toast('Abra um trabalho primeiro.'); return; }
+    if (!videoData) await loadVideoRequests();
+    const opts = (videoData && videoData.options) || null;
+    if (!opts) { mdShowError(new Error('não foi possível carregar as opções de geração')); return; }
+    const conn = videoData.videoConnection;
+    const root = $('#media-dialog-root');
+    root.innerHTML = '';
+    const overlay = el('div', { class: 'media-dialog-overlay' });
+    const dialog = el('div', { class: 'media-dialog', id: 'md-video-dialog' });
+    const promptInput = el('textarea', { rows: 5, placeholder: 'Descreva o clipe: cena, movimento de câmera, luz e clima (uma cena contínua funciona melhor).' });
+    const durationSel = el('select', {}, ...opts.durations.map((d) => el('option', { value: String(d), text: `${d} segundos`, selected: d === opts.durationDefault })));
+    const aspectSel = el('select', {}, ...opts.aspectRatios.map((a) => el('option', { value: a, text: a, selected: a === opts.aspectDefault })));
+    const resolutionSel = el('select', {}, ...opts.resolutions.map((r) => el('option', { value: r, text: r, selected: r === opts.resolutionDefault })));
+    const modelInput = el('input', { type: 'text', value: (conn && conn.model) || opts.model, placeholder: opts.model });
+    const fb = el('div', {});
+    dialog.append(
+      el('div', { class: 'row', style: 'justify-content: space-between;' }, [
+        el('h3', { text: 'Gerar clipe por API — texto para vídeo', style: 'margin:0;' }),
+        el('button', { class: 'secondary', text: 'Fechar', onclick: closeVideoDialog }),
+      ]),
+      conn
+        ? el('p', { class: 'muted', text: `Conexão do projeto: ${conn.connectionName} (${conn.connectionId}). A chave é resolvida no backend no momento da chamada.` })
+        : el('div', { class: 'alert-box err', text: 'Nenhuma conexão de vídeo selecionada para este projeto. Configure na aba Conexões antes de gerar.' }),
+      el('label', {}, ['Descrição do clipe', promptInput]),
+      el('div', { class: 'row' }, [
+        el('label', {}, ['Duração', durationSel]),
+        el('label', {}, ['Proporção', aspectSel]),
+        el('label', {}, ['Resolução', resolutionSel]),
+      ]),
+      el('label', {}, ['Modelo', modelInput]),
+      fb,
+      el('button', {
+        id: 'md-video-review-btn',
+        text: 'Revisar e confirmar envio',
+        disabled: !conn,
+        onclick: async () => {
+          fb.innerHTML = '';
+          try {
+            const data = await post('/api/works/video-requests/create', {
+              workId: currentWork.id,
+              prompt: promptInput.value,
+              durationSeconds: Number(durationSel.value),
+              aspectRatio: aspectSel.value,
+              resolution: resolutionSel.value,
+              model: modelInput.value.trim() || undefined,
+            });
+            closeVideoDialog();
+            await loadVideoRequests();
+            showVideoConfirm(data.request, data.confirmation, false);
+          } catch (e) {
+            fb.append(el('div', { class: 'alert-box err', text: e.message }));
+          }
+        },
+      }),
+    );
+    overlay.append(dialog);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeVideoDialog(); });
+    root.append(overlay);
+  }
+
+  async function openVideoConfirmDialog(request, resubmit) {
+    if (!videoData) await loadVideoRequests();
+    const notices = (videoData && videoData.options && videoData.options.notices) || {};
+    const confirmation = {
+      connectionId: request.connectionId,
+      connectionName: request.connectionName,
+      model: request.model,
+      prompt: request.prompt,
+      params: request.params,
+      notices,
+    };
+    showVideoConfirm(request, confirmation, resubmit);
+  }
+
+  function showVideoConfirm(request, confirmation, resubmit) {
+    const root = $('#media-dialog-root');
+    root.innerHTML = '';
+    const overlay = el('div', { class: 'media-dialog-overlay' });
+    const dialog = el('div', { class: 'media-dialog', id: 'md-video-confirm-dialog' });
+    const fb = el('div', {});
+    const params = confirmation.params || {};
+    dialog.append(...[
+      el('div', { class: 'row', style: 'justify-content: space-between;' }, [
+        el('h3', { text: resubmit ? 'Confirmar NOVA submissão ao fornecedor' : 'Confirmar envio ao fornecedor', style: 'margin:0;' }),
+        el('button', { class: 'secondary', text: 'Fechar', onclick: closeVideoDialog }),
+      ]),
+      resubmit ? el('div', { class: 'alert-box warn', text: 'O pedido anterior falhou ou ficou incerto. Reenviar cria uma nova tentativa e pode gerar nova cobrança; o histórico anterior é preservado.' }) : null,
+      el('p', {}, [
+        el('strong', { text: 'Conexão: ' }), el('span', { text: `${confirmation.connectionName} (${confirmation.connectionId})` }),
+      ]),
+      el('p', {}, [el('strong', { text: 'Modelo: ' }), el('span', { text: confirmation.model })]),
+      el('p', {}, [el('strong', { text: 'Parâmetros: ' }), el('span', { text: `${params.durationSeconds}s · ${params.aspectRatio} · ${params.resolution}` })]),
+      el('p', { class: 'muted', text: 'Texto que será enviado:' }),
+      el('div', { class: 'alert-box ok', text: confirmation.prompt }),
+      ...videoNoticeBoxes(confirmation.notices || {}),
+      fb,
+      el('button', {
+        id: 'md-video-confirm-btn',
+        text: resubmit ? 'Reenviar ao Google' : 'Confirmar envio ao Google',
+        onclick: async () => {
+          fb.innerHTML = '';
+          try {
+            const body = { workId: currentWork.id, requestId: request.id, confirm: true };
+            if (resubmit) body.resubmit = true;
+            const data = await post('/api/works/video-requests/submit', body);
+            closeVideoDialog();
+            await loadVideoRequests();
+            mdFeedback(data.deduplicated
+              ? `Pedido ${request.id} já estava em andamento; nenhuma nova submissão foi feita.`
+              : `Pedido ${request.id} enviado ao fornecedor. Acompanhe o processamento abaixo.`);
+          } catch (e) {
+            fb.append(el('div', { class: 'alert-box err', text: e.message }));
+          }
+        },
+      }),
+    ].filter(Boolean));
+    overlay.append(dialog);
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) closeVideoDialog(); });
+    root.append(overlay);
+  }
+
   // ---- hooks globais (mesmo padrao de planning.js) ----
 
   const _prevSetMode = typeof setMode === 'function' ? setMode : null;
@@ -773,8 +1025,10 @@
         }
         renderMediaPanel();
         loadMediaOverview().catch((e) => mdShowError(e));
+        loadVideoRequests().catch((e) => mdShowError(e));
         return;
       }
+      stopVideoPoll();
       const panel = $('#mode-media');
       if (panel) panel.hidden = true;
       const btn = $('#mode-media-btn');
@@ -792,6 +1046,8 @@
         mediaOverview = data.mediaLibrary;
         renderMediaPanel();
       }
+      videoData = null;
+      loadVideoRequests().catch(() => {});
     };
   }
 
@@ -802,6 +1058,7 @@
     $('#md-btn-register')?.addEventListener('click', () => registerFromPanel().catch(mdShowError));
     $('#md-btn-anchor-save')?.addEventListener('click', () => saveAnchorFromPanel().catch(mdShowError));
     $('#md-anchor-asset')?.addEventListener('change', (ev) => fillAnchorVersions(ev.target.value));
+    $('#md-btn-video-generate')?.addEventListener('click', () => openVideoGenerateDialog().catch(mdShowError));
     renderMediaPanel();
   }
 

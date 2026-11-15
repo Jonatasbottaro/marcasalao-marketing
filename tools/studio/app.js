@@ -4070,7 +4070,8 @@ async function loadConnections() {
       ]),
       el('td', {}, test
         ? [el('span', { class: 'badge ' + (test.status === 'ok' ? 'ok' : 'err'), text: test.code || test.status }),
-           el('div', { class: 'muted', text: (test.at || '').replace('T', ' ').replace('Z', '') })]
+           el('div', { class: 'muted', text: (test.at || '').replace('T', ' ').replace('Z', '') }),
+           test.videoModel ? el('div', { class: 'muted', text: `vídeo ${test.videoModel.model}: ${test.videoModel.listed == null ? 'não verificado' : test.videoModel.listed ? 'listado' : 'não listado'}` }) : null]
         : el('span', { class: 'badge muted', text: 'nunca testada' })),
       el('td', {}, [
         el('button', { class: 'secondary', text: 'Testar', onclick: () => testConnection(c.id).catch((e) => toast(e.message)) }),
@@ -4127,7 +4128,7 @@ async function fillConnectionSelection() {
   const fill = (selectId, modelId, capability) => {
     const select = $(selectId);
     select.innerHTML = '';
-    select.append(el('option', { value: '', text: 'Legado (variáveis de ambiente)' }));
+    select.append(el('option', { value: '', text: capability === 'video' ? 'Sem seleção (necessária para clipes)' : 'Legado (variáveis de ambiente)' }));
     for (const c of data.connections || []) {
       if ((c.capabilities || []).includes(capability)) {
         select.append(el('option', { value: c.id, text: `${c.name} (${c.id})` }));
@@ -4139,16 +4140,17 @@ async function fillConnectionSelection() {
   };
   fill('#conn-text-select', '#conn-text-model', 'text');
   fill('#conn-image-select', '#conn-image-model', 'image');
+  fill('#conn-video-select', '#conn-video-model', 'video');
   const fb = $('#conn-selection-feedback');
   fb.textContent = project
-    ? `Seleção atual do projeto: texto ${sel.text ? sel.text.connectionId : 'legado'} · imagem ${sel.image ? sel.image.connectionId : 'legado'}.`
+    ? `Seleção atual do projeto: texto ${sel.text ? sel.text.connectionId : 'legado'} · imagem ${sel.image ? sel.image.connectionId : 'legado'} · vídeo ${sel.video ? sel.video.connectionId : 'sem seleção'}.`
     : 'Selecione um projeto para ver e editar a seleção.';
 }
 
 async function saveConnectionSelection() {
   const project = $('#conn-project-select').value;
   if (!project) throw new Error('selecione um projeto');
-  for (const [capability, selectId, modelId] of [['text', '#conn-text-select', '#conn-text-model'], ['image', '#conn-image-select', '#conn-image-model']]) {
+  for (const [capability, selectId, modelId] of [['text', '#conn-text-select', '#conn-text-model'], ['image', '#conn-image-select', '#conn-image-model'], ['video', '#conn-video-select', '#conn-video-model']]) {
     await post('/api/connections/select', {
       project, capability,
       connectionId: $(selectId).value || null,
@@ -4215,7 +4217,7 @@ async function openConnectionDialog(existing) {
   const nameInput = el('input', { type: 'text', id: 'conn-f-name', value: existing ? existing.name : '' });
   const providerSelect = el('select', { id: 'conn-f-provider' }, [
     el('option', { value: 'local-llm', text: 'Modelo local de texto (OpenAI-compatível)' }),
-    el('option', { value: 'google-gemini', text: 'Google Gemini (imagem)' }),
+    el('option', { value: 'google-gemini', text: 'Google Gemini (imagem e vídeo)' }),
   ]);
   if (existing) {
     providerSelect.value = existing.provider;
