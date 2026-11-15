@@ -216,14 +216,80 @@
     </section>
 
     <section id="sec-scenes">
-      <h2>4. Cenas ordenadas</h2>
+      <h2>4. Cenas ordenadas e enquadramento por destino</h2>
+      <div class="row framing-toolbar">
+        <label>Destino ativo (enquadramento e prévia)
+          <select id="v-active-profile"></select>
+        </label>
+        <span id="v-active-profile-info" class="badge muted">Nenhum destino selecionado</span>
+      </div>
+      <div id="v-assembly-timeline" class="assembly-timeline" aria-label="Faixa navegável da montagem"></div>
       <div id="scenes-list"></div>
       <button id="btn-add-scene">Adicionar cena</button>
+
+      <div id="v-framing-editor" class="framing-editor" hidden>
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <div>
+            <strong id="v-framing-scene-title">Enquadramento da cena</strong>
+            <span id="v-framing-scene-summary" class="badge muted"></span>
+          </div>
+          <div class="row" style="margin-bottom: 0;">
+            <button id="v-frame-mode-fit" type="button" class="secondary">Ajustar</button>
+            <button id="v-frame-mode-fill" type="button" class="secondary">Preencher</button>
+            <button id="v-frame-reset-btn" type="button" class="secondary">Desfazer ajuste desta cena</button>
+          </div>
+        </div>
+        <div id="v-frame-error-banner" class="alert-box err" hidden>
+          <span id="v-frame-error-text"></span>
+          <button id="v-frame-fallback-fit-btn" type="button" class="secondary">Voltar para Ajustar</button>
+        </div>
+        <div class="row framing-inputs-row">
+          <label>Centro X (0–1)
+            <input id="v-frame-center-x" type="number" min="0" max="1" step="0.01" value="0.50">
+          </label>
+          <label>Centro Y (0–1)
+            <input id="v-frame-center-y" type="number" min="0" max="1" step="0.01" value="0.50">
+          </label>
+          <label>Aproximação (%)
+            <input id="v-frame-zoom-range" type="range" min="100" max="300" step="1" value="100">
+          </label>
+          <label>Zoom (%)
+            <input id="v-frame-zoom" type="number" min="100" max="300" step="1" value="100">
+          </label>
+        </div>
+        <div class="framing-canvases-grid">
+          <div class="framing-canvas-box">
+            <div class="field-label">Quadro da fonte (arraste para definir o centro)</div>
+            <canvas id="v-frame-source-canvas" width="320" height="220"></canvas>
+            <p id="v-frame-source-meta" class="muted"></p>
+          </div>
+          <div class="framing-canvas-box">
+            <div class="field-label">Quadro resultante no destino</div>
+            <canvas id="v-frame-dest-canvas" width="225" height="400"></canvas>
+            <p id="v-frame-resolved-info" class="muted"></p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="sec-preview">
-      <h2>5. Prévia (sem FFmpeg)</h2>
-      <button id="btn-preview">Gerar prévia</button>
+      <h2>5. Prévia da montagem e planejamento (sem áudio)</h2>
+      <div class="preview-assembly-panel">
+        <div class="row" style="align-items: center;">
+          <span id="v-preview-target-label" class="badge muted">Destino: —</span>
+          <button id="v-btn-preview-render" type="button">Gerar prévia da montagem</button>
+          <span id="v-preview-render-badge" class="badge muted">Sem prévia gerada</span>
+        </div>
+        <div id="v-preview-render-status" class="muted"></div>
+        <div id="v-preview-player-box" class="preview-player-box" hidden>
+          <video id="v-preview-player" controls muted playsinline preload="metadata"></video>
+          <p id="v-preview-player-meta" class="muted"></p>
+        </div>
+      </div>
+      <hr class="preview-sep">
+      <div class="row" style="align-items: center;">
+        <button id="btn-preview" class="secondary">Calcular plano (sem FFmpeg)</button>
+      </div>
       <div id="preview-output"></div>
       <div class="row" style="align-items: flex-start; gap: 12px; margin-top: 8px;">
         <canvas id="preview-frame-canvas" width="270" height="480" style="border: 1px solid var(--line); border-radius: 6px; background: #000;"></canvas>

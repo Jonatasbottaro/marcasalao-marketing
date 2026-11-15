@@ -33,13 +33,15 @@ import tempfile
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import build_video
 import make_agenda_media
 import make_proof_assets
 import make_request_media
+import produce_video
 import render_local
 import delivery_package
 import image_adapters
@@ -51,6 +53,8 @@ import studio_review
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
 KEBAB_CASE_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+PREVIEW_FILE_RE = re.compile(r'^[a-z0-9][a-z0-9._-]*\.mp4$')
+PREVIEW_CACHE_MAX_FILES = 4
 CONTENT_TYPES = {
     '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
@@ -270,9 +274,13 @@ class Studio:
         self.works_dir = os.path.join(self.studio_workspace, 'works')
         self.status_dir = os.path.join(self.studio_workspace, 'export-status')
         self.drafts_dir = os.path.join(self.root, '.workspace', 'tmp', 'video-studio', 'drafts')
+        self.standalone_previews_dir = os.path.join(self.root, '.workspace', 'tmp', 'video-studio', 'previews')
         self.jobs = {}
         self.jobs_lock = threading.Lock()
-        for folder in (self.projects_dir, self.works_dir, self.status_dir, self.drafts_dir):
+        self.preview_jobs = {}
+        self.preview_jobs_by_key = {}
+        self.preview_jobs_lock = threading.Lock()
+        for folder in (self.projects_dir, self.works_dir, self.status_dir, self.drafts_dir, self.standalone_previews_dir):
             os.makedirs(folder, exist_ok=True)
 
     # ---- prontidao ----
@@ -1184,6 +1192,387 @@ class Studio:
                     'profile': job['profile'], 'kind': job.get('kind', 'video')}
         return finalized
 
+    # ---- enquadramento e previa da montagem ----
+    def _resolve_video_profile_meta(self, project_rel, profile_id):
+        if not isinstance(profile_id, str) or not profile_id.strip():
+            raise ValueError('profileId obrigatorio')
+        pid = profile_id.strip()
+        listing = self.list_profiles(project_rel or None)
+        for item in listing.get('profiles') or []:
+            if item.get('id') == pid:
+                if item.get('mediaKind') != 'video':
+                    raise ValueError(f'perfil {pid} nao e um perfil de video')
+                return item, listing
+        raise ValueError(f'perfil de video desconhecido: {pid}')
+
+    def _preview_dir(self, work_id=None):
+        if work_id:
+            paths = self.work_paths(work_id)
+            return self.confine_workspace(f"{paths['workDir']}/previews")
+        return self.confine_workspace(self.standalone_previews_dir)
+
+    def _preview_state_path(self, preview_dir, profile_id):
+        if not isinstance(profile_id, str) or not KEBAB_CASE_RE.match(profile_id):
+            raise ValueError('perfil invalido para previa')
+        return self.confine_workspace(os.path.join(preview_dir, f'{profile_id}.preview.json'))
+
+    def _read_preview_state(self, preview_dir, profile_id):
+        fs = render_local.fs_path
+        state_path = self._preview_state_path(preview_dir, profile_id)
+        if not os.path.isfile(fs(state_path)):
+            return None
+        try:
+            with open(fs(state_path), 'r', encoding='utf-8') as handle:
+                data = json.load(handle)
+        except (OSError, ValueError):
+            return None
+        return data if isinstance(data, dict) else None
+
+    def _prune_preview_cache(self, preview_dir, protected_files=None, max_files=PREVIEW_CACHE_MAX_FILES):
+        fs = render_local.fs_path
+        if not os.path.isdir(fs(preview_dir)):
+            return
+        protected = set(protected_files or ())
+        # Tambem preserva o ultimo arquivo pronto de outros perfis ativos quando cabe no limite
+        for entry in os.listdir(fs(preview_dir)):
+            if not entry.endswith('.preview.json'):
+                continue
+            try:
+                with open(fs(os.path.join(preview_dir, entry)), 'r', encoding='utf-8') as handle:
+                    doc = json.load(handle)
+                fname = doc.get('file') if isinstance(doc, dict) else None
+                if isinstance(fname, str) and fname:
+                    protected.add(fname)
+            except (OSError, ValueError):
+                pass
+        mp4s = []
+        for entry in os.listdir(fs(preview_dir)):
+            if not PREVIEW_FILE_RE.match(entry):
+                continue
+            full = os.path.join(preview_dir, entry)
+            if not os.path.isfile(fs(full)):
+                continue
+            try:
+                mtime = os.path.getmtime(fs(full))
+            except OSError:
+                mtime = 0
+            mp4s.append((0 if entry in protected else 1, -mtime, entry, full))
+        mp4s.sort()
+        for _, _, _, victim in mp4s[max(1, int(max_files)):]:
+            try:
+                os.remove(fs(victim))
+            except OSError:
+                pass
+
+    def _motion_applies_to_profile(self, profile_meta, motion_plan):
+        if not isinstance(motion_plan, dict) or not (motion_plan.get('effects') or []):
+            return False
+        dims = (profile_meta or {}).get('dimensions') or profile_meta or {}
+        if int(dims.get('width') or 0) == 1080 and int(dims.get('height') or 0) == 1920:
+            return True
+        return bool((profile_meta or {}).get('localExportMotion'))
+
+    def _applicable_motion_plan(self, request, profile_meta, motion_plan):
+        if not self._motion_applies_to_profile(profile_meta, motion_plan):
+            return None
+        scenes = request.get('scenes') if isinstance(request, dict) else None
+        scene_ids = {s.get('id') for s in (scenes or []) if isinstance(s, dict) and s.get('id')}
+        effects = [
+            e for e in (motion_plan.get('effects') or [])
+            if isinstance(e, dict) and e.get('sceneId') in scene_ids
+        ]
+        if not effects:
+            return None
+        plan_copy = json.loads(json.dumps(motion_plan))
+        plan_copy['effects'] = effects
+        if isinstance(request, dict) and request.get('id'):
+            plan_copy['requestId'] = request['id']
+        return plan_copy
+
+    def _compute_preview_fingerprint(self, request, profile_id, motion_plan=None, profile_meta=None):
+        req_copy = json.loads(json.dumps(request if isinstance(request, dict) else {}))
+        plan_copy = self._applicable_motion_plan(req_copy, profile_meta, motion_plan)
+        if plan_copy is not None:
+            fp, _ = studio_review.compute_draft_snapshot(
+                self, 'motion', req_copy, None, plan_copy, profile_id=profile_id
+            )
+            return fp, 'motion'
+        fp, _ = studio_review.compute_draft_snapshot(
+            self, 'video', req_copy, None, None, profile_id=profile_id
+        )
+        return fp, 'video'
+
+    def _load_work_draft_bundle(self, work_id):
+        fs = render_local.fs_path
+        paths = self.work_paths(work_id)
+        work_abs = self.confine_workspace(paths['workFile'])
+        if not os.path.isfile(fs(work_abs)):
+            raise ValueError(f'trabalho nao encontrado: {work_id}')
+        with open(fs(work_abs), 'r', encoding='utf-8') as handle:
+            work = json.load(handle)
+        wpaths = studio_review.merged_work_paths(self, work_id, work)
+        vreq = self._load_json(wpaths['videoDraft']) or {}
+        mplan = self._load_json(wpaths['motionPlan']) or None
+        if isinstance(vreq, dict) and not vreq.get('project'):
+            vreq['project'] = work['project']
+        return work, vreq, mplan
+
+    def video_frame_info(self, body):
+        if not isinstance(body, dict):
+            raise ValueError('payload de quadro invalido')
+        work_id = (body.get('workId') or '').strip() or None
+        project_rel = (body.get('project') or '').strip() or None
+        if work_id and not project_rel:
+            work, _, _ = self._load_work_draft_bundle(work_id)
+            project_rel = work.get('project')
+        profile_id = (body.get('profileId') or body.get('profile') or '').strip()
+        profile_meta, _ = self._resolve_video_profile_meta(project_rel, profile_id)
+        dims = profile_meta.get('dimensions') or profile_meta
+        out_w, out_h = int(dims['width']), int(dims['height'])
+        media_path = (body.get('mediaPath') or body.get('path') or '').strip()
+        if not media_path:
+            raise ValueError('mediaPath obrigatorio')
+        media_abs = self.source_media_path(media_path)
+        probe_info = render_local.probe_asset(self.root, media_abs)
+        source_meta = render_local.extract_stream_geometry_meta(probe_info)
+        framing = body.get('framing') if 'framing' in body else None
+        beat_id = body.get('beatId')
+        try:
+            resolved = render_local.resolve_scene_framing(
+                source_meta, out_w, out_h, framing=framing, beat_id=beat_id
+            )
+            return {
+                'ok': True,
+                'profileId': profile_id,
+                'sourceMeta': source_meta,
+                'outputDimensions': {'width': out_w, 'height': out_h},
+                'resolvedFraming': resolved,
+            }
+        except build_video.DeliveryError as exc:
+            msg = str(exc)
+            if 'FRAMING_MEDIA_METADATA_UNSUPPORTED' not in msg:
+                raise ValueError(msg)
+            fit_resolved = render_local.resolve_scene_framing(
+                source_meta, out_w, out_h, framing=None, beat_id=beat_id
+            )
+            return {
+                'ok': False,
+                'errorCode': 'FRAMING_MEDIA_METADATA_UNSUPPORTED',
+                'message': msg,
+                'fallbackMode': 'fit',
+                'profileId': profile_id,
+                'sourceMeta': source_meta,
+                'outputDimensions': {'width': out_w, 'height': out_h},
+                'resolvedFraming': fit_resolved,
+            }
+
+    def _run_preview_job(self, job):
+        fs = render_local.fs_path
+        preview_dir = job['previewDir']
+        os.makedirs(fs(preview_dir), exist_ok=True)
+        tmp_mp4 = self.confine_workspace(os.path.join(preview_dir, f".tmp-{job['jobId']}.mp4"))
+        try:
+            res = produce_video.render_assembly_preview(
+                self.root,
+                job['request'],
+                job['profileId'],
+                tmp_mp4,
+                preset='veryfast',
+                scale_factor=0.5,
+                motion_plan=job.get('motionPlan'),
+            )
+            final_name = f"{job['profileId']}-{job['previewFingerprint'][:12]}.mp4"
+            final_mp4 = self.confine_workspace(os.path.join(preview_dir, final_name))
+            os.replace(fs(tmp_mp4), fs(final_mp4))
+            finished_at = now_iso()
+            work_q = quote(job['workId']) if job.get('workId') else ''
+            state_doc = {
+                'profileId': job['profileId'],
+                'previewFingerprint': job['previewFingerprint'],
+                'modality': job['modality'],
+                'file': final_name,
+                'url': f"/preview-media?work={work_q}&file={quote(final_name)}",
+                'width': res['width'],
+                'height': res['height'],
+                'sourceOutputWidth': res.get('sourceOutputWidth'),
+                'sourceOutputHeight': res.get('sourceOutputHeight'),
+                'fps': res.get('fps'),
+                'durationMs': res.get('durationMs'),
+                'bytes': res.get('bytes'),
+                'sha256': res.get('sha256'),
+                'framings': res.get('framings') or [],
+                'updatedAt': finished_at,
+                'jobId': job['jobId'],
+            }
+            state_path = self._preview_state_path(preview_dir, job['profileId'])
+            atomic_write_json(state_path, state_doc)
+            self._prune_preview_cache(preview_dir, protected_files={final_name})
+            with job['lock']:
+                job['status'] = 'completed'
+                job['finishedAt'] = finished_at
+                job['result'] = state_doc
+                job['error'] = None
+        except Exception as exc:
+            with job['lock']:
+                job['status'] = 'failed'
+                job['finishedAt'] = now_iso()
+                job['error'] = str(exc)
+                job['result'] = None
+        finally:
+            if os.path.exists(fs(tmp_mp4)):
+                try:
+                    os.remove(fs(tmp_mp4))
+                except OSError:
+                    pass
+
+    def start_video_preview_render(self, body):
+        if not isinstance(body, dict):
+            raise ValueError('payload de previa invalido')
+        work_id = (body.get('workId') or '').strip() or None
+        profile_id = (body.get('profileId') or body.get('profile') or '').strip()
+        req = body.get('request')
+        mplan = body.get('motionPlan') if 'motionPlan' in body else None
+        if work_id:
+            work, disk_req, disk_mplan = self._load_work_draft_bundle(work_id)
+            if not isinstance(req, dict):
+                req = disk_req
+            elif not req.get('project'):
+                req = dict(req)
+                req['project'] = work['project']
+            if 'motionPlan' not in body:
+                mplan = disk_mplan
+        if not isinstance(req, dict) or not req:
+            raise ValueError('VideoRequest ausente para gerar previa')
+        project_rel = req.get('project')
+        profile_meta, _ = self._resolve_video_profile_meta(project_rel, profile_id)
+        mplan = self._applicable_motion_plan(req, profile_meta, mplan)
+        preview_dir = self._preview_dir(work_id)
+        fp, modality = self._compute_preview_fingerprint(req, profile_id, mplan, profile_meta)
+        job_id = f'prev-{uuid.uuid4().hex[:12]}'
+        job = {
+            'jobId': job_id,
+            'workId': work_id,
+            'profileId': profile_id,
+            'modality': modality,
+            'previewFingerprint': fp,
+            'previewDir': preview_dir,
+            'request': json.loads(json.dumps(req)),
+            'motionPlan': mplan if modality == 'motion' else None,
+            'status': 'running',
+            'error': None,
+            'result': None,
+            'startedAt': now_iso(),
+            'finishedAt': None,
+            'lock': threading.Lock(),
+        }
+        with self.preview_jobs_lock:
+            self.preview_jobs[job_id] = job
+            self.preview_jobs_by_key[(work_id or '_standalone', profile_id)] = job_id
+        worker = threading.Thread(target=self._run_preview_job, args=(job,), daemon=True)
+        worker.start()
+        return {
+            'jobId': job_id,
+            'status': 'running',
+            'workId': work_id,
+            'profileId': profile_id,
+            'previewFingerprint': fp,
+        }
+
+    def video_preview_status(self, work_id=None, profile_id=None, job_id=None, request=None, motion_plan=None):
+        fs = render_local.fs_path
+        work_id = (work_id or '').strip() or None
+        profile_id = (profile_id or '').strip() or None
+        job_id = (job_id or '').strip() or None
+        job = None
+        if job_id:
+            with self.preview_jobs_lock:
+                job = self.preview_jobs.get(job_id)
+            if job is None:
+                raise ValueError('job de previa desconhecido')
+            work_id = work_id or job.get('workId')
+            profile_id = profile_id or job.get('profileId')
+        elif profile_id:
+            with self.preview_jobs_lock:
+                latest_id = self.preview_jobs_by_key.get((work_id or '_standalone', profile_id))
+                job = self.preview_jobs.get(latest_id) if latest_id else None
+        if not profile_id:
+            raise ValueError('profile obrigatorio')
+
+        current_req = request if isinstance(request, dict) else None
+        current_mplan = motion_plan if isinstance(motion_plan, dict) else None
+        project_rel = current_req.get('project') if current_req else None
+        if work_id:
+            work, disk_req, disk_mplan = self._load_work_draft_bundle(work_id)
+            if current_req is None:
+                current_req = disk_req
+            elif not current_req.get('project'):
+                current_req = dict(current_req)
+                current_req['project'] = work['project']
+            project_rel = project_rel or work.get('project')
+            if current_mplan is None and motion_plan is None:
+                current_mplan = disk_mplan
+
+        profile_meta, _ = self._resolve_video_profile_meta(project_rel, profile_id)
+        current_fp = None
+        if isinstance(current_req, dict) and current_req:
+            current_fp, _ = self._compute_preview_fingerprint(
+                current_req, profile_id, current_mplan, profile_meta
+            )
+
+        preview_dir = self._preview_dir(work_id)
+        last_ready = self._read_preview_state(preview_dir, profile_id)
+        if last_ready:
+            mp4_name = last_ready.get('file') or ''
+            if not PREVIEW_FILE_RE.match(mp4_name):
+                last_ready = None
+            else:
+                mp4_abs = self.confine_workspace(os.path.join(preview_dir, mp4_name))
+                if not os.path.isfile(fs(mp4_abs)):
+                    last_ready = None
+                else:
+                    ref_fp = current_fp or (job.get('previewFingerprint') if job else None)
+                    matches = (last_ready.get('previewFingerprint') == ref_fp) if ref_fp else True
+                    last_ready = {
+                        **last_ready,
+                        'matchesCurrentDraft': matches,
+                        'state': 'current' if matches else 'outdated',
+                    }
+
+        job_view = None
+        if job is not None:
+            with job['lock']:
+                ref_fp = current_fp or job.get('previewFingerprint')
+                job_view = {
+                    'jobId': job['jobId'],
+                    'status': job['status'],
+                    'profileId': job['profileId'],
+                    'previewFingerprint': job['previewFingerprint'],
+                    'matchesCurrentDraft': job['previewFingerprint'] == ref_fp,
+                    'error': job.get('error'),
+                    'startedAt': job.get('startedAt'),
+                    'finishedAt': job.get('finishedAt'),
+                }
+
+        return {
+            'workId': work_id,
+            'profileId': profile_id,
+            'currentFingerprint': current_fp,
+            'job': job_view,
+            'lastReady': last_ready,
+        }
+
+    def preview_media_path(self, work_id=None, filename=''):
+        fs = render_local.fs_path
+        work_id = (work_id or '').strip() or None
+        fname = os.path.basename((filename or '').strip())
+        if not PREVIEW_FILE_RE.match(fname) or fname != (filename or '').strip():
+            raise ValueError('arquivo de previa invalido')
+        preview_dir = self._preview_dir(work_id)
+        target = self.confine_workspace(os.path.join(preview_dir, fname))
+        if os.path.dirname(target) != preview_dir or not os.path.isfile(fs(target)):
+            raise ValueError('arquivo de previa ausente')
+        return target
+
     # ---- entrega e midia verificada ----
     def read_delivery(self, dir_rel):
         fs = render_local.fs_path
@@ -1685,12 +2074,28 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'request': studio.load_draft(query.get('path', [''])[0])})
             elif path == '/api/export/status':
                 self.send_json(200, {'ok': True, **studio.export_status(query.get('job', [''])[0])})
+            elif path == '/api/video/preview-status':
+                self.send_json(200, {'ok': True, **studio.video_preview_status(
+                    work_id=query.get('work', [''])[0],
+                    profile_id=query.get('profile', [''])[0],
+                    job_id=query.get('job', [''])[0],
+                )})
             elif path == '/api/delivery':
                 self.send_json(200, {'ok': True, **studio.read_delivery(query.get('dir', [''])[0])})
             elif path == '/api/carousel-delivery':
                 self.send_json(200, {'ok': True, **studio.read_carousel_delivery(query.get('dir', [''])[0])})
             elif path == '/media':
                 self.serve_artifact(query)
+            elif path == '/preview-media':
+                try:
+                    target = studio.preview_media_path(
+                        work_id=query.get('work', [''])[0],
+                        filename=query.get('file', [''])[0],
+                    )
+                except (ValueError, OSError) as exc:
+                    self.send_error_json(404, str(exc))
+                    return
+                self.serve_file_ranges(target)
             elif path == '/source-media':
                 try:
                     target = studio.source_media_path(query.get('path', [''])[0])
@@ -1791,6 +2196,18 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == '/api/preview':
                 self.send_json(200, {'ok': True, **studio.preview(
                     body.get('request'), body.get('profile'), body.get('kind', 'video'), body.get('motionPlan'))})
+            elif path == '/api/video/frame-info':
+                self.send_json(200, studio.video_frame_info(body))
+            elif path == '/api/video/preview-render':
+                self.send_json(200, {'ok': True, **studio.start_video_preview_render(body)})
+            elif path == '/api/video/preview-status':
+                self.send_json(200, {'ok': True, **studio.video_preview_status(
+                    work_id=body.get('workId'),
+                    profile_id=body.get('profileId') or body.get('profile'),
+                    job_id=body.get('jobId'),
+                    request=body.get('request'),
+                    motion_plan=body.get('motionPlan'),
+                )})
             elif path == '/api/export':
                 job_id = studio.start_export(
                     body.get('request'),

@@ -20,6 +20,21 @@ let mStandaloneOverride = false;
 let reviewState = null;
 let reviewSyncSeq = 0;
 
+let activeVideoProfileId = null;
+let selectedSceneIndex = 0;
+let vFrameMedia = { key: null, element: null, width: 0, height: 0, ready: false, error: false, type: null };
+let vFrameDrag = false;
+let vFrameInfoSeq = 0;
+let vFrameInfoTimer = null;
+let vLastFrameInfo = null;
+let vPreviewPollTimer = null;
+let vPreviewStatusTimer = null;
+let vPreviewStatusSeq = 0;
+let vLastPreviewData = null;
+let vLoadedPreviewUrl = null;
+let pendingPreviewSeekSec = null;
+let mVideoMedia = { key: null, canvas: null, ready: false, error: false };
+
 async function apiDetailed(path, opts = {}) {
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({ ok: false, error: 'resposta ilegível' }));
@@ -339,7 +354,15 @@ function applyOpenedWork(data) {
   }
 
   renderActiveWorkBar();
+  selectedSceneIndex = 0;
+  activeVideoProfileId = (draft.profiles && draft.profiles[0]) || null;
+  vLoadedPreviewUrl = null;
+  vLastPreviewData = null;
+  vLastFrameInfo = null;
+  vFrameMedia = { key: null, element: null, width: 0, height: 0, ready: false, error: false, type: null };
+  mVideoMedia = { key: null, canvas: null, ready: false, error: false };
   renderAll();
+  refreshVideoPreviewStatus().catch(() => {});
   renderCAll();
   renderCProfileOptions();
   populateMProfiles();
@@ -398,6 +421,7 @@ async function saveWork(silent = false) {
   if (!mStandaloneOverride) mreq = JSON.parse(JSON.stringify(draft));
   renderActiveWorkBar();
   if (!silent) toast('Trabalho salvo em disco com segurança.');
+  schedulePreviewStatusRefresh();
   if (!$('#mode-review').hidden) loadReviewOverview().catch(() => {});
   loadWorks().catch(() => {});
   return data;
@@ -457,6 +481,10 @@ function renderProfiles() {
         if (e.target.checked) { if (!draft.profiles.includes(p.id)) draft.profiles.push(p.id); }
         else draft.profiles = draft.profiles.filter((x) => x !== p.id);
         renderExportProfileOptions();
+        renderActiveVideoProfileSelect();
+        renderAssemblyTimeline();
+        renderFramingEditor();
+        schedulePreviewStatusRefresh();
         populateMProfiles();
       },
     });
@@ -498,6 +526,17 @@ function renderExportProfileOptions() {
     sel.append(el('option', { value: id, text: label }));
   }
   if (draft.profiles.includes(current)) sel.value = current;
+  renderActiveVideoProfileSelect();
+}
+
+function loadDraftStateReset() {
+  selectedSceneIndex = 0;
+  activeVideoProfileId = (draft && draft.profiles && draft.profiles[0]) || null;
+  vLoadedPreviewUrl = null;
+  vLastPreviewData = null;
+  vLastFrameInfo = null;
+  vFrameMedia = { key: null, element: null, width: 0, height: 0, ready: false, error: false, type: null };
+  mVideoMedia = { key: null, canvas: null, ready: false, error: false };
 }
 
 // ---- Exemplos e Rascunho Vídeo ----
@@ -519,8 +558,10 @@ function loadExample() {
   $('#output-dir').value = '.workspace/archives/video-studio/' + draft.id;
   $('#delivery-dir').value = '.workspace/archives/video-studio/' + draft.id;
   $('#project-select').value = draft.project;
+  loadDraftStateReset();
   renderAll();
   loadProfiles();
+  refreshVideoPreviewStatus().catch(() => {});
   toast('Exemplo carregado: ' + draft.id);
 }
 
@@ -538,8 +579,10 @@ async function openDraft() {
   const data = await api('/api/draft/load?path=' + encodeURIComponent(path));
   draft = data.request;
   $('#project-select').value = draft.project || '';
+  loadDraftStateReset();
   renderAll();
   if (draft.project) loadProfiles();
+  refreshVideoPreviewStatus().catch(() => {});
   toast('Rascunho reaberto.');
 }
 
@@ -709,11 +752,19 @@ function buildCutEditor(s, i) {
       const v = Math.max(0, Math.round(Number(e.target.value) || 0));
       if (v > 0) s.sourceStartMs = v; else delete s.sourceStartMs;
       refresh();
+      renderAssemblyTimeline();
+      schedulePreviewStatusRefresh();
+      if (selectedSceneIndex === i) renderFramingEditor(true);
     },
   });
   const durInput = el('input', {
     type: 'number', min: '1', step: '1', value: s.durationMs,
-    oninput: (e) => { s.durationMs = Math.max(1, Math.round(Number(e.target.value) || 1)); refresh(); },
+    oninput: (e) => {
+      s.durationMs = Math.max(1, Math.round(Number(e.target.value) || 1));
+      refresh();
+      renderAssemblyTimeline();
+      schedulePreviewStatusRefresh();
+    },
   });
 
   function sourceDurationMs() {
@@ -758,6 +809,9 @@ function buildCutEditor(s, i) {
       if (v > 0) s.sourceStartMs = v; else delete s.sourceStartMs;
       startInput.value = v;
       refresh();
+      renderAssemblyTimeline();
+      schedulePreviewStatusRefresh();
+      if (selectedSceneIndex === i) renderFramingEditor(true);
     },
   });
   const markOut = el('button', {
@@ -767,6 +821,8 @@ function buildCutEditor(s, i) {
       s.durationMs = Math.max(1, end - (s.sourceStartMs || 0));
       durInput.value = s.durationMs;
       refresh();
+      renderAssemblyTimeline();
+      schedulePreviewStatusRefresh();
     },
   });
   const playRange = el('button', {
@@ -796,45 +852,285 @@ function buildCutEditor(s, i) {
   ]);
 }
 
+function clamp01(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0.5;
+}
+
+function clampZoom(v) {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.max(100, Math.min(300, n)) : 100;
+}
+
+function getVideoProfileMeta(profileId) {
+  if (!profileId) return null;
+  const found = (catalog || []).find((p) => p.id === profileId);
+  if (found && found.width && found.height) return found;
+  const isHoriz = profileId.includes('horizontal');
+  return {
+    id: profileId,
+    width: isHoriz ? 1920 : 1080,
+    height: isHoriz ? 1080 : 1920,
+    aspectRatio: isHoriz ? '16:9' : '9:16',
+    fps: 30,
+  };
+}
+
+function getSceneFraming(scene, profileId) {
+  if (!scene || !scene.framingByProfile || !profileId) return null;
+  const f = scene.framingByProfile[profileId];
+  if (!f || typeof f !== 'object') return null;
+  if (f.centerX == null || f.centerY == null || f.zoomPercent == null) return null;
+  return f;
+}
+
+function setSceneFraming(scene, profileId, val) {
+  if (!scene || !profileId) return;
+  if (!val) {
+    if (scene.framingByProfile && Object.prototype.hasOwnProperty.call(scene.framingByProfile, profileId)) {
+      delete scene.framingByProfile[profileId];
+      if (!Object.keys(scene.framingByProfile).length) delete scene.framingByProfile;
+    }
+    return;
+  }
+  if (!scene.framingByProfile) scene.framingByProfile = {};
+  scene.framingByProfile[profileId] = {
+    centerX: Number(clamp01(val.centerX).toFixed(4)),
+    centerY: Number(clamp01(val.centerY).toFixed(4)),
+    zoomPercent: clampZoom(val.zoomPercent),
+  };
+}
+
+function computeLocalCropPreview(srcW, srcH, outW, outH, framing) {
+  if (!srcW || !srcH || !outW || !outH || !framing) {
+    return {
+      mode: 'fit', centerX: 0.5, centerY: 0.5, zoomPercent: 100,
+      cropX: 0, cropY: 0, cropWidth: srcW || 0, cropHeight: srcH || 0,
+    };
+  }
+  let baseW, baseH;
+  if (srcW * outH >= outW * srcH) {
+    baseH = srcH;
+    baseW = srcH * (outW / outH);
+  } else {
+    baseW = srcW;
+    baseH = srcW * (outH / outW);
+  }
+  const zoom = clampZoom(framing.zoomPercent) / 100;
+  const rawW = baseW / zoom;
+  const rawH = baseH / zoom;
+  const maxEvenW = Math.max(2, srcW - (srcW % 2));
+  const maxEvenH = Math.max(2, srcH - (srcH % 2));
+  const cropW = Math.max(2, Math.min(maxEvenW, Math.round(rawW / 2) * 2));
+  const cropH = Math.max(2, Math.min(maxEvenH, Math.round(rawH / 2) * 2));
+  const cx = clamp01(framing.centerX);
+  const cy = clamp01(framing.centerY);
+  const maxLeft = Math.max(0, srcW - cropW);
+  const maxTop = Math.max(0, srcH - cropH);
+  let left = Math.round((cx * srcW - cropW / 2) / 2) * 2;
+  let top = Math.round((cy * srcH - cropH / 2) / 2) * 2;
+  left = Math.max(0, Math.min(maxLeft - (maxLeft % 2), left));
+  top = Math.max(0, Math.min(maxTop - (maxTop % 2), top));
+  return {
+    mode: 'fill', centerX: cx, centerY: cy, zoomPercent: clampZoom(framing.zoomPercent),
+    cropX: left, cropY: top, cropWidth: cropW, cropHeight: cropH,
+  };
+}
+
+function syncActiveVideoProfile() {
+  const selected = (draft && Array.isArray(draft.profiles)) ? draft.profiles : [];
+  if (selected.length) {
+    if (!activeVideoProfileId || !selected.includes(activeVideoProfileId)) {
+      activeVideoProfileId = selected[0];
+    }
+    return activeVideoProfileId;
+  }
+  activeVideoProfileId = null;
+  return null;
+}
+
+function renderActiveVideoProfileSelect() {
+  const sel = $('#v-active-profile');
+  const badge = $('#v-active-profile-info');
+  const targetBadge = $('#v-preview-target-label');
+  if (!sel) return;
+  const prev = activeVideoProfileId;
+  syncActiveVideoProfile();
+  sel.innerHTML = '';
+  const selected = (draft && Array.isArray(draft.profiles)) ? draft.profiles : [];
+  for (const id of selected) {
+    const p = getVideoProfileMeta(id);
+    sel.append(el('option', { value: id, text: p ? `${id} — ${p.width}×${p.height} (${p.aspectRatio})` : id }));
+  }
+  if (!selected.length) {
+    sel.append(el('option', { value: '', text: '— selecione um perfil na seção 1 —' }));
+    if (badge) { badge.textContent = 'Nenhum destino selecionado'; badge.className = 'badge muted'; }
+    if (targetBadge) targetBadge.textContent = 'Destino: —';
+  } else {
+    sel.value = activeVideoProfileId;
+    const p = getVideoProfileMeta(activeVideoProfileId);
+    if (badge) {
+      badge.textContent = p ? `${p.width}×${p.height} (${p.aspectRatio})` : activeVideoProfileId;
+      badge.className = 'badge ok';
+    }
+    if (targetBadge) targetBadge.textContent = `Destino: ${activeVideoProfileId}`;
+  }
+  if (prev !== activeVideoProfileId) {
+    vLastFrameInfo = null;
+  }
+}
+
+function seekPreviewPlayerTo(ms) {
+  const box = $('#v-preview-player-box');
+  const player = $('#v-preview-player');
+  if (!box || box.hidden || !player || !player.getAttribute('src')) return;
+  const sec = Math.max(0, (Number(ms) || 0) / 1000);
+  if (player.readyState >= 1) {
+    try { player.currentTime = sec; } catch {}
+    pendingPreviewSeekSec = null;
+  } else {
+    pendingPreviewSeekSec = sec;
+  }
+}
+
+function renderAssemblyTimeline() {
+  const bar = $('#v-assembly-timeline');
+  if (!bar) return;
+  bar.innerHTML = '';
+  const scenes = (draft && draft.scenes) || [];
+  if (!scenes.length) {
+    bar.append(el('span', { class: 'muted', text: 'Adicione cenas para visualizar a linha do tempo da montagem.' }));
+    return;
+  }
+  syncActiveVideoProfile();
+  let acc = 0;
+  scenes.forEach((s, i) => {
+    const dur = Math.max(0, Number(s.durationMs) || 0);
+    const start = acc;
+    const end = acc + dur;
+    acc = end;
+    const f = getSceneFraming(s, activeVideoProfileId);
+    const frameTxt = activeVideoProfileId
+      ? (f ? `Preencher ${f.zoomPercent}% (${Number(f.centerX).toFixed(2)}, ${Number(f.centerY).toFixed(2)})` : 'Ajustar')
+      : 'Sem destino';
+    const media = sceneMediaEntry(s);
+    const cutTxt = media?.type === 'video'
+      ? `corte ${fmtMs(s.sourceStartMs || 0)}→${fmtMs((s.sourceStartMs || 0) + dur)}`
+      : 'imagem';
+    const chip = el('button', {
+      type: 'button',
+      class: 'timeline-chip' + (i === selectedSceneIndex ? ' active' : ''),
+      'data-scene-index': String(i),
+      'data-start-ms': String(start),
+      onclick: () => {
+        selectedSceneIndex = i;
+        vLastFrameInfo = null;
+        renderScenes();
+        seekPreviewPlayerTo(start);
+      },
+    }, [
+      el('strong', { text: `${i + 1}. ${s.id || `cena-${i + 1}`}` }),
+      el('small', { text: `${fmtMs(start)} → ${fmtMs(end)} (${cutTxt})` }),
+      el('small', { text: frameTxt }),
+    ]);
+    bar.append(chip);
+  });
+}
+
 function renderScenes() {
   const list = $('#scenes-list');
   list.innerHTML = '';
-  draft.scenes.forEach((s, i) => {
-    const mediaSel = el('select', { onchange: (e) => { s.mediaId = e.target.value; renderScenes(); } });
+  const scenes = draft.scenes || [];
+  if (selectedSceneIndex >= scenes.length) selectedSceneIndex = Math.max(0, scenes.length - 1);
+  syncActiveVideoProfile();
+  scenes.forEach((s, i) => {
+    const f = getSceneFraming(s, activeVideoProfileId);
+    const framingBadge = el('span', {
+      class: 'badge ' + (f ? 'ok' : 'muted'),
+      text: activeVideoProfileId
+        ? (f ? `${activeVideoProfileId}: Preencher ${f.zoomPercent}%` : `${activeVideoProfileId}: Ajustar`)
+        : 'Ajustar',
+    });
+    const mediaSel = el('select', {
+      onchange: (e) => {
+        s.mediaId = e.target.value;
+        selectedSceneIndex = i;
+        vLastFrameInfo = null;
+        renderScenes();
+        schedulePreviewStatusRefresh();
+      },
+    });
     mediaSel.append(el('option', { value: '', text: '— mídia —' }));
     for (const m of draft.media) mediaSel.append(el('option', { value: m.id, text: `${m.id} (${m.type})` }));
     mediaSel.value = s.mediaId || '';
-    const nf = el('select', { onchange: (e) => { s.narrativeFunction = e.target.value; } });
+    const nf = el('select', { onchange: (e) => { s.narrativeFunction = e.target.value; schedulePreviewStatusRefresh(); } });
     for (const v of NARRATIVE) nf.append(el('option', { value: v, text: v }));
     nf.value = s.narrativeFunction || 'demonstration';
-    const mi = el('select', { onchange: (e) => { s.motionIntent = e.target.value; } });
+    const mi = el('select', { onchange: (e) => { s.motionIntent = e.target.value; schedulePreviewStatusRefresh(); } });
     for (const v of MOTION) mi.append(el('option', { value: v, text: v }));
     mi.value = s.motionIntent || 'none';
-    const card = el('div', { class: 'scene' }, [
+    const card = el('div', { class: 'scene' + (i === selectedSceneIndex ? ' active-scene' : ''), 'data-scene-index': String(i) }, [
+      el('div', { class: 'row', style: 'justify-content: space-between; align-items: center;' }, [
+        el('div', {}, [framingBadge]),
+        el('button', {
+          type: 'button',
+          class: i === selectedSceneIndex ? 'framing-active-btn' : 'secondary',
+          text: i === selectedSceneIndex ? 'Enquadrando esta cena' : 'Enquadrar cena',
+          onclick: () => {
+            selectedSceneIndex = i;
+            vLastFrameInfo = null;
+            renderScenes();
+          },
+        }),
+      ]),
       el('div', { class: 'row' }, [
-        el('label', { text: `Cena ${i + 1} — id` }, el('input', { type: 'text', value: s.id, oninput: (e) => { s.id = e.target.value; } })),
-        el('label', { text: 'Duração (ms)' }, el('input', { type: 'number', class: 'scene-duration', min: '1', value: s.durationMs, oninput: (e) => { s.durationMs = Number(e.target.value); } })),
+        el('label', { text: `Cena ${i + 1} — id` }, el('input', { type: 'text', value: s.id, oninput: (e) => { s.id = e.target.value; renderAssemblyTimeline(); schedulePreviewStatusRefresh(); } })),
+        el('label', { text: 'Duração (ms)' }, el('input', { type: 'number', class: 'scene-duration', min: '1', value: s.durationMs, oninput: (e) => { s.durationMs = Number(e.target.value); renderAssemblyTimeline(); schedulePreviewStatusRefresh(); } })),
         el('label', { text: 'Mídia' }, mediaSel),
         el('label', { text: 'Função' }, nf),
         el('label', { text: 'Movimento' }, mi),
       ]),
       el('div', { class: 'row' }, [
-        el('label', { text: 'Legenda (queimada)' }, el('input', { type: 'text', value: s.caption || '', oninput: (e) => { s.caption = e.target.value; } })),
-        el('label', { text: 'Título sobreposto' }, el('input', { type: 'text', value: s.title || '', oninput: (e) => { s.title = e.target.value || undefined; } })),
+        el('label', { text: 'Legenda (queimada)' }, el('input', { type: 'text', value: s.caption || '', oninput: (e) => { s.caption = e.target.value; schedulePreviewStatusRefresh(); } })),
+        el('label', { text: 'Título sobreposto' }, el('input', { type: 'text', value: s.title || '', oninput: (e) => { s.title = e.target.value || undefined; schedulePreviewStatusRefresh(); } })),
       ]),
       el('div', { class: 'row' }, [
         el('label', { text: 'Narração (TXT separado)' }, el('input', { type: 'text', value: s.narration || '', oninput: (e) => { s.narration = e.target.value; } })),
       ]),
       sceneMediaEntry(s)?.type === 'video' ? buildCutEditor(s, i) : null,
       el('div', { class: 'row' }, [
-        el('button', { class: 'secondary', text: '↑', onclick: () => { if (i > 0) { [draft.scenes[i - 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i - 1]]; renderScenes(); } } }),
-        el('button', { class: 'secondary', text: '↓', onclick: () => { if (i < draft.scenes.length - 1) { [draft.scenes[i + 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i + 1]]; renderScenes(); } } }),
+        el('button', { class: 'secondary', text: '↑', onclick: () => {
+          if (i > 0) {
+            [draft.scenes[i - 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i - 1]];
+            if (selectedSceneIndex === i) selectedSceneIndex = i - 1;
+            else if (selectedSceneIndex === i - 1) selectedSceneIndex = i;
+            renderScenes();
+            schedulePreviewStatusRefresh();
+          }
+        } }),
+        el('button', { class: 'secondary', text: '↓', onclick: () => {
+          if (i < draft.scenes.length - 1) {
+            [draft.scenes[i + 1], draft.scenes[i]] = [draft.scenes[i], draft.scenes[i + 1]];
+            if (selectedSceneIndex === i) selectedSceneIndex = i + 1;
+            else if (selectedSceneIndex === i + 1) selectedSceneIndex = i;
+            renderScenes();
+            schedulePreviewStatusRefresh();
+          }
+        } }),
         el('button', { class: 'secondary', text: 'Duplicar cena', onclick: () => { duplicateScene(i); } }),
-        el('button', { class: 'secondary', text: 'Remover', onclick: () => { draft.scenes.splice(i, 1); renderScenes(); } }),
+        el('button', { class: 'secondary', text: 'Remover', onclick: () => {
+          draft.scenes.splice(i, 1);
+          if (selectedSceneIndex >= draft.scenes.length) selectedSceneIndex = Math.max(0, draft.scenes.length - 1);
+          vLastFrameInfo = null;
+          renderScenes();
+          schedulePreviewStatusRefresh();
+        } }),
       ]),
     ]);
     list.append(card);
   });
+  renderAssemblyTimeline();
+  renderFramingEditor(true);
 }
 
 function duplicateScene(i) {
@@ -846,7 +1142,9 @@ function duplicateScene(i) {
   const copy = JSON.parse(JSON.stringify(src));
   copy.id = id;
   draft.scenes.splice(i + 1, 0, copy);
+  selectedSceneIndex = i + 1;
   renderScenes();
+  schedulePreviewStatusRefresh();
   toast(`Cena duplicada (${id}) — a mesma fonte pode ser recortada em outro trecho.`);
 }
 
@@ -861,7 +1159,561 @@ function addScene() {
     narrativeFunction: 'demonstration',
     motionIntent: 'none',
   });
+  selectedSceneIndex = draft.scenes.length - 1;
+  vLastFrameInfo = null;
   renderScenes();
+  schedulePreviewStatusRefresh();
+}
+
+// ---- Enquadramento visual da cena selecionada e previa da montagem ----
+function drawFramingCanvases() {
+  const srcCv = $('#v-frame-source-canvas');
+  const dstCv = $('#v-frame-dest-canvas');
+  if (!srcCv || !dstCv) return;
+  const sCtx = srcCv.getContext('2d');
+  const dCtx = dstCv.getContext('2d');
+  const s = (draft.scenes || [])[selectedSceneIndex] || null;
+  const profile = getVideoProfileMeta(activeVideoProfileId);
+  const outW = profile ? Number(profile.width) : 1080;
+  const outH = profile ? Number(profile.height) : 1920;
+
+  // Ajusta dimensoes do canvas de destino preservando proporcao do perfil
+  const maxDstH = 360;
+  const maxDstW = 360;
+  const dstScale = Math.min(maxDstW / outW, maxDstH / outH);
+  dstCv.width = Math.max(80, Math.round(outW * dstScale));
+  dstCv.height = Math.max(80, Math.round(outH * dstScale));
+
+  sCtx.fillStyle = '#000';
+  sCtx.fillRect(0, 0, srcCv.width, srcCv.height);
+  dCtx.fillStyle = '#000';
+  dCtx.fillRect(0, 0, dstCv.width, dstCv.height);
+
+  if (!s || !vFrameMedia.ready || !vFrameMedia.element || !vFrameMedia.width || !vFrameMedia.height) {
+    srcCv._drawRect = null;
+    if (!vFrameMedia.error) {
+      sCtx.fillStyle = '#9aa0a6';
+      sCtx.font = '13px system-ui, sans-serif';
+      sCtx.fillText('Carregando quadro da mídia…', 16, 28);
+    }
+    return;
+  }
+
+  const natW = vFrameMedia.width;
+  const natH = vFrameMedia.height;
+  const fitSrc = Math.min(srcCv.width / natW, srcCv.height / natH);
+  const drawW = natW * fitSrc;
+  const drawH = natH * fitSrc;
+  const drawX = (srcCv.width - drawW) / 2;
+  const drawY = (srcCv.height - drawH) / 2;
+  srcCv._drawRect = { x: drawX, y: drawY, w: drawW, h: drawH, natW, natH };
+  sCtx.drawImage(vFrameMedia.element, drawX, drawY, drawW, drawH);
+
+  const framing = getSceneFraming(s, activeVideoProfileId);
+  const resolved = (vLastFrameInfo && vLastFrameInfo.resolvedFraming)
+    ? vLastFrameInfo.resolvedFraming
+    : computeLocalCropPreview(natW, natH, outW, outH, framing);
+
+  if (framing && resolved.mode === 'fill') {
+    const rx = drawX + (resolved.cropX / natW) * drawW;
+    const ry = drawY + (resolved.cropY / natH) * drawH;
+    const rw = (resolved.cropWidth / natW) * drawW;
+    const rh = (resolved.cropHeight / natH) * drawH;
+    // Escurece fora da janela de recorte
+    sCtx.save();
+    sCtx.fillStyle = 'rgba(0, 0, 0, 0.52)';
+    sCtx.fillRect(drawX, drawY, drawW, Math.max(0, ry - drawY));
+    sCtx.fillRect(drawX, ry + rh, drawW, Math.max(0, drawY + drawH - (ry + rh)));
+    sCtx.fillRect(drawX, ry, Math.max(0, rx - drawX), rh);
+    sCtx.fillRect(rx + rw, ry, Math.max(0, drawX + drawW - (rx + rw)), rh);
+    sCtx.strokeStyle = '#4f8cff';
+    sCtx.lineWidth = 2;
+    sCtx.strokeRect(rx, ry, rw, rh);
+    // Ponto do centro escolhido
+    const px = drawX + clamp01(framing.centerX) * drawW;
+    const py = drawY + clamp01(framing.centerY) * drawH;
+    sCtx.fillStyle = '#FFD700';
+    sCtx.beginPath();
+    sCtx.arc(px, py, 5, 0, Math.PI * 2);
+    sCtx.fill();
+    sCtx.strokeStyle = '#000';
+    sCtx.lineWidth = 1.5;
+    sCtx.stroke();
+    sCtx.restore();
+
+    dCtx.drawImage(
+      vFrameMedia.element,
+      resolved.cropX, resolved.cropY, resolved.cropWidth, resolved.cropHeight,
+      0, 0, dstCv.width, dstCv.height,
+    );
+  } else {
+    sCtx.strokeStyle = 'rgba(63, 185, 80, 0.85)';
+    sCtx.lineWidth = 2;
+    sCtx.strokeRect(drawX + 1, drawY + 1, Math.max(1, drawW - 2), Math.max(1, drawH - 2));
+
+    const fitOut = Math.min(dstCv.width / natW, dstCv.height / natH);
+    const dw = natW * fitOut;
+    const dh = natH * fitOut;
+    dCtx.drawImage(vFrameMedia.element, (dstCv.width - dw) / 2, (dstCv.height - dh) / 2, dw, dh);
+  }
+}
+
+function loadFramingSourceMedia(scene, forceSeek = false) {
+  const metaP = $('#v-frame-source-meta');
+  if (!scene || !scene.mediaId) {
+    vFrameMedia = { key: null, element: null, width: 0, height: 0, ready: false, error: false, type: null };
+    if (metaP) metaP.textContent = 'Selecione uma mídia nesta cena.';
+    drawFramingCanvases();
+    return;
+  }
+  const media = sceneMediaEntry(scene);
+  if (!media || !media.path) {
+    vFrameMedia = { key: null, element: null, width: 0, height: 0, ready: false, error: true, type: null };
+    if (metaP) metaP.textContent = `Mídia ${scene.mediaId} não encontrada no pedido.`;
+    drawFramingCanvases();
+    return;
+  }
+  const cutStart = scene.sourceStartMs || 0;
+  const key = `${media.type}|${media.path}|${cutStart}`;
+  if (vFrameMedia.key === key && vFrameMedia.ready && !forceSeek) {
+    drawFramingCanvases();
+    return;
+  }
+  const srcUrl = `/source-media?path=${encodeURIComponent(media.path)}`;
+  if (media.type === 'video') {
+    const targetSec = Math.max(0, cutStart / 1000);
+    const canReuseVideo = vFrameMedia.type === 'video' && vFrameMedia.mediaPath === media.path && vFrameMedia.videoEl;
+    const videoEl = canReuseVideo ? vFrameMedia.videoEl : el('video', { muted: '', preload: 'auto', src: srcUrl });
+    const frameCanvas = document.createElement('canvas');
+    vFrameMedia = {
+      key,
+      mediaPath: media.path,
+      type: 'video',
+      videoEl,
+      element: frameCanvas,
+      width: vFrameMedia.width || 0,
+      height: vFrameMedia.height || 0,
+      ready: false,
+      error: false,
+    };
+    const capture = () => {
+      if (vFrameMedia.key !== key) return;
+      const vw = videoEl.videoWidth || 0;
+      const vh = videoEl.videoHeight || 0;
+      if (vw <= 0 || vh <= 0) return;
+      frameCanvas.width = vw;
+      frameCanvas.height = vh;
+      frameCanvas.getContext('2d').drawImage(videoEl, 0, 0, vw, vh);
+      vFrameMedia.width = vw;
+      vFrameMedia.height = vh;
+      vFrameMedia.ready = true;
+      vFrameMedia.error = false;
+      if (metaP) metaP.textContent = `Quadro da gravação em ${fmtMs(cutStart)} (${vw}×${vh})`;
+      drawFramingCanvases();
+    };
+    videoEl.onloadeddata = () => {
+      if (vFrameMedia.key !== key) return;
+      if (Math.abs((videoEl.currentTime || 0) - targetSec) < 0.02) capture();
+      else {
+        try { videoEl.currentTime = targetSec; } catch { capture(); }
+      }
+    };
+    videoEl.onseeked = capture;
+    videoEl.onerror = () => {
+      if (vFrameMedia.key !== key) return;
+      vFrameMedia.error = true;
+      if (metaP) metaP.textContent = 'Não foi possível carregar o quadro da gravação.';
+      drawFramingCanvases();
+    };
+    if (canReuseVideo && videoEl.readyState >= 2) {
+      if (Math.abs((videoEl.currentTime || 0) - targetSec) < 0.02) capture();
+      else {
+        try { videoEl.currentTime = targetSec; } catch { capture(); }
+      }
+    }
+  } else {
+    const img = new Image();
+    vFrameMedia = {
+      key,
+      mediaPath: media.path,
+      type: 'image',
+      element: img,
+      width: 0,
+      height: 0,
+      ready: false,
+      error: false,
+    };
+    img.onload = () => {
+      if (vFrameMedia.key !== key) return;
+      vFrameMedia.width = img.naturalWidth;
+      vFrameMedia.height = img.naturalHeight;
+      vFrameMedia.ready = true;
+      vFrameMedia.error = false;
+      if (metaP) metaP.textContent = `Imagem estática (${img.naturalWidth}×${img.naturalHeight})`;
+      drawFramingCanvases();
+    };
+    img.onerror = () => {
+      if (vFrameMedia.key !== key) return;
+      vFrameMedia.error = true;
+      if (metaP) metaP.textContent = 'Não foi possível carregar a imagem.';
+      drawFramingCanvases();
+    };
+    img.src = srcUrl;
+  }
+}
+
+function scheduleServerFrameInfo(immediate = false) {
+  if (vFrameInfoTimer) clearTimeout(vFrameInfoTimer);
+  const run = async () => {
+    const s = (draft.scenes || [])[selectedSceneIndex];
+    const errBox = $('#v-frame-error-banner');
+    const errText = $('#v-frame-error-text');
+    const infoP = $('#v-frame-resolved-info');
+    if (!s || !activeVideoProfileId) {
+      if (errBox) errBox.hidden = true;
+      if (infoP) infoP.textContent = '';
+      return;
+    }
+    const media = sceneMediaEntry(s);
+    if (!media || !media.path) {
+      if (errBox) errBox.hidden = true;
+      if (infoP) infoP.textContent = 'Cena sem mídia selecionada.';
+      return;
+    }
+    const seq = ++vFrameInfoSeq;
+    const framing = getSceneFraming(s, activeVideoProfileId);
+    try {
+      const data = await post('/api/video/frame-info', {
+        workId: currentWork ? currentWork.id : undefined,
+        project: (draft && draft.project) || $('#project-select').value || undefined,
+        profileId: activeVideoProfileId,
+        mediaPath: media.path,
+        beatId: s.id,
+        framing: framing || { mode: 'fit' },
+      });
+      if (seq !== vFrameInfoSeq) return;
+      vLastFrameInfo = data;
+      const r = data.resolvedFraming || {};
+      if (!data.ok && data.errorCode === 'FRAMING_MEDIA_METADATA_UNSUPPORTED') {
+        if (errText) errText.textContent = data.message || 'Metadados de mídia impedem recorte confiável; volte para Ajustar.';
+        if (errBox) errBox.hidden = false;
+        if (infoP) infoP.textContent = `Fallback disponível: Ajustar (${r.sourceWidth}×${r.sourceHeight} → ${r.outputWidth}×${r.outputHeight})`;
+      } else {
+        if (errBox) errBox.hidden = true;
+        if (infoP) {
+          infoP.textContent = r.mode === 'fill'
+            ? `Adaptador: recorte ${r.cropWidth}×${r.cropHeight} em (${r.cropX}, ${r.cropY}) → saída ${r.outputWidth}×${r.outputHeight} (zoom ${r.zoomPercent}%, centro ${Number(r.centerX).toFixed(2)}, ${Number(r.centerY).toFixed(2)})`
+            : `Adaptador: Ajustar (mídia inteira ${r.sourceWidth}×${r.sourceHeight} centralizada em ${r.outputWidth}×${r.outputHeight})`;
+        }
+      }
+      drawFramingCanvases();
+    } catch (err) {
+      if (seq !== vFrameInfoSeq) return;
+      if (infoP) infoP.textContent = `Aviso ao consultar adaptador: ${err.message}`;
+    }
+  };
+  if (immediate) run();
+  else vFrameInfoTimer = setTimeout(run, 100);
+}
+
+function renderFramingEditor(reloadMedia = false, queryImmediate = true) {
+  const panel = $('#v-framing-editor');
+  if (!panel) return;
+  const scenes = (draft && draft.scenes) || [];
+  syncActiveVideoProfile();
+  if (!scenes.length || !activeVideoProfileId) {
+    panel.hidden = true;
+    return;
+  }
+  if (selectedSceneIndex < 0 || selectedSceneIndex >= scenes.length) selectedSceneIndex = 0;
+  const s = scenes[selectedSceneIndex];
+  panel.hidden = false;
+  const f = getSceneFraming(s, activeVideoProfileId);
+  const title = $('#v-framing-scene-title');
+  const summary = $('#v-framing-scene-summary');
+  if (title) title.textContent = `Cena ${selectedSceneIndex + 1} (${s.id}) — ${activeVideoProfileId}`;
+  if (summary) {
+    summary.textContent = f
+      ? `Preencher (${f.zoomPercent}% em ${Number(f.centerX).toFixed(2)}, ${Number(f.centerY).toFixed(2)})`
+      : 'Ajustar (mídia inteira centralizada)';
+    summary.className = 'badge ' + (f ? 'ok' : 'muted');
+  }
+  const fitBtn = $('#v-frame-mode-fit');
+  const fillBtn = $('#v-frame-mode-fill');
+  if (fitBtn) fitBtn.classList.toggle('framing-active-btn', !f);
+  if (fillBtn) fillBtn.classList.toggle('framing-active-btn', Boolean(f));
+
+  const cx = f ? clamp01(f.centerX) : 0.5;
+  const cy = f ? clamp01(f.centerY) : 0.5;
+  const zoom = f ? clampZoom(f.zoomPercent) : 100;
+  $('#v-frame-center-x').value = cx.toFixed(2);
+  $('#v-frame-center-y').value = cy.toFixed(2);
+  $('#v-frame-zoom-range').value = String(zoom);
+  $('#v-frame-zoom').value = String(zoom);
+
+  if (reloadMedia) loadFramingSourceMedia(s, false);
+  else drawFramingCanvases();
+  scheduleServerFrameInfo(queryImmediate);
+}
+
+function applyFramingChange(nextFraming, queryImmediate = false) {
+  const s = (draft.scenes || [])[selectedSceneIndex];
+  syncActiveVideoProfile();
+  if (!s || !activeVideoProfileId) return;
+  vLastFrameInfo = null;
+  setSceneFraming(s, activeVideoProfileId, nextFraming);
+  renderFramingEditor(false, queryImmediate);
+  renderAssemblyTimeline();
+  // Atualiza somente o badge da cena ativa na lista para nao recriar inputs durante digitacao/arraste
+  const badge = document.querySelector(`#scenes-list .scene[data-scene-index="${selectedSceneIndex}"] .badge`);
+  if (badge) {
+    const cur = getSceneFraming(s, activeVideoProfileId);
+    badge.className = 'badge ' + (cur ? 'ok' : 'muted');
+    badge.textContent = cur ? `${activeVideoProfileId}: Preencher ${cur.zoomPercent}%` : `${activeVideoProfileId}: Ajustar`;
+  }
+  schedulePreviewStatusRefresh();
+}
+
+function renderVideoPreviewState(data) {
+  vLastPreviewData = data || null;
+  const badge = $('#v-preview-render-badge');
+  const statusBox = $('#v-preview-render-status');
+  const playerBox = $('#v-preview-player-box');
+  const player = $('#v-preview-player');
+  const metaP = $('#v-preview-player-meta');
+  const targetBadge = $('#v-preview-target-label');
+  if (!badge || !statusBox || !playerBox || !player) return;
+
+  const pid = data?.profileId || activeVideoProfileId;
+  if (targetBadge) targetBadge.textContent = pid ? `Destino: ${pid}` : 'Destino: —';
+  if (!data || !pid) {
+    badge.className = 'badge muted';
+    badge.textContent = 'Sem destino';
+    statusBox.textContent = '';
+    playerBox.hidden = true;
+    return;
+  }
+
+  const job = data.job;
+  const lastReady = data.lastReady;
+  if (lastReady && lastReady.url) {
+    playerBox.hidden = false;
+    const desiredUrl = `${lastReady.url}&v=${encodeURIComponent(lastReady.previewFingerprint || '')}`;
+    if (vLoadedPreviewUrl !== desiredUrl) {
+      vLoadedPreviewUrl = desiredUrl;
+      player.src = desiredUrl;
+    }
+    if (metaP) {
+      metaP.textContent = `${lastReady.width}×${lastReady.height} · ${fmtMs(lastReady.durationMs)} · ${lastReady.bytes} bytes · sem áudio (SHA ${(lastReady.sha256 || '').slice(0, 10)})`;
+    }
+  } else {
+    playerBox.hidden = true;
+    vLoadedPreviewUrl = null;
+    player.removeAttribute('src');
+  }
+
+  if (job && job.status === 'running') {
+    badge.className = 'badge warn';
+    badge.textContent = lastReady
+      ? 'Gerando prévia (exibindo prévia da versão anterior)'
+      : 'Gerando prévia da montagem…';
+    statusBox.textContent = 'Renderizando prévia com o mesmo grafo de composição e legendas…';
+    return;
+  }
+
+  if (job && job.status === 'failed') {
+    badge.className = 'badge err';
+    badge.textContent = 'Falha na geração da prévia';
+    statusBox.innerHTML = '';
+    statusBox.append(el('div', { class: 'alert-box err', text: job.error || 'Falha desconhecida ao gerar prévia.' }));
+    return;
+  }
+
+  if (lastReady) {
+    if (lastReady.matchesCurrentDraft) {
+      badge.className = 'badge ok';
+      badge.textContent = 'Prévia atualizada';
+      statusBox.textContent = 'Prévia pronta e sincronizada com a edição atual deste destino.';
+    } else {
+      badge.className = 'badge warn';
+      badge.textContent = 'Prévia da versão anterior';
+      statusBox.textContent = 'O pedido, recorte, enquadramento ou mídia deste destino mudou desde a última prévia. Gere novamente para atualizar.';
+    }
+    return;
+  }
+
+  badge.className = 'badge muted';
+  badge.textContent = 'Sem prévia gerada';
+  statusBox.textContent = 'Clique em "Gerar prévia da montagem" para renderizar e assistir à montagem deste destino.';
+}
+
+async function refreshVideoPreviewStatus(profileOverride) {
+  syncActiveVideoProfile();
+  const profileId = profileOverride || activeVideoProfileId;
+  if (!profileId) {
+    renderVideoPreviewState(null);
+    return null;
+  }
+  syncDraftFields();
+  const seq = ++vPreviewStatusSeq;
+  const data = await post('/api/video/preview-status', {
+    workId: currentWork ? currentWork.id : undefined,
+    profileId,
+    request: draft,
+    motionPlan: (!mStandaloneOverride && mplan && (mplan.effects || []).length) ? mplan : undefined,
+  });
+  if (seq !== vPreviewStatusSeq) return data;
+  if (profileId === activeVideoProfileId) renderVideoPreviewState(data);
+  if (data.job && data.job.status === 'running') {
+    pollVideoPreview(data.job.jobId, profileId);
+  }
+  return data;
+}
+
+function schedulePreviewStatusRefresh() {
+  if (vPreviewStatusTimer) clearTimeout(vPreviewStatusTimer);
+  vPreviewStatusTimer = setTimeout(() => {
+    refreshVideoPreviewStatus().catch(() => {});
+  }, 150);
+}
+
+function pollVideoPreview(jobId, profileId) {
+  if (vPreviewPollTimer) clearTimeout(vPreviewPollTimer);
+  const tick = async () => {
+    try {
+      syncDraftFields();
+      const data = await post('/api/video/preview-status', {
+        workId: currentWork ? currentWork.id : undefined,
+        profileId,
+        jobId,
+        request: draft,
+        motionPlan: (!mStandaloneOverride && mplan && (mplan.effects || []).length) ? mplan : undefined,
+      });
+      if (profileId === activeVideoProfileId) renderVideoPreviewState(data);
+      if (data.job && data.job.status === 'running') {
+        vPreviewPollTimer = setTimeout(tick, 700);
+      }
+    } catch (err) {
+      toast('Erro ao consultar prévia: ' + err.message);
+    }
+  };
+  vPreviewPollTimer = setTimeout(tick, 600);
+}
+
+async function startVideoPreviewRender() {
+  syncDraftFields();
+  syncActiveVideoProfile();
+  if (!activeVideoProfileId) {
+    toast('Selecione pelo menos um perfil de vídeo antes de gerar a prévia.');
+    return;
+  }
+  const badge = $('#v-preview-render-badge');
+  if (badge) { badge.className = 'badge warn'; badge.textContent = 'Iniciando prévia…'; }
+  try {
+    const started = await post('/api/video/preview-render', {
+      workId: currentWork ? currentWork.id : undefined,
+      profileId: activeVideoProfileId,
+      request: draft,
+      motionPlan: (!mStandaloneOverride && mplan && (mplan.effects || []).length) ? mplan : undefined,
+    });
+    await refreshVideoPreviewStatus(activeVideoProfileId);
+    pollVideoPreview(started.jobId, activeVideoProfileId);
+  } catch (err) {
+    if (badge) { badge.className = 'badge err'; badge.textContent = 'Erro ao iniciar prévia'; }
+    toast('Prévia falhou: ' + err.message);
+  }
+}
+
+function initFramingAndPreviewControls() {
+  const activeSel = $('#v-active-profile');
+  if (activeSel) {
+    activeSel.addEventListener('change', () => {
+      activeVideoProfileId = activeSel.value || null;
+      vLastFrameInfo = null;
+      vLoadedPreviewUrl = null;
+      renderActiveVideoProfileSelect();
+      renderScenes();
+      refreshVideoPreviewStatus().catch(() => {});
+    });
+  }
+  $('#v-frame-mode-fit')?.addEventListener('click', () => applyFramingChange(null, true));
+  $('#v-frame-fallback-fit-btn')?.addEventListener('click', () => {
+    applyFramingChange(null, true);
+    toast('Enquadramento revertido para Ajustar.');
+  });
+  $('#v-frame-mode-fill')?.addEventListener('click', () => {
+    const s = (draft.scenes || [])[selectedSceneIndex];
+    const cur = getSceneFraming(s, activeVideoProfileId);
+    applyFramingChange(cur || { centerX: 0.5, centerY: 0.5, zoomPercent: 100 }, true);
+  });
+  $('#v-frame-reset-btn')?.addEventListener('click', () => {
+    applyFramingChange(null, true);
+    toast(`Ajuste da cena desfeito para ${activeVideoProfileId || 'o destino'} (voltou para Ajustar).`);
+  });
+
+  const cxInput = $('#v-frame-center-x');
+  const cyInput = $('#v-frame-center-y');
+  const zoomRange = $('#v-frame-zoom-range');
+  const zoomInput = $('#v-frame-zoom');
+
+  function applyNumericInputs() {
+    applyFramingChange({
+      centerX: clamp01(cxInput.value),
+      centerY: clamp01(cyInput.value),
+      zoomPercent: clampZoom(zoomInput.value),
+    }, false);
+  }
+  cxInput?.addEventListener('input', applyNumericInputs);
+  cyInput?.addEventListener('input', applyNumericInputs);
+  zoomRange?.addEventListener('input', () => {
+    zoomInput.value = zoomRange.value;
+    applyFramingChange({
+      centerX: clamp01(cxInput.value),
+      centerY: clamp01(cyInput.value),
+      zoomPercent: clampZoom(zoomRange.value),
+    }, false);
+  });
+  zoomInput?.addEventListener('input', () => {
+    zoomRange.value = String(clampZoom(zoomInput.value));
+    applyNumericInputs();
+  });
+
+  const srcCv = $('#v-frame-source-canvas');
+  function updateCenterFromPointer(ev) {
+    const rect = srcCv.getBoundingClientRect();
+    const px = ((ev.clientX - rect.left) / rect.width) * srcCv.width;
+    const py = ((ev.clientY - rect.top) / rect.height) * srcCv.height;
+    const dr = srcCv._drawRect || { x: 0, y: 0, w: srcCv.width, h: srcCv.height };
+    const cx = clamp01((px - dr.x) / dr.w);
+    const cy = clamp01((py - dr.y) / dr.h);
+    const s = (draft.scenes || [])[selectedSceneIndex];
+    const cur = getSceneFraming(s, activeVideoProfileId);
+    applyFramingChange({ centerX: cx, centerY: cy, zoomPercent: cur ? cur.zoomPercent : 100 }, false);
+  }
+  srcCv?.addEventListener('pointerdown', (ev) => {
+    if (!srcCv._drawRect) return;
+    vFrameDrag = true;
+    try { srcCv.setPointerCapture(ev.pointerId); } catch {}
+    updateCenterFromPointer(ev);
+  });
+  srcCv?.addEventListener('pointermove', (ev) => {
+    if (!vFrameDrag) return;
+    updateCenterFromPointer(ev);
+  });
+  srcCv?.addEventListener('pointerup', () => {
+    if (!vFrameDrag) return;
+    vFrameDrag = false;
+    scheduleServerFrameInfo(true);
+  });
+
+  $('#v-btn-preview-render')?.addEventListener('click', () => startVideoPreviewRender().catch((e) => toast(e.message)));
+  const player = $('#v-preview-player');
+  player?.addEventListener('loadedmetadata', () => {
+    if (pendingPreviewSeekSec != null) {
+      try { player.currentTime = pendingPreviewSeekSec; } catch {}
+      pendingPreviewSeekSec = null;
+    }
+  });
 }
 
 // ---- Prévia Vídeo ----
@@ -1053,9 +1905,9 @@ async function loadDelivery() {
 function renderAll() {
   renderDraftFields();
   renderMedia();
-  renderScenes();
   renderExportProfileOptions();
   if (catalog.length) renderProfiles();
+  renderScenes();
 }
 
 // ================= Carrossel (R003) =================
@@ -1551,25 +2403,88 @@ function currentMedia() {
   return mreq.media.find((m) => m.id === s.mediaId) || null;
 }
 
+function getMotionProfileId() {
+  const sel = $('#m-profile-select');
+  if (sel && sel.value) return sel.value;
+  return (mreq && mreq.profiles || []).find((id) => catalog.some((c) => c.id === id && c.localExportMotion))
+    || 'instagram-reels-video';
+}
+
 function drawMotionCanvas() {
   const cv = $('#m-canvas');
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cv.width, cv.height);
   if (!mreq || !mplan) return;
+  const scene = currentMScene();
   const media = currentMedia();
-  if (!media) return;
-  if (!mImg || mImg._src !== media.path) {
-    mImg = new Image();
-    mImg._src = media.path;
-    mImg.onload = () => drawMotionCanvas();
-    mImg.src = '/source-media?path=' + encodeURIComponent(media.path);
-    return;
+  if (!scene || !media) return;
+
+  let drawEl = null;
+  let natW = 0;
+  let natH = 0;
+  if (media.type === 'video') {
+    const cutStart = scene.sourceStartMs || 0;
+    const key = `${media.path}|${cutStart}`;
+    if (mVideoMedia.key !== key) {
+      const targetSec = Math.max(0, cutStart / 1000);
+      const vid = el('video', { muted: '', preload: 'auto', src: '/source-media?path=' + encodeURIComponent(media.path) });
+      const frameCanvas = document.createElement('canvas');
+      mVideoMedia = { key, canvas: frameCanvas, ready: false, width: 0, height: 0, error: false };
+      const cap = () => {
+        if (mVideoMedia.key !== key) return;
+        const vw = vid.videoWidth || 0;
+        const vh = vid.videoHeight || 0;
+        if (!vw || !vh) return;
+        frameCanvas.width = vw;
+        frameCanvas.height = vh;
+        frameCanvas.getContext('2d').drawImage(vid, 0, 0, vw, vh);
+        mVideoMedia.width = vw;
+        mVideoMedia.height = vh;
+        mVideoMedia.ready = true;
+        drawMotionCanvas();
+      };
+      vid.onloadeddata = () => {
+        if (mVideoMedia.key !== key) return;
+        if (Math.abs((vid.currentTime || 0) - targetSec) < 0.02) cap();
+        else { try { vid.currentTime = targetSec; } catch { cap(); } }
+      };
+      vid.onseeked = cap;
+      return;
+    }
+    if (!mVideoMedia.ready) return;
+    drawEl = mVideoMedia.canvas;
+    natW = mVideoMedia.width;
+    natH = mVideoMedia.height;
+  } else {
+    if (!mImg || mImg._src !== media.path) {
+      mImg = new Image();
+      mImg._src = media.path;
+      mImg.onload = () => drawMotionCanvas();
+      mImg.src = '/source-media?path=' + encodeURIComponent(media.path);
+      return;
+    }
+    if (!mImg.naturalWidth || !mImg.naturalHeight) return;
+    drawEl = mImg;
+    natW = mImg.naturalWidth;
+    natH = mImg.naturalHeight;
   }
-  const scale = Math.min(cv.width / mImg.width, cv.height / mImg.height);
-  const dw = mImg.width * scale;
-  const dh = mImg.height * scale;
-  ctx.drawImage(mImg, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+
+  const profileId = getMotionProfileId();
+  const profileMeta = getVideoProfileMeta(profileId);
+  const outW = profileMeta ? Number(profileMeta.width) : 1080;
+  const outH = profileMeta ? Number(profileMeta.height) : 1920;
+  const framing = getSceneFraming(scene, profileId);
+  if (framing && framing.zoomPercent) {
+    const crop = computeLocalCropPreview(natW, natH, outW, outH, framing);
+    ctx.drawImage(drawEl, crop.cropX, crop.cropY, crop.cropWidth, crop.cropHeight, 0, 0, cv.width, cv.height);
+  } else {
+    const scale = Math.min(cv.width / natW, cv.height / natH);
+    const dw = natW * scale;
+    const dh = natH * scale;
+    ctx.drawImage(drawEl, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh);
+  }
+
   const eff = mEffectFor(mCurrentSceneId);
   if (eff && eff.region) {
     const r = eff.region;
@@ -1583,16 +2498,21 @@ function updateMRegionInfo() {
   const scene = currentMScene();
   const e = mEffectFor(mCurrentSceneId);
   if (!scene) { $('#m-region-info').textContent = 'Nenhuma cena selecionada.'; return; }
+  const profileId = getMotionProfileId();
+  const framing = getSceneFraming(scene, profileId);
+  const framingTag = framing
+    ? `Enquadramento ${profileId}: Preencher ${framing.zoomPercent}% (${Number(framing.centerX).toFixed(2)}, ${Number(framing.centerY).toFixed(2)}). `
+    : `Enquadramento ${profileId}: Ajustar (quadro completo). `;
   if (scene.motionIntent === 'slow-zoom') {
-    $('#m-region-info').textContent = `Cena "${scene.id}" está com slow-zoom; altere o movimento para "none" na aba Vídeos para aplicar contorno.`;
+    $('#m-region-info').textContent = `${framingTag}Cena "${scene.id}" está com slow-zoom; altere o movimento para "none" na aba Vídeos para aplicar contorno.`;
     return;
   }
   if (!e) {
-    $('#m-region-info').textContent = `Cena "${scene.id}" (${scene.durationMs}ms) ainda sem contorno. Arraste na imagem ou clique em "Ativar contorno nesta cena".`;
+    $('#m-region-info').textContent = `${framingTag}Cena "${scene.id}" (${scene.durationMs}ms) ainda sem contorno. Arraste na imagem ou clique em "Ativar contorno nesta cena".`;
     return;
   }
   const r = e.region;
-  $('#m-region-info').textContent = `Região (${e.sceneId}): x=${r.x.toFixed(2)} y=${r.y.toFixed(2)} w=${r.w.toFixed(2)} h=${r.h.toFixed(2)} — contorno de ${e.startMs}ms a ${e.endMs}ms (${e.color}, ${e.thickness}px).`;
+  $('#m-region-info').textContent = `${framingTag}Região (${e.sceneId}): x=${r.x.toFixed(2)} y=${r.y.toFixed(2)} w=${r.w.toFixed(2)} h=${r.h.toFixed(2)} — contorno de ${e.startMs}ms a ${e.endMs}ms (${e.color}, ${e.thickness}px).`;
 }
 
 function canvasFraction(ev) {
@@ -1754,6 +2674,7 @@ async function initCarousel() {
 async function initMotion() {
   await loadMExamples();
   initMotionCanvas();
+  $('#m-profile-select')?.addEventListener('change', () => { drawMotionCanvas(); updateMRegionInfo(); });
   $('#m-btn-load-example').addEventListener('click', loadMExample);
   $('#m-btn-sync-work').addEventListener('click', () => {
     mStandaloneOverride = false;
@@ -1863,6 +2784,7 @@ async function init() {
 
   await initCarousel();
   await initMotion();
+  initFramingAndPreviewControls();
   setMode('home');
 }
 
