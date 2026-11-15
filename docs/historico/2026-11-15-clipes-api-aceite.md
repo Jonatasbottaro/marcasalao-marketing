@@ -41,6 +41,26 @@ Comando: `python tools/ci_studio_video_api_proof.py --port 8808`
 - Logs: `.workspace/logs/studio-video-api-v1/ci-video-proof-*.log` (execuções 1–3 diagnosticaram caminho longo do Windows na limpeza/varredura e o formato do índice de entrega; corrigidos na própria prova; execução final verde).
 - Passo novo no CI: `.github/workflows/local-render-validation.yml` — "Prova de clipes por API texto para video (Studio HTTP, Interactions API simulada)", porta 8808, Ubuntu + Windows.
 
+### 3.2b Reforço do caso de geometria — pós-PR #15 (15/11/2026, branch `codex/studio-video-proof-geometry-v1`, commit `a1a5532`)
+
+Ajuste pedido pelo titular: o caso que pede **4 s, 9:16 e 720p** passou a receber do simulador um **MP4 H.264 de 720×1280 e 4 s com áudio sintético** (lavfi color 720x1280@30 + sine, AAC), em vez do clipe genérico 320×240 de 2 s. A prova confere os parâmetros no corpo enviado (`response_format` exatamente `{type: video, aspect_ratio: 9:16, resolution: 720p, duration: 4s}`, modelo `gemini-omni-1.2-flash`) e, **depois da importação e antes de qualquer recorte ou montagem**, aplica FFprobe no arquivo da Biblioteca.
+
+Medidas observadas (execução local, Windows, FFmpeg/FFprobe reais):
+
+| Verificação | Insumo do simulador | Arquivo da Biblioteca |
+| --- | --- | --- |
+| Dimensões | 720×1280 | **720×1280** |
+| Duração | 4,0 s | **4,0 s** (tolerância aplicada: 1 quadro = 1/30 s ≈ 0,033333 s) |
+| Codec de vídeo | H.264 | **H.264** |
+| Faixas de áudio | **1 (AAC)** — confirmado | **0** |
+| SHA-256 do arquivo final | — | `bd2f784bf478a9fb87320e1887da6599da76e204fa2e8a11ed57b7d78e0ca92d` |
+
+- Comando: `python tools/ci_studio_video_api_proof.py --port 8808` → **exit 0**, primeira execução, sem defeito revelado (o remux `-c:v copy -an` da importação preserva geometria e duração; nenhuma correção de causa foi necessária).
+- Saída registrada: `{"videoPosts": 8, "imageCalls": 1, "videoCalls": 8, "queueCompleted": 1, "deliveryAudioStreams": 0, "resumedAfterRestart": 1, "geometryCase": {...medidas acima...}}`.
+- Verificações anteriores preservadas e verdes na mesma execução: retomada pós-reinício (`resumedAfterRestart: 1`), importação repetida = mesma versão, falhas/reenvio explícito, fila concluída com entrega final **0 faixas de áudio + SRT + TXT**, varredura de segredos.
+- Testes reexecutados: `REQUIRE_RENDER=1 python -m unittest tools.tests.test_studio_video_api tools.tests.test_studio_connections -v` → **15/15 OK em 84,1 s**.
+- Logs: `.workspace/logs/studio-video-proof-geometry-v1/ci-proof-geometry-1.log` e `suite-video-conn-geometry.log`.
+
 ### 3.3 Suítes afetadas e suíte completa
 
 - Afetadas (Conexões, enquadramento, fila, clipes por API): `python -m unittest tools.tests.test_studio_video_api tools.tests.test_studio_connections tools.tests.test_scene_framing_preview tools.tests.test_studio_queue -v` → **25/25 testes reais OK** (442,6 s). Um erro adicional de loader foi causado por nome de módulo inexistente digitado no comando (`test_media_library`; o correto, `test_studio_media`, está na suíte completa). Log: `.workspace/logs/studio-video-api-v1/suite-affected-1.log`.
