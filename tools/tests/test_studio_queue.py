@@ -419,6 +419,122 @@ class TestStudioQueue(unittest.TestCase):
         settled2 = _wait_batch_settled(studio5.queue, batch2['batchId'], timeout=120.0)
         self.assertEqual(settled2['items'][0]['status'], 'completed')
 
+    def test_05_project_divergence_and_frozen_bytes(self):
+        if not REQUIRE_RENDER and not _tools_available():
+            self.skipTest('FFmpeg/FFprobe indisponivel')
+        studio = self._make_studio(auto_start=False)
+        w1 = f'tq-frz-{os.getpid()}'
+        opened = self._seed_work(studio, w1, 'marca-salao')
+        project_rel = opened['work']['project']
+        project_abs = studio.confine(project_rel)
+
+        # 1. ProjectManifest alterado apos enfileiramento -> erro acionavel por peca
+        batch = studio.queue.enqueue_batch([
+            {'workId': w1, 'modality': 'video', 'profileId': 'instagram-reels-video'},
+        ])
+        item_id = batch['items'][0]['itemId']
+        with open(project_abs, 'r', encoding='utf-8') as f:
+            pdoc = json.load(f)
+        pdoc['outputProfiles'] = list(pdoc['outputProfiles']) + ['facebook-reels-video']
+        with open(project_abs, 'w', encoding='utf-8') as f:
+            json.dump(pdoc, f, ensure_ascii=False, indent=2)
+        studio.queue.run_once()
+        failed = studio.queue.get_item(item_id)
+        self.assertEqual(failed['status'], 'failed')
+        self.assertEqual(failed['errorCode'], 'PROJECT_DIVERGENCE')
+        self.assertTrue(failed['canUseCurrent'])
+        with self.assertRaises(studio_queue.QueueConflictError) as ctx:
+            studio.queue.retry_item(item_id, use_current=False)
+        self.assertEqual(ctx.exception.code, 'PROJECT_DIVERGENCE')
+        self.assertTrue(ctx.exception.can_use_current)
+
+        # 2. Bytes congelados: origem muda DEPOIS do isolamento e ANTES do render.
+        # A tentativa deve concluir usando a copia isolada (hash da fonte original).
+        studio.queue.retry_item(item_id, use_current=True)
+        studio.queue.run_once()
+        self.assertEqual(studio.queue.get_item(item_id)['status'], 'completed')
+        opened = studio.open_work(w1)
+        clip_rel = opened['videoRequest']['media'][-1]['path']
+        clip_abs = studio.confine(clip_rel)
+        original_sha = render_local.sha256_file(clip_abs)
+        batch2 = studio.queue.enqueue_batch([
+            {'workId': w1, 'modality': 'video', 'profileId': 'instagram-reels-video'},
+        ])
+        item2_id = batch2['items'][0]['itemId']
+
+        original_stage = studio.queue._stage_frozen_inputs
+        mutated = {'done': False}
+
+        def stage_then_mutate(snapshot, staging_dir):
+            req = original_stage(snapshot, staging_dir)
+            if not mutated['done']:
+                mutated['done'] = True
+                _create_color_video(clip_abs, 'red', duration_s=2.5)
+                with open(project_abs, 'a', encoding='utf-8') as f:
+                    f.write('\n')
+            return req
+
+        studio.queue._stage_frozen_inputs = stage_then_mutate
+        try:
+            studio.queue.run_once()
+        finally:
+            studio.queue._stage_frozen_inputs = original_stage
+        done = studio.queue.get_item(item2_id)
+        self.assertEqual(done['status'], 'completed', done.get('errorMessage'))
+        man_abs = studio.confine_workspace(done['deliveryManifestPath'])
+        with open(man_abs, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+        cuts = manifest.get('sourceCuts') or []
+        self.assertTrue(cuts, 'sourceCuts ausente no manifesto')
+        self.assertEqual(cuts[0]['sha256'], original_sha, 'render nao usou os bytes originais isolados')
+        self.assertNotEqual(render_local.sha256_file(clip_abs), original_sha)
+
+        # 3. A Revisao vincula a entrega a versao enfileirada, mesmo com rascunho editado
+        vreq = studio.open_work(w1)['videoRequest']
+        vreq['title'] = 'Titulo editado depois da fila'
+        studio.save_work({'workId': w1, 'videoRequest': vreq})
+        rev = studio.get_review_overview(w1)
+        piece = next(p for p in rev['pieces'] if p['pieceKey'] == 'video:instagram-reels-video')
+        self.assertEqual(piece['status'], 'draft_outdated')
+        state = studio_review._load_review_state(studio, w1, studio_review.merged_work_paths(studio, w1))
+        stored = state['pieces']['video:instagram-reels-video']['versions'][-1]
+        self.assertNotEqual(stored['requestSnapshot'].get('title'), 'Titulo editado depois da fila')
+
+    def test_06_legacy_pending_snapshot_requires_current_version(self):
+        if not REQUIRE_RENDER and not _tools_available():
+            self.skipTest('FFmpeg/FFprobe indisponivel')
+        studio = self._make_studio(auto_start=False)
+        w1 = f'tq-leg-{os.getpid()}'
+        self._seed_work(studio, w1, 'marca-salao')
+        batch = studio.queue.enqueue_batch([
+            {'workId': w1, 'modality': 'video', 'profileId': 'instagram-reels-video'},
+        ])
+        item_id = batch['items'][0]['itemId']
+        # Simula item pendente gravado pelo esquema anterior (sem projectManifestSha256)
+        with studio.queue._db_lock:
+            conn = studio.queue._connect()
+            try:
+                row = conn.execute('SELECT snapshot_json FROM queue_items WHERE item_id=?', (item_id,)).fetchone()
+                snap = json.loads(row['snapshot_json'])
+                snap['schemaVersion'] = 1
+                snap.pop('projectManifestSha256', None)
+                conn.execute('UPDATE queue_items SET snapshot_json=? WHERE item_id=?',
+                             (json.dumps(snap, ensure_ascii=False), item_id))
+            finally:
+                conn.close()
+        studio.queue.run_once()
+        legacy = studio.queue.get_item(item_id)
+        self.assertEqual(legacy['status'], 'failed')
+        self.assertEqual(legacy['errorCode'], 'SNAPSHOT_LEGACY')
+        self.assertTrue(legacy['canUseCurrent'])
+        with self.assertRaises(studio_queue.QueueConflictError) as ctx:
+            studio.queue.retry_item(item_id, use_current=False)
+        self.assertEqual(ctx.exception.code, 'SNAPSHOT_LEGACY')
+        studio.queue.retry_item(item_id, use_current=True)
+        studio.queue.run_once()
+        renewed = studio.queue.get_item(item_id)
+        self.assertEqual(renewed['status'], 'completed', renewed.get('errorMessage'))
+
 
 if __name__ == '__main__':
     unittest.main()

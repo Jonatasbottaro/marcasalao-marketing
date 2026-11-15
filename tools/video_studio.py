@@ -50,6 +50,7 @@ import llm_adapter
 import studio_media
 import studio_planning
 import studio_review
+import studio_templates
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
@@ -1001,6 +1002,25 @@ class Studio:
         work['updatedAt'] = now_iso()
         atomic_write_json(work_abs, work)
         return {'work': work}
+
+    # ---- modelos reutilizaveis e variacoes ----
+    def get_templates(self, project=None):
+        return {'templates': studio_templates.list_templates(self, project)}
+
+    def get_template(self, template_id):
+        return {'template': studio_templates.get_template(self, template_id)}
+
+    def save_template(self, body):
+        return studio_templates.save_as_template(self, body)
+
+    def duplicate_work(self, body):
+        return studio_templates.duplicate_work(self, body)
+
+    def plan_template_variations(self, body):
+        return studio_templates.plan_variations(self, body)
+
+    def create_template_variations(self, body):
+        return studio_templates.create_variations(self, body)
 
     # ---- rascunhos avulsos (compatibilidade) ----
     def save_draft(self, path_rel, request):
@@ -2035,6 +2055,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'examples': studio.list_examples()})
             elif path == '/api/works':
                 self.send_json(200, {'ok': True, 'works': studio.list_works()})
+            elif path == '/api/templates':
+                self.send_json(200, {'ok': True, **studio.get_templates(query.get('project', [None])[0])})
+            elif path == '/api/templates/get':
+                self.send_json(200, {'ok': True, **studio.get_template(query.get('id', [''])[0])})
             elif path == '/api/queue':
                 self.send_json(200, {'ok': True, **studio.queue.list_queue(
                     status=query.get('status', [None])[0],
@@ -2145,6 +2169,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.serve_file_ranges(target)
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_templates.TemplateConflictError as exc:
+            self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
         except studio_review.ReviewVersionConflictError as exc:
@@ -2188,6 +2214,14 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.create_demo_work(body)})
             elif path == '/api/works/save':
                 self.send_json(200, {'ok': True, **studio.save_work(body)})
+            elif path == '/api/templates/save':
+                self.send_json(200, {'ok': True, **studio.save_template(body)})
+            elif path == '/api/works/duplicate':
+                self.send_json(200, {'ok': True, **studio.duplicate_work(body)})
+            elif path == '/api/templates/plan':
+                self.send_json(200, {'ok': True, **studio.plan_template_variations(body)})
+            elif path == '/api/templates/create':
+                self.send_json(200, {'ok': True, **studio.create_template_variations(body)})
             elif path == '/api/works/editorial/save':
                 self.send_json(200, {'ok': True, **studio.save_editorial(body)})
             elif path == '/api/works/planning/save':
@@ -2281,6 +2315,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'written': studio.generate_media(body.get('request'))})
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_templates.TemplateConflictError as exc:
+            self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
         except studio_review.ReviewVersionConflictError as exc:

@@ -350,10 +350,22 @@ async function loadWorks() {
       el('td', {}, mk(s.carouselValid, s.carouselLastStatus)),
       el('td', {}, mk(s.motionValidCount, s.motionLastStatus)),
       el('td', { text: (w.updatedAt || '').replace('T', ' ').replace('Z', '') }),
-      el('td', {}, el('button', {
-        text: 'Reabrir',
-        onclick: () => openWork(w.id).then(() => setMode('video')).catch((e) => toast(e.message)),
-      })),
+      el('td', {}, [
+        el('button', {
+          text: 'Reabrir',
+          onclick: () => openWork(w.id).then(() => setMode('video')).catch((e) => toast(e.message)),
+        }),
+        el('button', {
+          class: 'secondary',
+          text: 'Salvar como modelo',
+          onclick: () => saveWorkAsModel(w.id).catch((e) => toast(e.message)),
+        }),
+        el('button', {
+          class: 'secondary',
+          text: 'Duplicar como rascunho',
+          onclick: () => duplicateWorkDialog(w.id).catch((e) => toast(e.message)),
+        }),
+      ]),
     ]));
   }
   updateBatchSelectionCount();
@@ -2829,6 +2841,7 @@ async function init() {
   $('#mode-review-btn').addEventListener('click', () => setMode('review'));
   $('#mode-queue-btn').addEventListener('click', () => setMode('queue'));
   $('#btn-open-batch-export').addEventListener('click', () => openBatchExportModal().catch((e) => toast(e.message)));
+  $('#btn-open-template-create').addEventListener('click', () => openTemplateCreateDialog().catch((e) => toast(e.message)));
   $('#works-select-all').addEventListener('change', (e) => {
     const checked = e.target.checked;
     document.querySelectorAll('.work-select-cb').forEach((cb) => {
@@ -3717,6 +3730,293 @@ async function loadQueue() {
   }
 
   scheduleQueuePoll(pendingCount > 0 && (!$('#mode-queue').hidden || pendingCount > 0));
+}
+
+// ---- Modelos reutilizáveis e variações em série ----
+
+function closeTemplateDialog() {
+  const root = $('#template-dialog-root');
+  if (root) root.innerHTML = '';
+}
+
+function templateDialogShell(title) {
+  const root = $('#template-dialog-root');
+  root.innerHTML = '';
+  const overlay = el('div', { class: 'media-dialog-overlay', id: 'template-dialog-overlay' });
+  const dialog = el('div', { class: 'media-dialog', id: 'template-dialog' });
+  dialog.append(el('div', { class: 'row', style: 'justify-content: space-between; align-items: center;' }, [
+    el('h3', { text: title, style: 'margin: 0;' }),
+    el('button', { class: 'secondary', text: 'Fechar', onclick: closeTemplateDialog }),
+  ]));
+  overlay.append(dialog);
+  root.append(overlay);
+  return dialog;
+}
+
+async function saveWorkAsModel(workId) {
+  const dialog = templateDialogShell(`Salvar como modelo — ${workId}`);
+  const nameInput = el('input', { type: 'text', id: 'tpl-save-name', placeholder: 'Nome do modelo (ex.: Agenda semanal)' });
+  const labelInput = el('input', { type: 'text', id: 'tpl-save-label', placeholder: 'Rótulo da revisão (opcional)' });
+  const existing = await api('/api/templates');
+  const select = el('select', { id: 'tpl-save-target' }, [
+    el('option', { value: '', text: 'Novo modelo' }),
+    ...(existing.templates || []).map((t) => el('option', { value: t.id, text: `${t.name} (${t.id}) — nova revisão` })),
+  ]);
+  const fb = el('div', { id: 'tpl-save-feedback' });
+  dialog.append(
+    el('p', { class: 'muted', text: 'Captura a versão salva do trabalho: cortes, destinos, enquadramentos, estilo, Motion, ficha editorial e mídias com origem, licença e SHA-256. A revisão é imutável.' }),
+    el('label', {}, ['Nome do modelo', nameInput]),
+    el('label', {}, ['Modelo existente (opcional)', select]),
+    el('label', {}, ['Rótulo da revisão', labelInput]),
+    fb,
+    el('button', {
+      id: 'btn-tpl-save-confirm',
+      text: 'Salvar modelo',
+      onclick: async () => {
+        fb.innerHTML = '';
+        try {
+          const res = await post('/api/templates/save', {
+            workId,
+            name: nameInput.value.trim(),
+            templateId: select.value || undefined,
+            label: labelInput.value.trim() || undefined,
+          });
+          toast(`Modelo ${res.template.id} salvo (${res.revisionId}).`);
+          closeTemplateDialog();
+        } catch (e) {
+          fb.append(el('div', { class: 'alert-box err', text: e.message }));
+        }
+      },
+    }),
+  );
+}
+
+async function duplicateWorkDialog(workId) {
+  const dialog = templateDialogShell(`Duplicar como rascunho — ${workId}`);
+  const idInput = el('input', { type: 'text', id: 'tpl-dup-id', value: `${workId}-copia` });
+  const nameInput = el('input', { type: 'text', id: 'tpl-dup-name', placeholder: 'Nome do novo trabalho (opcional)' });
+  const fb = el('div', { id: 'tpl-dup-feedback' });
+  dialog.append(
+    el('p', { class: 'muted', text: 'Cria um trabalho novo a partir da versão salva, sem exigir modelo permanente. O novo trabalho começa com ficha própria, revisão em aberto e entregas vazias.' }),
+    el('label', {}, ['Novo ID (kebab-case)', idInput]),
+    el('label', {}, ['Nome', nameInput]),
+    fb,
+    el('button', {
+      id: 'btn-tpl-dup-confirm',
+      text: 'Duplicar trabalho',
+      onclick: async () => {
+        fb.innerHTML = '';
+        try {
+          const res = await post('/api/works/duplicate', {
+            workId, newId: idInput.value.trim(), name: nameInput.value.trim() || undefined,
+          });
+          toast(`Trabalho duplicado: ${res.work.id}`);
+          closeTemplateDialog();
+          loadWorks().catch(() => {});
+        } catch (e) {
+          fb.append(el('div', { class: 'alert-box err', text: e.message }));
+        }
+      },
+    }),
+  );
+}
+
+async function openTemplateCreateDialog() {
+  const dialog = templateDialogShell('Criar a partir de modelo');
+  const data = await api('/api/templates');
+  const templates = data.templates || [];
+  if (!templates.length) {
+    dialog.append(el('div', { class: 'alert-box warn', text: 'Nenhum modelo salvo ainda. Use "Salvar como modelo" em um trabalho da lista.' }));
+    return;
+  }
+  const state = {
+    templateId: templates[0].id,
+    revisionId: (templates[0].revisions || [])[0]?.revisionId || '',
+    rows: [{ id: '', name: '', title: '', hook: '', cta: '' }],
+    planned: false,
+    idempotencyKey: `tpl-ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  };
+
+  const tplSelect = el('select', { id: 'tpl-create-template' },
+    templates.map((t) => el('option', { value: t.id, text: `${t.name} (${t.id})` })));
+  const revSelect = el('select', { id: 'tpl-create-revision' });
+  const rowsBox = el('div', { id: 'tpl-create-rows' });
+  const planBox = el('div', { id: 'tpl-create-plan' });
+  const resultBox = el('div', { id: 'tpl-create-results' });
+  const fb = el('div', { id: 'tpl-create-feedback' });
+  const confirmBtn = el('button', { id: 'btn-tpl-create-confirm', text: 'Confirmar criação', disabled: 'disabled' });
+
+  function fillRevisions() {
+    const tpl = templates.find((t) => t.id === state.templateId);
+    revSelect.innerHTML = '';
+    for (const rev of (tpl?.revisions || []).slice().reverse()) {
+      revSelect.append(el('option', {
+        value: rev.revisionId,
+        text: `${rev.revisionId} — ${rev.label || ''} (${rev.createdAt || ''})`,
+      }));
+    }
+    state.revisionId = revSelect.value || '';
+  }
+
+  function invalidatePlan() {
+    state.planned = false;
+    confirmBtn.setAttribute('disabled', 'disabled');
+    planBox.innerHTML = '';
+  }
+
+  function renderRows() {
+    rowsBox.innerHTML = '';
+    state.rows.forEach((row, i) => {
+      const mkInput = (key, label, placeholder) => el('label', {}, [
+        label,
+        el('input', {
+          type: 'text', value: row[key], placeholder: placeholder || 'herda do modelo',
+          oninput: (e) => { row[key] = e.target.value; invalidatePlan(); },
+        }),
+      ]);
+      rowsBox.append(el('div', { class: 'batch-work-group', 'data-tpl-row': String(i) }, [
+        el('div', { class: 'row', style: 'justify-content: space-between;' }, [
+          el('strong', { text: `Variação ${i + 1}` }),
+          el('button', {
+            class: 'secondary', text: 'Remover linha',
+            onclick: () => { state.rows.splice(i, 1); renderRows(); invalidatePlan(); },
+          }),
+        ]),
+        mkInput('id', 'Novo ID (kebab-case)', 'ex.: agenda-semana-42'),
+        mkInput('name', 'Nome do trabalho'),
+        mkInput('title', 'Título da peça'),
+        mkInput('hook', 'Gancho da ficha'),
+        mkInput('cta', 'CTA da ficha'),
+      ]));
+    });
+  }
+
+  tplSelect.addEventListener('change', () => {
+    state.templateId = tplSelect.value;
+    fillRevisions();
+    invalidatePlan();
+  });
+  revSelect.addEventListener('change', () => {
+    state.revisionId = revSelect.value;
+    invalidatePlan();
+  });
+
+  async function runPlan() {
+    fb.innerHTML = '';
+    planBox.innerHTML = '';
+    resultBox.innerHTML = '';
+    const res = await post('/api/templates/plan', {
+      templateId: state.templateId, revisionId: state.revisionId, rows: state.rows,
+    });
+    if ((res.profileAdjustments || []).length) {
+      planBox.append(el('div', {
+        class: 'alert-box warn',
+        text: 'Perfis que exigem ajuste: ' + res.profileAdjustments.map((a) => `${a.profileId} (${a.modality}): ${a.reason}`).join('; '),
+      }));
+    }
+    let allOk = true;
+    for (const plan of res.plans || []) {
+      const card = el('div', { class: 'batch-work-group', 'data-tpl-plan-row': String(plan.row) });
+      card.append(el('div', {}, [
+        el('span', { class: 'badge ' + (plan.ok ? 'ok' : 'err'), text: plan.ok ? 'pronta' : 'bloqueada' }),
+        el('strong', { text: ` ${plan.id || '(sem id)'}` }),
+      ]));
+      const changes = plan.changes || {};
+      const summary = Object.entries(changes)
+        .map(([k, c]) => {
+          const val = c.effective ?? '';
+          return c.changed ? `${k}: "${c.inherited ?? ''}" → "${val}"` : `${k}: herdado ("${val}")`;
+        })
+        .join(' · ');
+      card.append(el('p', { class: 'muted', text: summary }));
+      for (const c of [...(plan.conflicts || []), ...(plan.conditions || [])]) {
+        card.append(el('div', { class: 'alert-box err', text: `${c.code}: ${c.message}` }));
+        allOk = false;
+      }
+      if (!plan.ok && !(plan.conflicts || []).length && !(plan.conditions || []).length) allOk = false;
+      planBox.append(card);
+    }
+    state.planned = true;
+    if (allOk && (res.plans || []).length) confirmBtn.removeAttribute('disabled');
+  }
+
+  async function runCreate() {
+    fb.innerHTML = '';
+    resultBox.innerHTML = '';
+    const res = await post('/api/templates/create', {
+      templateId: state.templateId, revisionId: state.revisionId,
+      rows: state.rows, idempotencyKey: state.idempotencyKey,
+    });
+    const createdIds = [];
+    for (const c of res.creations || []) {
+      const card = el('div', { class: 'batch-work-group', 'data-tpl-result-row': String(c.row) });
+      if (c.status === 'created') {
+        createdIds.push(c.id);
+        card.append(el('div', {}, [
+          el('span', { class: 'badge ok', text: 'criado' }),
+          el('strong', { text: ` ${c.id} — ${c.name || ''}` }),
+        ]));
+        card.append(el('div', { class: 'row' }, [
+          el('button', {
+            text: 'Abrir trabalho',
+            onclick: () => {
+              closeTemplateDialog();
+              openWork(c.id).then(() => setMode('video')).catch((e) => toast(e.message));
+            },
+          }),
+        ]));
+      } else {
+        card.append(el('div', {}, [
+          el('span', { class: 'badge err', text: 'falhou' }),
+          el('strong', { text: ` ${c.id || '(sem id)'}` }),
+        ]));
+        card.append(el('div', { class: 'alert-box err', text: `${c.error?.code || ''}: ${c.error?.message || ''}` }));
+      }
+      resultBox.append(card);
+    }
+    if (res.deduplicated) {
+      fb.append(el('div', { class: 'alert-box warn', text: 'Confirmação repetida: os mesmos trabalhos foram devolvidos (idempotente).' }));
+    }
+    if (createdIds.length) {
+      resultBox.append(el('button', {
+        id: 'btn-tpl-send-queue',
+        text: `Enviar para a Fila de Produção (${createdIds.length})`,
+        onclick: () => {
+          selectedBatchWorks.clear();
+          createdIds.forEach((id) => selectedBatchWorks.add(id));
+          updateBatchSelectionCount();
+          closeTemplateDialog();
+          openBatchExportModal().catch((e) => toast(e.message));
+        },
+      }));
+      resultBox.append(el('p', { class: 'muted', text: 'A criação termina em rascunhos locais prontos para edição. O envio à fila reutiliza o planejamento e a confirmação de destinos existentes.' }));
+    }
+    loadWorks().catch(() => {});
+  }
+
+  dialog.append(
+    el('label', {}, ['Modelo', tplSelect]),
+    el('label', {}, ['Revisão do modelo', revSelect]),
+    el('p', { class: 'muted', text: 'Campos em branco herdam o valor daquela revisão do modelo. O plano mostra as mudanças e conflitos por linha sem criar arquivos.' }),
+    rowsBox,
+    el('div', { class: 'row' }, [
+      el('button', {
+        class: 'secondary', id: 'btn-tpl-add-row', text: 'Adicionar linha de variação',
+        onclick: () => { state.rows.push({ id: '', name: '', title: '', hook: '', cta: '' }); renderRows(); invalidatePlan(); },
+      }),
+      el('button', {
+        id: 'btn-tpl-plan', text: 'Planejar variações',
+        onclick: () => runPlan().catch((e) => fb.append(el('div', { class: 'alert-box err', text: e.message }))),
+      }),
+      confirmBtn,
+    ]),
+    planBox,
+    fb,
+    resultBox,
+  );
+  confirmBtn.addEventListener('click', () => runCreate().catch((e) => fb.append(el('div', { class: 'alert-box err', text: e.message }))));
+  fillRevisions();
+  renderRows();
 }
 
 init();

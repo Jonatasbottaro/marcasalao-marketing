@@ -29,6 +29,7 @@ import studio_review
 
 
 QUEUE_SCHEMA_VERSION = 1
+SNAPSHOT_SCHEMA_VERSION = 2
 VALID_STATUSES = ('queued', 'running', 'completed', 'failed', 'cancelled', 'interrupted')
 VALID_MODALITIES = ('video', 'carousel', 'motion')
 LEASE_STALE_SECONDS = 20.0
@@ -96,7 +97,7 @@ class StudioQueue:
     def __init__(self, studio, auto_start=True, db_path=None):
         self.studio = studio
         self.workspace_dir = studio.studio_workspace
-        self.db_path = db_path or os.path.join(self.workspace_dir, 'production-queue.sqlite')
+        self.db_path = db_path or os.environ.get('STUDIO_QUEUE_DB_PATH') or os.path.join(self.workspace_dir, 'production-queue.sqlite')
         self.fences_dir = os.path.join(self.workspace_dir, 'queue-fences')
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         os.makedirs(self.fences_dir, exist_ok=True)
@@ -422,11 +423,17 @@ class StudioQueue:
             )
             media_origins = studio_review._hash_media_list(self.studio, req_snapshot.get('media', []))
 
+        project_abs = self.studio.confine(project_rel)
+        if not os.path.isfile(render_local.fs_path(project_abs)):
+            raise ValueError(f'ProjectManifest do trabalho {work_id} nao encontrado: {project_rel}')
+        project_sha = render_local.sha256_file(project_abs)
+
         snapshot = {
-            'schemaVersion': 1,
+            'schemaVersion': SNAPSHOT_SCHEMA_VERSION,
             'workId': work_id,
             'workTitle': work.get('title') or work_id,
             'project': project_rel,
+            'projectManifestSha256': project_sha,
             'workUpdatedAt': work.get('updatedAt'),
             'modality': modality,
             'profileId': profile_id,
@@ -684,7 +691,7 @@ class StudioQueue:
     def _row_to_item_dict(self, row, attempts_by_item=None):
         snap = json.loads(row['snapshot_json'])
         attempts = list((attempts_by_item or {}).get(row['item_id'], []))
-        can_use_current = row['error_code'] in ('MEDIA_DIVERGENCE', 'SNAPSHOT_UNAVAILABLE')
+        can_use_current = row['error_code'] in ('MEDIA_DIVERGENCE', 'PROJECT_DIVERGENCE', 'SNAPSHOT_UNAVAILABLE', 'SNAPSHOT_LEGACY')
         return {
             'itemId': row['item_id'],
             'batchId': row['batch_id'],
@@ -895,10 +902,34 @@ class StudioQueue:
         modality = snapshot.get('modality')
         profile_id = snapshot.get('profileId')
         project_rel = snapshot.get('project')
+        if int(snapshot.get('schemaVersion') or 1) < SNAPSHOT_SCHEMA_VERSION or not snapshot.get('projectManifestSha256'):
+            raise QueueConflictError(
+                'SNAPSHOT_LEGACY',
+                f'O snapshot da peca {work_id}/{modality}/{profile_id} foi enfileirado antes do congelamento do ProjectManifest. '
+                'Enfileire a versao atual para produzir com insumos verificados.',
+                can_use_current=True,
+            )
         try:
             self.studio.open_work(work_id)
         except Exception as exc:
             raise QueueConflictError('SNAPSHOT_UNAVAILABLE', f'Trabalho {work_id} indisponivel: {exc}', can_use_current=False)
+
+        try:
+            project_abs = self.studio.confine(project_rel)
+        except ValueError:
+            raise QueueConflictError('PROJECT_DIVERGENCE', f'ProjectManifest fora da raiz: {project_rel}', can_use_current=True)
+        if not os.path.isfile(render_local.fs_path(project_abs)):
+            raise QueueConflictError(
+                'PROJECT_DIVERGENCE',
+                f'ProjectManifest ausente desde o enfileiramento ({project_rel}). Enfileire a versao atual ou restaure o arquivo.',
+                can_use_current=True,
+            )
+        if render_local.sha256_file(project_abs) != snapshot['projectManifestSha256']:
+            raise QueueConflictError(
+                'PROJECT_DIVERGENCE',
+                f'ProjectManifest modificado desde o enfileiramento ({project_rel}). Enfileire a versao atual para usar o projeto vigente.',
+                can_use_current=True,
+            )
 
         cat = self._catalog_for_project(project_rel)
         if modality == 'carousel':
@@ -933,6 +964,59 @@ class StudioQueue:
                         f'Midia modificada desde o enfileiramento ({mo.get("mediaId") or rel_path}). Enfileire a versao atual para usar os novos bytes.',
                         can_use_current=True,
                     )
+
+    def _stage_frozen_inputs(self, snapshot, staging_dir):
+        """Isola os bytes verificados (projeto + midias) no staging da tentativa.
+
+        O produtor consome exatamente estes bytes: se a origem mudar entre a
+        conferencia inicial e o render, a tentativa usa a copia isolada ou falha
+        antes de promover.
+        """
+        fs = render_local.fs_path
+        frozen_dir = os.path.join(staging_dir, 'frozen')
+        media_dir = os.path.join(frozen_dir, 'media')
+        os.makedirs(media_dir, exist_ok=True)
+
+        project_abs = self.studio.confine(snapshot['project'])
+        project_stage = os.path.join(frozen_dir, 'project.json')
+        shutil.copyfile(fs(project_abs), fs(project_stage))
+        if render_local.sha256_file(project_stage) != snapshot['projectManifestSha256']:
+            raise QueueConflictError(
+                'PROJECT_DIVERGENCE',
+                f'ProjectManifest mudou durante o isolamento dos bytes ({snapshot["project"]}). Enfileire a versao atual.',
+                can_use_current=True,
+            )
+
+        path_map = {}
+        for idx, mo in enumerate(snapshot.get('mediaOrigins') or []):
+            rel_path = mo.get('path')
+            expected_sha = mo.get('sha256')
+            if not rel_path or not expected_sha:
+                continue
+            src_abs = self.studio.confine(rel_path)
+            if not os.path.isfile(fs(src_abs)):
+                raise QueueConflictError(
+                    'MEDIA_DIVERGENCE',
+                    f'Midia ausente antes do isolamento ({mo.get("mediaId") or rel_path}). Enfileire a versao atual ou restaure o arquivo.',
+                    can_use_current=True,
+                )
+            name = f'{idx:02d}-{os.path.basename(rel_path)}'
+            dst_abs = os.path.join(media_dir, name)
+            shutil.copyfile(fs(src_abs), fs(dst_abs))
+            if render_local.sha256_file(dst_abs) != expected_sha:
+                raise QueueConflictError(
+                    'MEDIA_DIVERGENCE',
+                    f'Midia modificada durante o isolamento dos bytes ({mo.get("mediaId") or rel_path}). Enfileire a versao atual para usar os novos bytes.',
+                    can_use_current=True,
+                )
+            path_map[rel_path] = self.studio.rel(dst_abs)
+
+        req = json.loads(json.dumps(snapshot['request']))
+        req['project'] = self.studio.rel(project_stage)
+        for item in req.get('media') or []:
+            if isinstance(item, dict) and item.get('path') in path_map:
+                item['path'] = path_map[item['path']]
+        return req
 
     def retry_item(self, item_id, use_current=False):
         now = now_iso()
@@ -1329,9 +1413,15 @@ class StudioQueue:
             with open(fence_path, 'w', encoding='utf-8') as handle:
                 json.dump({'attemptId': attempt_id, 'itemId': item_row['item_id'], 'revoked': False}, handle)
 
+            try:
+                staged_request = self._stage_frozen_inputs(snap, staging_dir)
+            except QueueConflictError as exc:
+                self._finish_failed_item(item_row, attempt_row, 'failed', exc.code, exc.message)
+                return
+
             req_path = os.path.join(staging_dir, 'request.json')
             with open(req_path, 'w', encoding='utf-8', newline='\n') as handle:
-                json.dump(snap['request'], handle, ensure_ascii=False, indent=2)
+                json.dump(staged_request, handle, ensure_ascii=False, indent=2)
 
             output_abs = self.studio.confine_workspace(item_row['output_dir'])
             tool_name = 'produce_carousel.py' if item_row['modality'] == 'carousel' else 'produce_video.py'

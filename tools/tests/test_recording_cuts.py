@@ -240,7 +240,7 @@ class RecordingCutsRenderTest(unittest.TestCase):
             self.assertEqual(color_signature(extract_pixel(video, 6.80, fx, fy, frame_png)), 'B',
                              'trecho B reaproveitado em outra posicao da montagem')
             # SRT alinhado a montagem, nao a fonte.
-            with open(delivery_artifact(self.out_rel, profile_id, 'srt'), encoding='utf-8') as handle:
+            with open(render_local.fs_path(delivery_artifact(self.out_rel, profile_id, 'srt')), encoding='utf-8') as handle:
                 srt = handle.read()
             self.assertIn('00:00:00,000 --> 00:00:02,400', srt)
             self.assertIn('00:00:02,400 --> 00:00:04,400', srt)
