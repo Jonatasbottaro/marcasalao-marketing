@@ -642,3 +642,7 @@ jobs:
       - name: Prova de conexoes de texto e imagem (Studio HTTP, cofre simulado)
         run: |
           python tools/ci_studio_connections_proof.py --port 8807
+
+      - name: Prova de clipes por API texto para video (Studio HTTP, Interactions API simulada)
+        run: |
+          python tools/ci_studio_video_api_proof.py --port 8808

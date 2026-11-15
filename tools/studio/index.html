@@ -779,6 +779,16 @@
       </section>
 
       <section>
+        <div class="row" style="justify-content: space-between; align-items: center;">
+          <h2>Clipes por API (texto para vídeo)</h2>
+          <button id="md-btn-video-generate">Gerar clipe</button>
+        </div>
+        <p class="muted">Geração pelo Google Gemini Omni Flash (Interactions API) com a conexão de vídeo do projeto. O pedido é registrado localmente antes do envio; acompanhe o processamento e importe o resultado na Biblioteca. O clipe importado fica sem faixa de áudio e disponível para seleção nas cenas.</p>
+        <div id="md-video-conn" class="row"></div>
+        <div id="md-video-requests"></div>
+      </section>
+
+      <section>
         <h2>Mídias e versões</h2>
         <div id="md-assets-grid" class="media-grid"></div>
       </section>
@@ -910,7 +920,7 @@
   <div id="mode-connections" hidden>
     <section>
       <div class="row" style="justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;">Conexões de texto e imagem</h2>
+        <h2 style="margin: 0;">Conexões de texto, imagem e vídeo</h2>
         <button id="btn-conn-new">Nova conexão</button>
       </div>
       <p id="conn-store-banner" class="muted"></p>
@@ -939,6 +949,12 @@
         </label>
         <label>Modelo de imagem (opcional)
           <input id="conn-image-model" type="text" placeholder="herda da conexão">
+        </label>
+        <label>Conexão de vídeo
+          <select id="conn-video-select"></select>
+        </label>
+        <label>Modelo de vídeo (opcional)
+          <input id="conn-video-model" type="text" placeholder="padrão: gemini-omni-1.2-flash">
         </label>
         <button id="btn-conn-select-save">Salvar seleção</button>
       </div>

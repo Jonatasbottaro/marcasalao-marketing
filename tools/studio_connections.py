@@ -1,4 +1,4 @@
-"""Conexoes de texto e imagem do Video Studio: cadastro, credenciais e historico.
+"""Conexoes de texto, imagem e video do Video Studio: cadastro, credenciais e historico.
 
 Armazena metadados, escolhas por projeto e referencias de credencial em
 `.workspace/studio/connections.json` (formato versionado, gravacao atomica).
@@ -27,9 +27,11 @@ import studio_review
 
 CONNECTIONS_SCHEMA_VERSION = 1
 CALL_HISTORY_LIMIT = 200
+# Modelo oficial de video da Interactions API (Veo 3.1 Preview encerrado em 22/10/2026).
+GEMINI_VIDEO_DEFAULT_MODEL = 'gemini-omni-1.2-flash'
 PROVIDERS = {
     'local-llm': {'capabilities': ['text'], 'label': 'Modelo local de texto (OpenAI-compativel)'},
-    'google-gemini': {'capabilities': ['image'], 'label': 'Google Gemini (imagem)'},
+    'google-gemini': {'capabilities': ['image', 'video'], 'label': 'Google Gemini (imagem e video)'},
 }
 KEBAB_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 ENV_VAR_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
@@ -423,7 +425,7 @@ def delete_connection(studio, body):
             pass
     doc['connections'] = [c for c in doc['connections'] if c.get('id') != conn_id]
     for project, sel in list(doc['selections'].items()):
-        for cap in ('text', 'image'):
+        for cap in ('text', 'image', 'video'):
             if (sel.get(cap) or {}).get('connectionId') == conn_id:
                 sel[cap] = None
     _save_doc(studio, doc)
@@ -437,8 +439,8 @@ def select_for_project(studio, body):
     model = (body.get('model') or '').strip() or None
     if not project:
         raise ValueError('informe o projeto (caminho do ProjectManifest)')
-    if capability not in ('text', 'image'):
-        raise ConnectionError_('BAD_CAPABILITY', f'capacidade invalida: {capability} (use text ou image)')
+    if capability not in ('text', 'image', 'video'):
+        raise ConnectionError_('BAD_CAPABILITY', f'capacidade invalida: {capability} (use text, image ou video)')
     store = get_credential_store()
     doc = _load_doc(studio)
     if conn_id:
@@ -448,7 +450,8 @@ def select_for_project(studio, body):
                                    f'a conexao {conn_id} nao implementa a capacidade {capability}')
         if model and conn['provider'] == 'google-gemini' and not image_adapters.GEMINI_MODEL_RE.match(model):
             raise ConnectionError_('BAD_MODEL', f'identificador de modelo Gemini invalido: {model}')
-    sel = doc['selections'].setdefault(project, {'text': None, 'image': None})
+    sel = doc['selections'].setdefault(project, {'text': None, 'image': None, 'video': None})
+    sel.setdefault('video', None)
     sel[capability] = {'connectionId': conn_id, 'model': model} if conn_id else None
     _save_doc(studio, doc)
     return {'project': project, 'selection': sel}
@@ -466,12 +469,15 @@ def resolve_for_project(studio, project, capability):
     if conn is None:
         return None
     store = get_credential_store()
+    default_model = conn.get('model')
+    if capability == 'video' and conn['provider'] == 'google-gemini':
+        default_model = GEMINI_VIDEO_DEFAULT_MODEL
     return {
         'connectionId': conn['id'],
         'connectionName': conn.get('name'),
         'provider': conn['provider'],
         'endpoint': conn['endpoint'],
-        'model': sel.get('model') or conn.get('model'),
+        'model': sel.get('model') or default_model,
         'timeoutSec': conn.get('timeoutSec'),
         'credentialKind': (conn.get('credential') or {}).get('kind') or 'none',
         'secret': resolve_secret(conn, store),
@@ -495,7 +501,7 @@ def record_call(studio, project, connection_id, capability, model, status, code=
         'code': code,
     }
     if isinstance(usage, dict) and usage:
-        entry['usage'] = {k: usage[k] for k in ('promptTokens', 'completionTokens', 'totalTokens', 'imageCount')
+        entry['usage'] = {k: usage[k] for k in ('promptTokens', 'completionTokens', 'totalTokens', 'imageCount', 'videoCount')
                           if k in usage}
     if isinstance(provider_info, dict) and provider_info:
         entry['providerInfo'] = {k: provider_info[k] for k in ('cost', 'quota', 'balance', 'currency')
@@ -575,6 +581,7 @@ def test_connection(studio, body):
         if secret:
             headers['x-goog-api-key'] = secret
     status, code, message = 'ok', 'OK', 'Diagnostico concluido com sucesso.'
+    video_model_info = None
     try:
         if provider == 'google-gemini' and not secret:
             raise ConnectionError_('CREDENTIAL_MISSING',
@@ -593,6 +600,15 @@ def test_connection(studio, body):
             if not any(n == wanted or n.split('/')[-1] == short for n in names):
                 status, code = 'error', 'MODEL_INCOMPATIBLE'
                 message = f'Modelo "{wanted}" nao aparece na lista de modelos do servidor. Escolha um modelo listado.'
+        if provider == 'google-gemini':
+            video_wanted = GEMINI_VIDEO_DEFAULT_MODEL
+            listed = None
+            if names:
+                vshort = video_wanted.split('/')[-1]
+                listed = any(n == video_wanted or n.split('/')[-1] == vshort for n in names)
+            video_model_info = {'model': video_wanted, 'listed': listed}
+            if listed is False:
+                message += f' Modelo de video "{video_wanted}" nao listado pelo servidor; a geracao de clipes pode falhar.'
         if status == 'ok':
             message = f'Servidor respondeu com {len(names)} modelo(s); conexao utilizavel.' if names \
                 else 'Servidor respondeu ao diagnostico de disponibilidade.'
@@ -612,7 +628,8 @@ def test_connection(studio, body):
     except (ValueError, OSError) as exc:
         status, code, message = 'error', 'UNAVAILABLE', f'Falha no diagnostico: {_redact(str(exc), secret)}'
 
-    conn['lastTest'] = {'at': _now(), 'status': status, 'code': code, 'message': message}
+    conn['lastTest'] = {'at': _now(), 'status': status, 'code': code, 'message': message,
+                        'videoModel': video_model_info}
     conn['updatedAt'] = _now()
     _save_doc(studio, doc)
     record_call(studio, None, conn_id, 'diagnostic', conn.get('model'), status, code)
