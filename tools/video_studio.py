@@ -289,7 +289,7 @@ class Studio:
         if getattr(self, 'queue', None) is not None:
             self.queue.stop_executor()
 
-    def is_single_export_active(self, output_dir_rel):
+    def is_single_export_active(self, output_dir_rel, profile=None):
         try:
             norm = self._normalize_rel(output_dir_rel)
         except ValueError:
@@ -297,6 +297,8 @@ class Studio:
         with self.jobs_lock:
             for job in self.jobs.values():
                 if job.get('status') == 'running' and self._normalize_rel(job['outputDir']) == norm:
+                    if profile is not None and job.get('profile') != profile:
+                        continue
                     return True
         return False
 
@@ -1130,7 +1132,7 @@ class Studio:
             self._finalize_job(job)
 
     def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None, work_id=None):
-        if self.is_single_export_active(output_dir_rel) or self.queue.is_destination_active(output_dir_rel):
+        if self.is_single_export_active(output_dir_rel, profile=profile) or self.queue.is_destination_active(output_dir_rel):
             raise ValueError('Destino em uso por uma exportacao ou item da fila em andamento. Aguarde a conclusao.')
         export_lineage = None
         if work_id:
