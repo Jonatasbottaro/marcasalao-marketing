@@ -241,9 +241,9 @@ Critérios de conclusão atendidos:
 
 Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Motion em outros enquadramentos, Temporal de produção e deploy.
 
-## 4m. Enquadramento por cena/destino e prévia da montagem no Video Studio — implementado localmente em 14/11/2026 (branch técnica aguardando PR/merge)
+## 4m. Enquadramento por cena/destino e prévia da montagem no Video Studio — integrado na `main` em 15/11/2026 (PR #11 / `cfb0e62`)
 
-> O titular autorizou em 14/11/2026 a entrega completa com dados fictícios sob `<RAIZ>`, publicação da branch técnica `codex/scene-framing-preview-v1` (sobre `7036d64444dd23e0f2a54567125c8918a95b5e15`) e integração via PR após aceite e CI verde. Registro detalhado em [docs/historico/2026-11-14-enquadramento-previa-montagem-aceite.md](../historico/2026-11-14-enquadramento-previa-montagem-aceite.md).
+> O titular autorizou em 14/11/2026 a entrega completa com dados fictícios sob `<RAIZ>`, publicação da branch técnica `codex/scene-framing-preview-v1` (sobre `7036d64444dd23e0f2a54567125c8918a95b5e15`) e integração via PR após aceite e CI verde. Integrado via PR #11 (`cfb0e62ec15ad7609f32108e2e458da6bb2a3e46`) com CI pós-merge verde nos runs `43671676275` e `43671676254`. Registro detalhado em [docs/historico/2026-11-14-enquadramento-previa-montagem-aceite.md](../historico/2026-11-14-enquadramento-previa-montagem-aceite.md).
 
 Critérios atendidos na entrega local:
 - **Contrato e adaptador (`VideoRequest v1` + `AssetManifest` + `--plan-only`)**: `framingByProfile` opcional (`centerX`/`centerY` `[0, 1]`, `zoomPercent` inteiro `[100, 300]`, ausente ≡ **Ajustar**), schema draft-07/Ajv, restauração de perfis removidos, intenção na prévia sem FFmpeg e recorte par em `tools/render_local.py` com bloqueio explícito `FRAMING_MEDIA_METADATA_UNSUPPORTED` (rotação/SAR) oferecendo volta para **Ajustar**.
