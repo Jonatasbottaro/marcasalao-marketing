@@ -267,7 +267,7 @@ Continua bloqueado até decisão explícita: publicação/agendamento, fluxo ofi
 - **Interface e fila**: botões por trabalho e diálogo de variações em **Trabalhos & Projetos**; lista de variações com **Abrir trabalho** e **Enviar para a Fila de Produção**, reutilizando planejamento/confirmação da fila existentes. Exportação segue sem faixa de áudio, com SRT e narração TXT.
 - **Provas**: `tools/tests/test_studio_templates.py`, `tools/tests/test_queue_process_restart.py` (reinício real do Studio: retomada, promoção atrasada e reconciliação por `attemptId` com versão única na Revisão) e `tools/ci_studio_templates_proof.py` integrada ao workflow de render local. Registro em [2026-11-15-modelos-variacoes-aceite.md](../historico/2026-11-15-modelos-variacoes-aceite.md).
 
-### Conexões de texto e imagem no Video Studio — implementada em `codex/studio-connections-v1` (2026-11-15)
+### Conexões de texto e imagem no Video Studio — integrada na main em 15/11/2026 (PR #14 / `9c90f67`)
 
 - Aba **Conexões** (`tools/studio_connections.py` + rotas `/api/connections/*` + UI): cadastro com ID estável, nome, provedor, capacidades implementadas e modelo/endpoint; seleção de conexão e modelo por projeto para texto e imagem; reutilização de referência de credencial; apenas combinações suportadas nesta versão (texto local OpenAI-compatível e imagem Gemini).
 - Credenciais resolvidas no backend no momento da chamada: cofre Windows (CredWriteW/CredReadW), backend simulado nos testes (`STUDIO_CREDENTIAL_BACKEND=simulated`) ou variável de ambiente; conexão sem chave para servidor local aberto. Metadados/escolhas/histórico em `.workspace/studio/connections.json` versionado e atômico, sem ampliar `ProjectManifest`; segredos nunca em respostas, logs, fila, modelos ou ZIPs.

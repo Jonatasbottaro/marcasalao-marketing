@@ -2,7 +2,7 @@
 
 ## Escopo entregue
 
-- **Branch técnica**: `codex/studio-connections-v1` (sobre `main` em `0f77c49a497206160689143bf8a6ec3e8221df83`, PR #13 integrada em `3f4600b`).
+- **Branch técnica**: `codex/studio-connections-v1` (sobre `main` em `0f77c49a497206160689143bf8a6ec3e8221df83`, PR #13 integrada em `3f4600b`); **integrada na main pelo merge `9c90f67` (PR #14)** em 2026-11-15, por autorização explícita do titular após o aceite local.
 - **Núcleo (`tools/studio_connections.py`)**: armazenamento versionado `.workspace/studio/connections.json` (conexões, seleções por projeto, histórico limitado a 200 chamadas) com gravação atômica; interface de cofre com backend Windows (CredWriteW/CredReadW/CredDeleteW, alvo `MarcaSalaoStudio/<ref>`), backend simulado para testes e resolução por variável de ambiente no momento da chamada; conexão sem chave para servidor local aberto.
 - **Integração**: `llm_adapter.TextModelAdapter` aceita `apiKey` opcional (Authorization Bearer) e devolve `usage`; `image_adapters.GeminiImageAdapter` aceita config injetada e devolve `usageMetadata`/providerInfo; `studio_planning.generate_with_local_model` e `studio_media.generate_candidate` resolvem a seleção do projeto (conexão prevalece sobre `llmConfig` do painel), registram chamadas e identificam a conexão nas falhas; overviews de Planejamento e Mídia expõem a seleção sem segredo; `save_llm_config` nunca grava chave no arquivo legado.
 - **Rotas**: `GET /api/connections`, `POST /api/connections/save|credential|delete|select|test`, com Host/Origin nas escritas e erros estruturados sem segredos.
@@ -39,4 +39,4 @@ Capturas em `.workspace/logs/studio-connections-v1/browser/` (01-aba-conexoes, 0
 - 3ª corrida completa (`python-suite-full-3.log`): **250/250 testes OK**, zero falhas, zero erros, zero skips, em `2298.547s` com `REQUIRE_RENDER=1` (inclui `test_studio_connections.py` 7/7, `test_studio_queue.py` 6/6, `test_queue_process_restart.py` 2/2 e `test_studio_templates.py` 6/6).
 - Platform: `build`/`typecheck` OK; `npm test` **994/994**; `test:contracts` **324/324** (sem mudanças em `platform/`).
 - Prova HTTP `ci_studio_connections_proof.py --port 8807`: exit 0 (detalhes acima).
-- CI: publicação/PR/merge desta rodada dependem de autorização específica; se autorizada, runs do workflow de render local (com a etapa nova de Conexões) serão registrados aqui.
+- CI: PR #14 run [43742679544](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43742679544) no SHA `4cb8a77` — `ubuntu-latest · render real` e `windows-latest · render real` **success**, incluindo a etapa `Prova de conexoes de texto e imagem (Studio HTTP, cofre simulado)`; CI pós-merge run [43746174533](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43746174533) no merge `9c90f67` — **success** em `ubuntu-latest · render real` e `windows-latest · render real`.
