@@ -253,6 +253,12 @@ Critérios atendidos na entrega local:
 
 Continua bloqueado até decisão explícita: publicação/agendamento, fluxo oficial de arte do Marca Salão fora do ComfyUI08 e seu guard, áudio/TTS, Motion fora do 9:16, Temporal de produção e deploy.
 
+### Produção em lote com fila local persistente no Video Studio — implementada em `codex/studio-production-queue-v1` (2026-11-15)
+
+- **Fila persistente (`tools/studio_queue.py`)**: SQLite em `.workspace/studio/production-queue.sqlite` (esquema v1), planejamento por catálogo/allowlist/capacidade (`POST /api/queue/plan`), enfileiramento idempotente com snapshots e hashes SHA-256 congelados (`POST /api/queue/enqueue`), executor único em série por workspace com cerca de tentativa (`--attempt-id` + `--fence-file` em `tools/produce_video.py`, `tools/produce_carousel.py` e `tools/render_pipeline.py` sob `acquire_promotion_lock`), proteção compartilhada com `Studio.start_export`, retomada em reinício (`recover_on_startup`), cancelamento (`POST /api/queue/cancel`), repetição com tratamento de `MEDIA_DIVERGENCE` (`POST /api/queue/retry`) e resumo JSON (`GET /api/queue/batch/summary`).
+- **Interface e correção na Revisão (`tools/studio/{index.html,style.css,app.js}`)**: seleção múltipla + modal `#batch-export-dialog`, aba **Fila de Produção** (`#mode-queue`) e correção de `.review-card video` (`max-width: 100%; max-height: 460px;`) eliminando transbordo horizontal do player `16:9` em desktop (`1280x800`) e mobile (`390x844`).
+- **Gates executados**: `platform` (`build`, `typecheck`, `test`, `test:contracts` `324/324`), suíte Python completa `233/233` com `REQUIRE_RENDER=1` (incluindo `tools/tests/test_studio_queue.py`), prova HTTP `tools/ci_studio_queue_proof.py --port 8803` integrada ao CI e aceite E2E em Chrome headless via CDP; registro em [2026-11-15-fila-producao-lote-aceite.md](../historico/2026-11-15-fila-producao-lote-aceite.md). Próxima etapa imediata: PR, CI Ubuntu/Windows (Node 22/24) e merge para `main`.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.

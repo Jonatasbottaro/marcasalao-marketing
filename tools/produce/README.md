@@ -456,3 +456,20 @@ npm --prefix platform run build && npm --prefix platform run typecheck && npm --
 python tools/ci_scene_framing_preview_proof.py --port 8799
 REQUIRE_RENDER=1 python -m unittest tools/tests/test_scene_framing_preview.py -v
 ```
+
+## Produção em lote com fila local persistente (Video Studio)
+
+O Video Studio oferece produção em lote sobre os mesmos produtores locais (`tools/produce_video.py` e `tools/produce_carousel.py`), com estado persistido em SQLite (`.workspace/studio/production-queue.sqlite`, esquema versionado em `tools/studio_queue.py`) e execução em série no servidor local (`127.0.0.1`), permitindo fechar e reabrir o navegador sem perder o andamento.
+
+- **Seleção e modal de lote (`Trabalhos & Projetos` -> `Exportar em lote`)**: selecione múltiplos trabalhos, confira destinos disponíveis e motivos de bloqueio por catálogo/allowlist/capacidade local (`POST /api/queue/plan`) e confirme uma única vez com `idempotencyKey` (`POST /api/queue/enqueue`). Confirmação repetida com a mesma chave devolve o lote existente (`deduplicated: true`) sem duplicar itens.
+- **Snapshots congelados e proteção de destino**: no enfileiramento são congelados o pedido salvo, cortes, enquadramento, `MotionPlan` (quando aplicável), projeto e hashes SHA-256 das mídias. Um executor único por workspace assume um item por vez (`_claim_next_item` atômico), cria cerca de tentativa (`--attempt-id` + `--fence-file`) verificada sob `acquire_promotion_lock(output_dir)` antes da promoção e compartilha a proteção de destino com a exportação avulsa (`start_export`).
+- **Estados e retomada**: cada item representa `trabalho + modalidade + perfil` nos estados `queued`, `running`, `completed`, `failed`, `cancelled` e `interrupted`. Ao reiniciar o servidor, tentativas interrompidas reconciliam promoções já provadas pelo `attemptId` no manifesto ou viram `interrupted` preservando a entrega válida anterior.
+- **Aba `Fila de Produção`**: acompanha lotes e peças em tempo real (`GET /api/queue`, `GET /api/queue/batch`), exporta resumo JSON (`GET /api/queue/batch/summary`), cancela itens `queued` (`POST /api/queue/cancel`), repete itens falhos/interrompidos mantendo o snapshot anterior ou oferece **Enfileirar versão atual** em `MEDIA_DIVERGENCE` (`POST /api/queue/retry`), e abre cada trabalho diretamente na **Revisão & Entrega**.
+- **Correção visual na Revisão**: `.review-card` e `.review-card video` em `tools/studio/style.css` limitam a largura máxima ao contêiner (`max-width: 100%; height: auto; max-height: 460px;`) para evitar transbordo horizontal de vídeos `16:9` em desktop e `390px`.
+
+### Comandos reproduzíveis
+
+```bash
+python tools/ci_studio_queue_proof.py --port 8803
+REQUIRE_RENDER=1 python -m unittest tools/tests/test_studio_queue.py -v
+```
