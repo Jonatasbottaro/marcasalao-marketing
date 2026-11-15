@@ -20,6 +20,7 @@ import uuid
 
 import llm_adapter
 import render_local
+import studio_connections
 import studio_review
 
 PLANNING_STAGES = ('briefing', 'creative', 'apply')
@@ -1090,6 +1091,8 @@ def build_planning_overview(studio, work_id):
             work_media, allowed_profiles, review_overview=review_overview,
         )
         llm_cfg = llm_adapter.load_llm_config(studio)
+        llm_cfg = {k: v for k, v in llm_cfg.items() if k != 'apiKey'}
+        text_conn = studio_connections.resolve_for_project(studio, work_doc.get('project'), 'text')
         return {
             'work': work_doc,
             'stageLabels': STAGE_LABELS,
@@ -1102,9 +1105,16 @@ def build_planning_overview(studio, work_id):
             'analysis': analysis,
             'editorsDiff': diff,
             'llmConfig': llm_cfg,
+            'textConnection': _public_resolution(text_conn),
             'imageExtensionPoint': llm_adapter.ImageProviderExtensionPoint.status(),
             'isMarcaSalao': is_marca_salao,
         }
+
+
+def _public_resolution(resolved):
+    if not resolved:
+        return None
+    return {k: v for k, v in resolved.items() if k != 'secret'}
 
 
 def save_planning(studio, work_id, body):
@@ -1519,8 +1529,36 @@ def generate_with_local_model(studio, work_id, body):
     cfg = llm_adapter.load_llm_config(studio)
     if isinstance(body.get('llmConfig'), dict):
         cfg = llm_adapter.normalize_llm_config(body['llmConfig'], fallback=cfg)
+    resolved = studio_connections.resolve_for_project(studio, _work_project(studio, work_id), 'text')
+    if resolved:
+        cfg = llm_adapter.normalize_llm_config({
+            'enabled': True,
+            'endpoint': resolved['endpoint'],
+            'model': resolved['model'],
+            'timeoutSec': resolved['timeoutSec'],
+            'apiKey': resolved['secret'],
+        }, fallback=cfg)
     adapter = llm_adapter.TextModelAdapter(cfg)
-    llm_res = adapter.request_stage_json(stage, prompt_info['systemPrompt'], prompt_info['userPrompt'])
+    try:
+        llm_res = adapter.request_stage_json(stage, prompt_info['systemPrompt'], prompt_info['userPrompt'])
+    except llm_adapter.LLMAdapterError as exc:
+        studio_connections.record_call(
+            studio, _work_project(studio, work_id),
+            resolved['connectionId'] if resolved else None, 'text', cfg.get('model'),
+            'failed', exc.code,
+        )
+        if resolved:
+            raise exc.__class__(
+                f'Conexao "{resolved["connectionName"]}" ({resolved["connectionId"]}): {exc} '
+                'Confira a conexao na aba Conexoes (teste, credencial e modelo) ou troque a selecao do projeto.',
+                detail=exc.detail,
+            )
+        raise
+    studio_connections.record_call(
+        studio, _work_project(studio, work_id),
+        resolved['connectionId'] if resolved else None, 'text', llm_res['model'],
+        'completed', None, usage=studio_connections._normalize_usage(llm_res.get('usage')),
+    )
 
     staged = validate_and_stage_suggestion(
         studio,
@@ -1537,8 +1575,19 @@ def generate_with_local_model(studio, work_id, body):
         'endpoint': llm_res['endpoint'],
         'model': llm_res['model'],
         'stage': stage,
+        'connectionId': resolved['connectionId'] if resolved else None,
+        'connectionName': resolved['connectionName'] if resolved else None,
     }
     return staged
+
+
+def _work_project(studio, work_id):
+    try:
+        work_doc = studio_review._read_json_safe(
+            studio.confine_workspace(studio.work_paths(work_id)['workFile']))
+    except (ValueError, OSError):
+        return None
+    return (work_doc or {}).get('project')
 
 
 def accept_suggestion(studio, work_id, body):

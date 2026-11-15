@@ -116,6 +116,9 @@ def normalize_llm_config(raw, fallback=None):
         raise ValueError('temperature do modelo local deve ser numerica')
     if temperature < 0.0 or temperature > 1.5:
         raise ValueError('temperature do modelo local deve ficar entre 0.0 e 1.5')
+    api_key = raw.get('apiKey', base.get('apiKey'))
+    if api_key is not None and not isinstance(api_key, str):
+        raise ValueError('apiKey do modelo local deve ser texto')
     return {
         'schemaVersion': 1,
         'enabled': enabled,
@@ -123,6 +126,7 @@ def normalize_llm_config(raw, fallback=None):
         'model': model,
         'timeoutSec': round(timeout_sec, 3),
         'temperature': round(temperature, 3),
+        'apiKey': (api_key or '').strip() or None,
     }
 
 
@@ -146,6 +150,8 @@ def load_llm_config(studio):
 def save_llm_config(studio, payload):
     current = load_llm_config(studio)
     normalized = normalize_llm_config(payload, fallback=current)
+    # Credenciais pertencem as Conexoes/cofre; o arquivo legado nunca guarda chave.
+    normalized.pop('apiKey', None)
     target = llm_config_path(studio)
     studio_review.atomic_write_json(target, normalized)
     return normalized
@@ -205,10 +211,13 @@ class TextModelAdapter:
             'stream': False,
         }
         encoded = json.dumps(body, ensure_ascii=False).encode('utf-8')
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+        if self.config.get('apiKey'):
+            headers['Authorization'] = f'Bearer {self.config["apiKey"]}'
         req = urllib.request.Request(
             endpoint,
             data=encoded,
-            headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+            headers=headers,
             method='POST',
         )
         try:
@@ -274,6 +283,7 @@ class TextModelAdapter:
             'rawText': content,
             'model': payload.get('model') or self.config['model'],
             'endpoint': endpoint,
+            'usage': payload.get('usage') if isinstance(payload.get('usage'), dict) else None,
         }
 
 

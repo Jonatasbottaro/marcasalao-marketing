@@ -157,12 +157,14 @@ function setMode(mode) {
   $('#mode-motion').hidden = mode !== 'motion';
   $('#mode-review').hidden = mode !== 'review';
   $('#mode-queue').hidden = mode !== 'queue';
+  $('#mode-connections').hidden = mode !== 'connections';
   $('#mode-home-btn').classList.toggle('active', mode === 'home');
   $('#mode-video-btn').classList.toggle('active', mode === 'video');
   $('#mode-carousel-btn').classList.toggle('active', mode === 'carousel');
   $('#mode-motion-btn').classList.toggle('active', mode === 'motion');
   $('#mode-review-btn').classList.toggle('active', mode === 'review');
   $('#mode-queue-btn').classList.toggle('active', mode === 'queue');
+  $('#mode-connections-btn').classList.toggle('active', mode === 'connections');
   if (mode === 'motion') {
     if (currentWork && !mStandaloneOverride) {
       syncDraftFields();
@@ -178,6 +180,9 @@ function setMode(mode) {
   }
   if (mode === 'queue') {
     loadQueue().catch((e) => toast(e.message));
+  }
+  if (mode === 'connections') {
+    loadConnections().catch((e) => toast(e.message));
   }
 }
 
@@ -2840,6 +2845,10 @@ async function init() {
   $('#mode-motion-btn').addEventListener('click', () => setMode('motion'));
   $('#mode-review-btn').addEventListener('click', () => setMode('review'));
   $('#mode-queue-btn').addEventListener('click', () => setMode('queue'));
+  $('#mode-connections-btn').addEventListener('click', () => setMode('connections'));
+  $('#btn-conn-new').addEventListener('click', () => openConnectionDialog(null).catch((e) => toast(e.message)));
+  $('#btn-conn-select-save').addEventListener('click', () => saveConnectionSelection().catch((e) => toast(e.message)));
+  $('#conn-project-select').addEventListener('change', () => fillConnectionSelection().catch((e) => toast(e.message)));
   $('#btn-open-batch-export').addEventListener('click', () => openBatchExportModal().catch((e) => toast(e.message)));
   $('#btn-open-template-create').addEventListener('click', () => openTemplateCreateDialog().catch((e) => toast(e.message)));
   $('#works-select-all').addEventListener('change', (e) => {
@@ -4017,6 +4026,261 @@ async function openTemplateCreateDialog() {
   confirmBtn.addEventListener('click', () => runCreate().catch((e) => fb.append(el('div', { class: 'alert-box err', text: e.message }))));
   fillRevisions();
   renderRows();
+}
+
+// ---- Conexões de texto e imagem ----
+
+let connectionsCache = null;
+
+function closeConnectionDialog() {
+  const root = $('#conn-dialog-root');
+  if (root) root.innerHTML = '';
+}
+
+async function loadConnections() {
+  const data = await api('/api/connections');
+  connectionsCache = data;
+  const banner = $('#conn-store-banner');
+  const backend = data.storeBackend;
+  banner.textContent = backend === 'windows-credential-manager'
+    ? 'Cofre de credenciais: Windows Credential Manager desta estação.'
+    : backend === 'simulated'
+      ? 'Cofre de credenciais: backend SIMULADO (apenas testes/demonstração).'
+      : 'Cofre de credenciais indisponível nesta estação — use conexões por variável de ambiente.';
+  banner.className = backend === 'unavailable' ? 'alert-box warn' : 'muted';
+
+  const tbody = $('#conn-table tbody');
+  tbody.innerHTML = '';
+  if (!(data.connections || []).length) {
+    tbody.append(el('tr', {}, el('td', { colspan: '7', class: 'muted', text: 'Nenhuma conexão cadastrada. Crie uma conexão ou siga com o legado por variáveis de ambiente.' })));
+  }
+  for (const c of data.connections || []) {
+    const cred = c.credential || {};
+    const credLabel = cred.kind === 'vault' ? `cofre (${cred.vaultRef || '—'})`
+      : cred.kind === 'env' ? `env ${cred.envVar || '—'}` : 'sem chave';
+    const test = c.lastTest;
+    tbody.append(el('tr', { 'data-conn-id': c.id }, [
+      el('td', {}, [el('strong', { text: c.name || c.id }), el('div', { class: 'muted', text: c.id })]),
+      el('td', { text: c.providerLabel || c.provider }),
+      el('td', { text: (c.capabilities || []).join(', ') }),
+      el('td', {}, [el('div', { text: c.model || '—' }), el('div', { class: 'muted', text: c.endpoint || '' })]),
+      el('td', {}, [
+        el('span', { class: 'badge ' + (cred.configured ? 'ok' : 'warn'), text: cred.configured ? 'configurada' : 'pendente' }),
+        el('div', { class: 'muted', text: credLabel }),
+      ]),
+      el('td', {}, test
+        ? [el('span', { class: 'badge ' + (test.status === 'ok' ? 'ok' : 'err'), text: test.code || test.status }),
+           el('div', { class: 'muted', text: (test.at || '').replace('T', ' ').replace('Z', '') })]
+        : el('span', { class: 'badge muted', text: 'nunca testada' })),
+      el('td', {}, [
+        el('button', { class: 'secondary', text: 'Testar', onclick: () => testConnection(c.id).catch((e) => toast(e.message)) }),
+        el('button', { class: 'secondary', text: 'Editar', onclick: () => openConnectionDialog(c).catch((e) => toast(e.message)) }),
+        cred.kind === 'vault' ? el('button', { class: 'secondary', text: 'Trocar chave', onclick: () => openCredentialDialog(c).catch((e) => toast(e.message)) }) : null,
+        el('button', { class: 'warn-btn', text: 'Excluir', onclick: () => deleteConnection(c.id).catch((e) => toast(e.message)) }),
+      ]),
+    ]));
+  }
+
+  const projSel = $('#conn-project-select');
+  const previous = projSel.value;
+  projSel.innerHTML = '';
+  for (const p of allProjects || []) {
+    projSel.append(el('option', { value: p.path || p.id, text: `${p.name || p.id} (${p.sourceLabel || p.source || 'projeto'})` }));
+  }
+  if (previous && Array.from(projSel.options).some((o) => o.value === previous)) projSel.value = previous;
+  await fillConnectionSelection();
+
+  const hbody = $('#conn-history-table tbody');
+  hbody.innerHTML = '';
+  const calls = data.calls || [];
+  if (!calls.length) {
+    hbody.append(el('tr', {}, el('td', { colspan: '7', class: 'muted', text: 'Nenhuma chamada registrada ainda.' })));
+  }
+  for (const call of calls.slice(0, 60)) {
+    const usage = call.usage || {};
+    const info = call.providerInfo || {};
+    const usageText = [
+      usage.promptTokens != null ? `prompt ${usage.promptTokens}` : null,
+      usage.completionTokens != null ? `resposta ${usage.completionTokens}` : null,
+      usage.totalTokens != null ? `total ${usage.totalTokens}` : null,
+      usage.imageCount != null ? `${usage.imageCount} imagem(ns)` : null,
+      info.cost != null ? `custo ${info.cost}${info.currency ? ' ' + info.currency : ''}` : null,
+      info.quota != null ? `cota ${info.quota}` : null,
+      info.balance != null ? `saldo ${info.balance}` : null,
+    ].filter(Boolean).join(' · ');
+    hbody.append(el('tr', {}, [
+      el('td', { text: (call.at || '').replace('T', ' ').replace('Z', '') }),
+      el('td', { class: 'muted', text: call.project || '—' }),
+      el('td', { text: call.connectionId || 'legado (env)' }),
+      el('td', { text: call.capability }),
+      el('td', { text: call.model || '—' }),
+      el('td', {}, el('span', { class: 'badge ' + (call.status === 'completed' || call.status === 'ok' ? 'ok' : 'err'), text: call.code || call.status })),
+      el('td', { class: 'muted', text: usageText || '—' }),
+    ]));
+  }
+}
+
+async function fillConnectionSelection() {
+  const data = connectionsCache || await api('/api/connections');
+  const project = $('#conn-project-select').value;
+  const sel = (data.selections || {})[project] || {};
+  const fill = (selectId, modelId, capability) => {
+    const select = $(selectId);
+    select.innerHTML = '';
+    select.append(el('option', { value: '', text: 'Legado (variáveis de ambiente)' }));
+    for (const c of data.connections || []) {
+      if ((c.capabilities || []).includes(capability)) {
+        select.append(el('option', { value: c.id, text: `${c.name} (${c.id})` }));
+      }
+    }
+    const chosen = sel[capability] || {};
+    select.value = chosen.connectionId || '';
+    $(modelId).value = chosen.model || '';
+  };
+  fill('#conn-text-select', '#conn-text-model', 'text');
+  fill('#conn-image-select', '#conn-image-model', 'image');
+  const fb = $('#conn-selection-feedback');
+  fb.textContent = project
+    ? `Seleção atual do projeto: texto ${sel.text ? sel.text.connectionId : 'legado'} · imagem ${sel.image ? sel.image.connectionId : 'legado'}.`
+    : 'Selecione um projeto para ver e editar a seleção.';
+}
+
+async function saveConnectionSelection() {
+  const project = $('#conn-project-select').value;
+  if (!project) throw new Error('selecione um projeto');
+  for (const [capability, selectId, modelId] of [['text', '#conn-text-select', '#conn-text-model'], ['image', '#conn-image-select', '#conn-image-model']]) {
+    await post('/api/connections/select', {
+      project, capability,
+      connectionId: $(selectId).value || null,
+      model: $(modelId).value.trim() || null,
+    });
+  }
+  toast('Seleção do projeto salva.');
+  await loadConnections();
+}
+
+async function testConnection(connectionId) {
+  const res = await post('/api/connections/test', { connectionId });
+  const t = res.test || {};
+  toast(`Teste de ${connectionId}: ${t.code || t.status} — ${t.message || ''}`);
+  await loadConnections();
+}
+
+async function deleteConnection(connectionId) {
+  await post('/api/connections/delete', { connectionId });
+  toast(`Conexão ${connectionId} excluída; seleções que a usavam voltaram ao legado.`);
+  await loadConnections();
+}
+
+function openCredentialDialog(conn) {
+  const root = $('#conn-dialog-root');
+  root.innerHTML = '';
+  const overlay = el('div', { class: 'media-dialog-overlay' });
+  const dialog = el('div', { class: 'media-dialog', id: 'conn-credential-dialog' });
+  const input = el('input', { type: 'password', id: 'conn-credential-value', placeholder: 'Novo valor da chave' });
+  const fb = el('div', {});
+  dialog.append(
+    el('div', { class: 'row', style: 'justify-content: space-between;' }, [
+      el('h3', { text: `Trocar chave — ${conn.name}`, style: 'margin:0;' }),
+      el('button', { class: 'secondary', text: 'Fechar', onclick: closeConnectionDialog }),
+    ]),
+    el('p', { class: 'muted', text: `A referência ${conn.credential.vaultRef} e as escolhas dos projetos são mantidas; apenas o valor no cofre é substituído.` }),
+    el('label', {}, ['Nova chave', input]),
+    fb,
+    el('button', {
+      text: 'Gravar no cofre',
+      onclick: async () => {
+        fb.innerHTML = '';
+        try {
+          await post('/api/connections/credential', { connectionId: conn.id, value: input.value });
+          toast('Chave substituída no cofre.');
+          closeConnectionDialog();
+          await loadConnections();
+        } catch (e) {
+          fb.append(el('div', { class: 'alert-box err', text: e.message }));
+        }
+      },
+    }),
+  );
+  overlay.append(dialog);
+  root.append(overlay);
+  return Promise.resolve();
+}
+
+async function openConnectionDialog(existing) {
+  const root = $('#conn-dialog-root');
+  root.innerHTML = '';
+  const overlay = el('div', { class: 'media-dialog-overlay' });
+  const dialog = el('div', { class: 'media-dialog', id: 'conn-edit-dialog' });
+  const nameInput = el('input', { type: 'text', id: 'conn-f-name', value: existing ? existing.name : '' });
+  const providerSelect = el('select', { id: 'conn-f-provider' }, [
+    el('option', { value: 'local-llm', text: 'Modelo local de texto (OpenAI-compatível)' }),
+    el('option', { value: 'google-gemini', text: 'Google Gemini (imagem)' }),
+  ]);
+  if (existing) {
+    providerSelect.value = existing.provider;
+    providerSelect.disabled = true;
+  }
+  const endpointInput = el('input', { type: 'text', id: 'conn-f-endpoint', value: existing ? existing.endpoint : '' });
+  const modelInput = el('input', { type: 'text', id: 'conn-f-model', value: existing ? existing.model : '' });
+  const timeoutInput = el('input', { type: 'number', id: 'conn-f-timeout', value: existing ? existing.timeoutSec : '', placeholder: 'padrão do provedor' });
+  const kindSelect = el('select', { id: 'conn-f-kind' }, [
+    el('option', { value: 'none', text: 'Sem chave (servidor local aberto)' }),
+    el('option', { value: 'vault', text: 'Cofre da estação (gravar chave)' }),
+    el('option', { value: 'env', text: 'Variável de ambiente' }),
+  ]);
+  kindSelect.value = existing ? (existing.credential || {}).kind || 'none' : 'none';
+  const envInput = el('input', { type: 'text', id: 'conn-f-env', value: existing ? (existing.credential || {}).envVar || '' : '', placeholder: 'ex.: GEMINI_API_KEY' });
+  const secretInput = el('input', { type: 'password', id: 'conn-f-secret', placeholder: existing ? 'deixe vazio para manter a chave atual' : 'valor da chave (gravado no cofre)' });
+  const fb = el('div', {});
+  const syncVisibility = () => {
+    envInput.parentElement.hidden = kindSelect.value !== 'env';
+    secretInput.parentElement.hidden = kindSelect.value !== 'vault';
+  };
+  kindSelect.addEventListener('change', syncVisibility);
+  dialog.append(
+    el('div', { class: 'row', style: 'justify-content: space-between;' }, [
+      el('h3', { text: existing ? `Editar conexão — ${existing.id}` : 'Nova conexão', style: 'margin:0;' }),
+      el('button', { class: 'secondary', text: 'Fechar', onclick: closeConnectionDialog }),
+    ]),
+    el('label', {}, ['Nome', nameInput]),
+    el('label', {}, ['Provedor / capacidade', providerSelect]),
+    el('label', {}, ['Endpoint', endpointInput]),
+    el('label', {}, ['Modelo', modelInput]),
+    el('label', {}, ['Timeout (s)', timeoutInput]),
+    el('label', {}, ['Credencial', kindSelect]),
+    el('label', {}, ['Variável de ambiente', envInput]),
+    el('label', {}, ['Chave (cofre)', secretInput]),
+    fb,
+    el('button', {
+      id: 'btn-conn-save',
+      text: existing ? 'Salvar conexão' : 'Cadastrar conexão',
+      onclick: async () => {
+        fb.innerHTML = '';
+        try {
+          const body = {
+            id: existing ? existing.id : undefined,
+            name: nameInput.value.trim(),
+            provider: providerSelect.value,
+            endpoint: endpointInput.value.trim() || undefined,
+            model: modelInput.value.trim() || undefined,
+            timeoutSec: timeoutInput.value ? Number(timeoutInput.value) : undefined,
+            credential: { kind: kindSelect.value, envVar: envInput.value.trim() || undefined },
+          };
+          if (kindSelect.value === 'vault' && secretInput.value) body.credentialValue = secretInput.value;
+          await post('/api/connections/save', body);
+          toast(existing ? 'Conexão atualizada.' : 'Conexão cadastrada.');
+          closeConnectionDialog();
+          await loadConnections();
+        } catch (e) {
+          fb.append(el('div', { class: 'alert-box err', text: e.message }));
+        }
+      },
+    }),
+  );
+  overlay.append(dialog);
+  root.append(overlay);
+  syncVisibility();
 }
 
 init();

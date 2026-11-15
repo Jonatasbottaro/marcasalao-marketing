@@ -31,6 +31,7 @@ import uuid
 
 import image_adapters
 import render_local
+import studio_connections
 import studio_review
 
 LIBRARY_SCHEMA_VERSION = 1
@@ -749,13 +750,33 @@ def _overview_payload(studio, work_id, wpaths, library, on_disk, video_req, caro
         for entry in studio.scan_media(wpaths['mediaDir']):
             if entry['type'] == 'image' and entry['path'] not in known_paths:
                 unregistered.append(entry)
+    providers = image_adapters.provider_status()
+    work_doc = studio_review._read_json_safe(
+        studio.confine_workspace(studio.work_paths(work_id)['workFile'])) or {}
+    image_conn = studio_connections.resolve_for_project(studio, work_doc.get('project'), 'image')
+    if image_conn:
+        for prov in providers:
+            if prov['providerId'] == 'google-gemini':
+                prov['available'] = bool(image_conn['secret'])
+                prov['configured'] = bool(image_conn['secret'])
+                prov['model'] = image_conn['model']
+                prov['connectionId'] = image_conn['connectionId']
+                prov['connectionName'] = image_conn['connectionName']
+                prov['message'] = (
+                    f'Conexao "{image_conn["connectionName"]}" selecionada para este projeto; '
+                    'geracao habilitada por acao confirmada.'
+                    if image_conn['secret'] else
+                    f'Conexao "{image_conn["connectionName"]}" selecionada, mas a credencial nao resolveu. '
+                    'Confira o cofre/variavel na aba Conexoes.'
+                )
     return {
         'workId': work_id,
         'mediaLibrary': {**library, 'assets': assets_view, 'requests': requests_view},
         'libraryFingerprint': library_fingerprint(library),
         'initializedOnDisk': on_disk,
         'unregisteredFiles': unregistered,
-        'providers': image_adapters.provider_status(),
+        'providers': providers,
+        'imageConnection': {k: v for k, v in image_conn.items() if k != 'secret'} if image_conn else None,
         'originLabels': ORIGIN_LABELS,
         'categories': list(CATEGORIES),
     }
@@ -1174,10 +1195,46 @@ def generate_candidate(studio, work_id, body):
                     provider_text, req['geometry'],
                     anchor_sha256=link['sha256'] if link and link.get('sendToProvider') else None,
                 )
+                studio_connections.record_call(
+                    studio, work_doc.get('project'), None, 'image', 'simulator-v1', 'completed', None,
+                    usage={'imageCount': 1},
+                )
             else:
-                result = image_adapters.GeminiImageAdapter().generate(
-                    provider_text, req['geometry'], req['aspectRatio'],
-                    anchor_bytes=anchor_bytes, anchor_mime=anchor_mime,
+                resolved = studio_connections.resolve_for_project(studio, work_doc.get('project'), 'image')
+                if resolved:
+                    adapter = image_adapters.GeminiImageAdapter(config={
+                        'apiKey': resolved['secret'],
+                        'model': resolved['model'],
+                        'endpoint': resolved['endpoint'],
+                        'timeoutSec': resolved['timeoutSec'],
+                    })
+                else:
+                    adapter = image_adapters.GeminiImageAdapter()
+                try:
+                    result = adapter.generate(
+                        provider_text, req['geometry'], req['aspectRatio'],
+                        anchor_bytes=anchor_bytes, anchor_mime=anchor_mime,
+                    )
+                except image_adapters.ImageAdapterError as exc:
+                    studio_connections.record_call(
+                        studio, work_doc.get('project'),
+                        resolved['connectionId'] if resolved else None, 'image',
+                        adapter.model, 'failed', exc.code,
+                    )
+                    if resolved:
+                        raise exc.__class__(
+                            exc.code,
+                            f'Conexao "{resolved["connectionName"]}" ({resolved["connectionId"]}): {exc} '
+                            'Confira a conexao na aba Conexoes (teste, credencial e modelo) ou troque a selecao do projeto.',
+                            detail=exc.detail,
+                        )
+                    raise
+                studio_connections.record_call(
+                    studio, work_doc.get('project'),
+                    resolved['connectionId'] if resolved else None, 'image',
+                    result.get('model'), 'completed', None,
+                    usage=studio_connections._normalize_usage(result.get('usage')),
+                    provider_info=studio_connections._normalize_provider_info(result.get('providerInfo')),
                 )
         except image_adapters.ImageAdapterError as exc:
             attempt.update({'status': 'failed', 'code': exc.code, 'error': str(exc)})
