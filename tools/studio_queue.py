@@ -41,6 +41,14 @@ MODALITY_LABELS = {
 }
 
 
+def _safe_rollback(conn):
+    try:
+        if conn.in_transaction:
+            conn.execute('ROLLBACK')
+    except sqlite3.Error:
+        pass
+
+
 def now_iso():
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -87,7 +95,7 @@ class StudioQueue:
 
     def __init__(self, studio, auto_start=True, db_path=None):
         self.studio = studio
-        self.workspace_dir = studio.workspace_dir
+        self.workspace_dir = studio.studio_workspace
         self.db_path = db_path or os.path.join(self.workspace_dir, 'production-queue.sqlite')
         self.fences_dir = os.path.join(self.workspace_dir, 'queue-fences')
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
@@ -330,25 +338,45 @@ class StudioQueue:
     # ---- Planejamento e validacao de destinos ----
     def _catalog_for_project(self, project_rel):
         listing = self.studio.list_profiles(project_rel or None)
-        video_profiles = {p['id']: p for p in listing.get('videoProfiles') or []}
-        image_profiles = {p['id']: p for p in listing.get('imageProfiles') or []}
-        allowlist = listing.get('allowlist')
-        return video_profiles, image_profiles, allowlist
+        all_profiles = listing.get('profiles') or []
+        by_id = {p['id']: p for p in all_profiles if isinstance(p, dict) and p.get('id')}
+        video_profiles = {
+            pid: p for pid, p in by_id.items()
+            if p.get('mediaKind') == 'video' and p.get('availability') == 'allowed' and p.get('localExportVideo')
+        }
+        image_profiles = {
+            pid: p for pid, p in by_id.items()
+            if p.get('mediaKind') == 'image' and p.get('availability') == 'allowed' and p.get('localExportCarousel')
+        }
+        motion_profiles = {
+            pid: p for pid, p in by_id.items()
+            if p.get('mediaKind') == 'video' and p.get('availability') == 'allowed' and p.get('localExportMotion')
+        }
+        return {
+            'all': by_id,
+            'video': video_profiles,
+            'carousel': image_profiles,
+            'motion': motion_profiles,
+            'project': listing.get('project'),
+        }
 
     def _build_frozen_snapshot(self, work_id, modality, profile_id):
         if modality not in VALID_MODALITIES:
             raise ValueError(f'modalidade invalida: {modality}')
-        work = self.studio.load_work(work_id)
+        opened = self.studio.open_work(work_id)
+        work = opened['work']
         project_rel = work.get('project')
         if not project_rel:
             raise ValueError(f'trabalho {work_id} sem projeto configurado')
-        video_profiles, image_profiles, allowlist = self._catalog_for_project(project_rel)
+        cat = self._catalog_for_project(project_rel)
         wpaths = work.get('paths') or self.studio.work_paths(work_id)
 
         if modality == 'carousel':
-            if profile_id not in image_profiles:
-                raise ValueError(f'perfil de carrossel indisponivel no catalogo/allowlist: {profile_id}')
-            req = work.get('carouselRequest')
+            if profile_id not in cat['carousel']:
+                pmeta = cat['all'].get(profile_id)
+                reason = (pmeta or {}).get('blockReason') or f'perfil de carrossel indisponivel no catalogo/allowlist: {profile_id}'
+                raise ValueError(reason)
+            req = opened.get('carouselRequest')
             if not isinstance(req, dict) or not req.get('cards'):
                 raise ValueError(f'trabalho {work_id} nao possui carrossel salvo com cards')
             req_snapshot = json.loads(json.dumps(req))
@@ -361,10 +389,12 @@ class StudioQueue:
             )
             media_origins = studio_review._hash_media_list(self.studio, req_snapshot.get('media', []))
         else:
-            if profile_id not in video_profiles:
-                raise ValueError(f'perfil de video indisponivel no catalogo/allowlist: {profile_id}')
-            pmeta = video_profiles[profile_id]
-            req = work.get('videoRequest')
+            if profile_id not in cat['video']:
+                pmeta = cat['all'].get(profile_id)
+                reason = (pmeta or {}).get('blockReason') or f'perfil de video indisponivel no catalogo/allowlist: {profile_id}'
+                raise ValueError(reason)
+            pmeta = cat['video'][profile_id]
+            req = opened.get('videoRequest')
             if not isinstance(req, dict) or not req.get('scenes'):
                 raise ValueError(f'trabalho {work_id} nao possui pedido de video salvo com cenas')
             req_snapshot = json.loads(json.dumps(req))
@@ -377,9 +407,9 @@ class StudioQueue:
             motion_snapshot = None
             output_dir = wpaths['videoDeliveryDir']
             if modality == 'motion':
-                if pmeta.get('aspectRatio') != '9:16':
+                if profile_id not in cat['motion']:
                     raise ValueError(f'Motion local disponivel apenas para perfis verticais 9:16 ({profile_id} e {pmeta.get("aspectRatio")})')
-                mplan = work.get('motionPlan')
+                mplan = opened.get('motionPlan')
                 if not isinstance(mplan, dict) or not mplan.get('effects'):
                     raise ValueError(f'trabalho {work_id} nao possui MotionPlan salvo com efeitos')
                 motion_snapshot = json.loads(json.dumps(mplan))
@@ -419,13 +449,14 @@ class StudioQueue:
             if not isinstance(wid, str) or wid in seen:
                 continue
             seen.add(wid)
-            work = self.studio.load_work(wid)
+            opened = self.studio.open_work(wid)
+            work = opened['work']
             project_rel = work.get('project')
-            video_profiles, image_profiles, allowlist = self._catalog_for_project(project_rel)
+            cat = self._catalog_for_project(project_rel)
             wpaths = work.get('paths') or self.studio.work_paths(wid)
-            v_req = work.get('videoRequest')
-            c_req = work.get('carouselRequest')
-            m_plan = work.get('motionPlan')
+            v_req = opened.get('videoRequest')
+            c_req = opened.get('carouselRequest')
+            m_plan = opened.get('motionPlan')
 
             options = []
             # Videos
@@ -435,10 +466,8 @@ class StudioQueue:
                 try:
                     tmp_req = json.loads(json.dumps(v_req))
                     tmp_req['project'] = project_rel
-                    verdict = self.studio.check_video(tmp_req)
-                    v_check_ok = bool(verdict.get('ok'))
-                    if not v_check_ok:
-                        v_check_err = verdict.get('failureCode') or 'VIDEO_REQUEST_INVALID'
+                    self.studio.preview(tmp_req, kind='video')
+                    v_check_ok = True
                 except Exception as exc:
                     v_check_ok = False
                     v_check_err = str(exc)
@@ -446,10 +475,20 @@ class StudioQueue:
                 v_check_ok = False
                 v_check_err = 'Rascunho de video ausente ou sem cenas salvas.'
 
-            for pid, pmeta in video_profiles.items():
+            for pid, pmeta in cat['all'].items():
+                if pmeta.get('mediaKind') != 'video':
+                    continue
+                if pmeta.get('availability') != 'allowed' and not (isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])):
+                    continue
                 selected_in_req = isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])
-                avail = bool(v_check_ok)
-                reason = None if avail else v_check_err
+                local_ok = bool(pmeta.get('availability') == 'allowed' and pmeta.get('localExportVideo'))
+                avail = bool(v_check_ok and local_ok)
+                if not local_ok:
+                    reason = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('video', {}).get('reason') or 'Perfil indisponivel para video local.'
+                elif not v_check_ok:
+                    reason = v_check_err
+                else:
+                    reason = None
                 options.append({
                     'workId': wid,
                     'workTitle': work.get('title') or wid,
@@ -457,7 +496,7 @@ class StudioQueue:
                     'modality': 'video',
                     'modalityLabel': 'Video',
                     'profileId': pid,
-                    'profileLabel': pmeta.get('label') or pid,
+                    'profileLabel': pmeta.get('name') or pid,
                     'aspectRatio': pmeta.get('aspectRatio'),
                     'outputDir': wpaths['videoDeliveryDir'],
                     'selectedByDefault': selected_in_req and avail,
@@ -472,10 +511,8 @@ class StudioQueue:
                 try:
                     tmp_creq = json.loads(json.dumps(c_req))
                     tmp_creq['project'] = project_rel
-                    verdict = self.studio.check_carousel(tmp_creq)
-                    c_check_ok = bool(verdict.get('ok'))
-                    if not c_check_ok:
-                        c_check_err = verdict.get('failureCode') or 'CAROUSEL_REQUEST_INVALID'
+                    self.studio.preview(tmp_creq, kind='carousel')
+                    c_check_ok = True
                 except Exception as exc:
                     c_check_ok = False
                     c_check_err = str(exc)
@@ -483,10 +520,20 @@ class StudioQueue:
                 c_check_ok = False
                 c_check_err = 'Rascunho de carrossel ausente ou sem cards salvos.'
 
-            for pid, pmeta in image_profiles.items():
+            for pid, pmeta in cat['all'].items():
+                if pmeta.get('mediaKind') != 'image':
+                    continue
+                if pmeta.get('availability') != 'allowed' and not (isinstance(c_req, dict) and c_req.get('profile') == pid):
+                    continue
                 selected_in_req = isinstance(c_req, dict) and c_req.get('profile') == pid
-                avail = bool(c_check_ok)
-                reason = None if avail else c_check_err
+                local_ok = bool(pmeta.get('availability') == 'allowed' and pmeta.get('localExportCarousel'))
+                avail = bool(c_check_ok and local_ok)
+                if not local_ok:
+                    reason = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('carousel', {}).get('reason') or 'Perfil indisponivel para carrossel local.'
+                elif not c_check_ok:
+                    reason = c_check_err
+                else:
+                    reason = None
                 options.append({
                     'workId': wid,
                     'workTitle': work.get('title') or wid,
@@ -494,7 +541,7 @@ class StudioQueue:
                     'modality': 'carousel',
                     'modalityLabel': 'Carrossel',
                     'profileId': pid,
-                    'profileLabel': pmeta.get('label') or pid,
+                    'profileLabel': pmeta.get('name') or pid,
                     'aspectRatio': pmeta.get('aspectRatio'),
                     'outputDir': wpaths['carouselDeliveryDir'],
                     'selectedByDefault': selected_in_req and avail,
@@ -504,13 +551,18 @@ class StudioQueue:
 
             # Motion (somente 9:16 quando permitido)
             has_motion = isinstance(m_plan, dict) and bool(m_plan.get('effects'))
-            for pid, pmeta in video_profiles.items():
-                is_vertical = pmeta.get('aspectRatio') == '9:16'
-                if not is_vertical and not has_motion:
+            for pid, pmeta in cat['all'].items():
+                if pmeta.get('mediaKind') != 'video':
                     continue
-                avail = bool(v_check_ok and has_motion and is_vertical)
+                if pmeta.get('availability') != 'allowed':
+                    continue
+                is_vertical = pmeta.get('aspectRatio') == '9:16'
+                local_ok = bool(pmeta.get('localExportMotion'))
+                avail = bool(v_check_ok and has_motion and is_vertical and local_ok)
                 if not is_vertical:
                     reason = f'Motion local exige perfil vertical 9:16 ({pid} e {pmeta.get("aspectRatio")}).'
+                elif not local_ok:
+                    reason = pmeta.get('blockReason') or 'Perfil indisponivel para Motion local.'
                 elif not has_motion:
                     reason = 'Plano de Motion sem efeitos salvos.'
                 elif not v_check_ok:
@@ -524,7 +576,7 @@ class StudioQueue:
                     'modality': 'motion',
                     'modalityLabel': 'Motion',
                     'profileId': pid,
-                    'profileLabel': f'{pmeta.get("label") or pid} (Motion)',
+                    'profileLabel': f'{pmeta.get("name") or pid} (Motion)',
                     'aspectRatio': pmeta.get('aspectRatio'),
                     'outputDir': wpaths['motionDeliveryDir'],
                     'selectedByDefault': bool(avail),
@@ -537,7 +589,7 @@ class StudioQueue:
                 'title': work.get('title') or wid,
                 'project': project_rel,
                 'updatedAt': work.get('updatedAt'),
-                'allowlist': allowlist,
+                'allowlist': (cat.get('project') or {}).get('outputProfiles'),
                 'options': options,
             })
 
@@ -832,7 +884,7 @@ class StudioQueue:
                 conn.execute('UPDATE batches SET updated_at=? WHERE batch_id=?', (now, row['batch_id']))
                 conn.execute('COMMIT')
             except Exception:
-                conn.execute('ROLLBACK')
+                _safe_rollback(conn)
                 raise
             finally:
                 conn.close()
@@ -844,18 +896,18 @@ class StudioQueue:
         profile_id = snapshot.get('profileId')
         project_rel = snapshot.get('project')
         try:
-            self.studio.load_work(work_id)
+            self.studio.open_work(work_id)
         except Exception as exc:
             raise QueueConflictError('SNAPSHOT_UNAVAILABLE', f'Trabalho {work_id} indisponivel: {exc}', can_use_current=False)
 
-        video_profiles, image_profiles, _ = self._catalog_for_project(project_rel)
+        cat = self._catalog_for_project(project_rel)
         if modality == 'carousel':
-            if profile_id not in image_profiles:
+            if profile_id not in cat['carousel']:
                 raise QueueConflictError('SNAPSHOT_UNAVAILABLE', f'Perfil de carrossel {profile_id} nao esta mais permitido no catalogo.', can_use_current=True)
         else:
-            if profile_id not in video_profiles:
+            if profile_id not in cat['video']:
                 raise QueueConflictError('SNAPSHOT_UNAVAILABLE', f'Perfil de video {profile_id} nao esta mais permitido no catalogo.', can_use_current=True)
-            if modality == 'motion' and video_profiles[profile_id].get('aspectRatio') != '9:16':
+            if modality == 'motion' and profile_id not in cat['motion']:
                 raise QueueConflictError('SNAPSHOT_UNAVAILABLE', f'Perfil {profile_id} nao suporta Motion 9:16.', can_use_current=True)
 
         for mo in snapshot.get('mediaOrigins') or []:
