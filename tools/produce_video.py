@@ -419,7 +419,17 @@ def _write_index_atomic(index_path, index):
         with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as handle:
             json.dump(index, handle, ensure_ascii=False, indent=2)
             handle.write('\n')
-        os.replace(tmp, index_path)
+        # No Windows o destino pode estar temporariamente preso por outro processo
+        # (antivirus/indexador); retry curto, mesmo padrao da promocao de diretorio
+        # em studio_templates._replace_dir_with_retry.
+        for attempt in range(6):
+            try:
+                os.replace(tmp, index_path)
+                break
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(0.2 * (attempt + 1))
     except OSError:
         if os.path.exists(tmp):
             os.remove(tmp)
