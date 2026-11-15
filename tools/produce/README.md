@@ -421,3 +421,38 @@ verificacao de quadros por cor do trecho, fim exato/alem do arquivo, midia ausen
 troca de midia, reexportacao com hashes, importacao em blocos, Range HTTP,
 persistencia/reinicio, revisao e ZIP) e a etapa dedicada no workflow
 `.github/workflows/local-render-validation.yml`.
+
+## Enquadramento por cena/destino e prévia da montagem (Video Studio)
+
+Cada cena de imagem ou vídeo em `VideoRequest v1` aceita `framingByProfile` opcional, indexado pelo ID de um perfil de vídeo do catálogo (`mediaKind: "video"`):
+
+- `centerX`, `centerY`: ponto focal normalizado `[0, 1]` no quadro visível da fonte (origem no canto superior esquerdo).
+- `zoomPercent`: inteiro em `[100, 300]` (`100%` usa o maior retângulo com a proporção do destino que cabe na fonte; valores acima reduzem a janela ao redor do centro mantendo-a contida dentro da fonte).
+- Cena sem entrada para o perfil em execução usa **Ajustar** (mídia inteira centralizada com preenchimento nas bordas quando necessário); pedidos antigos sem `framingByProfile` e `validateComposition` permanecem inalterados.
+- Perfis podem sair de `request.profiles` e voltar depois recuperando os valores salvos por cena (`compile-video-request.ts` preserva as chaves válidas do catálogo; a exportação valida a allowlist do projeto).
+
+### Planejamento e adaptador local
+
+- `python tools/produce_video.py --input <pedido> --plan-only --json` exibe a intenção de enquadramento (`mode: "fit" | "fill"`, `centerX`, `centerY`, `zoomPercent`) ao lado dos tempos de fonte (`sourceStartMs`/`sourceEndMs`) e da montagem (`startMs`/`endMs`), sem FFmpeg, leitura de mídia nem escrita em disco.
+- O adaptador local (`tools/render_local.py` — `resolve_scene_framing`, consumido por `tools/render_pipeline.py`) calcula o retângulo de recorte em pixels pares antes de `slow-zoom`, contorno Motion `9:16`, títulos e legendas, mantendo os timestamps da montagem.
+- Mídias com rotação de stream (`!= 0`) ou SAR diferente de `1:1` são recusadas em **Preencher** com `FRAMING_MEDIA_METADATA_UNSUPPORTED` (tanto no adaptador quanto no diagnóstico `/api/video/frame-info`), orientando voltar para **Ajustar**.
+
+### Controles e prévia da montagem na aba Vídeos (`tools/video_studio.py` + `tools/studio/app.js`)
+
+- Seletor de destino ativo (`#v-active-profile`) e faixa navegável da montagem (`#v-assembly-timeline`): mostra ordem, tempos e resumo do ajuste por cena; clicar em uma cena seleciona-a no editor e posiciona `#v-preview-player` no início dela na montagem.
+- Modo **Ajustar** (`#v-frame-mode-fit`), **Preencher** (`#v-frame-mode-fill`) e **Desfazer ajuste desta cena** (`#v-frame-reset-btn`), arraste no quadro da fonte (`#v-frame-source-canvas`, com captura do quadro em `sourceStartMs` para gravações), prévia ao vivo do quadro resultante (`#v-frame-dest-canvas`), campos/deslizador por teclado (`#v-frame-center-x`, `#v-frame-center-y`, `#v-frame-zoom`, `#v-frame-zoom-range`) e consulta à geometria resolvida (`POST /api/video/frame-info`).
+- **Gerar prévia da montagem** (`POST /api/video/preview-render`, `GET /api/video/preview-status`): renderiza um destino por vez em resolução menor par usando o mesmo grafo de composição (cortes, enquadramentos, `slow-zoom`, Motion aplicável quando houver, títulos e legendas, zero áudio), reproduz no player mudo `#v-preview-player` via HTTP Range `206`, sinaliza versão anterior caso a edição mude durante ou após a geração (`Prévia da versão anterior`) e mantém cache LRU limitado a `<= 4` MP4s por trabalho em `.workspace/studio/works/<id>/previews/` (excluído do histórico de entregas, revisão e ZIP).
+
+### Revisão localizada, reexportação e ZIP
+
+- A versão efetiva por perfil calcula o fingerprint usando apenas o enquadramento daquele destino (`ausente ≡ Ajustar`). Editar só o Reels marca `video:<perfil>` (e `motion:<perfil>` quando usa o mesmo quadro) como `draft_outdated`, mantendo o destino horizontal e o carrossel aprovados.
+- Reexportar apenas o perfil editado altera somente seu MP4 (hashes da mídia original, `.srt`, `.txt` e dos demais perfis permanecem idênticos); falha controlada na reexportação preserva a entrega válida anterior.
+- `package-manifest.json` do ZIP registra `sourceCuts` e `framings` por peça promovida, com SHA-256 conferido contra os bytes empacotados.
+
+### Comandos reproduzíveis
+
+```bash
+npm --prefix platform run build && npm --prefix platform run typecheck && npm --prefix platform test
+python tools/ci_scene_framing_preview_proof.py --port 8799
+REQUIRE_RENDER=1 python -m unittest tools/tests/test_scene_framing_preview.py -v
+```
