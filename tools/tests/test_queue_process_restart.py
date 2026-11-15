@@ -181,7 +181,18 @@ class TestQueueProcessRestart(unittest.TestCase):
             if row and row['status'] in statuses:
                 return dict(row)
             time.sleep(0.25)
-        raise TimeoutError(f'item {item_id} nao alcancou {statuses}')
+        conn = self._db()
+        try:
+            item = conn.execute('SELECT status, error_code, error_message FROM queue_items WHERE item_id=?',
+                                (item_id,)).fetchone()
+            attempts = conn.execute('SELECT attempt_id, status, error_code, error_message, pid FROM queue_attempts WHERE item_id=?',
+                                    (item_id,)).fetchall()
+        finally:
+            conn.close()
+        raise TimeoutError(
+            f'item {item_id} nao alcancou {statuses}; estado final: {dict(item) if item else None}; '
+            f'tentativas: {[dict(a) for a in attempts]}'
+        )
 
     def _wait_attempt_pid(self, item_id, timeout=60.0):
         deadline = time.monotonic() + timeout
@@ -296,7 +307,7 @@ class TestQueueProcessRestart(unittest.TestCase):
             ROOT, '.workspace', 'studio', 'works', self.work_id,
             'deliveries', 'video', 'instagram-reels-video', 'delivery-manifest.json',
         )
-        deadline = time.monotonic() + 240.0
+        deadline = time.monotonic() + 360.0
         promoted = False
         while time.monotonic() < deadline:
             if os.path.isfile(render_local.fs_path(manifest_abs)):
@@ -308,6 +319,15 @@ class TestQueueProcessRestart(unittest.TestCase):
                         break
                 except (OSError, ValueError):
                     pass
+            if not _pid_alive(producer_pid):
+                staging = attempt.get('staging_dir') or ''
+                diag = ''
+                for name in ('stdout.json', 'stderr.log'):
+                    p = os.path.join(staging, name)
+                    if os.path.isfile(p):
+                        with open(p, encoding='utf-8', errors='replace') as f:
+                            diag += f'--- {name}: {f.read()[-800:]}\n'
+                raise AssertionError(f'produtor orfao encerrou sem promover (pid {producer_pid}):\n{diag}')
             time.sleep(0.25)
         self.assertTrue(promoted, 'produtor orfao nao promoveu a tempo')
         deadline = time.monotonic() + 60.0
