@@ -267,6 +267,13 @@ Continua bloqueado até decisão explícita: publicação/agendamento, fluxo ofi
 - **Interface e fila**: botões por trabalho e diálogo de variações em **Trabalhos & Projetos**; lista de variações com **Abrir trabalho** e **Enviar para a Fila de Produção**, reutilizando planejamento/confirmação da fila existentes. Exportação segue sem faixa de áudio, com SRT e narração TXT.
 - **Provas**: `tools/tests/test_studio_templates.py`, `tools/tests/test_queue_process_restart.py` (reinício real do Studio: retomada, promoção atrasada e reconciliação por `attemptId` com versão única na Revisão) e `tools/ci_studio_templates_proof.py` integrada ao workflow de render local. Registro em [2026-11-15-modelos-variacoes-aceite.md](../historico/2026-11-15-modelos-variacoes-aceite.md).
 
+### Conexões de texto e imagem no Video Studio — implementada em `codex/studio-connections-v1` (2026-11-15)
+
+- Aba **Conexões** (`tools/studio_connections.py` + rotas `/api/connections/*` + UI): cadastro com ID estável, nome, provedor, capacidades implementadas e modelo/endpoint; seleção de conexão e modelo por projeto para texto e imagem; reutilização de referência de credencial; apenas combinações suportadas nesta versão (texto local OpenAI-compatível e imagem Gemini).
+- Credenciais resolvidas no backend no momento da chamada: cofre Windows (CredWriteW/CredReadW), backend simulado nos testes (`STUDIO_CREDENTIAL_BACKEND=simulated`) ou variável de ambiente; conexão sem chave para servidor local aberto. Metadados/escolhas/histórico em `.workspace/studio/connections.json` versionado e atômico, sem ampliar `ProjectManifest`; segredos nunca em respostas, logs, fila, modelos ou ZIPs.
+- Legado preservado como padrão de projetos sem seleção (`STUDIO_LLM_*`, `GEMINI_API_KEY`); falhas identificam a conexão e a ação necessária; **Testar** é diagnóstico (models local / metadados Gemini) com estados `CREDENTIAL_REFUSED`, `CREDENTIAL_MISSING`, `MODEL_INCOMPATIBLE`, `RATE_LIMIT`, `UNAVAILABLE`, `TIMEOUT`; histórico com uso/custo/cota/saldo apenas quando o fornecedor informa.
+- Provas: `tools/tests/test_studio_connections.py` (7 testes, cofre e servidores simulados), `tools/ci_studio_connections_proof.py` no workflow de render local e aceite em Chromium real (cadastro/TESTAR/seleção/troca de chave/reinício). Registro em [2026-11-15-conexoes-texto-imagem-aceite.md](../historico/2026-11-15-conexoes-texto-imagem-aceite.md). Próximas etapas (geração de vídeo, entrada MCP, pesquisa de referências) ficam para rodadas próprias.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.
