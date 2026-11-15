@@ -63,9 +63,15 @@ Comando: `python tools/ci_studio_video_api_proof.py --port 8808`
 
 O núcleo `platform/` não foi alterado nesta rodada (contratos e API pública inalterados). Typecheck/build e suíte da platform executados como regressão: ver logs em `.workspace/logs/studio-video-api-v1/`.
 
-## 5. Limites e pendientes
+## 5. Integração
+
+- Autorização do titular em 15/11/2026: "Publicar + PR + merge".
+- Branch `codex/studio-video-api-v1` publicada; [PR #15](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/15) mergeada pelo merge commit `17179665b55496b3d4531d855c876c2951441f7f`, com os cinco commits originais preservados (`c45e502`, `019f68c`, `a69a0a0`, `4d8e8f8`, `bf2ed3f`).
+- CI do PR verde em Ubuntu + Windows: runs `43767371717` (push) e `43767403098` (PR). CI pós-merge na main: run `43770466169`.
+
+## 6. Limites e pendientes
 
 - V1: apenas texto para vídeo com Google Gemini Omni Flash; um clipe por pedido; sem edição/extensão conversacional, sem imagens de referência, sem outros provedores.
 - `background=true` não é usado (não documentado para o Omni Flash); a execução assíncrona é do Studio (thread em segundo plano), com consulta retomável pelo ID remoto.
 - Teste com conta real Google não foi executado (validação operacional posterior).
-- Publicação/merge dependem de autorização do titular; esta entrega fica em branch técnica com handoff.
+- Entrada MCP, pesquisa de referências e demais provedores ficam para rodadas próprias; aprovação editorial e publicação seguem o fluxo vigente.
