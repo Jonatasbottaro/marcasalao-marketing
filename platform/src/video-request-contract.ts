@@ -62,7 +62,18 @@ export const VIDEO_REQUEST_SCENE_FIELDS = [
     'title',
     'narrativeFunction',
     'motionIntent',
+    'framingByProfile',
 ] as const
+
+/** Campos conhecidos de um ajuste de enquadramento por perfil. */
+export const VIDEO_REQUEST_SCENE_FRAMING_FIELDS = ['centerX', 'centerY', 'zoomPercent'] as const
+
+/** Ajuste de enquadramento por cena e por perfil (zoomPercent em [100, 300], centro em [0, 1]). */
+export interface VideoSceneFraming {
+    readonly centerX: number
+    readonly centerY: number
+    readonly zoomPercent: number
+}
 
 /** Campos obrigatorios de cada cena (title, narrativeFunction e motionIntent sao opcionais). */
 export const VIDEO_REQUEST_SCENE_REQUIRED_FIELDS = ['id', 'durationMs', 'mediaId', 'caption', 'narration'] as const
@@ -116,6 +127,7 @@ export interface VideoRequestScene {
     readonly title?: string
     readonly narrativeFunction?: BeatNarrativeFunction
     readonly motionIntent?: VideoRequestMotionIntent
+    readonly framingByProfile?: Readonly<Record<string, VideoSceneFraming>>
 }
 
 /** Pedido de video v1: entrada unica suficiente para preparar todos os documentos. */
@@ -160,6 +172,10 @@ export type VideoRequestFailureCode =
     | 'VIDEO_REQUEST_SCENE_TITLE_INVALID'
     | 'VIDEO_REQUEST_SCENE_NARRATIVE_FUNCTION_INVALID'
     | 'VIDEO_REQUEST_SCENE_MOTION_INTENT_INVALID'
+    | 'VIDEO_REQUEST_SCENE_FRAMING_INVALID'
+    | 'VIDEO_REQUEST_SCENE_FRAMING_PROFILE_INVALID'
+    | 'VIDEO_REQUEST_SCENE_FRAMING_CENTER_INVALID'
+    | 'VIDEO_REQUEST_SCENE_FRAMING_ZOOM_INVALID'
     | 'VIDEO_REQUEST_VISUAL_STYLE_INVALID'
     | 'VIDEO_REQUEST_UNKNOWN_FIELD'
 

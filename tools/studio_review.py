@@ -179,6 +179,30 @@ def _hash_media_list(studio, media_items):
     return entries
 
 
+def _extract_manifest_framings(manifest):
+    if not isinstance(manifest, dict):
+        return []
+    raw_framings = manifest.get('framings')
+    if isinstance(raw_framings, list) and raw_framings:
+        return list(raw_framings)
+    cuts = manifest.get('sourceCuts') or []
+    result = []
+    for item in cuts:
+        if not isinstance(item, dict) or 'framing' not in item:
+            continue
+        result.append({
+            'beatId': item.get('beatId'),
+            'assetId': item.get('assetId'),
+            'path': item.get('path'),
+            'sha256': item.get('sha256'),
+            'sourceStartMs': item.get('sourceStartMs'),
+            'sourceEndMs': item.get('sourceEndMs'),
+            'durationMs': item.get('durationMs'),
+            'framing': item.get('framing'),
+        })
+    return result
+
+
 def _effective_video_slice(video_req, profile_id=None):
     src = dict(video_req) if isinstance(video_req, dict) else {}
     profiles = src.pop('profiles', []) or []
@@ -188,13 +212,30 @@ def _effective_video_slice(video_req, profile_id=None):
         src['profiles'] = list(profiles)
     scenes = src.get('scenes')
     if isinstance(scenes, list):
-        # Versao efetiva da edicao: inicio omitido e zero sao equivalentes.
+        # Versao efetiva da edicao: inicio omitido e zero sao equivalentes,
+        # e ajuste ausente equivale ao modo Ajustar para o perfil.
         normalized = []
         for scene in scenes:
-            if isinstance(scene, dict) and 'sourceStartMs' in scene:
+            if isinstance(scene, dict):
                 scene = dict(scene)
-                if not scene.get('sourceStartMs'):
+                if 'sourceStartMs' in scene and not scene.get('sourceStartMs'):
                     del scene['sourceStartMs']
+                framing_map = scene.pop('framingByProfile', None)
+                if profile_id is not None and isinstance(framing_map, dict):
+                    framing = framing_map.get(profile_id)
+                    if (
+                        isinstance(framing, dict)
+                        and 'centerX' in framing
+                        and 'centerY' in framing
+                        and 'zoomPercent' in framing
+                    ):
+                        scene['framing'] = {
+                            'centerX': round(float(framing['centerX']), 6),
+                            'centerY': round(float(framing['centerY']), 6),
+                            'zoomPercent': int(framing['zoomPercent']),
+                        }
+                elif framing_map is not None and profile_id is None:
+                    scene['framingByProfile'] = framing_map
             normalized.append(scene)
         src['scenes'] = normalized
     return src
@@ -480,6 +521,7 @@ def record_export_lineage(studio, job):
                     'motionPlanSnapshot': motion_snapshot,
                     'mediaOrigins': media_origins,
                     'sourceCuts': manifest.get('sourceCuts') or [],
+                    'framings': _extract_manifest_framings(manifest),
                     'artifacts': core_artifacts,
                 })
                 updated_keys.append(piece_key)
@@ -558,6 +600,7 @@ def _inspect_video_or_motion_piece(
             'lastValidDelivery': (index_entry or {}).get('lastValidDelivery'),
             'mediaOrigins': _merge_media_origins(None, None, request_doc),
             'sourceCuts': [],
+            'framings': [],
             'metrics': {},
             'artifacts': {},
             'currentDecision': None,
@@ -708,6 +751,7 @@ def _inspect_video_or_motion_piece(
         'lastValidDelivery': (index_entry or {}).get('lastValidDelivery'),
         'mediaOrigins': media_origins,
         'sourceCuts': manifest.get('sourceCuts') or [],
+        'framings': _extract_manifest_framings(manifest),
         'metrics': metrics,
         'artifacts': verified_artifacts,
         'currentDecision': current_decision,

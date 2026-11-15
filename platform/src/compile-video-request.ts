@@ -40,6 +40,13 @@ import {
     type VideoRequestScene,
 } from './video-request-contract.js'
 
+export interface VideoBeatFramingPreview {
+    readonly mode: 'fit' | 'fill'
+    readonly centerX: number
+    readonly centerY: number
+    readonly zoomPercent: number
+}
+
 export interface VideoProfileBeatPreview {
     readonly beatId: string
     readonly order: number
@@ -54,6 +61,7 @@ export interface VideoProfileBeatPreview {
     readonly caption: string
     readonly narration: string
     readonly title: string | null
+    readonly framing: VideoBeatFramingPreview
 }
 
 export interface VideoProfilePreview {
@@ -241,10 +249,20 @@ function compileProfile(
             const scene = sceneById.get(step.beatId) as VideoRequestScene
             const media = mediaById.get(scene.mediaId) as VideoRequestMedia
             const sourceStartMs = media.type === 'video' ? (scene.sourceStartMs ?? 0) : 0
+            const sceneFraming = scene.framingByProfile?.[profileId]
             return {
                 beatId: step.beatId,
                 path: media.path,
                 ...(sourceStartMs > 0 ? { sourceStartMs } : {}),
+                ...(sceneFraming !== undefined
+                    ? {
+                        framing: {
+                            centerX: sceneFraming.centerX,
+                            centerY: sceneFraming.centerY,
+                            zoomPercent: sceneFraming.zoomPercent,
+                        },
+                    }
+                    : {}),
             }
         }),
     }
@@ -269,6 +287,20 @@ function compileProfile(
             const media = mediaById.get(scene.mediaId) as VideoRequestMedia
             const isVideo = media.type === 'video'
             const sourceStartMs = isVideo ? (scene.sourceStartMs ?? 0) : null
+            const sceneFraming = scene.framingByProfile?.[profileId]
+            const framingPreview: VideoBeatFramingPreview = sceneFraming !== undefined
+                ? {
+                    mode: 'fill',
+                    centerX: sceneFraming.centerX,
+                    centerY: sceneFraming.centerY,
+                    zoomPercent: sceneFraming.zoomPercent,
+                }
+                : {
+                    mode: 'fit',
+                    centerX: 0.5,
+                    centerY: 0.5,
+                    zoomPercent: 100,
+                }
             return {
                 beatId: step.beatId,
                 order: step.order,
@@ -282,6 +314,7 @@ function compileProfile(
                 caption: scene.caption,
                 narration: scene.narration,
                 title: scene.title ?? null,
+                framing: framingPreview,
             }
         }),
         supported: configCheck.supported,

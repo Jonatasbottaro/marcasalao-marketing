@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import build_video
 import prepare_asset_manifest
+import r002_pilot
 import render_local
 import render_pipeline
 
@@ -176,6 +177,188 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         'artifacts': summary['artifacts'],
         'inspection': summary['inspection'],
     }
+
+
+def render_assembly_preview(root, request_data, profile_id, output_mp4_path,
+                            preset='veryfast', scale_factor=0.5, motion_plan=None):
+    """Renderiza a previa da montagem para um perfil usando o mesmo grafo de composicao.
+
+    Preserva cortes de fonte, enquadramento por cena/perfil, slow-zoom, titulos,
+    legendas e contornos de Motion (em 9:16), escalando a saida com numeros pares
+    e mantendo o arquivo estritamente fora do historico de entregas/ZIP.
+    """
+    root = os.path.realpath(root)
+    out_real = os.path.realpath(output_mp4_path)
+    if not render_local.contained(root, out_real):
+        raise render_local.InputFileError('caminho da previa fora da raiz do projeto')
+    render_local.ensure_video_tools(root)
+
+    tmp_parent = os.path.join(root, '.workspace', 'tmp')
+    os.makedirs(tmp_parent, exist_ok=True)
+    run_root = tempfile.mkdtemp(prefix='preview-render-', dir=tmp_parent)
+    try:
+        req_path = os.path.join(run_root, 'request.video-request.json')
+        write_json(req_path, request_data)
+
+        motion_path = None
+        if motion_plan and motion_plan.get('effects'):
+            motion_path = os.path.join(run_root, 'motion.motion-plan.json')
+            write_json(motion_path, motion_plan)
+
+        verdict = run_bridge_video_request(root, req_path, profile=profile_id, motion_plan_path=motion_path)
+        if not verdict.get('ok'):
+            raise render_local.RenderInputError(
+                verdict.get('failureCode', 'VIDEO_REQUEST_INVALID'),
+                verdict.get('subject'),
+            )
+        profiles = verdict['profiles']
+        if not profiles or profiles[0].get('status') != 'compiled':
+            p_err = profiles[0] if profiles else {}
+            # Se Motion falhou apenas por geometria horizontal (ex: YouTube 16:9), recompila sem Motion
+            if p_err.get('failureCode') == 'MOTION_LOCAL_UNSUPPORTED_GEOMETRY' and motion_path is not None:
+                verdict = run_bridge_video_request(root, req_path, profile=profile_id, motion_plan_path=None)
+                if not verdict.get('ok'):
+                    raise render_local.RenderInputError(
+                        verdict.get('failureCode', 'VIDEO_REQUEST_INVALID'), verdict.get('subject')
+                    )
+                profiles = verdict['profiles']
+                p_err = profiles[0] if profiles else {}
+            if p_err.get('status') != 'compiled':
+                raise render_local.RenderInputError(
+                    p_err.get('failureCode', 'PROFILE_COMPILE_FAILED'),
+                    p_err.get('profileId') or profile_id,
+                )
+
+        profile = profiles[0]
+        project = verdict['project']
+        media = verdict['media']
+        work_dir = os.path.join(run_root, 'docs')
+        paths = write_working_documents(work_dir, profile, project)
+
+        _, canonical_manifest_json = prepare_asset_manifest.build_asset_manifest_from_registry(
+            root, paths['case'], paths['association'], media
+        )
+        write_text(paths['asset_manifest'], canonical_manifest_json)
+        asset_manifest = json.loads(canonical_manifest_json)
+
+        # Obter resolvedAssetBindings via ponte do caso (mesmo contrato de render_pipeline)
+        bridge_verdict = render_pipeline.run_bridge_case(
+            root,
+            paths['case'],
+            asset_manifest_path=paths['asset_manifest'],
+            text_overlays_path=paths.get('overlays'),
+            visual_style_path=paths.get('style'),
+            plan_only=False,
+        )
+        # Se --assets / --asset-manifest ja trouxe resolvedAssetBindings
+        # Nota: run_bridge_case exige --assets OU --asset-manifest, com ambos OK quando --asset-manifest
+        if not bridge_verdict.get('ok'):
+            raise render_local.RenderInputError(
+                bridge_verdict.get('failureCode', 'CASE_INVALID'),
+                bridge_verdict.get('subject'),
+            )
+        resolved_bindings = bridge_verdict['resolvedAssetBindings']
+        resolved_overlays = bridge_verdict.get('resolvedTextOverlays', [])
+        visual_style = bridge_verdict.get('visualStyle')
+
+        inspected_by_id, source_abs_by_id, _, _ = render_pipeline.verify_manifest_assets(
+            root, asset_manifest, resolved_bindings
+        )
+
+        orig_pkg = bridge_verdict['package']
+        orig_out = orig_pkg['output']
+        orig_w, orig_h, fps = int(orig_out['width']), int(orig_out['height']), int(orig_out['fps'])
+        ratio = float(scale_factor) if (0.1 <= float(scale_factor) <= 1.0) else 0.5
+        preview_w = max(2, int(round(orig_w * ratio / 2.0)) * 2)
+        preview_h = max(2, int(round(orig_h * ratio / 2.0)) * 2)
+
+        preview_pkg = json.loads(json.dumps(orig_pkg))
+        preview_pkg['output']['width'] = preview_w
+        preview_pkg['output']['height'] = preview_h
+
+        framings_by_beat = {}
+        asset_paths = []
+        source_cuts = []
+        for binding in resolved_bindings:
+            beat_id = binding['beatId']
+            asset_id = binding['assetId']
+            asset_info = inspected_by_id[asset_id]
+            framings_by_beat[beat_id] = render_local.resolve_scene_framing(
+                asset_info, preview_w, preview_h, binding.get('framing'), beat_id=beat_id
+            )
+            asset_paths.append(source_abs_by_id[asset_id])
+            source_cuts.append(binding.get('sourceStartMs', 0))
+
+        srt_path = os.path.join(run_root, 'preview.srt')
+        write_text(srt_path, render_local.build_srt(preview_pkg))
+
+        title_srt_path = None
+        if resolved_overlays:
+            title_srt_content = render_local.build_title_srt(resolved_overlays)
+            if title_srt_content:
+                title_srt_path = os.path.join(run_root, 'preview-titles.srt')
+                write_text(title_srt_path, title_srt_content)
+
+        fs = render_local.fs_path
+        motion_render = []
+        if profile.get('motion'):
+            for i, eff in enumerate(profile['motion']['effects']):
+                png = os.path.join(run_root, f'.preview-motion-{i}.png')
+                rect = (eff['region']['x'] * preview_w, eff['region']['y'] * preview_h,
+                        eff['region']['w'] * preview_w, eff['region']['h'] * preview_h)
+                hexcolor = eff['color'].lstrip('#')
+                rgba = (int(hexcolor[0:2], 16), int(hexcolor[2:4], 16), int(hexcolor[4:6], 16), 255)
+                scaled_thickness = max(1, round(eff['thickness'] * (preview_w / float(orig_w))))
+                r002_pilot.write_outline_png(fs(png), rect, scaled_thickness, rgba, 0, preview_w, preview_h)
+                motion_render.append({
+                    'png': png,
+                    'start': eff['absoluteStartMs'] / 1000.0,
+                    'end': eff['absoluteEndMs'] / 1000.0,
+                    'fadeIn': eff['resolvedFadeInMs'] / 1000.0,
+                    'fadeOut': eff['resolvedFadeOutMs'] / 1000.0,
+                })
+
+        title_style = render_local.build_title_style(visual_style, preview_w, preview_h)
+        staged_mp4 = os.path.join(run_root, 'preview-output.mp4')
+        cmd = render_local.build_render_command(
+            preview_pkg, asset_paths, srt_path, staged_mp4, preset,
+            title_srt_path=title_srt_path, title_style=title_style,
+            motion=motion_render, source_cuts=source_cuts,
+            framings_by_beat=framings_by_beat,
+        )
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True,
+                                 timeout=render_local.RENDER_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            raise build_video.DeliveryError('geracao de previa excedeu o tempo limite')
+        if res.returncode != 0:
+            raise build_video.DeliveryError(
+                f'geracao de previa falhou no FFmpeg: {res.stderr[-240:] if res.stderr else "erro"}'
+            )
+
+        duration_s = preview_pkg['output']['durationMs'] / 1000.0
+        inspection = build_video.validate_mp4(
+            staged_mp4, preview_w, preview_h, fps, duration_s,
+            timeout=render_local.PROBE_TIMEOUT_SECONDS
+        )
+        os.makedirs(os.path.dirname(out_real), exist_ok=True)
+        os.replace(fs(staged_mp4), fs(out_real))
+        return {
+            'status': 'completed',
+            'profileId': profile_id,
+            'width': preview_w,
+            'height': preview_h,
+            'sourceOutputWidth': orig_w,
+            'sourceOutputHeight': orig_h,
+            'fps': fps,
+            'durationMs': preview_pkg['output']['durationMs'],
+            'bytes': os.path.getsize(fs(out_real)),
+            'sha256': render_local.sha256_file(out_real),
+            'inspection': inspection,
+            'framings': framings_by_beat,
+        }
+    finally:
+        shutil.rmtree(render_local.fs_path(run_root, force=True), ignore_errors=True)
 
 
 def failed_result(profile, error=None):
@@ -422,8 +605,13 @@ def main(argv=None):
                             fonte = (f"fonte [{beat['sourceStartMs']}ms -> {beat['sourceEndMs']}ms]")
                         else:
                             fonte = 'fonte [imagem estatica]'
+                        fr = beat.get('framing') or {'mode': 'fit'}
+                        if fr.get('mode') == 'fill':
+                            enq = f"enquadramento=Preencher(cx={fr['centerX']:.2f},cy={fr['centerY']:.2f},zoom={fr['zoomPercent']}%)"
+                        else:
+                            enq = 'enquadramento=Ajustar'
                         print(f"      {beat['beatId']} montagem [{beat['startMs']}ms -> {beat['endMs']}ms] "
-                              f"{fonte} midia={beat['mediaId']} titulo={beat['title']}")
+                              f"{fonte} {enq} midia={beat['mediaId']} titulo={beat['title']}")
                     for warning in entry['warnings']:
                         print(f"      aviso: {warning['code']} ({warning['path']})")
                 print(f"  Midias: {', '.join(item['id'] for item in media)}")
@@ -463,7 +651,10 @@ def main(argv=None):
         finally:
             shutil.rmtree(run_root, ignore_errors=True)
             if os.path.exists(lock_path):
-                os.remove(lock_path)
+                try:
+                    os.remove(lock_path)
+                except OSError:
+                    pass
 
         all_completed = all(entry['status'] == 'completed' for entry in results) and bool(results)
         payload = {

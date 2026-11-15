@@ -626,3 +626,7 @@ jobs:
       - name: Prova de edicao de gravacoes e cortes por cena (Studio HTTP)
         run: |
           python tools/ci_recording_cuts_proof.py --port 8798
+
+      - name: Prova de enquadramento por cena/destino e previa da montagem (Studio HTTP)
+        run: |
+          python tools/ci_scene_framing_preview_proof.py --port 8799

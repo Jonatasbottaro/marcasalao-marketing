@@ -15,6 +15,16 @@
 
 import type { CreativeExecutionPackage } from './creative-execution-package-contract.js'
 
+/** Ajuste de enquadramento aplicado ao beat (modo preencher). */
+export interface LocalRenderFraming {
+    readonly centerX: number
+    readonly centerY: number
+    readonly zoomPercent: number
+}
+
+/** Campos conhecidos do ajuste de enquadramento no vinculo. */
+export const LOCAL_RENDER_FRAMING_FIELDS = ['centerX', 'centerY', 'zoomPercent'] as const
+
 /** Unica versao de schema suportada nesta fatia. */
 export const LOCAL_RENDER_INPUT_SCHEMA_VERSION = 1
 
@@ -52,6 +62,7 @@ export interface LocalRenderAssetBinding {
     readonly beatId: string
     readonly path: string
     readonly sourceStartMs?: number
+    readonly framing?: LocalRenderFraming
 }
 
 /**
@@ -75,6 +86,7 @@ export type LocalRenderInputFailureCode =
     | 'ASSET_PATH_INVALID'
     | 'ASSET_EXTENSION_UNSUPPORTED'
     | 'ASSET_SOURCE_START_INVALID'
+    | 'ASSET_FRAMING_INVALID'
     | 'RENDER_CONFIGURATION_UNSUPPORTED'
 
 export type LocalRenderInputValidationResult =

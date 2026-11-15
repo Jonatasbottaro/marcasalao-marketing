@@ -19,6 +19,7 @@ import {
     ASSET_MANIFEST_BINDING_FIELDS,
     ASSET_MANIFEST_BINDING_REQUIRED_FIELDS,
     ASSET_MANIFEST_ENTRY_FIELDS,
+    ASSET_MANIFEST_FRAMING_FIELDS,
     ASSET_MANIFEST_IMAGE_EXTENSIONS,
     ASSET_MANIFEST_SCHEMA_VERSION,
     ASSET_MANIFEST_TOP_LEVEL_FIELDS,
@@ -35,7 +36,7 @@ import {
     type ResolvedAssetBinding,
 } from './asset-manifest-contract.js'
 import type { CreativeExecutionPackage } from './creative-execution-package-contract.js'
-import { LOCAL_RENDER_INPUT_SCHEMA_VERSION, type LocalRenderAssetAssociation } from './local-render-input-contract.js'
+import { LOCAL_RENDER_INPUT_SCHEMA_VERSION, type LocalRenderAssetAssociation, type LocalRenderFraming } from './local-render-input-contract.js'
 import { containsControlCharacter, inspectRelativePath } from './relative-path.js'
 import { validateCreativeExecutionPackage } from './validate-creative-execution-package.js'
 import { validateLocalRenderInput } from './validate-local-render-input.js'
@@ -117,10 +118,32 @@ function validateStructuralBinding(raw: unknown): AssetManifestBinding | null {
         && (typeof raw.sourceStartMs !== 'number' || !Number.isSafeInteger(raw.sourceStartMs) || raw.sourceStartMs < 0)) {
         return null
     }
+    let framing: LocalRenderFraming | undefined
+    if (raw.framing !== undefined) {
+        const f = raw.framing
+        if (!isPlainObject(f)
+            || !hasExactFields(f, ASSET_MANIFEST_FRAMING_FIELDS)
+            || typeof f.centerX !== 'number'
+            || !Number.isFinite(f.centerX)
+            || f.centerX < 0
+            || f.centerX > 1
+            || typeof f.centerY !== 'number'
+            || !Number.isFinite(f.centerY)
+            || f.centerY < 0
+            || f.centerY > 1
+            || typeof f.zoomPercent !== 'number'
+            || !Number.isSafeInteger(f.zoomPercent)
+            || f.zoomPercent < 100
+            || f.zoomPercent > 300) {
+            return null
+        }
+        framing = { centerX: f.centerX, centerY: f.centerY, zoomPercent: f.zoomPercent }
+    }
     return {
         beatId: raw.beatId,
         assetId: raw.assetId,
         ...(raw.sourceStartMs !== undefined ? { sourceStartMs: raw.sourceStartMs } : {}),
+        ...(framing !== undefined ? { framing } : {}),
     }
 }
 
@@ -212,7 +235,7 @@ export function validateAssetManifest(
 
     const orderedBindings: AssetManifestBinding[] = []
     const resolvedBindings: ResolvedAssetBinding[] = []
-    const derivedAssociationAssets: { beatId: string; path: string; sourceStartMs?: number }[] = []
+    const derivedAssociationAssets: { beatId: string; path: string; sourceStartMs?: number; framing?: LocalRenderFraming }[] = []
 
     for (const step of pkg.timeline) {
         const binding = bindingByBeat.get(step.beatId)
@@ -242,11 +265,13 @@ export function validateAssetManifest(
             durationMs: step.durationMs,
             sourceStartMs,
             sourceEndMs: sourceStartMs + step.durationMs,
+            ...(binding.framing !== undefined ? { framing: binding.framing } : {}),
         })
         derivedAssociationAssets.push({
             beatId: step.beatId,
             path: asset.path,
             ...(sourceStartMs > 0 ? { sourceStartMs } : {}),
+            ...(binding.framing !== undefined ? { framing: binding.framing } : {}),
         })
     }
 

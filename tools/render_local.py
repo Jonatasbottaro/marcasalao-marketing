@@ -221,6 +221,171 @@ def run_bridge(root, package_path, assets_path):
         raise build_video.DeliveryError('veredito da ponte ilegivel')
 
 
+def _parse_sar_ratio(sar_raw) -> tuple[int, int] | None:
+    if not sar_raw or not isinstance(sar_raw, str):
+        return None
+    cleaned = sar_raw.strip()
+    if cleaned in ('0:1', '0/1', 'N/A', '1:1', '1/1'):
+        return None
+    sep = ':' if ':' in cleaned else ('/' if '/' in cleaned else None)
+    if not sep:
+        return None
+    try:
+        num, den = (int(part) for part in cleaned.split(sep, 1))
+    except ValueError:
+        return None
+    if num <= 0 or den <= 0 or num == den:
+        return None
+    return (num, den)
+
+
+def extract_stream_geometry_meta(info: dict) -> dict:
+    """Extrai dimensoes, SAR e rotacao de um stream de video/imagem FFprobe."""
+    video_streams = [s for s in info.get('streams', []) if s.get('codec_type') == 'video']
+    if not video_streams:
+        raise build_video.DeliveryError('asset sem faixa de video legivel')
+    stream = video_streams[0]
+    width = int(stream['width'])
+    height = int(stream['height'])
+
+    rotation = 0
+    tags = stream.get('tags') or {}
+    if tags.get('rotate') is not None:
+        try:
+            rot_val = int(round(float(tags.get('rotate')))) % 360
+            if rot_val != 0:
+                rotation = rot_val
+        except (TypeError, ValueError):
+            rotation = -1
+    if rotation == 0:
+        for side_data in stream.get('side_data_list') or []:
+            if 'rotation' in side_data and side_data['rotation'] is not None:
+                try:
+                    rot_val = int(round(float(side_data['rotation']))) % 360
+                    if rot_val != 0:
+                        rotation = rot_val
+                        break
+                except (TypeError, ValueError):
+                    rotation = -1
+                    break
+
+    sar = stream.get('sample_aspect_ratio')
+    return {
+        'width': width,
+        'height': height,
+        'sar': sar,
+        'rotation': rotation,
+    }
+
+
+def resolve_scene_framing(source_meta: dict, output_width: int, output_height: int,
+                          framing: dict | None = None, beat_id: str | None = None) -> dict:
+    """Resolve o retangulo em pixels na fonte a partir da geometria de entrada/saida e do ajuste.
+
+    Calculo centralizado (limites, rotacao/SAR, recorte par para yuv420p):
+    - Sem framing (ou mode='fit'): mantem a midia inteira centralizada com pad nas bordas.
+    - Com framing (mode='fill'): com 100%, usa o maior retangulo com a proporcao do destino
+      que cabe na fonte; ao aproximar (100..300%), reduz a janela ao redor de (centerX, centerY)
+      com origem no canto superior esquerdo e mantem a janela integralmente dentro da fonte.
+    """
+    src_w = int(source_meta.get('width') or 0)
+    src_h = int(source_meta.get('height') or 0)
+    out_w = int(output_width)
+    out_h = int(output_height)
+    label = beat_id or '?'
+    if src_w <= 0 or src_h <= 0 or out_w <= 0 or out_h <= 0:
+        raise build_video.DeliveryError(f"FRAMING_GEOMETRY_INVALID: geometria invalida em '{label}'")
+
+    if framing is None or framing.get('mode') == 'fit':
+        return {
+            'mode': 'fit',
+            'centerX': 0.5,
+            'centerY': 0.5,
+            'zoomPercent': 100,
+            'sourceWidth': src_w,
+            'sourceHeight': src_h,
+            'outputWidth': out_w,
+            'outputHeight': out_h,
+            'cropX': 0,
+            'cropY': 0,
+            'cropWidth': src_w,
+            'cropHeight': src_h,
+        }
+
+    rotation = source_meta.get('rotation', 0)
+    if rotation not in (0, None):
+        raise build_video.DeliveryError(
+            f"FRAMING_MEDIA_METADATA_UNSUPPORTED: midia da cena '{label}' possui metadados de rotacao "
+            f"({rotation} graus) que impedem recorte confiavel; volte para Ajustar"
+        )
+    non_square_sar = _parse_sar_ratio(source_meta.get('sar'))
+    if non_square_sar is not None:
+        raise build_video.DeliveryError(
+            f"FRAMING_MEDIA_METADATA_UNSUPPORTED: midia da cena '{label}' possui pixel aspect ratio nao quadrado "
+            f"({source_meta.get('sar')}) que impede recorte confiavel; volte para Ajustar"
+        )
+    if src_w < 4 or src_h < 4:
+        raise build_video.DeliveryError(
+            f"FRAMING_MEDIA_METADATA_UNSUPPORTED: midia da cena '{label}' ({src_w}x{src_h}) e pequena demais "
+            f"para recorte confiavel; volte para Ajustar"
+        )
+
+    center_x = float(framing['centerX'])
+    center_y = float(framing['centerY'])
+    zoom_percent = int(framing['zoomPercent'])
+    if not (0.0 <= center_x <= 1.0 and 0.0 <= center_y <= 1.0):
+        raise build_video.DeliveryError(f"FRAMING_CENTER_OUT_OF_RANGE: centro invalido em '{label}'")
+    if not (100 <= zoom_percent <= 300):
+        raise build_video.DeliveryError(f"FRAMING_ZOOM_OUT_OF_RANGE: zoom invalido em '{label}'")
+
+    # Retangulo maximo com a proporcao do destino dentro da fonte
+    if src_w * out_h >= out_w * src_h:
+        base_h = float(src_h)
+        base_w = float(src_h) * (float(out_w) / float(out_h))
+    else:
+        base_w = float(src_w)
+        base_h = float(src_w) * (float(out_h) / float(out_w))
+
+    zoom = zoom_percent / 100.0
+    raw_w = base_w / zoom
+    raw_h = base_h / zoom
+
+    max_even_w = max(2, src_w - (src_w % 2))
+    max_even_h = max(2, src_h - (src_h % 2))
+    crop_w = max(2, min(max_even_w, int(round(raw_w / 2.0)) * 2))
+    crop_h = max(2, min(max_even_h, int(round(raw_h / 2.0)) * 2))
+
+    cx = center_x * float(src_w)
+    cy = center_y * float(src_h)
+    raw_x = cx - (crop_w / 2.0)
+    raw_y = cy - (crop_h / 2.0)
+
+    max_x = max(0, src_w - crop_w)
+    max_y = max(0, src_h - crop_h)
+    clamped_x = max(0.0, min(float(max_x), raw_x))
+    clamped_y = max(0.0, min(float(max_y), raw_y))
+
+    crop_x = min(max_x - (max_x % 2), int(round(clamped_x / 2.0)) * 2)
+    crop_y = min(max_y - (max_y % 2), int(round(clamped_y / 2.0)) * 2)
+
+    return {
+        'mode': 'fill',
+        'centerX': center_x,
+        'centerY': center_y,
+        'zoomPercent': zoom_percent,
+        'sourceWidth': src_w,
+        'sourceHeight': src_h,
+        'outputWidth': out_w,
+        'outputHeight': out_h,
+        'baseWidth': int(round(base_w)),
+        'baseHeight': int(round(base_h)),
+        'cropX': int(crop_x),
+        'cropY': int(crop_y),
+        'cropWidth': int(crop_w),
+        'cropHeight': int(crop_h),
+    }
+
+
 def probe_asset(root, path):
     """Sondagem FFprobe com timeout; exige stream de video decodificavel.
 
@@ -354,13 +519,27 @@ def build_narration(package):
     return '\n'.join(lines).rstrip('\n') + '\n'
 
 
-def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None, motion_effects=None):
+def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None, motion_effects=None,
+                       framings_by_beat=None):
     output = package['output']
     width, height, fps = output['width'], output['height'], output['fps']
     total_s = output['durationMs'] / 1000.0
     chains = []
     labels = []
+    framings_map = framings_by_beat or {}
     for index, step in enumerate(package['timeline']):
+        resolved_framing = framings_map.get(step['beatId'])
+        if resolved_framing and resolved_framing.get('mode') == 'fill':
+            crop_filter = (
+                f"crop={resolved_framing['cropWidth']}:{resolved_framing['cropHeight']}:"
+                f"{resolved_framing['cropX']}:{resolved_framing['cropY']},"
+                f"scale={width}:{height}:flags=bicubic,setsar=1,fps={fps}"
+            )
+        else:
+            crop_filter = (
+                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps}"
+            )
         # setpts reinicia os timestamps do trecho (corte com -ss na entrada)
         # para que a concatenacao e os filtros animados usem t a partir de 0.
         if step['motionIntent'] == 'slow-zoom':
@@ -370,8 +549,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
             # em 1080x1920; esta forma e valida e rapida.
             chains.append(
                 f"[{index}:v]setpts=PTS-STARTPTS,"
-                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},"
+                f"{crop_filter},"
                 f"scale=w='{width}*(1+0.10*t/{duration_s:.3f})':"
                 f"h='{height}*(1+0.10*t/{duration_s:.3f})':eval=frame,"
                 f"crop={width}:{height}:(iw-{width})/2:(ih-{height})/2[v{index}]"
@@ -379,8 +557,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
         else:
             chains.append(
                 f"[{index}:v]setpts=PTS-STARTPTS,"
-                f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
-                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps}[v{index}]"
+                f"{crop_filter}[v{index}]"
             )
         labels.append(f'[v{index}]')
     chains.append(''.join(labels) + f'concat=n={len(labels)}:v=1:a=0[cat]')
@@ -416,7 +593,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None, source_cuts=None):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None, source_cuts=None, framings_by_beat=None):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -439,7 +616,7 @@ def build_render_command(package, asset_paths, srt_path, video_path, preset, tit
             'input_index': input_index, 'start': m['start'], 'end': m['end'],
             'fadeIn': m['fadeIn'], 'fadeOut': m['fadeOut'],
         })
-    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style, motion_effects=motion_effects), '-map', '[vfinal]']
+    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style, motion_effects=motion_effects, framings_by_beat=framings_by_beat), '-map', '[vfinal]']
     cmd += ['-an', '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
             '-t', f'{total_s:.3f}', video_path]
     return cmd
@@ -520,8 +697,11 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     association = verdict['association']
 
     by_beat = {binding['beatId']: binding for binding in association['assets']}
+    out_w = int(package['output']['width'])
+    out_h = int(package['output']['height'])
     asset_paths = []
     source_cuts = []
+    framings_by_beat = {}
     for step in package['timeline']:
         binding = by_beat[step['beatId']]
         relative = binding['path']
@@ -529,6 +709,10 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         if not contained(root, absolute) or not os.path.isfile(absolute):
             raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
         info = probe_asset(root, absolute)
+        source_meta = extract_stream_geometry_meta(info)
+        framings_by_beat[step['beatId']] = resolve_scene_framing(
+            source_meta, out_w, out_h, binding.get('framing'), beat_id=step['beatId']
+        )
         start_ms = binding.get('sourceStartMs', 0)
         if start_ms > 0:
             stream = next(s for s in info.get('streams', []) if s.get('codec_type') == 'video')
@@ -555,7 +739,8 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     write_text(staging_paths['narration'], build_narration(package))
 
     cmd = build_render_command(package, asset_paths, staging_paths['srt'],
-                               staging_paths['video'], preset, source_cuts=source_cuts)
+                               staging_paths['video'], preset, source_cuts=source_cuts,
+                               framings_by_beat=framings_by_beat)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=RENDER_TIMEOUT_SECONDS)

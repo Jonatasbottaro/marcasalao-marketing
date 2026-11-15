@@ -105,3 +105,23 @@ button.warn-btn { background: #9e6a03; color: #fff; }
 .media-dialog-body textarea, .media-dialog-body input[type="text"] { width: 100%; }
 .md-provider-preview { white-space: pre-wrap; max-height: 180px; overflow-y: auto; }
 .md-apply-box { margin-top: 10px; }
+
+/* ---- Enquadramento por cena/destino e previa da montagem ---- */
+.framing-toolbar { align-items: center; }
+.assembly-timeline { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #14171d; }
+.timeline-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: #0d0f13; border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 7px 10px; font-size: 12px; cursor: pointer; text-align: left; }
+.timeline-chip.active { border-color: var(--accent); background: rgba(79,140,255,.16); }
+.timeline-chip small { color: var(--muted); font-size: 11px; }
+.scene.active-scene { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(79,140,255,.35); }
+.framing-editor { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #14171d; }
+.framing-inputs-row { margin-top: 8px; align-items: center; }
+.framing-inputs-row input[type="range"] { min-width: 160px; padding: 0; }
+.framing-canvases-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; align-items: flex-start; }
+.framing-canvas-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #0d0f13; }
+#v-frame-source-canvas { border: 1px solid var(--line); border-radius: 6px; background: #000; display: block; cursor: crosshair; touch-action: none; }
+#v-frame-dest-canvas { border: 1px solid var(--line); border-radius: 6px; background: #000; display: block; }
+button.framing-active-btn { background: var(--accent); color: #fff; }
+.preview-assembly-panel { margin-bottom: 10px; }
+.preview-player-box { margin-top: 10px; }
+.preview-player-box video { max-width: 360px; max-height: 460px; width: auto; border: 1px solid var(--line); border-radius: 6px; background: #000; display: block; }
+hr.preview-sep { border: 0; border-top: 1px dashed var(--line); margin: 14px 0; }
