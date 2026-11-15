@@ -506,14 +506,14 @@ REQUIRE_RENDER=1 python -m unittest tools/tests/test_studio_templates.py -v
 
 A prova HTTP cobre modelo + nova revisão, variações a partir de revisão anterior, duplicação, independência, colisão de ID, mídia ausente, mudança de allowlist, modelo de outro projeto, lote na fila (Reels, YouTube horizontal, carrossel 4:5 e Motion vertical), reexportação isolada, FFprobe sem áudio, aprovação na Revisão, ZIP com manifesto/hashes/versão conferidos e recuperação após reinício.
 
-## Conexões de texto e imagem (aba Conexões)
+## Conexões de texto, imagem e vídeo (aba Conexões)
 
-A aba **Conexões** cadastra, troca e testa conexões de texto local (OpenAI-compatível, ex.: Qwen) e de imagem (Google Gemini), com seleção por projeto e histórico de chamadas. O Planejamento e a Biblioteca de Mídia usam a mesma seleção; projetos sem seleção continuam no legado (`STUDIO_LLM_*` / `llm-config.json` para texto, `GEMINI_API_KEY` / `STUDIO_GEMINI_*` para imagem), sem migração obrigatória.
+A aba **Conexões** cadastra, troca e testa conexões de texto local (OpenAI-compatível, ex.: Qwen) e do Google Gemini (imagem e vídeo), com seleção de conexão e modelo por projeto e por capacidade, e histórico de chamadas. O Planejamento e a Biblioteca de Mídia usam a mesma seleção; projetos sem seleção continuam no legado (`STUDIO_LLM_*` / `llm-config.json` para texto, `GEMINI_API_KEY` / `STUDIO_GEMINI_*` para imagem), sem migração obrigatória. A mesma conexão Google atende imagem e vídeo quando a conta tem acesso; o modelo de vídeo padrão é o `gemini-omni-1.2-flash` (Omni Flash), com escolha por projeto.
 
 - **Armazenamento versionado** em `.workspace/studio/connections.json` (metadados, escolhas por projeto e histórico; gravação atômica). O contrato de `ProjectManifest` não foi ampliado.
 - **Credenciais no backend**: o valor nunca entra no JSON nem em respostas/logs. Conexões `vault` gravam no cofre da estação Windows (CredWriteW/CredReadW/CredDeleteW, alvo `MarcaSalaoStudio/<ref>`); conexões `env` resolvem a variável no momento da chamada; conexões `none` dispensam chave quando o servidor local dispensa autenticação. Testes e provas usam `STUDIO_CREDENTIAL_BACKEND=simulated` (com `STUDIO_CREDENTIAL_STORE_PATH` opcional); sem cofre disponível, a UI orienta o caminho por variável de ambiente. Trocar a chave mantém o ID da conexão e as escolhas dos projetos.
-- **Testar** executa diagnóstico, nunca geração: texto local consulta `GET {base}/v1/models` (com `Authorization: Bearer` quando houver chave); Gemini consulta o endpoint oficial de metadados `GET {endpoint}/v1beta/models` com `x-goog-api-key`. Estados distinguidos: `OK`, `CREDENTIAL_REFUSED` (401/403), `CREDENTIAL_MISSING`, `MODEL_INCOMPATIBLE` (modelo fora da lista/404), `RATE_LIMIT` (429), `UNAVAILABLE` (rede), `TIMEOUT`. Mensagens normalizadas e sem segredos; horário e estado ficam na conexão e no histórico.
-- **Histórico** (`calls`, limite 200): horário, projeto, conexão (ou `legado (env)`), capacidade (`text`/`image`/`diagnostic`), modelo, resultado e uso (`promptTokens`/`completionTokens`/`totalTokens`/`imageCount`) quando o provedor informa; custo/cota/saldo apenas quando houver dado do fornecedor aplicável.
+- **Testar** executa diagnóstico, nunca geração: texto local consulta `GET {base}/v1/models` (com `Authorization: Bearer` quando houver chave); Gemini consulta o endpoint oficial de metadados `GET {endpoint}/v1beta/models` com `x-goog-api-key` e informa se o modelo de vídeo (`gemini-omni-1.2-flash`) aparece na lista devolvida pelo servidor. Estados distinguidos: `OK`, `CREDENTIAL_REFUSED` (401/403), `CREDENTIAL_MISSING`, `MODEL_INCOMPATIBLE` (modelo fora da lista/404), `RATE_LIMIT` (429), `UNAVAILABLE` (rede), `TIMEOUT`. Mensagens normalizadas e sem segredos; horário e estado ficam na conexão e no histórico.
+- **Histórico** (`calls`, limite 200): horário, projeto, conexão (ou `legado (env)`), capacidade (`text`/`image`/`video`/`diagnostic`), modelo, resultado e uso (`promptTokens`/`completionTokens`/`totalTokens`/`imageCount`/`videoCount`) quando o provedor informa; custo/cota/saldo apenas quando houver dado do fornecedor aplicável.
 - **Falhas identificam a conexão**: erros de geração no Planejamento/Biblioteca citam nome e ID da conexão selecionada e a ação necessária; a troca de provedor fica a cargo do operador.
 - **Rotas**: `GET /api/connections`, `POST /api/connections/save|credential|delete|select|test` (escritas com as verificações de Host/Origin existentes). Respostas carregam só metadados/referências.
 
@@ -522,4 +522,23 @@ A aba **Conexões** cadastra, troca e testa conexões de texto local (OpenAI-com
 ```bash
 python tools/ci_studio_connections_proof.py --port 8807
 python -m unittest tools/tests/test_studio_connections.py -v
+```
+
+## Clipes por API: texto para vídeo (Gemini Omni Flash)
+
+A aba **Mídias** ganhou o fluxo **Gerar clipe / Acompanhar / Importar na Biblioteca**: o operador descreve um clipe, revisa a confirmação (conexão, modelo, texto, duração/proporção/resolução e condições de cobrança e retenção) e o Studio envia à **Interactions API** oficial do Google (`POST {endpoint}/v1beta/interactions`, modelo `gemini-omni-1.2-flash`). O Veo 3.1 Preview foi encerrado pelo Google em 22/10/2026; o Omni Flash é o modelo de vídeo desta API. A geração é síncrona no fornecedor e roda em segundo plano no Studio; `background=true` não é documentado para o Omni Flash e não é usado. O vídeo volta nos passos da interação (`steps[].model_output.content[]`, `type: "video"`, base64 inline ou `delivery: "uri"` com consulta ao arquivo até `ACTIVE` e download).
+
+- **Módulo dedicado** `tools/studio_video_api.py`; pedidos persistidos por trabalho em `.workspace/studio/works/<id>/video-requests.json` (schemaVersion 1, gravação atômica, isolamento por projeto). O `ProjectManifest` não foi ampliado.
+- **Pedido registrado antes da chamada**: ID local `vreq-*`, conexão/modelo resolvidos do projeto (capacidade `video`), parâmetros validados contra as opções oficiais (duração inteira 3–15 s, padrão 10 s; proporção 16:9/9:16; resolução 360p/720p/1080p/4k, padrão 720p) e revalidados no servidor. Estados: `awaiting` (aguardando confirmação), `processing`, `ready` (pronto para importar), `imported`, `failed` (falha confirmada) e `uncertain` (resultado incerto).
+- **Sem repetição de submissão**: clique duplicado ou recarregamento recuperam o mesmo pedido; `submit` exige `confirm: true`; pedido falho/incerto só reenvia com `resubmit: true` (ação explícita). Envio que pode ter sido aceito sem resposta preserva estado e evidência da tentativa (`RESULT_UNCERTAIN`).
+- **Retomada após reinício**: com ID remoto confirmado, o Studio retoma a consulta `GET /v1beta/interactions/{id}` (a resposta traz o vídeo inline mesmo em entregas `uri`); sem ID remoto, o pedido vira `uncertain` (`INTERRUPTED`). Resultados já recebidos são preservados. A retenção padrão do provedor (`store=true`: 55 dias no plano pago, 1 dia no gratuito) é informada na confirmação; `store=false` não é enviado porque a retomada depende do armazenamento remoto.
+- **Credencial no backend**: resolvida no momento da chamada pela conexão do projeto (cofre/env); o valor nunca entra em estado, respostas, logs, fila ou ZIP. Erros citam a conexão e a ação necessária; falhas distinguem credencial recusada, limite, modelo/resultado inválido e indisponibilidade.
+- **Importação na Biblioteca** reutiliza `studio_media.py`: FFprobe (duração, dimensões pares, contêiner, codec), normalização para MP4 H.264 quando necessário e **exportação silenciosa** (`-an`, verificação FFprobe de zero faixas de áudio no produto final). O fornecedor devolve áudio nativo; o clipe importado fica mudo pela política do projeto. Registro de origem `generated-google-gemini-video` com fornecedor, modelo, referência da conexão, parâmetros, `remoteInteractionId`, hash de origem e hash final. Importação repetida do mesmo pedido devolve a **mesma versão** (idempotente). O clipe fica selecionável na cena; a Fila de Produção recebe a composição pelo fluxo de exportação atual (vídeo sem áudio + SRT + narração TXT).
+- **Rotas**: `GET /api/works/video-requests?id=<work>`, `POST /api/works/video-requests/create|submit|check|import` (escritas com Host/Origin; erros estruturados com código). **Testar** em Conexões continua usando apenas metadados.
+
+### Comandos reproduzíveis
+
+```bash
+python tools/ci_studio_video_api_proof.py --port 8808
+python -m unittest tools/tests/test_studio_video_api.py -v
 ```
