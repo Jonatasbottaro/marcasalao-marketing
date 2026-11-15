@@ -15,6 +15,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 import uuid
 
 import render_local
@@ -65,6 +66,19 @@ def _slug(text, fallback):
     text = re.sub(r'[^a-z0-9]+', '-', text).strip('-')
     text = re.sub(r'-{2,}', '-', text)
     return text if KEBAB_RE.match(text or '') else fallback
+
+
+def _replace_dir_with_retry(src, dst, attempts=6):
+    """Promove diretorio com retry curto: Windows pode negar acesso transitorio
+    (indexador/antivirus) logo apos criar a arvore de staging."""
+    for i in range(attempts):
+        try:
+            os.replace(render_local.fs_path(src), render_local.fs_path(dst))
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(0.2 * (i + 1))
 
 
 # ---------------------------------------------------------------------------
@@ -281,7 +295,7 @@ def save_as_template(studio, body):
 
         _atomic_json(os.path.join(staging, 'snapshot.json'), snapshot)
         os.makedirs(render_local.fs_path(os.path.dirname(final_rev_dir)), exist_ok=True)
-        os.replace(render_local.fs_path(staging), render_local.fs_path(final_rev_dir))
+        _replace_dir_with_retry(staging, final_rev_dir)
         staging = None
     finally:
         if staging and os.path.isdir(render_local.fs_path(staging)):
@@ -593,7 +607,7 @@ def _instantiate_work(studio, snapshot, new_id, name, overrides, origin, media_s
                 'WORK_ID_COLLISION',
                 f'ja existe um trabalho com o id "{new_id}"; escolha outro id (o conteudo existente foi preservado)',
             )
-        os.replace(render_local.fs_path(staging), render_local.fs_path(target_dir))
+        _replace_dir_with_retry(staging, target_dir)
         staging = None
         return work_doc
     finally:
