@@ -126,3 +126,15 @@ button.framing-active-btn { background: var(--accent); color: #fff; }
 .preview-player-box { margin-top: 10px; }
 .preview-player-box video { max-width: 360px; max-height: 460px; width: auto; border: 1px solid var(--line); border-radius: 6px; background: #000; display: block; }
 hr.preview-sep { border: 0; border-top: 1px dashed var(--line); margin: 14px 0; }
+
+/* ---- Fila de Producao em Lote ---- */
+.badge.info { background: rgba(79,140,255,.18); color: #8ab4ff; }
+.queue-counts-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.queue-count-pill { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: #14171d; font-size: 13px; }
+.queue-item-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 10px 0; background: #14171d; }
+.queue-item-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.batch-work-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 10px 0; background: #0d0f13; }
+.batch-option-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.batch-option-row:last-child { border-bottom: 0; }
+#works-table th:first-child, #works-table td:first-child { width: 32px; text-align: center; }
+#works-table input[type="checkbox"] { min-width: auto; width: 16px; height: 16px; padding: 0; cursor: pointer; }

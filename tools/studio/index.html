@@ -37,6 +37,7 @@
       <button id="mode-carousel-btn" class="mode-btn">Carrosséis</button>
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
       <button id="mode-review-btn" class="mode-btn">Revisão &amp; Entrega</button>
+      <button id="mode-queue-btn" class="mode-btn">Fila de Produção <span id="queue-nav-badge" class="badge muted" hidden>0</span></button>
     </nav>
   </header>
 
@@ -55,11 +56,17 @@
     </section>
 
     <section id="sec-works-list">
-      <h2>Trabalhos recentes (retomada)</h2>
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">Trabalhos recentes (retomada)</h2>
+        <div class="row" style="margin: 0;">
+          <span id="works-batch-count" class="muted">0 selecionado(s)</span>
+          <button id="btn-open-batch-export">Exportar em lote</button>
+        </div>
+      </div>
       <p class="muted">Feche o painel e reabra qualquer trabalho depois mantendo rascunhos, mídias, últimas tentativas e entregas válidas.</p>
       <table id="works-table">
         <thead>
-          <tr><th>ID</th><th>Trabalho</th><th>Projeto</th><th>Vídeo</th><th>Carrossel</th><th>Motion</th><th>Atualizado</th><th></th></tr>
+          <tr><th><input id="works-select-all" type="checkbox" title="Selecionar todos"></th><th>ID</th><th>Trabalho</th><th>Projeto</th><th>Vídeo</th><th>Carrossel</th><th>Motion</th><th>Atualizado</th><th></th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -855,10 +862,53 @@
       </section>
     </div>
   </div>
+
+  <!-- ================= Fila de Produção ================= -->
+  <div id="mode-queue" hidden>
+    <section id="sec-queue-overview">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">Fila de Produção em Lote</h2>
+        <div class="row" style="margin: 0;">
+          <button id="btn-q-refresh" class="secondary">Atualizar fila</button>
+        </div>
+      </div>
+      <p class="muted">A fila persiste localmente em SQLite e continua executando em série no servidor local mesmo após fechar o navegador.</p>
+      <div id="queue-counts-bar" class="queue-counts-bar"></div>
+      <div class="row" style="margin-top: 10px;">
+        <label>Filtrar por estado
+          <select id="q-filter-status">
+            <option value="">Todos os estados</option>
+            <option value="queued">Na fila</option>
+            <option value="running">Em execução</option>
+            <option value="completed">Concluídos</option>
+            <option value="failed">Falhos</option>
+            <option value="interrupted">Interrompidos</option>
+            <option value="cancelled">Cancelados</option>
+          </select>
+        </label>
+        <label>Filtrar por trabalho
+          <select id="q-filter-work">
+            <option value="">Todos os trabalhos</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section id="sec-queue-batches">
+      <h2>Lotes registrados</h2>
+      <div id="q-batches-list"></div>
+    </section>
+
+    <section id="sec-queue-items">
+      <h2>Peças da fila</h2>
+      <div id="q-items-list"></div>
+    </section>
+  </div>
   </main>
 
   <div id="toast"></div>
   <div id="media-dialog-root"></div>
+  <div id="batch-dialog-root"></div>
   <script src="/static/app.js"></script>
   <script src="/static/planning.js"></script>
   <script src="/static/media.js"></script>
