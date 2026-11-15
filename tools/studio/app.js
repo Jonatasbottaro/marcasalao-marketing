@@ -156,11 +156,13 @@ function setMode(mode) {
   $('#mode-carousel').hidden = mode !== 'carousel';
   $('#mode-motion').hidden = mode !== 'motion';
   $('#mode-review').hidden = mode !== 'review';
+  $('#mode-queue').hidden = mode !== 'queue';
   $('#mode-home-btn').classList.toggle('active', mode === 'home');
   $('#mode-video-btn').classList.toggle('active', mode === 'video');
   $('#mode-carousel-btn').classList.toggle('active', mode === 'carousel');
   $('#mode-motion-btn').classList.toggle('active', mode === 'motion');
   $('#mode-review-btn').classList.toggle('active', mode === 'review');
+  $('#mode-queue-btn').classList.toggle('active', mode === 'queue');
   if (mode === 'motion') {
     if (currentWork && !mStandaloneOverride) {
       syncDraftFields();
@@ -173,6 +175,9 @@ function setMode(mode) {
   }
   if (mode === 'home') {
     loadWorks().catch(() => {});
+  }
+  if (mode === 'queue') {
+    loadQueue().catch((e) => toast(e.message));
   }
 }
 
@@ -286,13 +291,34 @@ function updateWorkPathsPreview() {
     `Caminhos automáticos em .workspace/studio/works/${id}/ (rascunhos/, media/ compartilhada e deliveries/).`;
 }
 
+const selectedBatchWorks = new Set();
+let lastSavedWorkSnapshot = null;
+
+function updateBatchSelectionCount() {
+  const span = $('#works-batch-count');
+  if (span) span.textContent = `${selectedBatchWorks.size} selecionado(s)`;
+}
+
+function hasUnsavedWorkChanges() {
+  if (!currentWork || !lastSavedWorkSnapshot) return false;
+  syncDraftFields();
+  syncCFields();
+  const currentSnap = JSON.stringify({
+    videoRequest: draft,
+    carouselRequest: cdraft,
+    motionPlan: mplan,
+  });
+  return currentSnap !== lastSavedWorkSnapshot;
+}
+
 async function loadWorks() {
   const data = await api('/api/works');
   const tbody = $('#works-table tbody');
   tbody.innerHTML = '';
   const works = data.works || [];
   if (!works.length) {
-    tbody.append(el('tr', {}, el('td', { colspan: '8', class: 'muted', text: 'Nenhum trabalho criado ainda. Use a demonstração guiada ou crie um trabalho abaixo.' })));
+    tbody.append(el('tr', {}, el('td', { colspan: '9', class: 'muted', text: 'Nenhum trabalho criado ainda. Use a demonstração guiada ou crie um trabalho abaixo.' })));
+    updateBatchSelectionCount();
     return;
   }
   for (const w of works) {
@@ -304,7 +330,19 @@ async function loadWorks() {
       if (ok) return el('span', { class: 'badge ok', text: typeof ok === 'number' ? `${ok} perfil(is)` : 'pronto' });
       return el('span', { class: 'badge muted', text: 'sem entrega' });
     };
+    const chk = el('input', {
+      type: 'checkbox',
+      class: 'work-select-cb',
+      'data-work-id': w.id,
+      onchange: () => {
+        if (chk.checked) selectedBatchWorks.add(w.id);
+        else selectedBatchWorks.delete(w.id);
+        updateBatchSelectionCount();
+      },
+    });
+    chk.checked = selectedBatchWorks.has(w.id);
     tbody.append(el('tr', {}, [
+      el('td', {}, chk),
       el('td', { text: w.id }),
       el('td', { text: w.name }),
       el('td', { text: w.projectId || w.project }),
@@ -318,6 +356,7 @@ async function loadWorks() {
       })),
     ]));
   }
+  updateBatchSelectionCount();
 }
 
 function applyOpenedWork(data) {
@@ -329,6 +368,11 @@ function applyOpenedWork(data) {
   cdraft = JSON.parse(JSON.stringify(data.carouselRequest));
   mreq = JSON.parse(JSON.stringify(data.videoRequest));
   mplan = JSON.parse(JSON.stringify(data.motionPlan));
+  lastSavedWorkSnapshot = JSON.stringify({
+    videoRequest: data.videoRequest,
+    carouselRequest: data.carouselRequest,
+    motionPlan: data.motionPlan,
+  });
 
   $('#project-select').value = draft.project || currentWork.project || '';
   $('#c-project-select').value = cdraft.project || currentWork.project || '';
@@ -418,6 +462,11 @@ async function saveWork(silent = false) {
   };
   const data = await post('/api/works/save', payload);
   currentWork = data.work;
+  lastSavedWorkSnapshot = JSON.stringify({
+    videoRequest: draft,
+    carouselRequest: cdraft,
+    motionPlan: mplan,
+  });
   if (!mStandaloneOverride) mreq = JSON.parse(JSON.stringify(draft));
   renderActiveWorkBar();
   if (!silent) toast('Trabalho salvo em disco com segurança.');
@@ -2778,6 +2827,21 @@ async function init() {
   $('#mode-carousel-btn').addEventListener('click', () => setMode('carousel'));
   $('#mode-motion-btn').addEventListener('click', () => setMode('motion'));
   $('#mode-review-btn').addEventListener('click', () => setMode('review'));
+  $('#mode-queue-btn').addEventListener('click', () => setMode('queue'));
+  $('#btn-open-batch-export').addEventListener('click', () => openBatchExportModal().catch((e) => toast(e.message)));
+  $('#works-select-all').addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    document.querySelectorAll('.work-select-cb').forEach((cb) => {
+      cb.checked = checked;
+      const wid = cb.getAttribute('data-work-id');
+      if (checked) selectedBatchWorks.add(wid);
+      else selectedBatchWorks.delete(wid);
+    });
+    updateBatchSelectionCount();
+  });
+  $('#btn-q-refresh').addEventListener('click', () => loadQueue().catch((e) => toast(e.message)));
+  $('#q-filter-status').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
+  $('#q-filter-work').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
   $('#btn-r-refresh').addEventListener('click', () => loadReviewOverview().catch((e) => toast(e.message)));
   $('#btn-r-save-editorial').addEventListener('click', () => saveEditorialSheet().catch((e) => toast(e.message)));
   $('#btn-r-build-package').addEventListener('click', () => buildPackageZip().catch((e) => toast(e.message)));
@@ -2785,6 +2849,7 @@ async function init() {
   await initCarousel();
   await initMotion();
   initFramingAndPreviewControls();
+  loadQueue().catch(() => {});
   setMode('home');
 }
 
@@ -3303,6 +3368,355 @@ function renderReviewPanel(review, pkg) {
   } else {
     resBox.append(el('p', { class: 'muted', text: 'Nenhum pacote ZIP de entrega gerado ainda neste trabalho.' }));
   }
+}
+
+// ---- Produção em Lote e Fila Persistente ----
+let queuePollTimer = null;
+
+function queueStatusBadge(status) {
+  const map = {
+    queued: { cls: 'muted', label: 'Na fila' },
+    running: { cls: 'info', label: 'Em execução' },
+    completed: { cls: 'ok', label: 'Concluído' },
+    failed: { cls: 'err', label: 'Falhou' },
+    interrupted: { cls: 'warn', label: 'Interrompido' },
+    cancelled: { cls: 'muted', label: 'Cancelado' },
+  };
+  return map[status] || { cls: 'muted', label: status };
+}
+
+function closeBatchExportModal() {
+  const root = $('#batch-dialog-root');
+  if (root) root.innerHTML = '';
+}
+
+async function openBatchExportModal() {
+  const workIds = Array.from(selectedBatchWorks);
+  if (!workIds.length) {
+    toast('Selecione pelo menos um trabalho na tabela para exportar em lote.');
+    return;
+  }
+  const plan = await post('/api/queue/plan', { workIds });
+  const idempotencyKey = `batch-ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const root = $('#batch-dialog-root');
+  root.innerHTML = '';
+
+  const overlay = el('div', { class: 'media-dialog-overlay', id: 'batch-export-overlay' });
+  const dialog = el('div', { class: 'media-dialog', id: 'batch-export-dialog' });
+  const head = el('div', { class: 'media-dialog-head' }, [
+    el('h2', { style: 'margin:0;', text: `Exportar em lote (${workIds.length} trabalho(s))` }),
+    el('button', { class: 'secondary', text: 'Fechar', onclick: closeBatchExportModal }),
+  ]);
+
+  const body = el('div', { class: 'media-dialog-body' });
+  const unsavedBox = el('div', { id: 'batch-unsaved-box' });
+  const renderUnsaved = () => {
+    unsavedBox.innerHTML = '';
+    if (hasUnsavedWorkChanges()) {
+      unsavedBox.append(el('div', { class: 'alert-box warn' }, [
+        el('div', { text: `Há alterações não salvas no trabalho ativo (${currentWork.id}). A fila congela a versão salva em disco.` }),
+        el('div', { class: 'row', style: 'margin-top:8px; margin-bottom:0;' }, [
+          el('button', {
+            id: 'btn-batch-save-active',
+            class: 'ok-btn',
+            text: 'Salvar trabalho ativo antes de confirmar',
+            onclick: async () => {
+              await saveWork();
+              closeBatchExportModal();
+              await openBatchExportModal();
+            },
+          }),
+        ]),
+      ]));
+    }
+  };
+  renderUnsaved();
+
+  const labelInput = el('input', {
+    id: 'batch-label-input',
+    type: 'text',
+    placeholder: `Lote (${workIds.length} trabalho(s))`,
+  });
+
+  const groupsBox = el('div', { id: 'batch-options-groups' });
+  for (const w of (plan.works || [])) {
+    const group = el('div', { class: 'batch-work-group', 'data-batch-work-id': w.workId }, [
+      el('div', { style: 'margin-bottom:6px;' }, [
+        el('strong', { text: `${w.title} ` }),
+        el('span', { class: 'muted', text: `(${w.workId} · ${w.project})` }),
+      ]),
+    ]);
+    for (const opt of (w.options || [])) {
+      const cb = el('input', {
+        type: 'checkbox',
+        class: 'batch-opt-cb',
+        'data-work-id': opt.workId,
+        'data-modality': opt.modality,
+        'data-profile-id': opt.profileId,
+      });
+      cb.checked = Boolean(opt.available && opt.selectedByDefault);
+      cb.disabled = !opt.available;
+      group.append(el('div', { class: 'batch-option-row' }, [
+        el('label', { class: 'inline-check' }, [
+          cb,
+          el('span', { class: 'badge muted', text: opt.modalityLabel }),
+          el('strong', { text: opt.profileLabel || opt.profileId }),
+          el('span', { class: 'muted', text: ` (${opt.profileId})` }),
+        ]),
+        opt.available
+          ? el('span', { class: 'badge ok', text: 'disponível' })
+          : el('span', { class: 'badge err', text: opt.unavailableReason || 'indisponível' }),
+      ]));
+    }
+    groupsBox.append(group);
+  }
+
+  const fb = el('div', { id: 'batch-confirm-feedback' });
+  const confirmBtn = el('button', {
+    id: 'btn-batch-confirm',
+    class: 'ok-btn',
+    text: 'Confirmar e enfileirar lote',
+    onclick: async () => {
+      fb.innerHTML = '';
+      const selected = Array.from(dialog.querySelectorAll('.batch-opt-cb:checked')).map((cb) => ({
+        workId: cb.getAttribute('data-work-id'),
+        modality: cb.getAttribute('data-modality'),
+        profileId: cb.getAttribute('data-profile-id'),
+      }));
+      if (!selected.length) {
+        fb.append(el('div', { class: 'alert-box err', text: 'Selecione pelo menos uma peça disponível.' }));
+        return;
+      }
+      confirmBtn.disabled = true;
+      try {
+        const res = await post('/api/queue/enqueue', {
+          items: selected,
+          idempotencyKey,
+          label: labelInput.value.trim() || undefined,
+        });
+        closeBatchExportModal();
+        toast(res.deduplicated
+          ? `Lote ${res.batch.batchId} já enfileirado (requisição idempotente).`
+          : `Lote ${res.batch.batchId} enfileirado (${res.batch.counts.total} peça(s)).`);
+        setMode('queue');
+        await loadQueue();
+      } catch (err) {
+        fb.append(el('div', { class: 'alert-box err', text: err.message }));
+        confirmBtn.disabled = false;
+      }
+    },
+  });
+
+  body.append(
+    unsavedBox,
+    el('label', {}, 'Nome do lote (opcional)', labelInput),
+    groupsBox,
+    fb,
+    el('div', { class: 'row', style: 'margin-top:12px;' }, [
+      confirmBtn,
+      el('button', { class: 'secondary', text: 'Cancelar', onclick: closeBatchExportModal }),
+    ]),
+  );
+  dialog.append(head, body);
+  overlay.append(dialog);
+  root.append(overlay);
+}
+
+function scheduleQueuePoll(hasActive) {
+  if (queuePollTimer) {
+    clearTimeout(queuePollTimer);
+    queuePollTimer = null;
+  }
+  if (hasActive) {
+    queuePollTimer = setTimeout(() => {
+      loadQueue().catch(() => {});
+    }, 1500);
+  }
+}
+
+async function openQueueWorkReview(workId) {
+  await openWork(workId);
+  setMode('review');
+  await loadReviewOverview();
+}
+
+async function cancelQueueItem(itemId) {
+  await post('/api/queue/cancel', { itemId });
+  toast('Item cancelado na fila.');
+  await loadQueue();
+}
+
+async function retryQueueItem(itemId, useCurrent = false, feedbackEl = null) {
+  try {
+    await post('/api/queue/retry', { itemId, useCurrent });
+    toast(useCurrent ? 'Item reenfileirado com a versão atual.' : 'Nova tentativa enfileirada com o snapshot anterior.');
+    await loadQueue();
+  } catch (err) {
+    if (err.payload && err.payload.canUseCurrent && feedbackEl) {
+      feedbackEl.innerHTML = '';
+      feedbackEl.append(el('div', { class: 'alert-box warn' }, [
+        el('div', { text: err.message }),
+        el('div', { class: 'row', style: 'margin-top:6px; margin-bottom:0;' }, [
+          el('button', {
+            class: 'ok-btn',
+            text: 'Enfileirar versão atual',
+            onclick: () => retryQueueItem(itemId, true, feedbackEl),
+          }),
+        ]),
+      ]));
+    } else {
+      toast(err.message);
+    }
+  }
+}
+
+async function loadQueue() {
+  const statusFilter = $('#q-filter-status')?.value || '';
+  const workFilter = $('#q-filter-work')?.value || '';
+  const params = new URLSearchParams();
+  if (statusFilter) params.set('status', statusFilter);
+  if (workFilter) params.set('workId', workFilter);
+  const qs = params.toString() ? '?' + params.toString() : '';
+  const data = await api('/api/queue' + qs);
+
+  const counts = data.counts || {};
+  const pendingCount = (counts.queued || 0) + (counts.running || 0);
+  const navBadge = $('#queue-nav-badge');
+  if (navBadge) {
+    navBadge.textContent = String(pendingCount);
+    navBadge.hidden = pendingCount === 0;
+  }
+
+  const bar = $('#queue-counts-bar');
+  if (bar) {
+    bar.innerHTML = '';
+    const labels = [
+      ['Total', counts.total || 0],
+      ['Na fila', counts.queued || 0],
+      ['Em execução', counts.running || 0],
+      ['Concluídos', counts.completed || 0],
+      ['Falhos', counts.failed || 0],
+      ['Interrompidos', counts.interrupted || 0],
+      ['Cancelados', counts.cancelled || 0],
+    ];
+    for (const [k, v] of labels) {
+      bar.append(el('div', { class: 'queue-count-pill' }, [
+        el('span', { class: 'muted', text: `${k}: ` }),
+        el('strong', { text: String(v) }),
+      ]));
+    }
+  }
+
+  // Atualiza opcoes do filtro por trabalho preservando selecao atual
+  const workSel = $('#q-filter-work');
+  if (workSel) {
+    const allWorksData = await api('/api/queue');
+    const seenWorks = new Set();
+    for (const it of (allWorksData.items || [])) seenWorks.add(it.workId);
+    const prev = workSel.value;
+    workSel.innerHTML = '';
+    workSel.append(el('option', { value: '', text: 'Todos os trabalhos' }));
+    for (const wid of Array.from(seenWorks).sort()) {
+      workSel.append(el('option', { value: wid, text: wid }));
+    }
+    workSel.value = seenWorks.has(prev) ? prev : '';
+  }
+
+  const batchesBox = $('#q-batches-list');
+  if (batchesBox) {
+    batchesBox.innerHTML = '';
+    const batches = data.batches || [];
+    if (!batches.length) {
+      batchesBox.append(el('p', { class: 'muted', text: 'Nenhum lote enfileirado ainda.' }));
+    }
+    for (const b of batches) {
+      const bc = b.counts || {};
+      const stInfo = queueStatusBadge(b.batchStatus);
+      batchesBox.append(el('div', { class: 'queue-item-card', 'data-batch-id': b.batchId }, [
+        el('div', { class: 'queue-item-head' }, [
+          el('div', {}, [
+            el('strong', { text: `${b.label || b.batchId} ` }),
+            el('span', { class: 'muted', text: `(${b.batchId})` }),
+          ]),
+          el('span', { class: 'badge ' + stInfo.cls, text: stInfo.label }),
+        ]),
+        el('p', {
+          class: 'timeline',
+          text: `Total ${bc.total || 0} · Na fila ${bc.queued || 0} · Em execução ${bc.running || 0} · Concluídos ${bc.completed || 0} · Falhos ${bc.failed || 0} · Interrompidos ${bc.interrupted || 0} · Cancelados ${bc.cancelled || 0}`,
+        }),
+        el('div', { class: 'row', style: 'margin-bottom:0;' }, [
+          el('a', {
+            href: `/api/queue/batch/summary?id=${encodeURIComponent(b.batchId)}`,
+            download: `${b.batchId}-summary.json`,
+            text: 'Baixar resumo JSON do lote',
+          }),
+        ]),
+      ]));
+    }
+  }
+
+  const itemsBox = $('#q-items-list');
+  if (itemsBox) {
+    itemsBox.innerHTML = '';
+    const items = data.items || [];
+    if (!items.length) {
+      itemsBox.append(el('p', { class: 'muted', text: 'Nenhuma peça corresponde aos filtros atuais.' }));
+    }
+    for (const it of items) {
+      const stInfo = queueStatusBadge(it.status);
+      const card = el('div', { class: 'queue-item-card', 'data-queue-item-id': it.itemId });
+      const retryFb = el('div', { class: 'q-item-retry-feedback' });
+      const actions = [];
+      if (it.status === 'queued') {
+        actions.push(el('button', {
+          class: 'secondary q-btn-cancel',
+          text: 'Cancelar',
+          onclick: () => cancelQueueItem(it.itemId).catch((e) => toast(e.message)),
+        }));
+      }
+      if (it.status === 'failed' || it.status === 'interrupted') {
+        actions.push(el('button', {
+          class: 'warn-btn q-btn-retry',
+          text: 'Tentar novamente',
+          onclick: () => retryQueueItem(it.itemId, false, retryFb),
+        }));
+        if (it.canUseCurrent) {
+          actions.push(el('button', {
+            class: 'ok-btn q-btn-retry-current',
+            text: 'Enfileirar versão atual',
+            onclick: () => retryQueueItem(it.itemId, true, retryFb),
+          }));
+        }
+      }
+      actions.push(el('button', {
+        class: 'q-btn-open-review',
+        text: 'Abrir revisão',
+        onclick: () => openQueueWorkReview(it.workId).catch((e) => toast(e.message)),
+      }));
+
+      card.append(
+        el('div', { class: 'queue-item-head' }, [
+          el('div', {}, [
+            el('span', { class: 'badge muted', text: it.modalityLabel }),
+            el('strong', { text: `${it.workTitle} ` }),
+            el('span', { class: 'muted', text: `(${it.workId} · ${it.profileId})` }),
+          ]),
+          el('span', { class: 'badge ' + stInfo.cls, text: stInfo.label }),
+        ]),
+        el('p', {
+          class: 'timeline',
+          text: `Lote ${it.batchId} · Tentativas: ${(it.attempts || []).length}` +
+            (it.deliveryVersionId ? ` · Entrega: ${it.deliveryVersionId}` : ''),
+        }),
+        it.errorMessage ? el('div', { class: 'alert-box ' + (it.status === 'cancelled' ? 'warn' : 'err'), text: it.errorMessage }) : null,
+        retryFb,
+        el('div', { class: 'row', style: 'margin-bottom:0;' }, actions),
+      );
+      itemsBox.append(card);
+    }
+  }
+
+  scheduleQueuePoll(pendingCount > 0 && (!$('#mode-queue').hidden || pendingCount > 0));
 }
 
 init();

@@ -417,7 +417,7 @@ def run_check_assets(case_path, asset_manifest_path, root,
 
 def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast',
                         text_overlays_path=None, visual_style_path=None, asset_manifest_path=None,
-                        motion=None):
+                        motion=None, extra_manifest_fields=None, pre_promote_hook=None):
     root = os.path.realpath(root)
     if bool(assets_path) == bool(asset_manifest_path):
         raise render_local.InputFileError('informe exatamente um entre --assets e --asset-manifest')
@@ -908,11 +908,15 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     if visual_style_path and visual_style:
         manifest['visualStyleId'] = visual_style['id']
         manifest['visualStyle'] = rel(root, visual_style_path)
+    if extra_manifest_fields:
+        manifest.update(extra_manifest_fields)
     write_text(staging_paths['manifest'], json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
     backup_dir = os.path.join(staging, '.backup')
     lock = render_local.acquire_promotion_lock(output_dir)
     try:
+        if pre_promote_hook is not None:
+            pre_promote_hook()
         check_destination_collision(output_dir, case_id)
         render_local.promote_with_backup(staging_paths, dests, backup_dir)
     finally:

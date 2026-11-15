@@ -43,6 +43,7 @@ import make_proof_assets
 import make_request_media
 import produce_video
 import render_local
+import studio_queue
 import delivery_package
 import image_adapters
 import llm_adapter
@@ -264,7 +265,7 @@ def _default_output_profiles_from_listing(listing):
 class Studio:
     """Estado e operacoes do painel, confinadas a raiz do projeto."""
 
-    def __init__(self, root, port):
+    def __init__(self, root, port, auto_start_queue=True):
         self.root = os.path.realpath(root)
         self.port = port
         self.tools = os.path.join(self.root, 'tools')
@@ -282,6 +283,24 @@ class Studio:
         self.preview_jobs_lock = threading.Lock()
         for folder in (self.projects_dir, self.works_dir, self.status_dir, self.drafts_dir, self.standalone_previews_dir):
             os.makedirs(folder, exist_ok=True)
+        self.queue = studio_queue.StudioQueue(self, auto_start=auto_start_queue)
+
+    def close(self):
+        if getattr(self, 'queue', None) is not None:
+            self.queue.stop_executor()
+
+    def is_single_export_active(self, output_dir_rel, profile=None):
+        try:
+            norm = self._normalize_rel(output_dir_rel)
+        except ValueError:
+            return False
+        with self.jobs_lock:
+            for job in self.jobs.values():
+                if job.get('status') == 'running' and self._normalize_rel(job['outputDir']) == norm:
+                    if profile is not None and job.get('profile') != profile:
+                        continue
+                    return True
+        return False
 
     # ---- prontidao ----
     def check_readiness(self):
@@ -1113,6 +1132,8 @@ class Studio:
             self._finalize_job(job)
 
     def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None, work_id=None):
+        if self.is_single_export_active(output_dir_rel, profile=profile) or self.queue.is_destination_active(output_dir_rel):
+            raise ValueError('Destino em uso por uma exportacao ou item da fila em andamento. Aguarde a conclusao.')
         export_lineage = None
         if work_id:
             save_payload = {'workId': work_id}
@@ -2014,6 +2035,25 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'examples': studio.list_examples()})
             elif path == '/api/works':
                 self.send_json(200, {'ok': True, 'works': studio.list_works()})
+            elif path == '/api/queue':
+                self.send_json(200, {'ok': True, **studio.queue.list_queue(
+                    status=query.get('status', [None])[0],
+                    work_id=query.get('workId', [None])[0],
+                    batch_id=query.get('batchId', [None])[0],
+                )})
+            elif path == '/api/queue/batch':
+                self.send_json(200, {'ok': True, 'batch': studio.queue.get_batch(query.get('id', [''])[0])})
+            elif path == '/api/queue/batch/summary':
+                summary = studio.queue.export_batch_summary(query.get('id', [''])[0])
+                payload = (json.dumps(summary, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+                bid = re.sub(r'[^a-zA-Z0-9._-]', '_', summary['batchId'])
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Disposition', f'attachment; filename="{bid}-summary.json"')
+                self.send_header('Content-Length', str(len(payload)))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(payload)
             elif path == '/api/works/open':
                 self.send_json(200, {'ok': True, **studio.open_work(query.get('id', [''])[0])})
             elif path == '/api/works/planning':
@@ -2105,6 +2145,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.serve_file_ranges(target)
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_queue.QueueConflictError as exc:
+            self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
         except studio_review.ReviewVersionConflictError as exc:
             self.send_error_json(409, str(exc), {'conflict': True})
         except studio_planning.PlanningValidationError as exc:
@@ -2218,12 +2260,29 @@ class StudioHandler(BaseHTTPRequestHandler):
                     work_id=body.get('workId'),
                 )
                 self.send_json(200, {'ok': True, 'jobId': job_id})
+            elif path == '/api/queue/plan':
+                self.send_json(200, {'ok': True, **studio.queue.plan_batch(body.get('workIds') or [])})
+            elif path == '/api/queue/enqueue':
+                batch = studio.queue.enqueue_batch(
+                    body.get('items') or [],
+                    idempotency_key=body.get('idempotencyKey'),
+                    label=body.get('label'),
+                )
+                self.send_json(200, {'ok': True, 'batch': batch})
+            elif path == '/api/queue/cancel':
+                item = studio.queue.cancel_item(body.get('itemId'))
+                self.send_json(200, {'ok': True, 'item': item})
+            elif path == '/api/queue/retry':
+                item = studio.queue.retry_item(body.get('itemId'), use_current=bool(body.get('useCurrent')))
+                self.send_json(200, {'ok': True, 'item': item})
             elif path == '/api/media/scan':
                 self.send_json(200, {'ok': True, 'media': studio.scan_media(body.get('folder', ''))})
             elif path == '/api/media/generate':
                 self.send_json(200, {'ok': True, 'written': studio.generate_media(body.get('request'))})
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_queue.QueueConflictError as exc:
+            self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
         except studio_review.ReviewVersionConflictError as exc:
             self.send_error_json(409, str(exc), {'conflict': True})
         except studio_planning.PlanningValidationError as exc:
@@ -2250,8 +2309,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(500, str(exc))
 
 
-def make_server(root, port):
-    studio = Studio(root, port)
+def make_server(root, port, auto_start_queue=True):
+    studio = Studio(root, port, auto_start_queue=auto_start_queue)
     handler = type('BoundStudioHandler', (StudioHandler,), {'studio': studio})
     httpd = ThreadingHTTPServer(('127.0.0.1', port), handler)
     return httpd, studio
@@ -2283,7 +2342,7 @@ def main(argv=None):
         return 0 if readiness['ready'] else 1
 
     print_readiness_text(readiness)
-    httpd, _ = make_server(root, args.port)
+    httpd, studio = make_server(root, args.port)
     print(f"Video Studio em http://127.0.0.1:{args.port} (raiz: {root})")
     print("Ctrl+C para encerrar.")
     try:
@@ -2291,6 +2350,7 @@ def main(argv=None):
     except KeyboardInterrupt:
         pass
     finally:
+        studio.close()
         httpd.server_close()
     return 0
 

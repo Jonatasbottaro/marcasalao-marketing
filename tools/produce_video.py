@@ -144,7 +144,22 @@ def write_working_documents(run_dir, profile, project):
     return paths
 
 
-def export_profile(root, profile, project, media, output_dir, run_root, preset, staging, motion_plan=None):
+def _verify_attempt_fence(fence_file, attempt_id=None):
+    if not fence_file:
+        return
+    try:
+        with open(fence_file, 'r', encoding='utf-8') as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: tentativa perdeu a reserva antes da promocao')
+    if not isinstance(data, dict) or data.get('revoked'):
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: tentativa perdeu a reserva antes da promocao')
+    if attempt_id and data.get('attemptId') != attempt_id:
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: reserva pertence a outra tentativa')
+
+
+def export_profile(root, profile, project, media, output_dir, run_root, preset, staging,
+                   motion_plan=None, attempt_id=None, fence_file=None):
     profile_id = profile['profileId']
     run_dir = os.path.join(run_root, profile_id)
     paths = write_working_documents(run_dir, profile, project)
@@ -155,6 +170,8 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
     motion = None
     if motion_plan and profile.get('motion'):
         motion = {'plan': motion_plan, 'effects': profile['motion']['effects']}
+    extra_fields = {'attemptId': attempt_id} if attempt_id else None
+    pre_hook = (lambda: _verify_attempt_fence(fence_file, attempt_id)) if fence_file else None
     summary = render_pipeline.run_render_pipeline(
         paths['case'],
         None,
@@ -166,8 +183,10 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         visual_style_path=paths.get('style'),
         asset_manifest_path=paths['asset_manifest'],
         motion=motion,
+        extra_manifest_fields=extra_fields,
+        pre_promote_hook=pre_hook,
     )
-    return {
+    res = {
         'profileId': profile_id,
         'caseId': profile['caseId'],
         'packageId': summary['packageId'],
@@ -177,6 +196,9 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         'artifacts': summary['artifacts'],
         'inspection': summary['inspection'],
     }
+    if attempt_id:
+        res['attemptId'] = attempt_id
+    return res
 
 
 def render_assembly_preview(root, request_data, profile_id, output_mp4_path,
@@ -372,7 +394,7 @@ def failed_result(profile, error=None):
     }
 
 
-DELIVERY_FIELDS = ('profileId', 'caseId', 'packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection')
+DELIVERY_FIELDS = ('profileId', 'caseId', 'packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection', 'attemptId')
 EXPORT_LOCK_NAME = '.produce-video-export.lock'
 
 
@@ -491,6 +513,8 @@ def reconcile_index_from_manifests(output_dir, request_id):
                 'artifacts': artifacts,
                 'inspection': (artifacts.get('video') or {}).get('ffprobe'),
             }
+            if manifest.get('attemptId'):
+                delivery['attemptId'] = manifest['attemptId']
             entry = {
                 'profileId': name,
                 'caseId': manifest.get('caseId'),
@@ -531,6 +555,8 @@ def main(argv=None):
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo (opcional)')
     parser.add_argument('--preset', default='veryfast', help='Preset do FFmpeg')
+    parser.add_argument('--attempt-id', default=None, help='Identificador da tentativa da fila (interno)')
+    parser.add_argument('--fence-file', default=None, help='Arquivo de cerca/reserva da fila (interno)')
     parser.add_argument('--json', action='store_true', help='Emite um unico resultado JSON no stdout')
     args = parser.parse_args(argv)
 
@@ -640,7 +666,9 @@ def main(argv=None):
                 try:
                     results.append(export_profile(root, profile, project, media, output_dir,
                                                   run_root, args.preset, args.staging,
-                                                  motion_plan=motion_plan_input))
+                                                  motion_plan=motion_plan_input,
+                                                  attempt_id=args.attempt_id,
+                                                  fence_file=args.fence_file))
                 except (build_video.DeliveryError, render_local.RenderInputError,
                         render_local.InputFileError, OSError, ValueError) as exc:
                     results.append(failed_result(profile, error=str(exc)))

@@ -630,3 +630,7 @@ jobs:
       - name: Prova de enquadramento por cena/destino e previa da montagem (Studio HTTP)
         run: |
           python tools/ci_scene_framing_preview_proof.py --port 8799
+
+      - name: Prova de fila persistente e producao em lote (Studio HTTP)
+        run: |
+          python tools/ci_studio_queue_proof.py --port 8803
