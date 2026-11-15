@@ -415,6 +415,8 @@ class RenderEndToEndTest(unittest.TestCase):
 
         def flaky_replace(src, dst):
             src_text = str(src)
+            if src_text.startswith('\\\\?\\'):
+                src_text = src_text[4:]
             if src_text.startswith(staging) and ".backup" not in src_text:
                 promotion_calls["count"] += 1
                 if promotion_calls["count"] == 2:
@@ -438,6 +440,8 @@ class RenderEndToEndTest(unittest.TestCase):
 
         def broken_replace(src, dst):
             src_text = str(src)
+            if src_text.startswith('\\\\?\\'):
+                src_text = src_text[4:]
             if ".backup" in src_text:
                 raise OSError("falha simulada de restauracao")
             if src_text.startswith(staging):

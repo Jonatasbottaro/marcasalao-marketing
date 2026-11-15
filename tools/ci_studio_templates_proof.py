@@ -296,6 +296,16 @@ def main(argv=None):
                 expected = (1920, 1080) if it['profileId'] == 'youtube-video-horizontal' else (1080, 1920)
                 assert (vs['width'], vs['height']) == expected
                 promoted[(it['modality'], it['profileId'])] = v_art['sha256']
+                if it['modality'] == 'video' and it['profileId'] == 'instagram-reels-video':
+                    # Quadro medio do trecho recortado: a fonte ficticia e azul
+                    ffmpeg = build_video.get_ffmpeg()
+                    raw = subprocess.run(
+                        [ffmpeg, '-v', 'error', '-i', v_abs, '-vf', 'select=eq(n\\,15),scale=1:1',
+                         '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+                        capture_output=True, check=True, timeout=60,
+                    ).stdout
+                    r, g, b = raw[0], raw[1], raw[2]
+                    assert b > r and b > g, f'quadro do trecho nao e azul: {(r, g, b)}'
 
         # 8. Reexportacao isolada do horizontal preserva os demais perfis
         v1_open = _http_json(f'{base}/api/works/open?id={variations[0]}')
