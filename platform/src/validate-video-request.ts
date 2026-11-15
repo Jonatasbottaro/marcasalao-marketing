@@ -11,6 +11,7 @@
  */
 
 import { KEBAB_CASE_PATTERN } from './project-contract.js'
+import { findOutputProfile } from './output-profiles/catalog.js'
 import {
     VIDEO_REQUEST_MEDIA_FIELDS,
     VIDEO_REQUEST_MEDIA_REQUIRED_FIELDS,
@@ -18,6 +19,7 @@ import {
     VIDEO_REQUEST_MOTION_INTENTS,
     VIDEO_REQUEST_NARRATIVE_FUNCTIONS,
     VIDEO_REQUEST_SCENE_FIELDS,
+    VIDEO_REQUEST_SCENE_FRAMING_FIELDS,
     VIDEO_REQUEST_SCENE_REQUIRED_FIELDS,
     VIDEO_REQUEST_SCHEMA_VERSION,
     VIDEO_REQUEST_TOP_LEVEL_FIELDS,
@@ -28,6 +30,7 @@ import {
     type VideoRequestMotionIntent,
     type VideoRequestScene,
     type VideoRequestValidationResult,
+    type VideoSceneFraming,
 } from './video-request-contract.js'
 import type { BeatNarrativeFunction } from './beat-plan-contract.js'
 import type { VisualStyle } from './visual-style-contract.js'
@@ -129,6 +132,46 @@ function readScene(input: unknown, mediaById: Map<string, VideoRequestMedia>, se
     if (input.motionIntent !== undefined && (typeof input.motionIntent !== 'string' || !(VIDEO_REQUEST_MOTION_INTENTS as readonly string[]).includes(input.motionIntent))) {
         return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_MOTION_INTENT_INVALID', subject: input.id }
     }
+    let framingByProfile: Record<string, VideoSceneFraming> | undefined
+    if (input.framingByProfile !== undefined) {
+        if (!isPlainObject(input.framingByProfile)) {
+            return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_FRAMING_INVALID', subject: input.id }
+        }
+        const validatedFraming: Record<string, VideoSceneFraming> = {}
+        for (const [profileKey, rawFraming] of Object.entries(input.framingByProfile)) {
+            const catalogProfile = findOutputProfile(profileKey)
+            if (catalogProfile === null || catalogProfile.mediaKind !== 'video') {
+                return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_FRAMING_PROFILE_INVALID', subject: `${input.id}.framingByProfile.${profileKey}` }
+            }
+            if (!isPlainObject(rawFraming)
+                || !hasOnlyKnownFields(rawFraming, VIDEO_REQUEST_SCENE_FRAMING_FIELDS)
+                || !hasRequiredFields(rawFraming, VIDEO_REQUEST_SCENE_FRAMING_FIELDS)) {
+                return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_FRAMING_INVALID', subject: `${input.id}.framingByProfile.${profileKey}` }
+            }
+            if (typeof rawFraming.centerX !== 'number'
+                || !Number.isFinite(rawFraming.centerX)
+                || rawFraming.centerX < 0
+                || rawFraming.centerX > 1
+                || typeof rawFraming.centerY !== 'number'
+                || !Number.isFinite(rawFraming.centerY)
+                || rawFraming.centerY < 0
+                || rawFraming.centerY > 1) {
+                return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_FRAMING_CENTER_INVALID', subject: `${input.id}.framingByProfile.${profileKey}` }
+            }
+            if (typeof rawFraming.zoomPercent !== 'number'
+                || !Number.isSafeInteger(rawFraming.zoomPercent)
+                || rawFraming.zoomPercent < 100
+                || rawFraming.zoomPercent > 300) {
+                return { ok: false, failureCode: 'VIDEO_REQUEST_SCENE_FRAMING_ZOOM_INVALID', subject: `${input.id}.framingByProfile.${profileKey}` }
+            }
+            validatedFraming[profileKey] = Object.freeze({
+                centerX: rawFraming.centerX,
+                centerY: rawFraming.centerY,
+                zoomPercent: rawFraming.zoomPercent,
+            })
+        }
+        framingByProfile = Object.freeze(validatedFraming)
+    }
     seenIds.add(input.id)
     const scene: VideoRequestScene = {
         id: input.id,
@@ -140,6 +183,7 @@ function readScene(input: unknown, mediaById: Map<string, VideoRequestMedia>, se
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.narrativeFunction !== undefined ? { narrativeFunction: input.narrativeFunction as BeatNarrativeFunction } : {}),
         ...(input.motionIntent !== undefined ? { motionIntent: input.motionIntent as VideoRequestMotionIntent } : {}),
+        ...(framingByProfile !== undefined ? { framingByProfile } : {}),
     }
     return { ok: true, scene }
 }

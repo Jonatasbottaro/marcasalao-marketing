@@ -402,3 +402,22 @@ test('sourceStartMs negativo ou fracionario falha na estrutura do inventario', (
         if (!result.ok) assert.equal(result.failureCode, 'ASSET_MANIFEST_INVALID')
     }
 })
+
+test('vinculo com framing preserva valores em resolvedBindings, associacao e serializacao canonica', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0].path)
+    const manifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+    manifest.bindings[0]!.framing = { centerX: 0.8, centerY: 0.3, zoomPercent: 175 }
+    const result = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, manifest)
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.deepEqual(result.resolvedBindings[0]!.framing, { centerX: 0.8, centerY: 0.3, zoomPercent: 175 })
+    assert.deepEqual(result.association.assets[0]!.framing, { centerX: 0.8, centerY: 0.3, zoomPercent: 175 })
+    const canonical = JSON.parse(serializeAssetManifest(result.manifest)) as AssetManifest
+    assert.deepEqual(canonical.bindings[0]!.framing, { centerX: 0.8, centerY: 0.3, zoomPercent: 175 })
+
+    const badManifest = buildValidManifest(pkg, PACKAGE_FIXTURES[0].caseId)
+    ;(badManifest.bindings[0] as Record<string, unknown>).framing = { centerX: 0.5, centerY: 0.5, zoomPercent: 305 }
+    const badRes = validateAssetManifest(pkg, PACKAGE_FIXTURES[0].caseId, badManifest)
+    assert.equal(badRes.ok, false)
+    if (!badRes.ok) assert.equal(badRes.failureCode, 'ASSET_MANIFEST_INVALID')
+})

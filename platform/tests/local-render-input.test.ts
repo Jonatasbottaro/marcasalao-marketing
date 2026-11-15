@@ -293,3 +293,22 @@ test('associacao legada sem sourceStartMs continua valida', () => {
     const result = validateLocalRenderInput(pkg, associationFor(pkg))
     assert.equal(result.ok, true)
 })
+
+test('associacao aceita framing valido e rejeita framing invalido com ASSET_FRAMING_INVALID', () => {
+    const pkg = readPackage(PACKAGE_FIXTURES[0])
+    const okAssoc = associationFor(pkg) as Mutable<LocalRenderAssetAssociation>
+    ;(okAssoc.assets[0] as Record<string, unknown>).framing = { centerX: 0.75, centerY: 0.4, zoomPercent: 180 }
+    const okRes = validateLocalRenderInput(pkg, okAssoc)
+    assert.equal(okRes.ok, true)
+    if (okRes.ok) {
+        assert.deepEqual(okRes.association.assets[0]!.framing, { centerX: 0.75, centerY: 0.4, zoomPercent: 180 })
+    }
+
+    for (const bad of [{ centerX: 1.5, centerY: 0.5, zoomPercent: 120 }, { centerX: 0.5, centerY: 0.5, zoomPercent: 99 }, { centerX: 0.5, centerY: 0.5 }]) {
+        const badAssoc = associationFor(pkg) as Mutable<LocalRenderAssetAssociation>
+        ;(badAssoc.assets[0] as Record<string, unknown>).framing = bad
+        const badRes = validateLocalRenderInput(pkg, badAssoc)
+        assert.equal(badRes.ok, false)
+        if (!badRes.ok) assert.equal(badRes.failureCode, 'ASSET_FRAMING_INVALID')
+    }
+})

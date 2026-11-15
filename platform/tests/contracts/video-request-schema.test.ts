@@ -64,6 +64,17 @@ test('paridade estrutural: pedidos validos sao aceitos pelo schema e pelo valida
             ;(r.scenes as Array<Record<string, unknown>>)[0] = { id: 'abertura', durationMs: 2400, sourceStartMs: 0, mediaId: 'gravacao-01', caption: 'Legenda', narration: 'Narracao' }
             return r
         })(),
+        (() => {
+            const r = validRequest()
+            ;(r.scenes as Array<Record<string, unknown>>)[0] = {
+                ...(r.scenes as Array<Record<string, unknown>>)[0],
+                framingByProfile: {
+                    'instagram-reels-video': { centerX: 0.8, centerY: 0.35, zoomPercent: 185 },
+                    'youtube-video-horizontal': { centerX: 0.5, centerY: 0.5, zoomPercent: 100 },
+                },
+            }
+            return r
+        })(),
     ]
 
     for (const document of validCases) {
@@ -102,6 +113,11 @@ test('paridade estrutural: defeitos de formato sao rejeitados pelo schema e pelo
         { name: 'sourceStartMs negativo', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: -1 }; return r })() },
         { name: 'sourceStartMs fracionario', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: 1.5 }; return r })() },
         { name: 'sourceStartMs textual', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], sourceStartMs: '6200' }; return r })() },
+        { name: 'framingByProfile perfil de imagem', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], framingByProfile: { 'instagram-feed-image-square': { centerX: 0.5, centerY: 0.5, zoomPercent: 120 } } }; return r })() },
+        { name: 'framingByProfile zoom fora de faixa', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], framingByProfile: { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5, zoomPercent: 301 } } }; return r })() },
+        { name: 'framingByProfile zoom fracionario', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], framingByProfile: { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5, zoomPercent: 150.5 } } }; return r })() },
+        { name: 'framingByProfile centerX > 1', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], framingByProfile: { 'instagram-reels-video': { centerX: 1.2, centerY: 0.5, zoomPercent: 150 } } }; return r })() },
+        { name: 'framingByProfile campo extra', document: (() => { const r = validRequest(); (r.scenes as Array<Record<string, unknown>>)[0] = { ...(r.scenes as Array<Record<string, unknown>>)[0], framingByProfile: { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5, zoomPercent: 150, extra: true } } }; return r })() },
     ]
 
     for (const testCase of invalidCases) {

@@ -15,6 +15,7 @@ import {
     LOCAL_RENDER_ASPECT_RATIOS,
     LOCAL_RENDER_ASSET_EXTENSIONS,
     LOCAL_RENDER_FPS,
+    LOCAL_RENDER_FRAMING_FIELDS,
     LOCAL_RENDER_INPUT_SCHEMA_VERSION,
     LOCAL_RENDER_MOTION_INTENTS,
     LOCAL_RENDER_TRANSITIONS_IN,
@@ -29,7 +30,7 @@ import { validateCreativeExecutionPackage } from './validate-creative-execution-
 
 const ASSOCIATION_FIELDS = ['schemaVersion', 'packageId', 'assets'] as const
 const BINDING_REQUIRED_FIELDS = ['beatId', 'path'] as const
-const BINDING_OPTIONAL_FIELDS = ['sourceStartMs'] as const
+const BINDING_OPTIONAL_FIELDS = ['sourceStartMs', 'framing'] as const
 const VIDEO_ASSET_EXTENSIONS = ['.mp4', '.mov'] as const
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -175,6 +176,25 @@ export function validateLocalRenderInput(
                 || !step
                 || !Number.isSafeInteger(binding.sourceStartMs + step.durationMs)) {
                 return fail('ASSET_SOURCE_START_INVALID', binding.beatId)
+            }
+        }
+        if (binding.framing !== undefined) {
+            const f = binding.framing as unknown
+            if (!isPlainObject(f)
+                || !hasExactFields(f, LOCAL_RENDER_FRAMING_FIELDS)
+                || typeof f.centerX !== 'number'
+                || !Number.isFinite(f.centerX)
+                || f.centerX < 0
+                || f.centerX > 1
+                || typeof f.centerY !== 'number'
+                || !Number.isFinite(f.centerY)
+                || f.centerY < 0
+                || f.centerY > 1
+                || typeof f.zoomPercent !== 'number'
+                || !Number.isSafeInteger(f.zoomPercent)
+                || f.zoomPercent < 100
+                || f.zoomPercent > 300) {
+                return fail('ASSET_FRAMING_INVALID', binding.beatId)
             }
         }
     }

@@ -11,7 +11,7 @@
  */
 
 import type { CreativeExecutionPackage } from './creative-execution-package-contract.js'
-import type { LocalRenderAssetAssociation, LocalRenderInputFailureCode } from './local-render-input-contract.js'
+import type { LocalRenderAssetAssociation, LocalRenderFraming, LocalRenderInputFailureCode } from './local-render-input-contract.js'
 import { KEBAB_CASE_PATTERN } from './project-contract.js'
 
 /** Unica versao de schema suportada nesta fatia. */
@@ -42,7 +42,11 @@ export const ASSET_MANIFEST_BINDING_FIELDS = [
     'beatId',
     'assetId',
     'sourceStartMs',
+    'framing',
 ] as const
+
+/** Campos conhecidos do ajuste de enquadramento no vinculo. */
+export const ASSET_MANIFEST_FRAMING_FIELDS = ['centerX', 'centerY', 'zoomPercent'] as const
 
 /** Campos obrigatorios de cada vinculo (sourceStartMs e opcional; omitido = 0). */
 export const ASSET_MANIFEST_BINDING_REQUIRED_FIELDS = [
@@ -85,6 +89,7 @@ export interface AssetManifestBinding {
     readonly beatId: string
     readonly assetId: string
     readonly sourceStartMs?: number
+    readonly framing?: LocalRenderFraming
 }
 
 /** Inventario versionado de midia AssetManifest v1. */
@@ -112,6 +117,7 @@ export interface ResolvedAssetBinding {
     /** Janela na fonte: 0..durationMs para imagem ou video sem corte explicito. */
     readonly sourceStartMs: number
     readonly sourceEndMs: number
+    readonly framing?: LocalRenderFraming
 }
 
 /** Codigos de falha estaveis para validacao do inventario de midia. */
@@ -121,6 +127,7 @@ export type AssetManifestFailureCode =
     | 'CASE_ID_MISMATCH'
     | 'ASSET_ID_DUPLICATE'
     | 'UNKNOWN_ASSET_REFERENCE'
+    | 'ASSET_MANIFEST_BINDING_FRAMING_INVALID'
 
 export type AssetManifestValidationResult =
     | {

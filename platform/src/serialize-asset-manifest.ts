@@ -26,6 +26,15 @@ function canonicalBinding(binding: AssetManifestBinding): Record<string, unknown
         beatId: binding.beatId,
         assetId: binding.assetId,
         ...(binding.sourceStartMs !== undefined && binding.sourceStartMs > 0 ? { sourceStartMs: binding.sourceStartMs } : {}),
+        ...(binding.framing !== undefined
+            ? {
+                framing: {
+                    centerX: binding.framing.centerX,
+                    centerY: binding.framing.centerY,
+                    zoomPercent: binding.framing.zoomPercent,
+                },
+            }
+            : {}),
     }
 }
 

@@ -205,3 +205,56 @@ test('cortes compilam tambem no perfil horizontal 16:9', () => {
     assert.equal(profile.plan?.geometry.height, 1080)
     assert.equal(profile.plan?.beats[0]?.sourceStartMs, 6200)
 })
+
+// ---- framingByProfile: selecao por perfil na compilacao ----
+
+test('compilador seleciona framingByProfile especifico de cada perfil e mantem fit quando ausente', () => {
+    const proj = projectWith({ outputProfiles: ['instagram-reels-video', 'youtube-video-horizontal'] })
+    const req = requestWithCuts()
+    req.profiles = ['instagram-reels-video', 'youtube-video-horizontal']
+    ;(req.scenes as Array<Record<string, unknown>>)[0] = {
+        ...(req.scenes as Array<Record<string, unknown>>)[0],
+        framingByProfile: {
+            'instagram-reels-video': { centerX: 0.82, centerY: 0.4, zoomPercent: 190 },
+            'youtube-shorts': { centerX: 0.25, centerY: 0.5, zoomPercent: 140 },
+        },
+    }
+
+    const result = compileVideoRequest(req, proj)
+    assert.ok(result.ok)
+    if (!result.ok) return
+
+    const reels = result.profiles.find((p) => p.profileId === 'instagram-reels-video')!
+    const youtube = result.profiles.find((p) => p.profileId === 'youtube-video-horizontal')!
+
+    assert.deepEqual(reels.plan?.beats[0]?.framing, { mode: 'fill', centerX: 0.82, centerY: 0.4, zoomPercent: 190 })
+    assert.deepEqual(reels.plan?.beats[1]?.framing, { mode: 'fit', centerX: 0.5, centerY: 0.5, zoomPercent: 100 })
+    assert.deepEqual(reels.association?.assets[0]?.framing, { centerX: 0.82, centerY: 0.4, zoomPercent: 190 })
+    assert.equal(reels.association?.assets[1]?.framing, undefined)
+
+    assert.deepEqual(youtube.plan?.beats[0]?.framing, { mode: 'fit', centerX: 0.5, centerY: 0.5, zoomPercent: 100 })
+    assert.equal(youtube.association?.assets[0]?.framing, undefined)
+})
+
+test('remover e readicionar perfil restaura o framingByProfile preservado na cena', () => {
+    const proj = projectWith({ outputProfiles: ['instagram-reels-video', 'youtube-video-horizontal'] })
+    const reqWithoutShorts = requestWithCuts()
+    reqWithoutShorts.profiles = ['instagram-reels-video']
+    ;(reqWithoutShorts.scenes as Array<Record<string, unknown>>)[0] = {
+        ...(reqWithoutShorts.scenes as Array<Record<string, unknown>>)[0],
+        framingByProfile: {
+            'youtube-video-horizontal': { centerX: 0.65, centerY: 0.5, zoomPercent: 130 },
+        },
+    }
+    const r1 = compileVideoRequest(reqWithoutShorts, proj)
+    assert.ok(r1.ok)
+    if (!r1.ok) return
+    assert.deepEqual(r1.profiles[0]?.plan?.beats[0]?.framing, { mode: 'fit', centerX: 0.5, centerY: 0.5, zoomPercent: 100 })
+
+    const reqWithYt = { ...reqWithoutShorts, profiles: ['instagram-reels-video', 'youtube-video-horizontal'] }
+    const r2 = compileVideoRequest(reqWithYt, proj)
+    assert.ok(r2.ok)
+    if (!r2.ok) return
+    const yt = r2.profiles.find((p) => p.profileId === 'youtube-video-horizontal')!
+    assert.deepEqual(yt.plan?.beats[0]?.framing, { mode: 'fill', centerX: 0.65, centerY: 0.5, zoomPercent: 130 })
+})

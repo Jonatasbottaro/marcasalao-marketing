@@ -176,6 +176,52 @@
             "none",
             "slow-zoom"
           ]
+        },
+        "framingByProfile": {
+          "$ref": "#/definitions/framingByProfile"
+        }
+      }
+    },
+    "framingByProfile": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "instagram-stories-video",
+          "instagram-reels-video",
+          "facebook-stories-video",
+          "facebook-reels-video",
+          "youtube-video-horizontal",
+          "youtube-shorts"
+        ]
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/sceneFraming"
+      }
+    },
+    "sceneFraming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "centerX",
+        "centerY",
+        "zoomPercent"
+      ],
+      "properties": {
+        "centerX": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "centerY": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "zoomPercent": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300
         }
       }
     }

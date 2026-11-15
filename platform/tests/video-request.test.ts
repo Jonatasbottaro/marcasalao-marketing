@@ -266,5 +266,90 @@ test('cena de imagem sem inicio continua valida (pedido legado)', () => {
     assert.ok(result.ok)
     if (result.ok) {
         assert.equal(result.request.scenes[0]?.sourceStartMs, undefined)
+        assert.equal(result.request.scenes[0]?.framingByProfile, undefined)
+    }
+})
+
+// ---- framingByProfile: enquadramento por cena e por perfil ----
+
+test('aceita framingByProfile valido em cenas de imagem e video e preserva perfis fora da selecao atual', () => {
+    const request = requestWithVideo()
+    const scenes = request.scenes as Array<Record<string, unknown>>
+    scenes[0] = {
+        ...scenes[0],
+        mediaId: 'gravacao-01',
+        framingByProfile: {
+            'instagram-reels-video': { centerX: 0.78, centerY: 0.45, zoomPercent: 180 },
+            'youtube-video-horizontal': { centerX: 0.5, centerY: 0.5, zoomPercent: 100 },
+        },
+    }
+    scenes[1] = {
+        ...scenes[1],
+        framingByProfile: {
+            'youtube-shorts': { centerX: 0.2, centerY: 0.8, zoomPercent: 300 },
+        },
+    }
+    const result = validateVideoRequest(request)
+    assert.ok(result.ok, result.ok ? '' : `${result.failureCode}:${result.subject}`)
+    if (result.ok) {
+        assert.deepEqual(result.request.scenes[0]?.framingByProfile?.['instagram-reels-video'], {
+            centerX: 0.78,
+            centerY: 0.45,
+            zoomPercent: 180,
+        })
+        assert.deepEqual(result.request.scenes[0]?.framingByProfile?.['youtube-video-horizontal'], {
+            centerX: 0.5,
+            centerY: 0.5,
+            zoomPercent: 100,
+        })
+    }
+})
+
+test('rejeita framingByProfile nao objeto, campos faltando ou campos desconhecidos', () => {
+    for (const bad of ['preencher', [], null, { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5 } }, { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5, zoomPercent: 120, extra: 1 } }]) {
+        const request = validRequest()
+        const scenes = request.scenes as Array<Record<string, unknown>>
+        scenes[0] = { ...scenes[0], framingByProfile: bad }
+        assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_FRAMING_INVALID', `framingByProfile=${JSON.stringify(bad)}`)
+    }
+})
+
+test('rejeita perfil inexistente ou perfil de imagem em framingByProfile', () => {
+    for (const badProfile of ['perfil-desconhecido', 'instagram-feed-image-square', 'facebook-stories-image']) {
+        const request = validRequest()
+        const scenes = request.scenes as Array<Record<string, unknown>>
+        scenes[0] = {
+            ...scenes[0],
+            framingByProfile: { [badProfile]: { centerX: 0.5, centerY: 0.5, zoomPercent: 120 } },
+        }
+        assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_FRAMING_PROFILE_INVALID', badProfile)
+    }
+})
+
+test('rejeita centerX e centerY fora de [0, 1] ou nao numericos', () => {
+    for (const bad of [-0.01, 1.01, NaN, Infinity, '0.5']) {
+        const r1 = validRequest()
+        ;(r1.scenes as Array<Record<string, unknown>>)[0] = {
+            ...(r1.scenes as Array<Record<string, unknown>>)[0],
+            framingByProfile: { 'instagram-reels-video': { centerX: bad, centerY: 0.5, zoomPercent: 150 } },
+        }
+        assert.equal(codes(r1), 'VIDEO_REQUEST_SCENE_FRAMING_CENTER_INVALID', `centerX=${String(bad)}`)
+        const r2 = validRequest()
+        ;(r2.scenes as Array<Record<string, unknown>>)[0] = {
+            ...(r2.scenes as Array<Record<string, unknown>>)[0],
+            framingByProfile: { 'instagram-reels-video': { centerX: 0.5, centerY: bad, zoomPercent: 150 } },
+        }
+        assert.equal(codes(r2), 'VIDEO_REQUEST_SCENE_FRAMING_CENTER_INVALID', `centerY=${String(bad)}`)
+    }
+})
+
+test('rejeita zoomPercent fora de [100, 300] ou nao inteiro', () => {
+    for (const bad of [99, 301, 150.5, '150', NaN]) {
+        const request = validRequest()
+        ;(request.scenes as Array<Record<string, unknown>>)[0] = {
+            ...(request.scenes as Array<Record<string, unknown>>)[0],
+            framingByProfile: { 'instagram-reels-video': { centerX: 0.5, centerY: 0.5, zoomPercent: bad } },
+        }
+        assert.equal(codes(request), 'VIDEO_REQUEST_SCENE_FRAMING_ZOOM_INVALID', `zoomPercent=${String(bad)}`)
     }
 })
