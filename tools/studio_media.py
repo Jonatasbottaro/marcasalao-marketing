@@ -54,6 +54,7 @@ ORIGIN_LABELS = {
     'external-tool': 'Ferramenta externa (importada)',
     'generated-simulator': 'Ilustracao gerada (simulador)',
     'generated-google-gemini': 'Ilustracao gerada (Google Gemini)',
+    'generated-google-gemini-video': 'Clipe gerado por API (Google Gemini)',
     'synthetic-demo': 'Ficticia de demonstracao',
     'studio-work': 'Arquivo do trabalho',
     'screenshot': 'Captura / evidencia funcional',

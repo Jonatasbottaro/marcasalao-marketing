@@ -52,6 +52,7 @@ import studio_planning
 import studio_review
 import studio_connections
 import studio_templates
+import studio_video_api
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
@@ -286,8 +287,11 @@ class Studio:
         for folder in (self.projects_dir, self.works_dir, self.status_dir, self.drafts_dir, self.standalone_previews_dir):
             os.makedirs(folder, exist_ok=True)
         self.queue = studio_queue.StudioQueue(self, auto_start=auto_start_queue)
+        self.video_api_stopped = False
+        self.video_api_recovery = studio_video_api.recover_on_startup(self)
 
     def close(self):
+        self.video_api_stopped = True
         if getattr(self, 'queue', None) is not None:
             self.queue.stop_executor()
 
@@ -597,6 +601,7 @@ class Studio:
             'reviewStateFile': f'{base}/review-state.json',
             'planningFile': f'{base}/planning.json',
             'mediaLibraryFile': f'{base}/media-library.json',
+            'videoRequestsFile': f'{base}/video-requests.json',
             'videoDeliveryDir': f'{base}/deliveries/video',
             'carouselDeliveryDir': f'{base}/deliveries/carousel',
             'motionDeliveryDir': f'{base}/deliveries/motion',
@@ -1899,6 +1904,26 @@ class Studio:
     def cancel_video_import(self, body):
         return studio_media.cancel_video_import(self, body)
 
+    # ---- geracao de clipes por API (texto para video) ----
+    def get_video_requests(self, work_id):
+        return studio_video_api.get_requests(self, work_id)
+
+    def create_video_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_video_api.create_request(self, work_id, body)
+
+    def submit_video_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_video_api.submit_request(self, work_id, body)
+
+    def check_video_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_video_api.check_request(self, work_id, body)
+
+    def import_video_request(self, body):
+        work_id = (body.get('workId') or '').strip() if isinstance(body, dict) else ''
+        return studio_video_api.import_request(self, work_id, body)
+
 
 class StudioHandler(BaseHTTPRequestHandler):
     server_version = 'VideoStudio/1.0'
@@ -2106,6 +2131,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.get_planning_overview(query.get('id', [''])[0])})
             elif path == '/api/works/media-library':
                 self.send_json(200, {'ok': True, **studio.get_media_library(query.get('id', [''])[0])})
+            elif path == '/api/works/video-requests':
+                self.send_json(200, {'ok': True, **studio.get_video_requests(query.get('id', [''])[0])})
             elif path == '/api/image/config':
                 self.send_json(200, {'ok': True, **studio.get_image_providers()})
             elif path == '/library-media':
@@ -2191,6 +2218,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.serve_file_ranges(target)
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_video_api.VideoApiError as exc:
+            self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_connections.ConnectionError_ as exc:
             self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_templates.TemplateConflictError as exc:
@@ -2282,6 +2311,14 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.finish_video_import(body)})
             elif path == '/api/works/media/import-video/cancel':
                 self.send_json(200, {'ok': True, **studio.cancel_video_import(body)})
+            elif path == '/api/works/video-requests/create':
+                self.send_json(200, {'ok': True, **studio.create_video_request(body)})
+            elif path == '/api/works/video-requests/submit':
+                self.send_json(200, {'ok': True, **studio.submit_video_request(body)})
+            elif path == '/api/works/video-requests/check':
+                self.send_json(200, {'ok': True, **studio.check_video_request(body)})
+            elif path == '/api/works/video-requests/import':
+                self.send_json(200, {'ok': True, **studio.import_video_request(body)})
             elif path == '/api/works/media/register':
                 self.send_json(200, {'ok': True, **studio.register_work_media(body)})
             elif path == '/api/works/media/anchor':
@@ -2349,6 +2386,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'written': studio.generate_media(body.get('request'))})
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_video_api.VideoApiError as exc:
+            self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_connections.ConnectionError_ as exc:
             self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_templates.TemplateConflictError as exc:
