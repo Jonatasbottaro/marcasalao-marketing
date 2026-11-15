@@ -638,3 +638,7 @@ jobs:
       - name: Prova de modelos reutilizaveis e variacoes em serie (Studio HTTP)
         run: |
           python tools/ci_studio_templates_proof.py --port 8804
+
+      - name: Prova de conexoes de texto e imagem (Studio HTTP, cofre simulado)
+        run: |
+          python tools/ci_studio_connections_proof.py --port 8807

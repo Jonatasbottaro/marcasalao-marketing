@@ -96,7 +96,7 @@
     for (const p of (mediaOverview && mediaOverview.providers) || []) {
       box.append(el('span', {
         class: 'badge ' + (p.available ? 'ok' : 'warn'),
-        text: `${p.label}: ${p.available ? 'disponível' : 'indisponível'}${p.model ? ' · ' + p.model : ''}`,
+        text: `${p.label}: ${p.available ? 'disponível' : 'indisponível'}${p.model ? ' · ' + p.model : ''}${p.connectionName ? ' · conexão ' + p.connectionName : ''}`,
         title: p.message || '',
       }));
     }

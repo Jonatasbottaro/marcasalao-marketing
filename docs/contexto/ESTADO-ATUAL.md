@@ -589,6 +589,16 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 - Provas: `tools/tests/test_studio_templates.py` (6 testes), `tools/tests/test_queue_process_restart.py` (2 testes de processo: encerra/reinicia Studio real com itens em andamento e pendentes; retomada, proteção contra promoção atrasada e reconciliação por `attemptId` com versão única na Revisão), `tools/ci_studio_templates_proof.py` (prova HTTP integrada ao workflow de render local em Ubuntu/Windows).
 - Limites: modelos restritos ao projeto de origem na V1; novos trabalhos são rascunhos locais; aprovação editorial, produção de campanhas reais e publicação seguem autorizações próprias; regras de proveniência e arte do Marca Salão (ComfyUI08 + guard) inalteradas; API pública `validateComposition` inalterada (nenhuma mudança em `platform/` nesta rodada).
 
+## Conexões de texto e imagem — implementada em `codex/studio-connections-v1`
+
+- Status: implementada e validada localmente na branch técnica `codex/studio-connections-v1` (sobre `0f77c49a497206160689143bf8a6ec3e8221df83`); publicação/PR/merge dependem de autorização específica desta rodada. Registro em [2026-11-15-conexoes-texto-imagem-aceite.md](../historico/2026-11-15-conexoes-texto-imagem-aceite.md).
+- Aba **Conexões** com cadastro (ID estável, nome, provedor, capacidades, modelo/endpoint), seleção de conexão+modelo por projeto para texto e imagem, **Testar** como diagnóstico (models local / metadados Gemini), troca de chave mantendo ID e seleções, e histórico de chamadas com uso/custo/cota/saldo apenas quando o fornecedor informa.
+- Credenciais resolvidas no backend no momento da chamada: cofre Windows (CredWriteW/CredReadW/CredDeleteW), backend simulado nos testes (`STUDIO_CREDENTIAL_BACKEND=simulated`) ou variável de ambiente; conexão sem chave para servidor local aberto. Metadados/seleções/histórico em `.workspace/studio/connections.json` (versionado, atômico, sem segredos); `ProjectManifest` inalterado; respostas/logs/fila/modelos/ZIPs só com referências.
+- Legado preservado sem migração: projetos sem seleção usam `STUDIO_LLM_*`/`llm-config.json` (texto) e `GEMINI_API_KEY`/`STUDIO_GEMINI_*` (imagem); `save_llm_config` nunca grava chave. Falhas de geração identificam a conexão selecionada e a ação necessária.
+- Integração: Planejamento e Biblioteca de Mídia usam a mesma seleção (conexão prevalece sobre o painel); overviews expõem a seleção sem segredo; `TextModelAdapter` com Bearer opcional e `usage`; `GeminiImageAdapter` com config injetada e `usageMetadata`.
+- Provas: `tools/tests/test_studio_connections.py` 7/7 (cofre/servidores simulados), `tools/ci_studio_connections_proof.py` (etapa nova no workflow de render local), aceite em Chromium real com dois projetos, três tipos de credencial, troca+reinício e varredura de segredos. Platform 994/994 + contratos 324/324 (sem mudanças no núcleo).
+- Limites: apenas texto local e imagem Gemini nesta versão; geração de vídeo, entrada MCP e pesquisa de referências ficam para rodadas próprias; aprovação editorial e publicação seguem o fluxo vigente.
+
 ## TEMPORAL-01
 
 - Status: **integrado e aprovado**.

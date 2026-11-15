@@ -38,6 +38,7 @@
       <button id="mode-motion-btn" class="mode-btn">Motion</button>
       <button id="mode-review-btn" class="mode-btn">Revisão &amp; Entrega</button>
       <button id="mode-queue-btn" class="mode-btn">Fila de Produção <span id="queue-nav-badge" class="badge muted" hidden>0</span></button>
+      <button id="mode-connections-btn" class="mode-btn">Conexões</button>
     </nav>
   </header>
 
@@ -507,6 +508,7 @@
           <button id="p-btn-generate-llm" type="button">Gerar sugestão com modelo local</button>
         </div>
         <div id="p-llm-status" class="muted" style="margin-top: 6px;"></div>
+        <p id="p-conn-note" class="muted" style="margin-top: 6px;"></p>
       </div>
 
       <div id="p-staged-box" class="planning-subpanel planning-staged" hidden>
@@ -905,12 +907,62 @@
       <div id="q-items-list"></div>
     </section>
   </div>
+  <div id="mode-connections" hidden>
+    <section>
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">Conexões de texto e imagem</h2>
+        <button id="btn-conn-new">Nova conexão</button>
+      </div>
+      <p id="conn-store-banner" class="muted"></p>
+      <p class="muted">Projetos sem seleção usam o legado (<code>STUDIO_LLM_*</code> / <code>llm-config.json</code> para texto e <code>GEMINI_API_KEY</code> para imagem). Chaves ficam no cofre da estação ou em variável de ambiente; o Studio guarda apenas referências.</p>
+      <table id="conn-table">
+        <thead>
+          <tr><th>Conexão</th><th>Provedor</th><th>Capacidades</th><th>Modelo / endpoint</th><th>Credencial</th><th>Último teste</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Seleção por projeto</h2>
+      <div class="row">
+        <label>Projeto
+          <select id="conn-project-select"></select>
+        </label>
+        <label>Conexão de texto
+          <select id="conn-text-select"></select>
+        </label>
+        <label>Modelo de texto (opcional)
+          <input id="conn-text-model" type="text" placeholder="herda da conexão">
+        </label>
+        <label>Conexão de imagem
+          <select id="conn-image-select"></select>
+        </label>
+        <label>Modelo de imagem (opcional)
+          <input id="conn-image-model" type="text" placeholder="herda da conexão">
+        </label>
+        <button id="btn-conn-select-save">Salvar seleção</button>
+      </div>
+      <p id="conn-selection-feedback" class="muted"></p>
+    </section>
+    <section>
+      <h2>Histórico de chamadas</h2>
+      <p class="muted">Custo, cota e saldo aparecem apenas quando o fornecedor informa esses dados para a conta/projeto.</p>
+      <table id="conn-history-table">
+        <thead>
+          <tr><th>Horário</th><th>Projeto</th><th>Conexão</th><th>Capacidade</th><th>Modelo</th><th>Resultado</th><th>Uso / custo</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
   </main>
 
   <div id="toast"></div>
   <div id="media-dialog-root"></div>
   <div id="batch-dialog-root"></div>
   <div id="template-dialog-root"></div>
+  <div id="conn-dialog-root"></div>
+
   <script src="/static/app.js"></script>
   <script src="/static/planning.js"></script>
   <script src="/static/media.js"></script>

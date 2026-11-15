@@ -892,10 +892,17 @@
     const cfg = planningOverview.llmConfig || {};
     const ext = planningOverview.imageExtensionPoint || {};
     if ($('#p-image-ext-note') && ext.message) $('#p-image-ext-note').textContent = ext.message;
-    if ($('#p-llm-enabled')) $('#p-llm-enabled').checked = Boolean(cfg.enabled);
-    if ($('#p-llm-endpoint') && cfg.endpoint) $('#p-llm-endpoint').value = cfg.endpoint;
-    if ($('#p-llm-model') && cfg.model) $('#p-llm-model').value = cfg.model;
-    if ($('#p-llm-timeout') && cfg.timeoutSec != null) $('#p-llm-timeout').value = String(cfg.timeoutSec);
+    const conn = planningOverview.textConnection;
+    if ($('#p-conn-note')) {
+      $('#p-conn-note').textContent = conn
+        ? `Conexão do projeto: ${conn.connectionName} (${conn.connectionId}) · modelo ${conn.model}. A seleção da aba Conexões prevalece sobre os campos abaixo; sem seleção, vale o legado.`
+        : 'Sem conexão selecionada para este projeto: valem os campos abaixo / variáveis STUDIO_LLM_* (legado).';
+    }
+    const effective = conn ? { enabled: true, endpoint: conn.endpoint, model: conn.model, timeoutSec: conn.timeoutSec } : cfg;
+    if ($('#p-llm-enabled')) $('#p-llm-enabled').checked = Boolean(effective.enabled);
+    if ($('#p-llm-endpoint') && effective.endpoint) $('#p-llm-endpoint').value = effective.endpoint;
+    if ($('#p-llm-model') && effective.model) $('#p-llm-model').value = effective.model;
+    if ($('#p-llm-timeout') && effective.timeoutSec != null) $('#p-llm-timeout').value = String(effective.timeoutSec);
   }
 
   function renderCarouselProfileSelect() {

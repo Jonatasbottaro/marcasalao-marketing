@@ -254,12 +254,22 @@ class GeminiImageAdapter:
 
     provider_id = 'google-gemini'
 
-    def __init__(self, env=None):
-        cfg = gemini_config_from_env(env)
-        self.api_key = cfg['apiKey']
-        self.model = cfg['model']
-        self.endpoint = cfg['endpoint']
-        self.timeout_sec = cfg['timeoutSec']
+    def __init__(self, env=None, config=None):
+        if isinstance(config, dict):
+            self.api_key = (config.get('apiKey') or '').strip()
+            self.model = (config.get('model') or DEFAULT_GEMINI_MODEL).strip()
+            self.endpoint = (config.get('endpoint') or DEFAULT_GEMINI_ENDPOINT).strip().rstrip('/')
+            try:
+                timeout = float(config.get('timeoutSec', 120))
+            except (TypeError, ValueError):
+                timeout = 120.0
+            self.timeout_sec = max(5.0, min(600.0, timeout))
+        else:
+            cfg = gemini_config_from_env(env)
+            self.api_key = cfg['apiKey']
+            self.model = cfg['model']
+            self.endpoint = cfg['endpoint']
+            self.timeout_sec = cfg['timeoutSec']
 
     def _validate_config(self):
         if not self.api_key:
@@ -440,6 +450,8 @@ class GeminiImageAdapter:
                 'provider': self.provider_id,
                 'model': payload.get('modelVersion') or self.model,
                 'simulated': False,
+                'usage': payload.get('usageMetadata') if isinstance(payload.get('usageMetadata'), dict) else None,
+                'providerInfo': {k: payload[k] for k in ('cost', 'quota', 'balance', 'currency') if k in payload} or None,
             }
         raise ImageAdapterError(
             'IMAGE_PROVIDER_NO_IMAGE',

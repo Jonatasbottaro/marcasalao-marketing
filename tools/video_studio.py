@@ -50,6 +50,7 @@ import llm_adapter
 import studio_media
 import studio_planning
 import studio_review
+import studio_connections
 import studio_templates
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
@@ -1002,6 +1003,25 @@ class Studio:
         work['updatedAt'] = now_iso()
         atomic_write_json(work_abs, work)
         return {'work': work}
+
+    # ---- conexoes de texto e imagem ----
+    def get_connections(self):
+        return studio_connections.build_connections_overview(self)
+
+    def save_connection(self, body):
+        return studio_connections.save_connection(self, body)
+
+    def replace_connection_credential(self, body):
+        return studio_connections.replace_credential(self, body)
+
+    def delete_connection(self, body):
+        return studio_connections.delete_connection(self, body)
+
+    def select_connection(self, body):
+        return studio_connections.select_for_project(self, body)
+
+    def test_connection(self, body):
+        return studio_connections.test_connection(self, body)
 
     # ---- modelos reutilizaveis e variacoes ----
     def get_templates(self, project=None):
@@ -2057,6 +2077,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'works': studio.list_works()})
             elif path == '/api/templates':
                 self.send_json(200, {'ok': True, **studio.get_templates(query.get('project', [None])[0])})
+            elif path == '/api/connections':
+                self.send_json(200, {'ok': True, **studio.get_connections()})
             elif path == '/api/templates/get':
                 self.send_json(200, {'ok': True, **studio.get_template(query.get('id', [''])[0])})
             elif path == '/api/queue':
@@ -2169,6 +2191,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.serve_file_ranges(target)
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_connections.ConnectionError_ as exc:
+            self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_templates.TemplateConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:
@@ -2216,6 +2240,16 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.save_work(body)})
             elif path == '/api/templates/save':
                 self.send_json(200, {'ok': True, **studio.save_template(body)})
+            elif path == '/api/connections/save':
+                self.send_json(200, {'ok': True, **studio.save_connection(body)})
+            elif path == '/api/connections/credential':
+                self.send_json(200, {'ok': True, **studio.replace_connection_credential(body)})
+            elif path == '/api/connections/delete':
+                self.send_json(200, {'ok': True, **studio.delete_connection(body)})
+            elif path == '/api/connections/select':
+                self.send_json(200, {'ok': True, **studio.select_connection(body)})
+            elif path == '/api/connections/test':
+                self.send_json(200, {'ok': True, **studio.test_connection(body)})
             elif path == '/api/works/duplicate':
                 self.send_json(200, {'ok': True, **studio.duplicate_work(body)})
             elif path == '/api/templates/plan':
@@ -2315,6 +2349,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'written': studio.generate_media(body.get('request'))})
             else:
                 self.send_error_json(404, 'rota desconhecida')
+        except studio_connections.ConnectionError_ as exc:
+            self.send_error_json(400, exc.message, {'code': exc.code})
         except studio_templates.TemplateConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:

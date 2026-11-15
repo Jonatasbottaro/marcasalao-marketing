@@ -505,3 +505,21 @@ REQUIRE_RENDER=1 python -m unittest tools/tests/test_studio_templates.py -v
 ```
 
 A prova HTTP cobre modelo + nova revisão, variações a partir de revisão anterior, duplicação, independência, colisão de ID, mídia ausente, mudança de allowlist, modelo de outro projeto, lote na fila (Reels, YouTube horizontal, carrossel 4:5 e Motion vertical), reexportação isolada, FFprobe sem áudio, aprovação na Revisão, ZIP com manifesto/hashes/versão conferidos e recuperação após reinício.
+
+## Conexões de texto e imagem (aba Conexões)
+
+A aba **Conexões** cadastra, troca e testa conexões de texto local (OpenAI-compatível, ex.: Qwen) e de imagem (Google Gemini), com seleção por projeto e histórico de chamadas. O Planejamento e a Biblioteca de Mídia usam a mesma seleção; projetos sem seleção continuam no legado (`STUDIO_LLM_*` / `llm-config.json` para texto, `GEMINI_API_KEY` / `STUDIO_GEMINI_*` para imagem), sem migração obrigatória.
+
+- **Armazenamento versionado** em `.workspace/studio/connections.json` (metadados, escolhas por projeto e histórico; gravação atômica). O contrato de `ProjectManifest` não foi ampliado.
+- **Credenciais no backend**: o valor nunca entra no JSON nem em respostas/logs. Conexões `vault` gravam no cofre da estação Windows (CredWriteW/CredReadW/CredDeleteW, alvo `MarcaSalaoStudio/<ref>`); conexões `env` resolvem a variável no momento da chamada; conexões `none` dispensam chave quando o servidor local dispensa autenticação. Testes e provas usam `STUDIO_CREDENTIAL_BACKEND=simulated` (com `STUDIO_CREDENTIAL_STORE_PATH` opcional); sem cofre disponível, a UI orienta o caminho por variável de ambiente. Trocar a chave mantém o ID da conexão e as escolhas dos projetos.
+- **Testar** executa diagnóstico, nunca geração: texto local consulta `GET {base}/v1/models` (com `Authorization: Bearer` quando houver chave); Gemini consulta o endpoint oficial de metadados `GET {endpoint}/v1beta/models` com `x-goog-api-key`. Estados distinguidos: `OK`, `CREDENTIAL_REFUSED` (401/403), `CREDENTIAL_MISSING`, `MODEL_INCOMPATIBLE` (modelo fora da lista/404), `RATE_LIMIT` (429), `UNAVAILABLE` (rede), `TIMEOUT`. Mensagens normalizadas e sem segredos; horário e estado ficam na conexão e no histórico.
+- **Histórico** (`calls`, limite 200): horário, projeto, conexão (ou `legado (env)`), capacidade (`text`/`image`/`diagnostic`), modelo, resultado e uso (`promptTokens`/`completionTokens`/`totalTokens`/`imageCount`) quando o provedor informa; custo/cota/saldo apenas quando houver dado do fornecedor aplicável.
+- **Falhas identificam a conexão**: erros de geração no Planejamento/Biblioteca citam nome e ID da conexão selecionada e a ação necessária; a troca de provedor fica a cargo do operador.
+- **Rotas**: `GET /api/connections`, `POST /api/connections/save|credential|delete|select|test` (escritas com as verificações de Host/Origin existentes). Respostas carregam só metadados/referências.
+
+### Comandos reproduzíveis
+
+```bash
+python tools/ci_studio_connections_proof.py --port 8807
+python -m unittest tools/tests/test_studio_connections.py -v
+```
