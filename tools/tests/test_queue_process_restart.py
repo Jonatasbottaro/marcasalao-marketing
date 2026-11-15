@@ -17,6 +17,7 @@ import tempfile
 import time
 import unittest
 import urllib.request
+import uuid
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 TOOLS = os.path.join(ROOT, 'tools')
@@ -107,7 +108,7 @@ class TestQueueProcessRestart(unittest.TestCase):
     def setUp(self):
         self.tmp_root = tempfile.mkdtemp(prefix='t_queue_restart_', dir=os.path.join(ROOT, '.workspace', 'tmp'))
         self.db_path = os.path.join(self.tmp_root, 'queue.sqlite')
-        self.work_id = f'tqr-ms-{os.getpid()}'
+        self.work_id = f'tqr-{os.getpid()}-{uuid.uuid4().hex[:6]}'
         self.project_abs = None
         self.server = None
         self.port = None
@@ -202,7 +203,7 @@ class TestQueueProcessRestart(unittest.TestCase):
     def _seed_work(self):
         proj_res = self._post('/api/projects/create', {
             'schemaVersion': 1,
-            'id': f'tqr-{os.getpid()}',
+            'id': f'proj-{self.work_id}',
             'name': 'Projeto restart',
             'locale': 'pt-BR',
             'timezone': 'America/Sao_Paulo',

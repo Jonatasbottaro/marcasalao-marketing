@@ -462,7 +462,8 @@ REQUIRE_RENDER=1 python -m unittest tools/tests/test_scene_framing_preview.py -v
 O Video Studio oferece produção em lote sobre os mesmos produtores locais (`tools/produce_video.py` e `tools/produce_carousel.py`), com estado persistido em SQLite (`.workspace/studio/production-queue.sqlite`, esquema versionado em `tools/studio_queue.py`) e execução em série no servidor local (`127.0.0.1`), permitindo fechar e reabrir o navegador sem perder o andamento.
 
 - **Seleção e modal de lote (`Trabalhos & Projetos` -> `Exportar em lote`)**: selecione múltiplos trabalhos, confira destinos disponíveis e motivos de bloqueio por catálogo/allowlist/capacidade local (`POST /api/queue/plan`) e confirme uma única vez com `idempotencyKey` (`POST /api/queue/enqueue`). Confirmação repetida com a mesma chave devolve o lote existente (`deduplicated: true`) sem duplicar itens.
-- **Snapshots congelados e proteção de destino**: no enfileiramento são congelados o pedido salvo, cortes, enquadramento, `MotionPlan` (quando aplicável), projeto e hashes SHA-256 das mídias. Um executor único por workspace assume um item por vez (`_claim_next_item` atômico), cria cerca de tentativa (`--attempt-id` + `--fence-file`) verificada sob `acquire_promotion_lock(output_dir)` antes da promoção e compartilha a proteção de destino com a exportação avulsa (`start_export`).
+- **Snapshots congelados e proteção de destino**: no enfileiramento são congelados o pedido salvo, cortes, enquadramento, `MotionPlan` (quando aplicável), projeto (bytes do `ProjectManifest` com SHA-256, `schemaVersion: 2` do snapshot) e hashes SHA-256 das mídias. Antes do render, a tentativa isola os bytes verificados no staging (`frozen/project.json` e `frozen/media/`), reconfere cada hash e aponta o pedido para as cópias isoladas: se a origem mudar entre a conferência inicial e o render, a tentativa usa os bytes originais já isolados ou falha antes de promover (`MEDIA_DIVERGENCE` / `PROJECT_DIVERGENCE`, com oferta de enfileirar a versão atual). Um executor único por workspace assume um item por vez (`_claim_next_item` atômico), cria cerca de tentativa (`--attempt-id` + `--fence-file`) verificada sob `acquire_promotion_lock(output_dir)` antes da promoção e compartilha a proteção de destino com a exportação avulsa (`start_export`). A Revisão vincula a entrega à versão que entrou na fila: editar apenas o rascunho marca `draft_outdated` sem alterar o snapshot vinculado.
+- **Itens pendentes legados**: snapshots gravados antes do congelamento do `ProjectManifest` (`schemaVersion: 1`, sem `projectManifestSha256`) falham com `SNAPSHOT_LEGACY` e `canUseCurrent: true`; o operador usa **Enfileirar versão atual** (`retry` com `useCurrent`) para recongelar os insumos no formato novo. Nenhum item legado é renderizado com a garantia antiga.
 - **Estados e retomada**: cada item representa `trabalho + modalidade + perfil` nos estados `queued`, `running`, `completed`, `failed`, `cancelled` e `interrupted`. Ao reiniciar o servidor, tentativas interrompidas reconciliam promoções já provadas pelo `attemptId` no manifesto ou viram `interrupted` preservando a entrega válida anterior.
 - **Aba `Fila de Produção`**: acompanha lotes e peças em tempo real (`GET /api/queue`, `GET /api/queue/batch`), exporta resumo JSON (`GET /api/queue/batch/summary`), cancela itens `queued` (`POST /api/queue/cancel`), repete itens falhos/interrompidos mantendo o snapshot anterior ou oferece **Enfileirar versão atual** em `MEDIA_DIVERGENCE` (`POST /api/queue/retry`), e abre cada trabalho diretamente na **Revisão & Entrega**.
 - **Correção visual na Revisão**: `.review-card` e `.review-card video` em `tools/studio/style.css` limitam a largura máxima ao contêiner (`max-width: 100%; height: auto; max-height: 460px;`) para evitar transbordo horizontal de vídeos `16:9` em desktop e `390px`.
@@ -472,4 +473,35 @@ O Video Studio oferece produção em lote sobre os mesmos produtores locais (`to
 ```bash
 python tools/ci_studio_queue_proof.py --port 8803
 REQUIRE_RENDER=1 python -m unittest tools/tests/test_studio_queue.py -v
+REQUIRE_RENDER=1 python -m unittest tools/tests/test_queue_process_restart.py -v
 ```
+
+A prova de processo (`test_queue_process_restart.py`) encerra e reinicia um Studio real com itens em andamento e pendentes: retomada de pendentes, proteção contra promoção atrasada (cerca revogada após queda) e reconciliação após promoção órfã com o mesmo `attemptId`, criando uma única versão na Revisão. `STUDIO_QUEUE_DB_PATH` permite isolar o banco SQLite da fila por processo (usado nos testes).
+
+## Modelos reutilizáveis e variações em série (Video Studio)
+
+O operador transforma um trabalho salvo em **modelo do projeto**, duplica qualquer trabalho como rascunho ou cria **várias peças a partir de uma revisão do modelo**, confere as variações e as envia à Fila de Produção já integrada. Os novos trabalhos são rascunhos locais: aprovação editorial, produção de campanhas reais e publicação seguem as autorizações próprias.
+
+- **Armazenamento** (`tools/studio_templates.py`): modelos em `.workspace/studio/templates/<id>/template.json` com revisões imutáveis em `revisions/<rev-N>/` (`snapshot.json` + `media/` copiada e conferida por SHA-256, uma vez por arquivo físico mesmo quando usado em mais de uma modalidade). Cada modelo referencia o trabalho de origem e é **restrito ao projeto de origem na V1**.
+- **Salvar como modelo** (botão por trabalho em *Trabalhos & Projetos*, `POST /api/templates/save`): captura a versão salva de vídeo, carrossel e Motion — cortes (`sourceStartMs`), `framingByProfile`, destinos, estilos e ajustes de Motion — mais a ficha editorial e os textos como campos editáveis de rascunho, e as mídias com origem, licença e SHA-256. A captura detecta edição concorrente (`TEMPLATE_CAPTURE_CONFLICT`) e promove a revisão como unidade; a revisão salva pode ser instanciada mesmo depois de mudanças no trabalho de origem.
+- **Duplicar como rascunho** (`POST /api/works/duplicate`): usa o mesmo serviço de instanciação a partir de um snapshot efêmero, sem exigir modelo permanente.
+- **Criar a partir de modelo** (`POST /api/templates/plan` e `POST /api/templates/create`): escolha da revisão e uma ou várias linhas de variação (novo ID, nome, título, gancho e CTA da ficha; campos em branco herdam o valor daquela revisão). O **plano** mostra mudanças, conflitos e condições por linha sem criar arquivos; a **confirmação** cria cada trabalho válido de forma transacional (staging + promoção do diretório como unidade), informa os que falharam e permite retomada. Repetir a mesma confirmação com a mesma `idempotencyKey` devolve os mesmos trabalhos (`deduplicated: true`). Colisão de ID (`WORK_ID_COLLISION`), arquivo ausente ou mídia divergente preservam o original e os demais trabalhos.
+- **Instanciação**: cada trabalho novo recebe IDs próprios (`<id>-video`, `<id>-carrossel`, `<id>-estilo`), `requestId` do Motion ajustado, caminhos de mídia reescritos para a pasta do novo trabalho, referências internas entre cenas/cards/materiais preservadas, ficha própria, revisão em aberto, entregas vazias e estado de fila próprio. Catálogo, allowlist e compatibilidade local são revalidados na criação; perfis que exigem ajuste são listados antes de concluir (`PROFILE_NEEDS_ADJUSTMENT`). As regras vigentes de proveniência e de arte do Marca Salão seguem valendo ao reaproveitar materiais (origem/licença preservadas; nenhuma arte oficial nova é gerada por este fluxo).
+- **Envio à fila**: a lista de variações criadas oferece **Abrir trabalho** e **Enviar para a Fila de Produção**, reutilizando o planejamento e a confirmação da fila existentes (destinos permitidos e deduplicação). A criação por si só termina em rascunhos prontos para edição; a confirmação de exportação enfileira apenas as peças selecionadas. A exportação continua entregando vídeo sem faixa de áudio, com SRT e roteiro de narração TXT separado.
+
+### Rotas HTTP
+
+- `GET /api/templates?project=…` | `GET /api/templates/get?id=…` — listar/ler modelos e revisões.
+- `POST /api/templates/save` — salvar como modelo (nova revisão com `templateId`).
+- `POST /api/works/duplicate` — duplicar como rascunho.
+- `POST /api/templates/plan` — plano de variações (sem criar arquivos).
+- `POST /api/templates/create` — confirmação transacional e idempotente.
+
+### Comandos reproduzíveis
+
+```bash
+python tools/ci_studio_templates_proof.py --port 8804
+REQUIRE_RENDER=1 python -m unittest tools/tests/test_studio_templates.py -v
+```
+
+A prova HTTP cobre modelo + nova revisão, variações a partir de revisão anterior, duplicação, independência, colisão de ID, mídia ausente, mudança de allowlist, modelo de outro projeto, lote na fila (Reels, YouTube horizontal, carrossel 4:5 e Motion vertical), reexportação isolada, FFprobe sem áudio, aprovação na Revisão, ZIP com manifesto/hashes/versão conferidos e recuperação após reinício.

@@ -634,3 +634,7 @@ jobs:
       - name: Prova de fila persistente e producao em lote (Studio HTTP)
         run: |
           python tools/ci_studio_queue_proof.py --port 8803
+
+      - name: Prova de modelos reutilizaveis e variacoes em serie (Studio HTTP)
+        run: |
+          python tools/ci_studio_templates_proof.py --port 8804
