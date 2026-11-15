@@ -120,7 +120,21 @@ def _media_rgb(ffmpeg, media_abs, width, height, staging, card_id):
     return data
 
 
-def _promote_set(output_dir, staging, names, index_payload):
+def _verify_attempt_fence(fence_file, attempt_id=None):
+    if not fence_file:
+        return
+    try:
+        with open(fence_file, 'r', encoding='utf-8') as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: tentativa perdeu a reserva antes da promocao')
+    if not isinstance(data, dict) or data.get('revoked'):
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: tentativa perdeu a reserva antes da promocao')
+    if attempt_id and data.get('attemptId') != attempt_id:
+        raise build_video.DeliveryError('QUEUE_FENCE_REVOKED: reserva pertence a outra tentativa')
+
+
+def _promote_set(output_dir, staging, names, index_payload, fence_file=None, attempt_id=None):
     """Promove o conjunto completo sob lock; falha restaura a entrega anterior."""
     lock = render_local.acquire_promotion_lock(output_dir)
     backup_dir = os.path.join(staging, '.backup')
@@ -128,6 +142,7 @@ def _promote_set(output_dir, staging, names, index_payload):
     existing = [n for n in os.listdir(output_dir)
                 if os.path.isfile(os.path.join(output_dir, n)) and n != render_local.PROMOTION_LOCK_NAME]
     try:
+        _verify_attempt_fence(fence_file, attempt_id)
         for name in existing:
             shutil.copyfile(os.path.join(output_dir, name), os.path.join(backup_dir, name))
         for name in existing:
@@ -151,7 +166,7 @@ def _promote_set(output_dir, staging, names, index_payload):
     shutil.rmtree(backup_dir, ignore_errors=True)
 
 
-def run_export(root, input_path, output_dir, profile=None):
+def run_export(root, input_path, output_dir, profile=None, attempt_id=None, fence_file=None):
     root = os.path.realpath(root)
     verdict = run_bridge_carousel(root, input_path, profile)
     if not verdict.get('ok'):
@@ -217,18 +232,25 @@ def run_export(root, input_path, output_dir, profile=None):
             'zip': {'file': zip_name, 'path': rel(root, os.path.join(output_dir, zip_name)),
                     'bytes': os.path.getsize(zip_path), 'sha256': render_local.sha256_file(zip_path)},
         }
+        if attempt_id:
+            manifest['attemptId'] = attempt_id
         write_json(os.path.join(staging, manifest_name), manifest)
         names.append(manifest_name)
 
+        last_attempt = {'status': 'completed', 'manifest': rel(root, os.path.join(output_dir, manifest_name))}
+        last_valid = {'status': 'completed', 'manifest': rel(root, os.path.join(output_dir, manifest_name)),
+                      'cardCount': len(card_entries)}
+        if attempt_id:
+            last_attempt['attemptId'] = attempt_id
+            last_valid['attemptId'] = attempt_id
         index_payload = {
             'schemaVersion': 1,
             'requestId': verdict['requestId'],
-            'lastAttempt': {'status': 'completed', 'manifest': rel(root, os.path.join(output_dir, manifest_name))},
-            'lastValidDelivery': {'status': 'completed', 'manifest': rel(root, os.path.join(output_dir, manifest_name)),
-                                  'cardCount': len(card_entries)},
+            'lastAttempt': last_attempt,
+            'lastValidDelivery': last_valid,
         }
         os.makedirs(output_dir, exist_ok=True)
-        _promote_set(output_dir, staging, names, index_payload)
+        _promote_set(output_dir, staging, names, index_payload, fence_file=fence_file, attempt_id=attempt_id)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 
@@ -251,6 +273,8 @@ def main(argv=None):
     parser.add_argument('--output-dir', default=None, help='Diretorio final de entrega')
     parser.add_argument('--profile', default=None, help='Sobrescreve o perfil de imagem')
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
+    parser.add_argument('--attempt-id', default=None, help='Identificador da tentativa da fila (interno)')
+    parser.add_argument('--fence-file', default=None, help='Arquivo de cerca/reserva da fila (interno)')
     parser.add_argument('--json', action='store_true', help='Emite um unico resultado JSON no stdout')
     args = parser.parse_args(argv)
 
@@ -286,7 +310,8 @@ def main(argv=None):
         output_dir = os.path.realpath(args.output_dir)
         if not render_local.contained(root, output_dir) or output_dir == root:
             raise render_local.InputFileError('destino fora da raiz ou igual a raiz')
-        payload = run_export(root, input_path, output_dir, args.profile)
+        payload = run_export(root, input_path, output_dir, args.profile,
+                             attempt_id=args.attempt_id, fence_file=args.fence_file)
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:

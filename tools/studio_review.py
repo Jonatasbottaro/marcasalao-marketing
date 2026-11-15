@@ -403,35 +403,14 @@ def record_export_lineage(studio, job):
         out_dir_abs = studio.confine_workspace(job['outputDir'])
         fs = render_local.fs_path
         updated_keys = []
+        version_ids = {}
+        job_id = job.get('jobId')
 
         if modality == 'carousel':
             manifest_abs = os.path.join(out_dir_abs, 'carousel-manifest.json')
             manifest = _read_json_safe(manifest_abs)
             if isinstance(manifest, dict) and manifest.get('profileId'):
                 profile_id = manifest['profileId']
-                cards_meta = []
-                for card in manifest.get('cards') or []:
-                    cards_meta.append({
-                        'order': card.get('order'),
-                        'id': card.get('id'),
-                        'file': card.get('file'),
-                        'path': card.get('path'),
-                        'sha256': card.get('sha256'),
-                        'bytes': card.get('bytes'),
-                    })
-                zip_info = manifest.get('zip') or {}
-                artifacts_fp = canonical_sha256({
-                    'modality': 'carousel',
-                    'profileId': profile_id,
-                    'cards': cards_meta,
-                    'zip': {'path': zip_info.get('path'), 'sha256': zip_info.get('sha256')},
-                })
-                draft_fp, _ = compute_draft_snapshot(
-                    studio, 'carousel', None, req_snapshot, None, profile_id=profile_id
-                )
-                state['exportsSeq'] += 1
-                seq = state['exportsSeq']
-                delivery_version_id = f'carousel-{profile_id}-v{seq}-{artifacts_fp[:8]}'
                 piece_key = f'carousel:{profile_id}'
                 piece_state = state['pieces'].setdefault(piece_key, {
                     'modality': 'carousel',
@@ -439,27 +418,59 @@ def record_export_lineage(studio, job):
                     'versions': [],
                     'decisions': [],
                 })
-                piece_state['versions'].append({
-                    'deliveryVersionId': delivery_version_id,
-                    'seq': seq,
-                    'exportedAt': now_iso(),
-                    'jobId': job.get('jobId'),
-                    'modality': 'carousel',
-                    'profileId': profile_id,
-                    'requestId': manifest.get('requestId'),
-                    'manifestPath': studio.rel(manifest_abs),
-                    'manifestSha256': render_local.sha256_file(manifest_abs),
-                    'artifactsFingerprint': artifacts_fp,
-                    'draftFingerprint': draft_fp,
-                    'requestSha256': canonical_sha256(req_snapshot),
-                    'motionPlanSha256': None,
-                    'requestSnapshot': req_snapshot,
-                    'motionPlanSnapshot': None,
-                    'mediaOrigins': media_origins,
-                    'cards': cards_meta,
-                    'zip': zip_info,
-                })
-                updated_keys.append(piece_key)
+                existing = next(
+                    (v for v in piece_state['versions'] if job_id and v.get('jobId') == job_id),
+                    None,
+                )
+                if existing is not None:
+                    version_ids[piece_key] = existing.get('deliveryVersionId')
+                    updated_keys.append(piece_key)
+                else:
+                    cards_meta = []
+                    for card in manifest.get('cards') or []:
+                        cards_meta.append({
+                            'order': card.get('order'),
+                            'id': card.get('id'),
+                            'file': card.get('file'),
+                            'path': card.get('path'),
+                            'sha256': card.get('sha256'),
+                            'bytes': card.get('bytes'),
+                        })
+                    zip_info = manifest.get('zip') or {}
+                    artifacts_fp = canonical_sha256({
+                        'modality': 'carousel',
+                        'profileId': profile_id,
+                        'cards': cards_meta,
+                        'zip': {'path': zip_info.get('path'), 'sha256': zip_info.get('sha256')},
+                    })
+                    draft_fp, _ = compute_draft_snapshot(
+                        studio, 'carousel', None, req_snapshot, None, profile_id=profile_id
+                    )
+                    state['exportsSeq'] += 1
+                    seq = state['exportsSeq']
+                    delivery_version_id = f'carousel-{profile_id}-v{seq}-{artifacts_fp[:8]}'
+                    piece_state['versions'].append({
+                        'deliveryVersionId': delivery_version_id,
+                        'seq': seq,
+                        'exportedAt': now_iso(),
+                        'jobId': job_id,
+                        'modality': 'carousel',
+                        'profileId': profile_id,
+                        'requestId': manifest.get('requestId'),
+                        'manifestPath': studio.rel(manifest_abs),
+                        'manifestSha256': render_local.sha256_file(manifest_abs),
+                        'artifactsFingerprint': artifacts_fp,
+                        'draftFingerprint': draft_fp,
+                        'requestSha256': canonical_sha256(req_snapshot),
+                        'motionPlanSha256': None,
+                        'requestSnapshot': req_snapshot,
+                        'motionPlanSnapshot': None,
+                        'mediaOrigins': media_origins,
+                        'cards': cards_meta,
+                        'zip': zip_info,
+                    })
+                    version_ids[piece_key] = delivery_version_id
+                    updated_keys.append(piece_key)
         else:
             profiles_res = (job.get('result') or {}).get('profiles') or []
             completed_ids = [
@@ -473,6 +484,21 @@ def record_export_lineage(studio, job):
                 manifest_abs = os.path.join(out_dir_abs, profile_id, 'delivery-manifest.json')
                 manifest = _read_json_safe(manifest_abs)
                 if not isinstance(manifest, dict):
+                    continue
+                piece_key = f'{modality}:{profile_id}'
+                piece_state = state['pieces'].setdefault(piece_key, {
+                    'modality': modality,
+                    'profileId': profile_id,
+                    'versions': [],
+                    'decisions': [],
+                })
+                existing = next(
+                    (v for v in piece_state['versions'] if job_id and v.get('jobId') == job_id),
+                    None,
+                )
+                if existing is not None:
+                    version_ids[piece_key] = existing.get('deliveryVersionId')
+                    updated_keys.append(piece_key)
                     continue
                 artifacts = manifest.get('artifacts') or {}
                 core_artifacts = {}
@@ -495,18 +521,11 @@ def record_export_lineage(studio, job):
                 state['exportsSeq'] += 1
                 seq = state['exportsSeq']
                 delivery_version_id = f'{modality}-{profile_id}-v{seq}-{artifacts_fp[:8]}'
-                piece_key = f'{modality}:{profile_id}'
-                piece_state = state['pieces'].setdefault(piece_key, {
-                    'modality': modality,
-                    'profileId': profile_id,
-                    'versions': [],
-                    'decisions': [],
-                })
                 piece_state['versions'].append({
                     'deliveryVersionId': delivery_version_id,
                     'seq': seq,
                     'exportedAt': now_iso(),
-                    'jobId': job.get('jobId'),
+                    'jobId': job_id,
                     'modality': modality,
                     'profileId': profile_id,
                     'caseId': manifest.get('caseId'),
@@ -524,10 +543,11 @@ def record_export_lineage(studio, job):
                     'framings': _extract_manifest_framings(manifest),
                     'artifacts': core_artifacts,
                 })
+                version_ids[piece_key] = delivery_version_id
                 updated_keys.append(piece_key)
 
         _save_review_state(studio, wpaths, state)
-        return {'workId': work_id, 'updatedPieces': updated_keys}
+        return {'workId': work_id, 'updatedPieces': updated_keys, 'versionIds': version_ids}
 
 
 def _find_index_entry(index_doc, profile_id):
