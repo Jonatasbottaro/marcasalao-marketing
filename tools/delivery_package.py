@@ -365,6 +365,20 @@ def build_and_promote_package(studio, work_id, body):
                 'cardOrder': card_order,
                 'mediaOrigins': piece.get('mediaOrigins') or [],
                 'sourceCuts': piece.get('sourceCuts') or [],
+                'framings': piece.get('framings') or [
+                    {
+                        'beatId': cut.get('beatId'),
+                        'assetId': cut.get('assetId'),
+                        'path': cut.get('path'),
+                        'sha256': cut.get('sha256'),
+                        'sourceStartMs': cut.get('sourceStartMs'),
+                        'sourceEndMs': cut.get('sourceEndMs'),
+                        'durationMs': cut.get('durationMs'),
+                        'framing': cut.get('framing'),
+                    }
+                    for cut in (piece.get('sourceCuts') or [])
+                    if isinstance(cut, dict) and 'framing' in cut
+                ],
                 'metrics': piece.get('metrics') or {},
                 'files': piece_files,
             })

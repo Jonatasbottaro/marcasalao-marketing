@@ -158,6 +158,8 @@ def build_asset_manifest(root_real: str, case_abs: str, assets_abs: str,
         source_start = binding.get('sourceStartMs') or 0
         if source_start > 0:
             binding_entry['sourceStartMs'] = source_start
+        if binding.get('framing') is not None:
+            binding_entry['framing'] = dict(binding['framing'])
         bindings_list.append(binding_entry)
 
     manifest_candidate = {
@@ -258,6 +260,8 @@ def build_asset_manifest_from_registry(root_real: str, case_abs: str, associatio
         source_start = binding.get('sourceStartMs') or 0
         if source_start > 0:
             binding_entry['sourceStartMs'] = source_start
+        if binding.get('framing') is not None:
+            binding_entry['framing'] = dict(binding['framing'])
         bindings_list.append(binding_entry)
 
     manifest_candidate = {

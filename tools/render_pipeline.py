@@ -228,8 +228,9 @@ def _probe_and_extract_media_metadata(root, asset_id, media_type, target_abs):
 
     video_streams = [s for s in info.get('streams', []) if s.get('codec_type') == 'video']
     stream = video_streams[0]
-    width = int(stream['width'])
-    height = int(stream['height'])
+    geom_meta = render_local.extract_stream_geometry_meta(info)
+    width = int(geom_meta['width'])
+    height = int(geom_meta['height'])
     if width <= 0 or height <= 0 or width % 2 != 0 or height % 2 != 0:
         raise build_video.DeliveryError(
             f'ASSET_DIMENSIONS_INVALID: {asset_id} ({width}x{height})'
@@ -248,6 +249,8 @@ def _probe_and_extract_media_metadata(root, asset_id, media_type, target_abs):
     return {
         'width': width,
         'height': height,
+        'sar': geom_meta.get('sar'),
+        'rotation': geom_meta.get('rotation', 0),
         'codec': stream.get('codec_name'),
         'durationSeconds': round(duration_s, 3) if duration_s is not None else None,
         '_rawDurationSeconds': duration_s,
@@ -306,6 +309,8 @@ def verify_manifest_assets(root, asset_manifest, resolved_bindings):
             'license': asset['license'],
             'width': probe_meta['width'],
             'height': probe_meta['height'],
+            'sar': probe_meta.get('sar'),
+            'rotation': probe_meta.get('rotation', 0),
             'codec': probe_meta['codec'],
             'durationSeconds': probe_meta['durationSeconds'],
             '_rawDurationSeconds': probe_meta['_rawDurationSeconds'],
@@ -340,6 +345,11 @@ def verify_manifest_assets(root, asset_manifest, resolved_bindings):
                     f"ASSET_VIDEO_TOO_SHORT: {beat_id} exige {beat_duration_s:.3f}s, "
                     f"asset '{asset_id}' tem {0.0 if asset_dur_s is None else asset_dur_s:.3f}s"
                 )
+        if binding.get('framing') is not None:
+            render_local.resolve_scene_framing(
+                asset_info, asset_info['width'], asset_info['height'],
+                binding.get('framing'), beat_id=beat_id,
+            )
         binding_reports.append({
             'beatId': beat_id,
             'assetId': asset_id,
@@ -353,6 +363,7 @@ def verify_manifest_assets(root, asset_manifest, resolved_bindings):
             'width': asset_info['width'],
             'height': asset_info['height'],
             'durationSeconds': asset_info['durationSeconds'],
+            'framing': binding.get('framing'),
         })
 
     public_assets = []
@@ -469,9 +480,12 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
 
     check_destination_collision(output_dir, case_id)
 
+    out_w = int(package['output']['width'])
+    out_h = int(package['output']['height'])
+    framings_by_beat = {}
     binding_reports = []
     if asset_manifest_path and asset_manifest:
-        _, source_abs_by_id, _, binding_reports = verify_manifest_assets(
+        inspected_by_id, source_abs_by_id, _, binding_reports = verify_manifest_assets(
             root, asset_manifest, resolved_asset_bindings
         )
         verified_dir = os.path.join(staging, 'verified-assets')
@@ -486,29 +500,41 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
                 raise build_video.DeliveryError(f'ASSET_HASH_MISMATCH: copia em staging divergiu para {asset_id}')
             staged_by_id[asset_id] = staged_asset
         asset_paths = [staged_by_id[binding['assetId']] for binding in resolved_asset_bindings]
-        cut_infos = [
-            {
-                'beatId': binding['beatId'],
+        cut_infos = []
+        for binding in resolved_asset_bindings:
+            beat_id = binding['beatId']
+            asset_info = inspected_by_id[binding['assetId']]
+            resolved_framing = render_local.resolve_scene_framing(
+                asset_info, out_w, out_h, binding.get('framing'), beat_id=beat_id
+            )
+            framings_by_beat[beat_id] = resolved_framing
+            cut_infos.append({
+                'beatId': beat_id,
                 'assetId': binding['assetId'],
                 'path': binding['path'],
                 'sha256': binding['sha256'],
                 'durationMs': binding['durationMs'],
                 'sourceStartMs': binding.get('sourceStartMs', 0),
                 'sourceEndMs': binding.get('sourceStartMs', 0) + binding['durationMs'],
-            }
-            for binding in resolved_asset_bindings
-        ]
+                'framing': resolved_framing,
+            })
     else:
         by_beat = {binding['beatId']: binding for binding in association['assets']}
         asset_paths = []
         cut_infos = []
         for step in package['timeline']:
-            binding = by_beat[step['beatId']]
+            beat_id = step['beatId']
+            binding = by_beat[beat_id]
             relative = binding['path']
             absolute = os.path.join(root, relative)
             if not contained(root, absolute) or not os.path.isfile(absolute):
                 raise build_video.DeliveryError(f'asset ausente ou fora da raiz: {relative}')
             info = render_local.probe_asset(root, absolute)
+            geom_meta = render_local.extract_stream_geometry_meta(info)
+            resolved_framing = render_local.resolve_scene_framing(
+                geom_meta, out_w, out_h, binding.get('framing'), beat_id=beat_id
+            )
+            framings_by_beat[beat_id] = resolved_framing
             source_start_ms = binding.get('sourceStartMs', 0)
             if source_start_ms > 0:
                 stream = next(s for s in info.get('streams', []) if s.get('codec_type') == 'video')
@@ -520,20 +546,21 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
                 required_end_s = (source_start_ms + step['durationMs']) / 1000.0
                 if asset_dur_s is None or required_end_s > asset_dur_s + 0.001:
                     raise build_video.DeliveryError(
-                        f"SOURCE_CUT_OUT_OF_RANGE: {step['beatId']} pede fonte "
+                        f"SOURCE_CUT_OUT_OF_RANGE: {beat_id} pede fonte "
                         f"[{source_start_ms}ms -> {source_start_ms + step['durationMs']}ms], "
                         f"asset '{relative}' tem "
                         f"{0.0 if asset_dur_s is None else asset_dur_s:.3f}s disponiveis"
                     )
             asset_paths.append(absolute)
             cut_infos.append({
-                'beatId': step['beatId'],
+                'beatId': beat_id,
                 'assetId': None,
                 'path': relative,
                 'sha256': sha256_file(absolute),
                 'durationMs': step['durationMs'],
                 'sourceStartMs': source_start_ms,
                 'sourceEndMs': source_start_ms + step['durationMs'],
+                'framing': resolved_framing,
             })
     source_cuts = [info['sourceStartMs'] for info in cut_infos]
 
@@ -602,7 +629,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     cmd = render_local.build_render_command(
         package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
         title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render,
-        source_cuts=source_cuts)
+        source_cuts=source_cuts, framings_by_beat=framings_by_beat)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -856,6 +883,19 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'command': command,
         'outputDir': rel(root, output_dir),
         'sourceCuts': cut_infos,
+        'framings': [
+            {
+                'beatId': info['beatId'],
+                'assetId': info['assetId'],
+                'path': info['path'],
+                'sha256': info['sha256'],
+                'sourceStartMs': info['sourceStartMs'],
+                'sourceEndMs': info['sourceEndMs'],
+                'durationMs': info['durationMs'],
+                'framing': info['framing'],
+            }
+            for info in cut_infos
+        ],
         'artifacts': manifest_artifacts,
     }
     if assets_path:
