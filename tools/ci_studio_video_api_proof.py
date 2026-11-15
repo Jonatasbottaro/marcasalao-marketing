@@ -269,6 +269,17 @@ def main(argv=None):
     geometry_input_info = _probe(geometry_path)
     geometry_input_audio = [s for s in geometry_input_info['streams'] if s.get('codec_type') == 'audio']
     assert geometry_input_audio, 'fixture de geometria sem faixa de audio'
+    # Medidas do insumo observadas por FFprobe; a tolerancia de duracao e
+    # 1 quadro do FPS da fixture (nao o FPS do arquivo importado).
+    geometry_input_vstream = _video_stream(geometry_input_info)
+    geometry_input_fps = _fps_of(geometry_input_vstream)
+    geometry_input_duration = float(geometry_input_vstream.get('duration')
+                                    or geometry_input_info.get('format', {}).get('duration'))
+    geometry_input_width = int(geometry_input_vstream['width'])
+    geometry_input_height = int(geometry_input_vstream['height'])
+    geometry_frame_tol = 1.0 / geometry_input_fps
+    assert (geometry_input_width, geometry_input_height) == (720, 1280), geometry_input_vstream
+    assert abs(geometry_input_duration - 4.0) <= geometry_frame_tol, geometry_input_duration
     env_backup = {k: os.environ.get(k) for k in (
         'STUDIO_CREDENTIAL_BACKEND', 'STUDIO_CREDENTIAL_STORE_PATH', 'GEMINI_API_KEY')}
     os.environ['STUDIO_CREDENTIAL_BACKEND'] = 'simulated'
@@ -398,17 +409,17 @@ def main(argv=None):
         assert vstream.get('codec_name') == 'h264', vstream.get('codec_name')
         fps = _fps_of(vstream)
         duration = float(vstream.get('duration') or info.get('format', {}).get('duration'))
-        frame_tol = 1.0 / fps
-        assert abs(duration - 4.0) <= frame_tol, \
-            f'duracao divergente na Biblioteca: {duration}s (tolerancia {frame_tol:.4f}s = 1 quadro)'
+        assert abs(duration - 4.0) <= geometry_frame_tol, \
+            f'duracao divergente na Biblioteca: {duration}s (tolerancia {geometry_frame_tol:.4f}s = 1 quadro da fixture)'
         assert geometry_input_audio, 'insumo do simulador sem audio'
         geometry_measures = {
-            'input': {'width': 720, 'height': 1280, 'durationSeconds': 4.0, 'fps': 30,
+            'input': {'width': geometry_input_width, 'height': geometry_input_height,
+                      'durationSeconds': round(geometry_input_duration, 6), 'fps': geometry_input_fps,
                       'audioStreams': len(geometry_input_audio),
                       'audioCodec': geometry_input_audio[0].get('codec_name')},
             'library': {'width': int(vstream['width']), 'height': int(vstream['height']),
                         'durationSeconds': round(duration, 6), 'fps': fps,
-                        'frameToleranceSeconds': round(frame_tol, 6),
+                        'frameToleranceSeconds': round(geometry_frame_tol, 6),
                         'codec': vstream.get('codec_name'), 'audioStreams': 0,
                         'sha256': version['sha256']},
         }
