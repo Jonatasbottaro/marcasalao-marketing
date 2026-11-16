@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /tools/studio/frontend
+    schedule:
+      interval: weekly
+    groups:
+      astryx:
+        patterns:
+          - "@astryxdesign/*"
+          - "@stylexjs/stylex"
+          - "react"
+          - "react-dom"

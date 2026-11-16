@@ -98,6 +98,25 @@ python tools/video_studio.py --check --json   # diagnostica Python, Node, build,
 python tools/video_studio.py --port 8765      # abra http://127.0.0.1:8765
 ```
 
+### Interface React / Astryx (piloto Trabalhos & Projetos)
+
+A aba **Trabalhos & Projetos** utiliza o pacote privado `tools/studio/frontend/` (React 19 + `@astryxdesign/core` + `@astryxdesign/theme-neutral` + `@stylexjs/stylex` + Vite, usando Node 22.12+ / 24):
+
+```bash
+# 1. Instalar e compilar o bundle estatico da interface (gera tools/studio/frontend/dist/)
+cd tools/studio/frontend
+npm ci
+npm run build
+
+# 2. Voltar a raiz e iniciar o Studio local (mesma origem das APIs)
+cd ../../..
+python tools/video_studio.py --port 8765
+```
+
+- **Fallback preservado**: caso `tools/studio/frontend/dist/` ainda nao tenha sido compilado no checkout, o servidor Python entrega `tools/studio/index.html` sem injetar o bundle e a interface existente continua acessivel normalmente.
+- **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente o conteiner `#home-astryx-root` (ocultando e limpando `#home-legacy-root`), mantendo a barra de trabalho ativo e as demais abas sincronizadas via `window.StudioBridge`.
+- **Atualizacoes agrupadas (Dependabot)**: `.github/dependabot.yml` agenda verificacoes semanais em `/tools/studio/frontend` agrupando `@astryxdesign/*`, `@stylexjs/stylex`, `react` e `react-dom` no grupo `astryx`. Toda PR de atualizacao passa pelo workflow de CI que valida `npm ci`, `npm run build` e a regressao focada do piloto, exigindo `@astryxdesign/core` e `@astryxdesign/theme-neutral` em versoes compativeis, `package-lock.json` atualizado e prova funcional da aba verde antes do merge.
+
 Fluxo no painel:
 1. **Prontidao e demonstracao guiada** — a barra superior consulta `/api/readiness`
    e aponta eventuais faltas com instrucao direta; em 1 clique, **Demonstracao

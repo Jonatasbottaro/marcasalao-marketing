@@ -215,11 +215,12 @@ async function loadProjects() {
     if (currentVal) sel.value = currentVal;
   };
 
-  fillSelect($('#work-project'), $('#work-project').value || (allProjects[0]?.path || ''));
+  if ($('#work-project')) fillSelect($('#work-project'), $('#work-project').value || (allProjects[0]?.path || ''));
   fillSelect($('#project-select'), draft?.project);
   fillSelect($('#c-project-select'), cdraft?.project);
 
   const tbody = $('#projects-table tbody');
+  if (!tbody || window.__studioAstryxHomeActive) return;
   tbody.innerHTML = '';
   for (const p of allProjects) {
     const badge = el('span', {
@@ -317,8 +318,13 @@ function hasUnsavedWorkChanges() {
 }
 
 async function loadWorks() {
+  if (window.__studioAstryxHomeActive) {
+    window.__studioAstryxRefresh?.();
+    return;
+  }
   const data = await api('/api/works');
   const tbody = $('#works-table tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   const works = data.works || [];
   if (!works.length) {
@@ -4284,5 +4290,19 @@ async function openConnectionDialog(existing) {
   root.append(overlay);
   syncVisibility();
 }
+
+window.StudioBridge = {
+  applyOpenedWork: (data) => applyOpenedWork(data),
+  setMode: (mode) => setMode(mode),
+  toast: (msg) => toast(msg),
+  checkReadiness: () => checkReadiness(),
+  loadProjects: () => loadProjects(),
+  openBatchExportModal: (ids) => {
+    selectedBatchWorks.clear();
+    for (const id of ids || []) selectedBatchWorks.add(id);
+    updateBatchSelectionCount();
+    return openBatchExportModal();
+  },
+};
 
 init();

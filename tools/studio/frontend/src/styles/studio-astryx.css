@@ -1,0 +1,132 @@
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';
+
+/* Tokens e escopo isolado do piloto Astryx em Trabalhos & Projetos */
+.astryx-home-pilot,
+.astryx-home-pilot [data-astryx-theme="neutral"] {
+  color-scheme: dark;
+  --color-background-body: #0f1115;
+  --color-background-surface: #1a1d24;
+  --color-background-card: #1a1d24;
+  --color-background-popover: #14171d;
+  --color-background-muted: #14171d;
+  --color-text-primary: #e8eaed;
+  --color-text-secondary: #9aa0a6;
+  --color-text-disabled: #6b7280;
+  --color-border: #2a2e37;
+  --color-border-emphasized: #3e4554;
+  --color-accent: #4f8cff;
+  --color-accent-hover: #679eff;
+  --color-accent-muted: rgba(79, 140, 255, 0.18);
+  --color-on-accent: #ffffff;
+  --color-text-accent: #7aaaff;
+  --color-success: #3fb950;
+  --color-on-success: #0b160d;
+  --color-warning: #d29922;
+  --color-error: #f85149;
+  --color-info: #4f8cff;
+  --font-family-body: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-family-heading: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+.astryx-home-pilot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.astryx-home-pilot :focus-visible {
+  outline: 2px solid #4f8cff;
+  outline-offset: 2px;
+}
+
+.astryx-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.astryx-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.astryx-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.astryx-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.astryx-checks-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.astryx-fieldset {
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.astryx-fieldset legend {
+  color: var(--color-text-secondary, #9aa0a6);
+  font-size: 13px;
+  padding: 0 6px;
+}
+
+.astryx-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.astryx-variation-card {
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 8px;
+  padding: 12px;
+  background: #0d0f13;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Native select fallback com aparencia alinhada ao tema neutro */
+.astryx-select-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.astryx-select-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary, #e8eaed);
+}
+
+.astryx-native-select {
+  background: #0d0f13;
+  color: #e8eaed;
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 6px;
+  padding: 7px 10px;
+  min-height: 32px;
+  font: inherit;
+  width: 100%;
+}
