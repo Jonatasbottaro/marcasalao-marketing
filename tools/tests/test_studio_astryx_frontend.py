@@ -48,6 +48,8 @@ class StudioAstryxFrontendTests(unittest.TestCase):
         self.assertIn('id="home-astryx-root"', html)
         self.assertIn('id="queue-legacy-root"', html)
         self.assertIn('id="queue-astryx-root"', html)
+        self.assertIn('id="review-package-legacy-root"', html)
+        self.assertIn('id="review-package-astryx-root"', html)
         self.assertNotIn('/static/frontend/', html)
 
     def test_index_injects_manifest_and_serves_assets_when_dist_exists(self):

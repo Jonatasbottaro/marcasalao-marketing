@@ -1,11 +1,13 @@
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
 
-/* Tokens e escopo isolado do piloto Astryx em Trabalhos & Projetos e Fila de Producao */
+/* Tokens e escopo isolado dos pilotos Astryx em Trabalhos & Projetos, Fila e Pacote ZIP */
 .astryx-home-pilot,
 .astryx-home-pilot [data-astryx-theme="neutral"],
 .astryx-queue-pilot,
-.astryx-queue-pilot [data-astryx-theme="neutral"] {
+.astryx-queue-pilot [data-astryx-theme="neutral"],
+.astryx-review-package-pilot,
+.astryx-review-package-pilot [data-astryx-theme="neutral"] {
   color-scheme: dark;
   --color-background-body: #0f1115;
   --color-background-surface: #1a1d24;
@@ -32,14 +34,16 @@
 }
 
 .astryx-home-pilot,
-.astryx-queue-pilot {
+.astryx-queue-pilot,
+.astryx-review-package-pilot {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
 .astryx-home-pilot :focus-visible,
-.astryx-queue-pilot :focus-visible {
+.astryx-queue-pilot :focus-visible,
+.astryx-review-package-pilot :focus-visible {
   outline: 2px solid #4f8cff;
   outline-offset: 2px;
 }
@@ -155,4 +159,52 @@
   min-height: 32px;
   font: inherit;
   width: 100%;
+}
+
+.astryx-checklist-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 8px;
+  background: #0d0f13;
+}
+
+.astryx-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary, #e8eaed);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.astryx-checklist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.astryx-package-meta {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.astryx-package-manifest {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 6px;
+  background: #0d0f13;
+  color: var(--color-text-primary, #e8eaed);
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: 100%;
+  overflow-x: auto;
 }

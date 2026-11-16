@@ -98,9 +98,9 @@ python tools/video_studio.py --check --json   # diagnostica Python, Node, build,
 python tools/video_studio.py --port 8765      # abra http://127.0.0.1:8765
 ```
 
-### Interface React / Astryx (pilotos Trabalhos & Projetos e Fila de Producao)
+### Interface React / Astryx (pilotos Trabalhos & Projetos, Fila de Producao e Pacote ZIP)
 
-As abas **Trabalhos & Projetos** e **Fila de Produção** utilizam o pacote privado `tools/studio/frontend/` (React 19 + `@astryxdesign/core` + `@astryxdesign/theme-neutral` + `@stylexjs/stylex` + Vite, usando Node 22.12+ / 24):
+As abas **Trabalhos & Projetos**, **Fila de Produção** e o painel **4. Montar e baixar pacote ZIP de entrega** (em **Revisão & Entrega**) utilizam o pacote privado `tools/studio/frontend/` (React 19 + `@astryxdesign/core` + `@astryxdesign/theme-neutral` + `@stylexjs/stylex` + Vite, usando Node 22.12+ / 24):
 
 ```bash
 # 1. Instalar e compilar o bundle estatico da interface (gera tools/studio/frontend/dist/)
@@ -114,7 +114,7 @@ python tools/video_studio.py --port 8765
 ```
 
 - **Fallback preservado**: caso `tools/studio/frontend/dist/` ainda nao tenha sido compilado no checkout, o servidor Python entrega `tools/studio/index.html` sem injetar o bundle e a interface existente continua acessivel normalmente.
-- **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente os conteineres `#home-astryx-root` e `#queue-astryx-root` (ocultando e limpando `#home-legacy-root` e `#queue-legacy-root`), mantendo a barra de trabalho ativo, o indicador da fila na navegacao e as demais abas sincronizadas via `window.StudioBridge`.
+- **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente os conteineres `#home-astryx-root`, `#queue-astryx-root` e `#review-package-astryx-root` (ocultando e limpando `#home-legacy-root`, `#queue-legacy-root` e `#review-package-legacy-root`), mantendo a barra de trabalho ativo, o indicador da fila na navegacao e as demais secoes de Revisão & Entrega sincronizadas via `window.StudioBridge` (incluindo guarda de trabalho ativo/sequência, bloqueio de reenvio, tratamento de HTTP 409 e preservação do último ZIP válido).
 - **Regressao de navegador (local e CI)**: para executar a prova focada de inicializacao, prontidao, acionamento unico e Fila de Producao em Chromium com Playwright apos compilar `platform/` e `tools/studio/frontend/`:
   ```bash
   pip install playwright

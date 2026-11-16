@@ -333,6 +333,14 @@ def run_browser_regression():
             page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#active-work-title').inner_text()
 
+            # 6. Painel de pacote ZIP em React/Astryx na aba Revisao & Entrega
+            print('[ci_studio_astryx_browser] Etapa 6: painel ZIP em Revisao & Entrega...', flush=True)
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            pkg_legacy_hidden = page.locator('#review-package-legacy-root').get_attribute('hidden')
+            assert pkg_legacy_hidden is not None, '#review-package-legacy-root deve estar oculto quando React monta'
+            page.locator('#r-package-checklist').wait_for(state='visible', timeout=20000)
+            page.locator('#btn-r-build-package').wait_for(state='visible', timeout=20000)
+
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
             assert not http_error_responses, (
