@@ -567,3 +567,53 @@ A aba **Mídias** ganhou o fluxo **Gerar clipe / Acompanhar / Importar na Biblio
 python tools/ci_studio_video_api_proof.py --port 8808
 python -m unittest tools/tests/test_studio_video_api.py -v
 ```
+
+## Entrada local por agentes (MCP): propostas de roteiro e carrossel
+
+Agentes MCP (Codex, Claude Code ou um cliente de teste) consultam o briefing de um trabalho do Video Studio e registram **propostas estruturadas** que o operador revisa na aba **Planejamento**. O servidor é `tools/studio_mcp_server.py`, iniciado pelo cliente via **stdio**; ele conversa por **HTTP de loopback** com a instância do Studio **já em execução**, que continua responsável pela leitura, pela validação (contrato `PlanningSuggestion v1` do núcleo) e pela gravação. Sem SDK de terceiros: apenas biblioteca padrão do Python (JSON-RPC 2.0 delimitado por newline). O transporte usa **UTF-8 explícito nos dois sentidos** (independente do encoding padrão do processo, ex.: CP1252 em Windows); o stdout transporta só mensagens MCP e os diagnósticos vão ao stderr.
+
+**Negociação de versão**: o servidor oferece apenas as versões implementadas **sem lotes JSON-RPC** — `2025-06-18` e `2024-11-05`. A `2025-03-26`, que exige receber lotes, **não é oferecida**; um lote recebido nas versões sem lotes devolve `Invalid Request`. Se o cliente pedir uma versão fora da lista, o servidor responde com a suportada mais recente (`2025-06-18`).
+
+- **Ferramentas**:
+  - `consultar_planejamento` (`workId`): devolve briefing, perfis permitidos, `contextFingerprint`, `briefingSha256` e as instruções canônicas da etapa `creative` (reusa `build_stage_prompt`). Expõe apenas campos necessários à proposta.
+  - `enviar_proposta` (`workId`, `expectedContextFingerprint`, `suggestion`): reusa o importador validado (`POST /api/works/planning/import`) **com `stage: "creative"`**, ativando a validação de etapa (uma proposta `briefing` enviada pelo MCP é rejeitada com `PLANNING_STAGE_MISMATCH`; o import de briefing pelo Studio continua disponível). Devolve `suggestionId`, `diffPreview` e `warnings`. A proposta fica vinculada ao trabalho e ao fingerprint consultados.
+- **Concorrência e prévia vinculada**: o importador reconfere o `contextFingerprint` **sob o lock existente** antes de gravar, comparando o contexto atual com o snapshot usado para validar e calcular o `diffPreview` — **inclusive quando `expectedContextFingerprint` é omitido**. Uma edição concorrente entre validação e registro devolve conflito (`CONTEXT_CONFLICT`) com instrução de recarregar o contexto, preservando a edição e o histórico anterior; o fingerprint enviado já desatualizado também devolve conflito. Dois envios válidos sobre o mesmo contexto geram **dois registros** no histórico.
+- **Limites da interface MCP**: termina no registro da proposta. Incorporar e aplicar aos editores continuam sendo ações do operador nos controles existentes do Planejamento (histórico → **Visualizar / Incorporar** → **Aplicar**). Geração de mídia, pesquisa de referências e publicação ficam fora desta rodada.
+- **Segurança**: destino fixo em `127.0.0.1`, porta configurável (`--port` ou `STUDIO_MCP_PORT`), tempo limite por chamada; as verificações de **Host/Origin** do Studio são preservadas (o adaptador envia ambos). Respostas carregam só dados do Planejamento — sem configuração de conexões, chaves ou caminhos internos. Studio indisponível devolve instrução de como iniciar a instância local.
+
+### Como usar
+
+1. Suba o Studio na raiz do checkout (`<RAIZ>`): `python tools/video_studio.py --port 8765` (abra `http://127.0.0.1:8765`).
+2. Configure o servidor MCP **por projeto** no cliente, apontando para a mesma porta. Inicie o cliente na raiz do checkout para que o caminho relativo do script resolva; em outra pasta, use o caminho absoluto local de `<RAIZ>/tools/studio_mcp_server.py`. No Linux troque `python` por `python3` se necessário.
+
+**Codex** — `.codex/config.toml` do projeto:
+
+```toml
+[mcp_servers.video-studio-planejamento]
+command = "python"
+args = ["tools/studio_mcp_server.py", "--port", "8765"]
+```
+
+**Claude Code** — `.mcp.json` do projeto (escopo de projeto) ou `claude mcp add -s project video-studio-planejamento -- python tools/studio_mcp_server.py --port 8765`:
+
+```json
+{
+  "mcpServers": {
+    "video-studio-planejamento": {
+      "command": "python",
+      "args": ["tools/studio_mcp_server.py", "--port", "8765"]
+    }
+  }
+}
+```
+
+Exemplo de chamada (cliente MCP): `consultar_planejamento` com `{"workId": "<id-do-trabalho>"}`; depois `enviar_proposta` com `{"workId": "<id>", "expectedContextFingerprint": "<fingerprint consultado>", "suggestion": { ... PlanningSuggestion v1, stage "creative" ... }}`. O contrato `creative` exige `videoScenes` e `carouselCards`; separe `caption` (legenda SRT), `narration` (narração externa) e `postText` (texto de publicação).
+
+### Comandos reproduzíveis
+
+```bash
+# Prova de uso completa (sobe o proprio Studio com trabalho ficticio e dois clientes MCP sobre stdio)
+python tools/ci_studio_mcp_proof.py --port 8810
+# Regressao do servidor MCP
+python -m unittest tools.tests.test_studio_mcp -v
+```
