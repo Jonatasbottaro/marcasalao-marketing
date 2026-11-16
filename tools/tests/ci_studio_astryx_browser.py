@@ -437,8 +437,60 @@ def run_browser_regression():
                 assert pkg_piece['deliveryVersionId'] == approved_version_id, (
                     f"Versão empacotada {pkg_piece['deliveryVersionId']} difere da aprovada {approved_version_id}"
                 )
+                assert any(name.lower().endswith('.mp4') for name in zf.namelist()), (
+                    f'ZIP sem MP4 da peça renderizada: {zf.namelist()}'
+                )
+                assert any(name.lower().endswith('.srt') for name in zf.namelist()), (
+                    f'ZIP sem SRT da peça renderizada: {zf.namelist()}'
+                )
 
-            # Troca de trabalho: a resposta/estado antigo não pode derrubar o painel Astryx.
+            # 7. HTTP 409 esperado: versão obsoleta no payload gera conflito na rede e no painel.
+            print('[ci_studio_astryx_browser] Etapa 7: conflito HTTP 409 e ZIP valido preservado...', flush=True)
+            stale_version = 'versao-obsoleta-para-prova-409'
+
+            def force_stale_version(route):
+                payload = json.loads(route.request.post_data or '{}')
+                for piece in payload.get('pieces', []):
+                    piece['expectedVersionId'] = stale_version
+                route.continue_(post_data=json.dumps(payload))
+
+            page.route('**/api/works/package', force_stale_version)
+            allow_expected_409[0] = True
+            try:
+                with page.expect_response(
+                    lambda r: r.url.split('?')[0].endswith('/api/works/package') and r.status == 409,
+                    timeout=30000,
+                ) as conflict_resp:
+                    page.locator('#btn-r-build-package').click()
+                assert conflict_resp.value.status == 409, 'Conflito de versao nao retornou HTTP 409'
+                page.locator('#r-package-status').get_by_text('Conflito de versão', exact=False).wait_for(
+                    state='visible', timeout=20000
+                )
+            finally:
+                allow_expected_409[0] = False
+                page.unroute('**/api/works/package', force_stale_version)
+
+            # O pacote valido anterior permanece promovido, com o mesmo packageId e SHA-256.
+            page.locator('#btn-r-download-zip').wait_for(state='visible', timeout=20000)
+            preserved_text = page.locator('#r-package-result').inner_text()
+            assert package_id in preserved_text, f'packageId {package_id} nao preservado apos 409'
+            assert studio_sha in preserved_text, f'SHA-256 {studio_sha} nao preservado apos 409'
+            with page.expect_download(timeout=30000) as preserved_dl:
+                page.locator('#btn-r-download-zip').click()
+            preserved_path = preserved_dl.value.path()
+            with open(preserved_path, 'rb') as fh:
+                preserved_sha = hashlib.sha256(fh.read()).hexdigest()
+            assert preserved_sha == studio_sha, (
+                f'ZIP apos 409 divergiu: {preserved_sha} != {studio_sha}'
+            )
+
+            # 8. Troca de trabalho com geracao em andamento: dispara o clique e troca antes da resposta.
+            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
+            page.locator('#btn-r-build-package').click(no_wait_after=True)
+            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
+                state='visible', timeout=10000
+            )
+            # Cria o trabalho B enquanto a geracao em A ainda esta em voo, em seguida troca de trabalho.
             page.evaluate(
                 """async ({workId}) => {
                     await fetch('/api/works/create', {
@@ -468,6 +520,42 @@ def run_browser_regression():
             page.locator('#mode-review-btn').click()
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            # A geracao disparada antes da troca pode ter promovido um ZIP novo; usa o SHA corrente do painel.
+            switched_result = page.locator('#r-package-result').inner_text()
+            switched_sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', switched_result)
+            assert switched_sha_match, f'Resultado apos troca sem SHA-256: {switched_result}'
+            current_sha = switched_sha_match.group(1)
+
+            # 9. Painel legado sem bundle: bloqueia o script React e valida o download da UI classica.
+            print('[ci_studio_astryx_browser] Etapa 9: download pelo painel legado sem bundle...', flush=True)
+            legacy_page = context.new_page()
+            legacy_errors = []
+            legacy_page.on('pageerror', lambda err: legacy_errors.append(str(err)))
+            legacy_page.route('**/static/frontend/**', lambda route: route.abort())
+            legacy_page.goto(base_url, wait_until='networkidle')
+            legacy_page.locator('#home-legacy-root').wait_for(state='visible', timeout=20000)
+            assert legacy_page.locator('#home-legacy-root').get_attribute('hidden') is None, (
+                'Painel legado deve estar ativo quando o bundle React nao carrega'
+            )
+            legacy_row = legacy_page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
+            legacy_row.wait_for(state='visible', timeout=20000)
+            legacy_row.click()
+            # O Reabrir legado chama setMode('video') de forma assíncrona; espera antes de trocar para Revisão.
+            legacy_page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#mode-review-btn').click()
+            legacy_page.locator('#mode-review').wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#active-work-title').get_by_text(work_id).wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            with legacy_page.expect_download(timeout=30000) as legacy_dl:
+                legacy_page.locator('#btn-r-download-zip').click()
+            legacy_path = legacy_dl.value.path()
+            with open(legacy_path, 'rb') as fh:
+                legacy_sha = hashlib.sha256(fh.read()).hexdigest()
+            assert legacy_sha == current_sha, (
+                f'ZIP do painel legado divergiu: {legacy_sha} != {current_sha}'
+            )
+            assert not legacy_errors, f'Excecoes JS no painel legado: {legacy_errors}'
+            legacy_page.close()
 
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
