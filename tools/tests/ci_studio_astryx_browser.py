@@ -207,15 +207,16 @@ def run_browser_regression():
             assert work_id in page.locator('#q-items-list').inner_text()
 
             # Filtro por trabalho preserva selecao e responde 200
+            page.locator(f'#q-filter-work option[value="{work_id}"]').wait_for(state='attached', timeout=20000)
             with page.expect_response(lambda r: f'workId={work_id}' in r.url and r.status == 200, timeout=20000):
                 page.locator('#q-filter-work').select_option(work_id)
             assert page.locator('#q-filter-work').input_value() == work_id
 
             # Abrir revisao a partir da peca da fila ativa o trabalho em Revisao & Entrega
-            page.locator('#q-items-list .q-btn-open-review').first.click()
+            page.locator('#q-items-list').get_by_role('button', name='Abrir revisão').first.click()
             page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#active-work-title').inner_text()
-            assert not page.locator('#mode-review').is_hidden(), 'Aba Revisao & Entrega deve ficar visivel'
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
 
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'

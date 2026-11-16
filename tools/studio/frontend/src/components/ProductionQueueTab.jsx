@@ -217,9 +217,8 @@ export function ProductionQueueTab() {
               <Button
                 id="btn-q-refresh"
                 variant="secondary"
-                label={refreshing ? 'Atualizando…' : 'Atualizar fila'}
+                label="Atualizar fila"
                 onClick={() => fetchQueue()}
-                isDisabled={refreshing}
               />
             </div>
           </div>
