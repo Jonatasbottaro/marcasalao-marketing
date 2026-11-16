@@ -24,6 +24,11 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# Estados finais possiveis de um item da fila (tools/studio_queue.py VALID_STATUSES).
+TERMINAL_STATUSES = ('completed', 'failed', 'cancelled', 'interrupted')
+# Teto de espera por um estado terminal antes de simular SNAPSHOT_LEGACY.
+TERMINAL_WAIT_SECONDS = 300.0
+
 
 def _free_port():
     with socket.socket() as s:
@@ -108,6 +113,33 @@ def run_browser_regression():
                         console_errors.append(text)
 
             page.on('console', _on_console)
+
+            # Registra metodo, rota e status de toda resposta HTTP de erro (>= 400) para
+            # identificar a origem de falhas silenciosas em chamadas feitas via page.evaluate.
+            http_error_responses = []
+
+            def _on_response(resp):
+                try:
+                    status = resp.status
+                except Exception:
+                    return
+                if status < 400:
+                    return
+                route = resp.url.split('?')[0]
+                # Ignora 404 de favicon.ico que nao faz parte do app
+                if route.endswith('/favicon.ico'):
+                    return
+                # 409 e esperado no retry com snapshot legado (SNAPSHOT_LEGACY)
+                if allow_expected_409[0] and status == 409:
+                    return
+                method = resp.request.method
+                http_error_responses.append((method, route, status))
+                print(
+                    f'[ci_studio_astryx_browser][http-error] {method} {route} -> {status}',
+                    flush=True,
+                )
+
+            page.on('response', _on_response)
             page.on('request', lambda req: (
                 readiness_requests.append(req.url) if '/api/readiness' in req.url else None,
                 create_requests.append(req.url) if '/api/works/create' in req.url else None,
@@ -232,22 +264,31 @@ def run_browser_regression():
             item_id, snap_raw = row
             conn.close()
 
-            # Garante que o worker nao esteja executando o item antes de simular SNAPSHOT_LEGACY
-            page.evaluate(f"""async () => {{
-                await fetch('/api/queue/cancel', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ itemId: '{item_id}' }})
-                }}).catch(() => null);
-            }}""")
-            deadline = time.time() + 15.0
+            # Espera a peca alcancar um estado terminal antes de simular SNAPSHOT_LEGACY.
+            # Nao chamamos POST /api/queue/cancel: a rota so aceita itens `queued` e responde
+            # HTTP 400 quando a peca ja esta `running`, que e o caso durante a preparacao.
+            deadline = time.time() + TERMINAL_WAIT_SECONDS
+            last_status = None
+            final_status = None
             while time.time() < deadline:
                 conn = sqlite3.connect(db_path)
                 st_row = conn.execute('SELECT status FROM queue_items WHERE item_id = ?', (item_id,)).fetchone()
                 conn.close()
-                if st_row and st_row[0] not in ('queued', 'running'):
+                current_status = st_row[0] if st_row else None
+                if current_status != last_status:
+                    print(
+                        f'[ci_studio_astryx_browser] item {item_id}: status={current_status}',
+                        flush=True,
+                    )
+                    last_status = current_status
+                if current_status in TERMINAL_STATUSES:
+                    final_status = current_status
                     break
-                time.sleep(0.25)
+                time.sleep(0.5)
+            assert final_status is not None, (
+                f'Peca {item_id} nao alcancou estado terminal em {TERMINAL_WAIT_SECONDS:.0f}s '
+                f'(ultimo status: {last_status})'
+            )
 
             conn = sqlite3.connect(db_path)
             snap_obj = json.loads(snap_raw)
@@ -294,6 +335,10 @@ def run_browser_regression():
 
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
+            assert not http_error_responses, (
+                'Respostas HTTP de erro inesperadas (metodo, rota, status): '
+                f'{http_error_responses}'
+            )
 
             browser.close()
     finally:
