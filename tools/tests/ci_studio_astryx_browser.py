@@ -110,6 +110,7 @@ def run_browser_regression():
             ))
 
             # 1. Inicializacao com lista (potencialmente) vazia
+            print('[ci_studio_astryx_browser] Etapa 1: abertura inicial...', flush=True)
             page.goto(base_url, wait_until='networkidle')
             page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
             legacy_hidden = page.locator('#home-legacy-root').get_attribute('hidden')
@@ -118,6 +119,7 @@ def run_browser_regression():
             assert not console_errors, f'Erros de console na abertura: {console_errors}'
 
             # 2. Reverificar ambiente: exatamente 1 GET /api/readiness por clique
+            print('[ci_studio_astryx_browser] Etapa 2: reverificar ambiente...', flush=True)
             before_readiness = len(readiness_requests)
             with page.expect_response(lambda r: '/api/readiness' in r.url and r.status == 200, timeout=20000):
                 page.locator('#btn-refresh-readiness').click()
@@ -128,6 +130,7 @@ def run_browser_regression():
             assert not page_errors, f'Excecoes JS apos Reverificar ambiente: {page_errors}'
 
             # 3. Criar e abrir trabalho: exatamente 1 POST /api/works/create
+            print('[ci_studio_astryx_browser] Etapa 3: criar e abrir trabalho...', flush=True)
             page.locator('#work-name').fill('CI Astryx Piloto 01')
             page.locator('#work-id').fill(work_id)
             page.locator('#work-project').select_option('platform/examples/projects/marca-salao-social.project.json')
@@ -142,6 +145,7 @@ def run_browser_regression():
             assert not page_errors, f'Excecoes JS apos criar trabalho: {page_errors}'
 
             # 4. Inicializacao com trabalhos existentes e acionamento unico de Criar a partir de modelo
+            print('[ci_studio_astryx_browser] Etapa 4: modelos e dialogo...', flush=True)
             page.reload(wait_until='networkidle')
             page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#works-table').wait_for(state='visible', timeout=20000)
@@ -170,12 +174,13 @@ def run_browser_regression():
             assert page.locator('dialog[open]').count() == 0, 'Nenhum dialog deve permanecer aberto apos Escape'
 
             # 5. Aba Fila de Producao em React/Astryx: montagem, atualizar fila, filtros e Abrir revisao
+            print('[ci_studio_astryx_browser] Etapa 5: aba Fila de Producao...', flush=True)
             page.locator('#mode-queue-btn').click()
             page.locator('[data-testid="astryx-queue-pilot"]').wait_for(state='visible', timeout=20000)
             queue_legacy_hidden = page.locator('#queue-legacy-root').get_attribute('hidden')
             assert queue_legacy_hidden is not None, '#queue-legacy-root deve estar oculto quando React monta'
 
-            with page.expect_response(lambda r: '/api/queue' in r.url and r.status == 200, timeout=20000):
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/queue') and r.status == 200, timeout=20000):
                 page.locator('#btn-q-refresh').click()
 
             # Enfileira 1 lote de teste via API oficial e valida na UI da fila
@@ -198,13 +203,11 @@ def run_browser_regression():
             }}""")
             assert enqueue_res.get('ok'), f'Falha ao enfileirar lote de teste: {enqueue_res}'
 
-            with page.expect_response(lambda r: '/api/queue' in r.url and r.status == 200, timeout=20000):
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/queue') and r.status == 200, timeout=20000):
                 page.locator('#btn-q-refresh').click()
 
-            page.locator('#q-batches-list').wait_for(state='visible', timeout=20000)
-            assert 'Lote CI Astryx' in page.locator('#q-batches-list').inner_text()
-            page.locator('#q-items-list').wait_for(state='visible', timeout=20000)
-            assert work_id in page.locator('#q-items-list').inner_text()
+            page.locator('#q-batches-list').get_by_text('Lote CI Astryx').wait_for(state='visible', timeout=20000)
+            page.locator('#q-items-list').get_by_text(work_id).first.wait_for(state='visible', timeout=20000)
 
             # Filtro por trabalho preserva selecao e responde 200
             page.locator(f'#q-filter-work option[value="{work_id}"]').wait_for(state='attached', timeout=20000)
@@ -214,9 +217,9 @@ def run_browser_regression():
 
             # Abrir revisao a partir da peca da fila ativa o trabalho em Revisao & Entrega
             page.locator('#q-items-list').get_by_role('button', name='Abrir revisão').first.click()
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#active-work-title').inner_text()
-            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
 
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
