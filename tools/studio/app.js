@@ -455,7 +455,9 @@ function applyOpenedWork(data) {
   catalog = (data.listing && data.listing.profiles) || [];
   cCatalog = catalog;
 
-  for (const sel of ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status', '#r-editorial-feedback', '#r-package-status']) {
+  const feedbackSelectors = ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status', '#r-editorial-feedback'];
+  if (!isAstryxReviewPackageActive()) feedbackSelectors.push('#r-package-status');
+  for (const sel of feedbackSelectors) {
     const node = $(sel);
     if (node) node.innerHTML = '';
   }
