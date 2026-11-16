@@ -93,6 +93,8 @@ def run_browser_regression():
             console_errors = []
             readiness_requests = []
             create_requests = []
+            retry_requests = []
+            allow_expected_409 = [False]
 
             page.on('pageerror', lambda err: page_errors.append(str(err)))
 
@@ -101,12 +103,15 @@ def run_browser_regression():
                     text = msg.text
                     # Ignora 404 de favicon.ico que nao faz parte do app
                     if 'favicon.ico' not in text and '404 (Not Found)' not in text:
+                        if allow_expected_409[0] and '409 (Conflict)' in text:
+                            return
                         console_errors.append(text)
 
             page.on('console', _on_console)
             page.on('request', lambda req: (
                 readiness_requests.append(req.url) if '/api/readiness' in req.url else None,
                 create_requests.append(req.url) if '/api/works/create' in req.url else None,
+                retry_requests.append((req.url, req.post_data)) if '/api/queue/retry' in req.url else None,
             ))
 
             # 1. Inicializacao com lista (potencialmente) vazia
@@ -214,6 +219,72 @@ def run_browser_regression():
             with page.expect_response(lambda r: f'workId={work_id}' in r.url and r.status == 200, timeout=20000):
                 page.locator('#q-filter-work').select_option(work_id)
             assert page.locator('#q-filter-work').input_value() == work_id
+
+            # Retry com snapshot indisponivel/legado mantem aviso e unico botao Enfileirar versao atual
+            import sqlite3
+            db_path = os.path.join(ROOT, '.workspace', 'studio', 'production-queue.sqlite')
+            conn = sqlite3.connect(db_path)
+            row = conn.execute(
+                'SELECT item_id, snapshot_json FROM queue_items WHERE work_id = ? ORDER BY created_at DESC LIMIT 1',
+                (work_id,),
+            ).fetchone()
+            assert row is not None, f'Nenhum item na fila encontrado para {work_id}'
+            item_id, snap_raw = row
+            conn.close()
+
+            # Garante que o worker nao esteja executando o item antes de simular SNAPSHOT_LEGACY
+            page.evaluate(f"""async () => {{
+                await fetch('/api/queue/cancel', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ itemId: '{item_id}' }})
+                }}).catch(() => null);
+            }}""")
+            deadline = time.time() + 15.0
+            while time.time() < deadline:
+                conn = sqlite3.connect(db_path)
+                st_row = conn.execute('SELECT status FROM queue_items WHERE item_id = ?', (item_id,)).fetchone()
+                conn.close()
+                if st_row and st_row[0] not in ('queued', 'running'):
+                    break
+                time.sleep(0.25)
+
+            conn = sqlite3.connect(db_path)
+            snap_obj = json.loads(snap_raw)
+            snap_obj['schemaVersion'] = 1
+            snap_obj.pop('projectManifestSha256', None)
+            conn.execute(
+                'UPDATE queue_items SET status = ?, error_code = ?, error_message = ?, snapshot_json = ? WHERE item_id = ?',
+                ('failed', 'SNAPSHOT_LEGACY', 'Snapshot legado para prova de retry.', json.dumps(snap_obj), item_id),
+            )
+            conn.commit()
+            conn.close()
+
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/queue') and r.status == 200, timeout=20000):
+                page.locator('#btn-q-refresh').click()
+
+            item_card = page.locator(f'[data-queue-item-id="{item_id}"]')
+            item_card.get_by_text('Snapshot legado para prova de retry.').wait_for(state='visible', timeout=20000)
+            assert item_card.get_by_role('button', name='Enfileirar versão atual').count() == 1
+
+            allow_expected_409[0] = True
+            with page.expect_response(lambda r: '/api/queue/retry' in r.url and r.status == 409, timeout=20000):
+                item_card.get_by_role('button', name='Tentar novamente').click()
+            item_card.get_by_text('Snapshot anterior indisponível').wait_for(state='visible', timeout=20000)
+            allow_expected_409[0] = False
+
+            current_btns = item_card.get_by_role('button', name='Enfileirar versão atual')
+            assert current_btns.count() == 1, f'Esperado exatamente 1 botao Enfileirar versao atual, obtidos {current_btns.count()}'
+
+            before_retry = len(retry_requests)
+            with page.expect_response(lambda r: '/api/queue/retry' in r.url and r.status == 200, timeout=20000):
+                current_btns.first.click()
+            new_retries = retry_requests[before_retry:]
+            assert len(new_retries) == 1, f'Esperado exatamente 1 POST /api/queue/retry, obtidos {len(new_retries)}'
+            retry_payload = json.loads(new_retries[0][1] or '{}')
+            assert retry_payload.get('itemId') == item_id and retry_payload.get('useCurrent') is True, (
+                f'Payload inesperado em POST /api/queue/retry: {retry_payload}'
+            )
 
             # Abrir revisao a partir da peca da fila ativa o trabalho em Revisao & Entrega
             page.locator('#q-items-list').get_by_role('button', name='Abrir revisão').first.click()

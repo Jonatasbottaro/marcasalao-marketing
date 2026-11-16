@@ -401,9 +401,10 @@ export function ProductionQueueTab() {
                             title="Snapshot anterior indisponível"
                             description={fb.message}
                             collapsible={false}
-                            actions={
+                            endContent={
                               fb.canUseCurrent ? (
                                 <Button
+                                  className="q-btn-retry-current"
                                   variant="primary"
                                   size="sm"
                                   label="Enfileirar versão atual"
@@ -438,7 +439,7 @@ export function ProductionQueueTab() {
                               onClick={() => handleRetryItem(it.itemId, false)}
                               isDisabled={isBusy}
                             />
-                            {it.canUseCurrent ? (
+                            {it.canUseCurrent && !(fb && fb.canUseCurrent) ? (
                               <Button
                                 className="q-btn-retry-current"
                                 variant="primary"
