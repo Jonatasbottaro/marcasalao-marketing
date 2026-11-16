@@ -1,9 +1,11 @@
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
 
-/* Tokens e escopo isolado do piloto Astryx em Trabalhos & Projetos */
+/* Tokens e escopo isolado do piloto Astryx em Trabalhos & Projetos e Fila de Producao */
 .astryx-home-pilot,
-.astryx-home-pilot [data-astryx-theme="neutral"] {
+.astryx-home-pilot [data-astryx-theme="neutral"],
+.astryx-queue-pilot,
+.astryx-queue-pilot [data-astryx-theme="neutral"] {
   color-scheme: dark;
   --color-background-body: #0f1115;
   --color-background-surface: #1a1d24;
@@ -29,15 +31,39 @@
   --font-family-heading: system-ui, "Segoe UI", Roboto, sans-serif;
 }
 
-.astryx-home-pilot {
+.astryx-home-pilot,
+.astryx-queue-pilot {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.astryx-home-pilot :focus-visible {
+.astryx-home-pilot :focus-visible,
+.astryx-queue-pilot :focus-visible {
   outline: 2px solid #4f8cff;
   outline-offset: 2px;
+}
+
+.astryx-queue-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.astryx-queue-count-pill {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border, #2a2e37);
+  border-radius: 6px;
+  background: #14171d;
+  font-size: 13px;
+  color: var(--color-text-primary, #e8eaed);
+}
+
+.astryx-queue-link {
+  color: var(--color-accent, #4f8cff);
+  font-size: 14px;
+  text-decoration: underline;
+  align-self: flex-start;
 }
 
 .astryx-section-head {

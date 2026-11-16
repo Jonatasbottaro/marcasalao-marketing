@@ -5,15 +5,16 @@ import { Theme } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 import './styles/studio-astryx.css';
 import { WorksAndProjectsTab } from './components/WorksAndProjectsTab.jsx';
+import { ProductionQueueTab } from './components/ProductionQueueTab.jsx';
 
-function mountAstryxHomePilot() {
-  const container = document.getElementById('home-astryx-root');
+function mountAstryxTab({ containerId, legacyId, flagName, Component }) {
+  const container = document.getElementById(containerId);
   if (!container) return;
 
   container.dataset.astryxReady = '1';
-  window.__studioAstryxHomeActive = true;
+  window[flagName] = true;
 
-  const legacyRoot = document.getElementById('home-legacy-root');
+  const legacyRoot = document.getElementById(legacyId);
   if (legacyRoot) {
     legacyRoot.hidden = true;
     legacyRoot.innerHTML = '';
@@ -23,15 +24,30 @@ function mountAstryxHomePilot() {
     <React.StrictMode>
       <Theme theme={neutralTheme}>
         <LayerProvider>
-          <WorksAndProjectsTab />
+          <Component />
         </LayerProvider>
       </Theme>
     </React.StrictMode>,
   );
 }
 
+function mountAstryxStudioPilots() {
+  mountAstryxTab({
+    containerId: 'home-astryx-root',
+    legacyId: 'home-legacy-root',
+    flagName: '__studioAstryxHomeActive',
+    Component: WorksAndProjectsTab,
+  });
+  mountAstryxTab({
+    containerId: 'queue-astryx-root',
+    legacyId: 'queue-legacy-root',
+    flagName: '__studioAstryxQueueActive',
+    Component: ProductionQueueTab,
+  });
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', mountAstryxHomePilot, { once: true });
+  document.addEventListener('DOMContentLoaded', mountAstryxStudioPilots, { once: true });
 } else {
-  mountAstryxHomePilot();
+  mountAstryxStudioPilots();
 }

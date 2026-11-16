@@ -98,9 +98,9 @@ python tools/video_studio.py --check --json   # diagnostica Python, Node, build,
 python tools/video_studio.py --port 8765      # abra http://127.0.0.1:8765
 ```
 
-### Interface React / Astryx (piloto Trabalhos & Projetos)
+### Interface React / Astryx (pilotos Trabalhos & Projetos e Fila de Producao)
 
-A aba **Trabalhos & Projetos** utiliza o pacote privado `tools/studio/frontend/` (React 19 + `@astryxdesign/core` + `@astryxdesign/theme-neutral` + `@stylexjs/stylex` + Vite, usando Node 22.12+ / 24):
+As abas **Trabalhos & Projetos** e **Fila de Produção** utilizam o pacote privado `tools/studio/frontend/` (React 19 + `@astryxdesign/core` + `@astryxdesign/theme-neutral` + `@stylexjs/stylex` + Vite, usando Node 22.12+ / 24):
 
 ```bash
 # 1. Instalar e compilar o bundle estatico da interface (gera tools/studio/frontend/dist/)
@@ -114,12 +114,13 @@ python tools/video_studio.py --port 8765
 ```
 
 - **Fallback preservado**: caso `tools/studio/frontend/dist/` ainda nao tenha sido compilado no checkout, o servidor Python entrega `tools/studio/index.html` sem injetar o bundle e a interface existente continua acessivel normalmente.
-- **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente o conteiner `#home-astryx-root` (ocultando e limpando `#home-legacy-root`), mantendo a barra de trabalho ativo e as demais abas sincronizadas via `window.StudioBridge`.
-- **Regressao de navegador (local e CI)**: para executar a prova focada de inicializacao, prontidao e acionamento unico em Chromium com Playwright apos compilar `platform/` e `tools/studio/frontend/`:
+- **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente os conteineres `#home-astryx-root` e `#queue-astryx-root` (ocultando e limpando `#home-legacy-root` e `#queue-legacy-root`), mantendo a barra de trabalho ativo, o indicador da fila na navegacao e as demais abas sincronizadas via `window.StudioBridge`.
+- **Regressao de navegador (local e CI)**: para executar a prova focada de inicializacao, prontidao, acionamento unico e Fila de Producao em Chromium com Playwright apos compilar `platform/` e `tools/studio/frontend/`:
   ```bash
   pip install playwright
   python -m playwright install chromium
   python tools/tests/ci_studio_astryx_browser.py
+  PYTHONPATH=tools python -m unittest tools/tests/test_studio_astryx_frontend.py tools/tests/test_studio_queue.py -v
   ```
 - **Atualizacoes agrupadas (Dependabot)**: `.github/dependabot.yml` agenda verificacoes semanais em `/tools/studio/frontend` agrupando `@astryxdesign/*`, `@stylexjs/stylex`, `react` e `react-dom` no grupo `astryx`. Toda PR de atualizacao passa pelo workflow de CI que valida `npm ci`, `npm run build` e as regressoes HTTP e de navegador, exigindo `@astryxdesign/core` e `@astryxdesign/theme-neutral` em versoes compativeis, `package-lock.json` atualizado e prova funcional da aba verde antes do merge.
 

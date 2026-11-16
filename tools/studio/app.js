@@ -47,6 +47,20 @@ function homeEl(sel) {
   if (!root || isAstryxHomeActive()) return null;
   return root.querySelector(sel);
 }
+
+function isAstryxQueueActive() {
+  return Boolean(window.__studioAstryxQueueActive) || document.getElementById('queue-astryx-root')?.dataset?.astryxReady === '1';
+}
+
+function queueLegacyRoot() {
+  return document.getElementById('queue-legacy-root');
+}
+
+function queueEl(sel) {
+  const root = queueLegacyRoot();
+  if (!root || isAstryxQueueActive()) return null;
+  return root.querySelector(sel);
+}
 let mVideoMedia = { key: null, canvas: null, ready: false, error: false };
 
 async function apiDetailed(path, opts = {}) {
@@ -2871,6 +2885,7 @@ async function init() {
   });
 
   bindLegacyHomeEvents();
+  bindLegacyQueueEvents();
 
   $('#btn-save-work').addEventListener('click', () => saveWork().catch((e) => toast(e.message)));
   $('#btn-work-home').addEventListener('click', () => setMode('home'));
@@ -2913,9 +2928,6 @@ async function init() {
   $('#btn-conn-new').addEventListener('click', () => openConnectionDialog(null).catch((e) => toast(e.message)));
   $('#btn-conn-select-save').addEventListener('click', () => saveConnectionSelection().catch((e) => toast(e.message)));
   $('#conn-project-select').addEventListener('change', () => fillConnectionSelection().catch((e) => toast(e.message)));
-  $('#btn-q-refresh').addEventListener('click', () => loadQueue().catch((e) => toast(e.message)));
-  $('#q-filter-status').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
-  $('#q-filter-work').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
   $('#btn-r-refresh').addEventListener('click', () => loadReviewOverview().catch((e) => toast(e.message)));
   $('#btn-r-save-editorial').addEventListener('click', () => saveEditorialSheet().catch((e) => toast(e.message)));
   $('#btn-r-build-package').addEventListener('click', () => buildPackageZip().catch((e) => toast(e.message)));
@@ -3644,14 +3656,35 @@ async function retryQueueItem(itemId, useCurrent = false, feedbackEl = null) {
   }
 }
 
+function bindLegacyQueueEvents() {
+  if (isAstryxQueueActive()) return;
+  const root = queueLegacyRoot();
+  if (!root || !root.childElementCount) return;
+  queueEl('#btn-q-refresh')?.addEventListener('click', () => loadQueue().catch((e) => toast(e.message)));
+  queueEl('#q-filter-status')?.addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
+  queueEl('#q-filter-work')?.addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
+}
+
+let legacyQueueSeq = 0;
+
 async function loadQueue() {
-  const statusFilter = $('#q-filter-status')?.value || '';
-  const workFilter = $('#q-filter-work')?.value || '';
+  if (isAstryxQueueActive()) {
+    if (queuePollTimer) {
+      clearTimeout(queuePollTimer);
+      queuePollTimer = null;
+    }
+    window.__studioAstryxQueueRefresh?.();
+    return;
+  }
+  const seq = ++legacyQueueSeq;
+  const statusFilter = queueEl('#q-filter-status')?.value || '';
+  const workFilter = queueEl('#q-filter-work')?.value || '';
   const params = new URLSearchParams();
   if (statusFilter) params.set('status', statusFilter);
   if (workFilter) params.set('workId', workFilter);
   const qs = params.toString() ? '?' + params.toString() : '';
   const data = await api('/api/queue' + qs);
+  if (seq !== legacyQueueSeq) return;
 
   const counts = data.counts || {};
   const pendingCount = (counts.queued || 0) + (counts.running || 0);
@@ -3661,7 +3694,7 @@ async function loadQueue() {
     navBadge.hidden = pendingCount === 0;
   }
 
-  const bar = $('#queue-counts-bar');
+  const bar = queueEl('#queue-counts-bar');
   if (bar) {
     bar.innerHTML = '';
     const labels = [
@@ -3682,9 +3715,10 @@ async function loadQueue() {
   }
 
   // Atualiza opcoes do filtro por trabalho preservando selecao atual
-  const workSel = $('#q-filter-work');
+  const workSel = queueEl('#q-filter-work');
   if (workSel) {
     const allWorksData = await api('/api/queue');
+    if (seq !== legacyQueueSeq) return;
     const seenWorks = new Set();
     for (const it of (allWorksData.items || [])) seenWorks.add(it.workId);
     const prev = workSel.value;
@@ -3696,7 +3730,7 @@ async function loadQueue() {
     workSel.value = seenWorks.has(prev) ? prev : '';
   }
 
-  const batchesBox = $('#q-batches-list');
+  const batchesBox = queueEl('#q-batches-list');
   if (batchesBox) {
     batchesBox.innerHTML = '';
     const batches = data.batches || [];
@@ -3729,7 +3763,7 @@ async function loadQueue() {
     }
   }
 
-  const itemsBox = $('#q-items-list');
+  const itemsBox = queueEl('#q-items-list');
   if (itemsBox) {
     itemsBox.innerHTML = '';
     const items = data.items || [];
@@ -4343,6 +4377,14 @@ window.StudioBridge = {
   toast: (msg) => toast(msg),
   checkReadiness: () => loadReadiness(),
   loadProjects: () => loadProjects(),
+  openQueueWorkReview: (workId) => openQueueWorkReview(workId),
+  updateQueueNavBadge: (pendingCount) => {
+    const navBadge = $('#queue-nav-badge');
+    if (navBadge) {
+      navBadge.textContent = String(pendingCount);
+      navBadge.hidden = pendingCount === 0;
+    }
+  },
   openBatchExportModal: (ids) => {
     selectedBatchWorks.clear();
     for (const id of ids || []) selectedBatchWorks.add(id);
