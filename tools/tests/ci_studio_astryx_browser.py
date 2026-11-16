@@ -233,13 +233,16 @@ def run_browser_regression():
             conn.close()
 
             # Garante que o worker nao esteja executando o item antes de simular SNAPSHOT_LEGACY
-            page.evaluate(f"""async () => {{
-                await fetch('/api/queue/cancel', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ itemId: '{item_id}' }})
-                }}).catch(() => null);
-            }}""")
+            try:
+                cancel_req = urllib.request.Request(
+                    f'{base_url}/api/queue/cancel',
+                    data=json.dumps({'itemId': item_id}).encode('utf-8'),
+                    headers={'Content-Type': 'application/json', 'Origin': base_url},
+                    method='POST',
+                )
+                urllib.request.urlopen(cancel_req, timeout=5).close()
+            except Exception:
+                pass
             deadline = time.time() + 15.0
             while time.time() < deadline:
                 conn = sqlite3.connect(db_path)
