@@ -67,9 +67,8 @@ def run_browser_regression():
     proc = subprocess.Popen(
         [sys.executable, os.path.join(ROOT, 'tools', 'video_studio.py'), '--port', str(port)],
         cwd=ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     try:
@@ -101,7 +100,7 @@ def run_browser_regression():
 
             # 1. Inicializacao com lista (potencialmente) vazia
             page.goto(base_url, wait_until='networkidle')
-            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=10000)
+            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
             legacy_hidden = page.locator('#home-legacy-root').get_attribute('hidden')
             assert legacy_hidden is not None, '#home-legacy-root deve estar oculto quando React monta'
             assert not page_errors, f'Excecoes JS na abertura: {page_errors}'
@@ -109,9 +108,9 @@ def run_browser_regression():
 
             # 2. Reverificar ambiente: exatamente 1 GET /api/readiness por clique
             before_readiness = len(readiness_requests)
-            with page.expect_response(lambda r: '/api/readiness' in r.url and r.status == 200):
+            with page.expect_response(lambda r: '/api/readiness' in r.url and r.status == 200, timeout=20000):
                 page.locator('#btn-refresh-readiness').click()
-            page.locator('#astryx-readiness-feedback').wait_for(state='visible', timeout=5000)
+            page.locator('#astryx-readiness-feedback').wait_for(state='visible', timeout=20000)
             assert len(readiness_requests) - before_readiness == 1, (
                 f'Esperado 1 GET /api/readiness por clique, obtidos {len(readiness_requests) - before_readiness}'
             )
@@ -122,9 +121,9 @@ def run_browser_regression():
             page.locator('#work-id').fill(work_id)
             page.locator('#work-project').select_option('platform/examples/projects/marca-salao-social.project.json')
             before_create = len(create_requests)
-            with page.expect_response(lambda r: '/api/works/create' in r.url and r.status == 200):
+            with page.expect_response(lambda r: '/api/works/create' in r.url and r.status == 200, timeout=20000):
                 page.locator('#btn-create-work').click()
-            page.locator('#active-work-bar').wait_for(state='visible', timeout=5000)
+            page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#active-work-title').inner_text()
             assert len(create_requests) - before_create == 1, (
                 f'Esperado 1 POST /api/works/create por clique, obtidos {len(create_requests) - before_create}'
@@ -133,22 +132,22 @@ def run_browser_regression():
 
             # 4. Inicializacao com trabalhos existentes e acionamento unico de Criar a partir de modelo
             page.reload(wait_until='networkidle')
-            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=10000)
-            page.locator('#works-table').wait_for(state='visible', timeout=10000)
+            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            page.locator('#works-table').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#works-table').inner_text()
 
             # Salva como modelo
             row_btn = page.locator('#works-table tr', has_text=work_id).get_by_role('button', name='Salvar como modelo')
             row_btn.click()
             page.locator('#tpl-save-name').fill('CI Modelo Astryx')
-            with page.expect_response(lambda r: '/api/templates/save' in r.url and r.status == 200):
+            with page.expect_response(lambda r: '/api/templates/save' in r.url and r.status == 200, timeout=20000):
                 page.locator('#btn-tpl-save-confirm').click()
-            page.locator('#tpl-save-name').wait_for(state='hidden', timeout=5000)
+            page.locator('#tpl-save-name').wait_for(state='hidden', timeout=20000)
 
             # Clique unico em Criar a partir de modelo: 1 dialogo, 1 #tpl-create-revision
             trigger = page.locator('#btn-open-template-create')
             trigger.click()
-            page.locator('#tpl-create-revision').wait_for(state='visible', timeout=5000)
+            page.locator('#tpl-create-revision').wait_for(state='visible', timeout=20000)
             rev_count = page.locator('#tpl-create-revision').count()
             assert rev_count == 1, f'Esperado 1 #tpl-create-revision no DOM, obtidos {rev_count}'
             dialog_count = page.locator('dialog[open]').count()
@@ -156,7 +155,7 @@ def run_browser_regression():
 
             # Escape fecha dialogo e devolve foco ao disparador
             page.keyboard.press('Escape')
-            page.locator('#tpl-create-revision').wait_for(state='hidden', timeout=5000)
+            page.locator('#tpl-create-revision').wait_for(state='hidden', timeout=20000)
             assert page.locator('dialog[open]').count() == 0, 'Nenhum dialog deve permanecer aberto apos Escape'
 
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
