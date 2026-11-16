@@ -33,6 +33,20 @@ let vPreviewStatusSeq = 0;
 let vLastPreviewData = null;
 let vLoadedPreviewUrl = null;
 let pendingPreviewSeekSec = null;
+
+function isAstryxHomeActive() {
+  return Boolean(window.__studioAstryxHomeActive) || document.getElementById('home-astryx-root')?.dataset?.astryxReady === '1';
+}
+
+function homeLegacyRoot() {
+  return document.getElementById('home-legacy-root');
+}
+
+function homeEl(sel) {
+  const root = homeLegacyRoot();
+  if (!root || isAstryxHomeActive()) return null;
+  return root.querySelector(sel);
+}
 let mVideoMedia = { key: null, canvas: null, ready: false, error: false };
 
 async function apiDetailed(path, opts = {}) {
@@ -141,11 +155,13 @@ async function loadReadiness() {
     }
     box.append(list);
     box.hidden = r.ready;
+    return { ok: true, readiness: r };
   } catch (err) {
     pill.textContent = 'Erro ao verificar ambiente';
     pill.className = 'readiness-pill err';
     box.hidden = false;
     box.textContent = err.message;
+    return { ok: false, error: err.message };
   }
 }
 
@@ -188,7 +204,8 @@ function setMode(mode) {
 
 // ---- Projetos e Cadastro ----
 async function renderProjectProfileBoxes() {
-  const box = $('#proj-profiles-boxes');
+  if (isAstryxHomeActive()) return;
+  const box = homeEl('#proj-profiles-boxes');
   if (!box || box.childElementCount) return;
   const data = await api('/api/profiles');
   const defaults = new Set(['instagram-reels-video', 'facebook-reels-video', 'youtube-shorts', 'instagram-feed-image-square']);
@@ -215,11 +232,13 @@ async function loadProjects() {
     if (currentVal) sel.value = currentVal;
   };
 
-  fillSelect($('#work-project'), $('#work-project').value || (allProjects[0]?.path || ''));
+  const workProj = homeEl('#work-project');
+  if (workProj) fillSelect(workProj, workProj.value || (allProjects[0]?.path || ''));
   fillSelect($('#project-select'), draft?.project);
   fillSelect($('#c-project-select'), cdraft?.project);
 
-  const tbody = $('#projects-table tbody');
+  const tbody = homeEl('#projects-table tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   for (const p of allProjects) {
     const badge = el('span', {
@@ -237,16 +256,20 @@ async function loadProjects() {
 }
 
 async function createProject() {
-  const id = $('#proj-id').value.trim();
-  const name = $('#proj-name').value.trim();
-  const locale = $('#proj-locale').value.trim() || 'pt-BR';
-  const timezone = $('#proj-tz').value.trim() || 'America/Sao_Paulo';
-  const brandTheme = $('#proj-theme').value.trim() || id;
-  const assetRoot = $('#proj-asset-root').value.trim() || `.workspace/studio/projects/${id}/assets`;
-  const outputProfiles = Array.from(document.querySelectorAll('#proj-profiles-boxes input[type="checkbox"]:checked'))
-    .map((cb) => cb.value);
+  if (isAstryxHomeActive()) return;
+  const id = (homeEl('#proj-id')?.value || '').trim();
+  const name = (homeEl('#proj-name')?.value || '').trim();
+  const locale = (homeEl('#proj-locale')?.value || '').trim() || 'pt-BR';
+  const timezone = (homeEl('#proj-tz')?.value || '').trim() || 'America/Sao_Paulo';
+  const brandTheme = (homeEl('#proj-theme')?.value || '').trim() || id;
+  const assetRoot = (homeEl('#proj-asset-root')?.value || '').trim() || `.workspace/studio/projects/${id}/assets`;
+  const root = homeLegacyRoot();
+  const outputProfiles = root
+    ? Array.from(root.querySelectorAll('#proj-profiles-boxes input[type="checkbox"]:checked')).map((cb) => cb.value)
+    : [];
 
-  const feedback = $('#proj-create-feedback');
+  const feedback = homeEl('#proj-create-feedback');
+  if (!feedback) return;
   feedback.innerHTML = '';
   try {
     const data = await post('/api/projects/create', {
@@ -258,15 +281,16 @@ async function createProject() {
       brandTheme,
       assetRoot,
       contentPolicies: {
-        requireApprovedBriefing: $('#proj-pol-briefing').checked,
-        requireApprovedScript: $('#proj-pol-script').checked,
-        prohibitPersonalData: $('#proj-pol-pii').checked,
-        requireFunctionalEvidence: $('#proj-pol-evidence').checked,
+        requireApprovedBriefing: Boolean(homeEl('#proj-pol-briefing')?.checked),
+        requireApprovedScript: Boolean(homeEl('#proj-pol-script')?.checked),
+        prohibitPersonalData: Boolean(homeEl('#proj-pol-pii')?.checked),
+        requireFunctionalEvidence: Boolean(homeEl('#proj-pol-evidence')?.checked),
       },
       outputProfiles,
     });
     await loadProjects();
-    $('#work-project').value = data.path;
+    const workProj = homeEl('#work-project');
+    if (workProj) workProj.value = data.path;
     feedback.append(el('div', {
       class: 'alert-box ok',
       text: `Projeto cadastrado e validado pelo núcleo: ${data.project.id} (${data.path})`,
@@ -291,8 +315,11 @@ function renderActiveWorkBar() {
 }
 
 function updateWorkPathsPreview() {
-  const id = $('#work-id').value.trim() || '<id-do-trabalho>';
-  $('#work-paths-preview').textContent =
+  const input = homeEl('#work-id');
+  const previewEl = homeEl('#work-paths-preview');
+  if (!input || !previewEl) return;
+  const id = input.value.trim() || '<id-do-trabalho>';
+  previewEl.textContent =
     `Caminhos automáticos em .workspace/studio/works/${id}/ (rascunhos/, media/ compartilhada e deliveries/).`;
 }
 
@@ -300,7 +327,7 @@ const selectedBatchWorks = new Set();
 let lastSavedWorkSnapshot = null;
 
 function updateBatchSelectionCount() {
-  const span = $('#works-batch-count');
+  const span = homeEl('#works-batch-count');
   if (span) span.textContent = `${selectedBatchWorks.size} selecionado(s)`;
 }
 
@@ -317,8 +344,13 @@ function hasUnsavedWorkChanges() {
 }
 
 async function loadWorks() {
+  if (isAstryxHomeActive()) {
+    window.__studioAstryxRefresh?.();
+    return;
+  }
   const data = await api('/api/works');
-  const tbody = $('#works-table tbody');
+  const tbody = homeEl('#works-table tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   const works = data.works || [];
   if (!works.length) {
@@ -440,11 +472,13 @@ function applyOpenedWork(data) {
 }
 
 async function createWork() {
-  const name = $('#work-name').value.trim();
-  const id = $('#work-id').value.trim();
-  const project = $('#work-project').value;
-  const template = $('#work-template').value;
-  const feedback = $('#work-create-feedback');
+  if (isAstryxHomeActive()) return;
+  const name = (homeEl('#work-name')?.value || '').trim();
+  const id = (homeEl('#work-id')?.value || '').trim();
+  const project = homeEl('#work-project')?.value || '';
+  const template = homeEl('#work-template')?.value || 'marca-salao';
+  const feedback = homeEl('#work-create-feedback');
+  if (!feedback) return;
   feedback.innerHTML = '';
   try {
     const data = await post('/api/works/create', { id, name: name || id, project, template });
@@ -494,7 +528,9 @@ async function saveWork(silent = false) {
 }
 
 async function startGuidedDemo(brand) {
-  const box = $('#demo-feedback');
+  if (isAstryxHomeActive()) return;
+  const box = homeEl('#demo-feedback');
+  if (!box) return;
   box.innerHTML = '<p class="muted">Preparando trabalho de demonstração…</p>';
   try {
     const data = await post('/api/works/demo', { brand });
@@ -2758,6 +2794,68 @@ async function initMotion() {
   $('#m-btn-load-delivery').addEventListener('click', () => loadMDelivery().catch((e) => toast(e.message)));
 }
 
+function bindLegacyHomeEvents() {
+  if (isAstryxHomeActive()) return;
+  const root = homeLegacyRoot();
+  if (!root || !root.childElementCount) return;
+
+  homeEl('#btn-refresh-readiness')?.addEventListener('click', () => loadReadiness());
+
+  // Sugestão automática de IDs em kebab-case nos formulários
+  let workIdTouched = false;
+  homeEl('#work-id')?.addEventListener('input', () => { workIdTouched = true; updateWorkPathsPreview(); });
+  homeEl('#work-name')?.addEventListener('input', (e) => {
+    if (!workIdTouched) {
+      const workIdEl = homeEl('#work-id');
+      if (workIdEl) workIdEl.value = slugifyKebab(e.target.value);
+      updateWorkPathsPreview();
+    }
+  });
+  updateWorkPathsPreview();
+
+  let projIdTouched = false;
+  homeEl('#proj-id')?.addEventListener('input', () => {
+    projIdTouched = true;
+    const v = (homeEl('#proj-id')?.value || '').trim();
+    if (v) {
+      const themeEl = homeEl('#proj-theme');
+      const assetEl = homeEl('#proj-asset-root');
+      if (themeEl) themeEl.value = v;
+      if (assetEl) assetEl.value = `.workspace/studio/projects/${v}/assets`;
+    }
+  });
+  homeEl('#proj-name')?.addEventListener('input', (e) => {
+    if (!projIdTouched) {
+      const slug = slugifyKebab(e.target.value);
+      const projIdEl = homeEl('#proj-id');
+      if (projIdEl) projIdEl.value = slug;
+      if (slug) {
+        const themeEl = homeEl('#proj-theme');
+        const assetEl = homeEl('#proj-asset-root');
+        if (themeEl) themeEl.value = slug;
+        if (assetEl) assetEl.value = `.workspace/studio/projects/${slug}/assets`;
+      }
+    }
+  });
+
+  homeEl('#btn-create-project')?.addEventListener('click', createProject);
+  homeEl('#btn-create-work')?.addEventListener('click', createWork);
+  homeEl('#btn-demo-marca-salao')?.addEventListener('click', () => startGuidedDemo('marca-salao'));
+  homeEl('#btn-demo-multitrack')?.addEventListener('click', () => startGuidedDemo('multitrack-hub'));
+  homeEl('#btn-open-batch-export')?.addEventListener('click', () => openBatchExportModal().catch((e) => toast(e.message)));
+  homeEl('#btn-open-template-create')?.addEventListener('click', () => openTemplateCreateDialog().catch((e) => toast(e.message)));
+  homeEl('#works-select-all')?.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    root.querySelectorAll('.work-select-cb').forEach((cb) => {
+      cb.checked = checked;
+      const wid = cb.getAttribute('data-work-id');
+      if (checked) selectedBatchWorks.add(wid);
+      else selectedBatchWorks.delete(wid);
+    });
+    updateBatchSelectionCount();
+  });
+}
+
 async function init() {
   draft = emptyDraft();
   await loadReadiness();
@@ -2771,43 +2869,9 @@ async function init() {
     const details = $('#readiness-details');
     details.hidden = !details.hidden;
   });
-  $('#btn-refresh-readiness').addEventListener('click', () => loadReadiness());
 
-  // Sugestão automática de IDs em kebab-case nos formulários
-  let workIdTouched = false;
-  $('#work-id').addEventListener('input', () => { workIdTouched = true; updateWorkPathsPreview(); });
-  $('#work-name').addEventListener('input', (e) => {
-    if (!workIdTouched) {
-      $('#work-id').value = slugifyKebab(e.target.value);
-      updateWorkPathsPreview();
-    }
-  });
-  updateWorkPathsPreview();
+  bindLegacyHomeEvents();
 
-  let projIdTouched = false;
-  $('#proj-id').addEventListener('input', () => {
-    projIdTouched = true;
-    const v = $('#proj-id').value.trim();
-    if (v) {
-      $('#proj-theme').value = v;
-      $('#proj-asset-root').value = `.workspace/studio/projects/${v}/assets`;
-    }
-  });
-  $('#proj-name').addEventListener('input', (e) => {
-    if (!projIdTouched) {
-      const slug = slugifyKebab(e.target.value);
-      $('#proj-id').value = slug;
-      if (slug) {
-        $('#proj-theme').value = slug;
-        $('#proj-asset-root').value = `.workspace/studio/projects/${slug}/assets`;
-      }
-    }
-  });
-
-  $('#btn-create-project').addEventListener('click', createProject);
-  $('#btn-create-work').addEventListener('click', createWork);
-  $('#btn-demo-marca-salao').addEventListener('click', () => startGuidedDemo('marca-salao'));
-  $('#btn-demo-multitrack').addEventListener('click', () => startGuidedDemo('multitrack-hub'));
   $('#btn-save-work').addEventListener('click', () => saveWork().catch((e) => toast(e.message)));
   $('#btn-work-home').addEventListener('click', () => setMode('home'));
 
@@ -2849,18 +2913,6 @@ async function init() {
   $('#btn-conn-new').addEventListener('click', () => openConnectionDialog(null).catch((e) => toast(e.message)));
   $('#btn-conn-select-save').addEventListener('click', () => saveConnectionSelection().catch((e) => toast(e.message)));
   $('#conn-project-select').addEventListener('change', () => fillConnectionSelection().catch((e) => toast(e.message)));
-  $('#btn-open-batch-export').addEventListener('click', () => openBatchExportModal().catch((e) => toast(e.message)));
-  $('#btn-open-template-create').addEventListener('click', () => openTemplateCreateDialog().catch((e) => toast(e.message)));
-  $('#works-select-all').addEventListener('change', (e) => {
-    const checked = e.target.checked;
-    document.querySelectorAll('.work-select-cb').forEach((cb) => {
-      cb.checked = checked;
-      const wid = cb.getAttribute('data-work-id');
-      if (checked) selectedBatchWorks.add(wid);
-      else selectedBatchWorks.delete(wid);
-    });
-    updateBatchSelectionCount();
-  });
   $('#btn-q-refresh').addEventListener('click', () => loadQueue().catch((e) => toast(e.message)));
   $('#q-filter-status').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
   $('#q-filter-work').addEventListener('change', () => loadQueue().catch((e) => toast(e.message)));
@@ -4284,5 +4336,19 @@ async function openConnectionDialog(existing) {
   root.append(overlay);
   syncVisibility();
 }
+
+window.StudioBridge = {
+  applyOpenedWork: (data) => applyOpenedWork(data),
+  setMode: (mode) => setMode(mode),
+  toast: (msg) => toast(msg),
+  checkReadiness: () => loadReadiness(),
+  loadProjects: () => loadProjects(),
+  openBatchExportModal: (ids) => {
+    selectedBatchWorks.clear();
+    for (const id of ids || []) selectedBatchWorks.add(id);
+    updateBatchSelectionCount();
+    return openBatchExportModal();
+  },
+};
 
 init();

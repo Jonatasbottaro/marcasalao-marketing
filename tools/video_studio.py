@@ -61,7 +61,9 @@ PREVIEW_FILE_RE = re.compile(r'^[a-z0-9][a-z0-9._-]*\.mp4$')
 PREVIEW_CACHE_MAX_FILES = 4
 CONTENT_TYPES = {
     '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8', '.mjs': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8', '.map': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml', '.woff2': 'font/woff2',
     '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.srt': 'text/plain; charset=utf-8',
     '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.zip': 'application/zip',
@@ -1962,15 +1964,73 @@ class StudioHandler(BaseHTTPRequestHandler):
             return False
         return True
 
-    def serve_static(self, name):
-        if not name or '/' in name or '\\' in name or name in ('.', '..'):
-            self.send_error_json(404, 'arquivo invalido')
-            return
-        path = os.path.join(self.studio.studio_dir, name)
+    def _astryx_frontend_tags(self):
+        dist_dir = os.path.realpath(os.path.join(self.studio.studio_dir, 'frontend', 'dist'))
+        manifest_path = os.path.join(dist_dir, '.vite', 'manifest.json')
+        if not os.path.isfile(manifest_path):
+            return ''
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as handle:
+                manifest = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            return ''
+        entry = manifest.get('src/main.jsx')
+        if not isinstance(entry, dict) or not entry.get('file'):
+            return ''
+        entry_rel = str(entry['file']).lstrip('/')
+        entry_fs = os.path.realpath(os.path.join(dist_dir, *entry_rel.split('/')))
+        if os.path.commonpath([dist_dir, entry_fs]) != dist_dir or not os.path.isfile(entry_fs):
+            return ''
+        tags = []
+        for css_rel in entry.get('css', []) or []:
+            css_clean = str(css_rel).lstrip('/')
+            css_fs = os.path.realpath(os.path.join(dist_dir, *css_clean.split('/')))
+            if os.path.commonpath([dist_dir, css_fs]) == dist_dir and os.path.isfile(css_fs):
+                tags.append(f'<link rel="stylesheet" href="/static/frontend/{css_clean}">')
+        tags.append(f'<script type="module" src="/static/frontend/{entry_rel}"></script>')
+        return '\n  '.join(tags)
+
+    def serve_index(self):
+        path = os.path.join(self.studio.studio_dir, 'index.html')
         if not os.path.isfile(path):
             self.send_error_json(404, 'arquivo ausente')
             return
-        ext = os.path.splitext(name)[1].lower()
+        with open(path, 'r', encoding='utf-8') as handle:
+            html = handle.read()
+        tags = self._astryx_frontend_tags()
+        html = html.replace('<!-- ASTRYX_FRONTEND_ASSETS -->', tags)
+        body = html.encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def serve_static(self, name):
+        if not name or '\\' in name or name in ('.', '..'):
+            self.send_error_json(404, 'arquivo invalido')
+            return
+        if name.startswith('frontend/'):
+            rel = name[len('frontend/'):]
+            parts = [p for p in rel.split('/') if p]
+            if not parts or any(p in ('.', '..') for p in parts):
+                self.send_error_json(404, 'arquivo invalido')
+                return
+            dist_dir = os.path.realpath(os.path.join(self.studio.studio_dir, 'frontend', 'dist'))
+            path = os.path.realpath(os.path.join(dist_dir, *parts))
+            if os.path.commonpath([dist_dir, path]) != dist_dir:
+                self.send_error_json(404, 'arquivo invalido')
+                return
+        else:
+            if '/' in name:
+                self.send_error_json(404, 'arquivo invalido')
+                return
+            path = os.path.join(self.studio.studio_dir, name)
+        if not os.path.isfile(path):
+            self.send_error_json(404, 'arquivo ausente')
+            return
+        ext = os.path.splitext(path)[1].lower()
         with open(path, 'rb') as handle:
             body = handle.read()
         self.send_response(200)
@@ -2085,7 +2145,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             return
         try:
             if path == '/' or path == '/index.html':
-                self.serve_static('index.html')
+                self.serve_index()
             elif path.startswith('/static/'):
                 self.serve_static(path[len('/static/'):])
             elif path == '/api/readiness':
@@ -2246,7 +2306,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(503, str(exc), {'code': exc.code})
         except image_adapters.ImageAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
-        except (ValueError, OSError) as exc:
+        except (ValueError, OSError, build_video.DeliveryError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
             self.send_error_json(500, str(exc))
@@ -2414,7 +2474,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(503, str(exc), {'code': exc.code})
         except image_adapters.ImageAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
-        except (ValueError, OSError) as exc:
+        except (ValueError, OSError, build_video.DeliveryError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
             self.send_error_json(500, str(exc))

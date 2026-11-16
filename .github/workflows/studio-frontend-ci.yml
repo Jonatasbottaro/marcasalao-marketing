@@ -1,0 +1,84 @@
+name: Validar interface Astryx do Video Studio
+
+on:
+  push:
+    paths:
+      - 'tools/studio/frontend/**'
+      - 'tools/studio/index.html'
+      - 'tools/studio/app.js'
+      - 'tools/video_studio.py'
+      - 'tools/tests/test_studio_astryx_frontend.py'
+      - 'tools/tests/ci_studio_astryx_browser.py'
+      - '.github/workflows/studio-frontend-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/studio/frontend/**'
+      - 'tools/studio/index.html'
+      - 'tools/studio/app.js'
+      - 'tools/video_studio.py'
+      - 'tools/tests/test_studio_astryx_frontend.py'
+      - 'tools/tests/ci_studio_astryx_browser.py'
+      - '.github/workflows/studio-frontend-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-build-and-regression:
+    name: ${{ matrix.os }} · Astryx Studio Frontend
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/studio/frontend/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup FFmpeg e FFprobe
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
+      - name: Instalar e compilar nucleo platform
+        working-directory: platform
+        run: |
+          npm ci
+          npm run build
+
+      - name: Instalar e compilar interface React/Astryx
+        working-directory: tools/studio/frontend
+        run: |
+          npm ci
+          npm run build
+          test -f dist/.vite/manifest.json
+
+      - name: Regressao HTTP da entrega estatica e fallback
+        env:
+          PYTHONPATH: tools
+        run: python -m unittest tools/tests/test_studio_astryx_frontend.py -v
+
+      - name: Instalar Playwright Chromium para regressao de navegador
+        run: |
+          python -m pip install --no-cache-dir playwright
+          python -m playwright install chromium
+          if [ "${{ runner.os }}" = "Linux" ]; then python -m playwright install-deps chromium; fi
+
+      - name: Regressao focada de navegador (inicializacao, prontidao e acionamento unico)
+        run: python tools/tests/ci_studio_astryx_browser.py
