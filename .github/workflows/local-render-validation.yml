@@ -646,3 +646,7 @@ jobs:
       - name: Prova de clipes por API texto para video (Studio HTTP, Interactions API simulada)
         run: |
           python tools/ci_studio_video_api_proof.py --port 8808
+
+      - name: Prova de entrada MCP de Planejamento (Studio HTTP, cliente MCP de teste sobre stdio)
+        run: |
+          python tools/ci_studio_mcp_proof.py --port 8810
