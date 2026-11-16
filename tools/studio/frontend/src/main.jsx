@@ -10,13 +10,14 @@ function mountAstryxHomePilot() {
   const container = document.getElementById('home-astryx-root');
   if (!container) return;
 
+  container.dataset.astryxReady = '1';
+  window.__studioAstryxHomeActive = true;
+
   const legacyRoot = document.getElementById('home-legacy-root');
   if (legacyRoot) {
     legacyRoot.hidden = true;
     legacyRoot.innerHTML = '';
   }
-
-  window.__studioAstryxHomeActive = true;
 
   createRoot(container).render(
     <React.StrictMode>

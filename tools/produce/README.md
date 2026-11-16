@@ -115,7 +115,13 @@ python tools/video_studio.py --port 8765
 
 - **Fallback preservado**: caso `tools/studio/frontend/dist/` ainda nao tenha sido compilado no checkout, o servidor Python entrega `tools/studio/index.html` sem injetar o bundle e a interface existente continua acessivel normalmente.
 - **Escopo e responsavel unico**: quando o bundle esta compilado, `tools/video_studio.py` injeta os assets do `dist/.vite/manifest.json` via `/static/frontend/` e o React assume exclusivamente o conteiner `#home-astryx-root` (ocultando e limpando `#home-legacy-root`), mantendo a barra de trabalho ativo e as demais abas sincronizadas via `window.StudioBridge`.
-- **Atualizacoes agrupadas (Dependabot)**: `.github/dependabot.yml` agenda verificacoes semanais em `/tools/studio/frontend` agrupando `@astryxdesign/*`, `@stylexjs/stylex`, `react` e `react-dom` no grupo `astryx`. Toda PR de atualizacao passa pelo workflow de CI que valida `npm ci`, `npm run build` e a regressao focada do piloto, exigindo `@astryxdesign/core` e `@astryxdesign/theme-neutral` em versoes compativeis, `package-lock.json` atualizado e prova funcional da aba verde antes do merge.
+- **Regressao de navegador (local e CI)**: para executar a prova focada de inicializacao, prontidao e acionamento unico em Chromium com Playwright apos compilar `platform/` e `tools/studio/frontend/`:
+  ```bash
+  pip install playwright
+  python -m playwright install chromium
+  python tools/tests/ci_studio_astryx_browser.py
+  ```
+- **Atualizacoes agrupadas (Dependabot)**: `.github/dependabot.yml` agenda verificacoes semanais em `/tools/studio/frontend` agrupando `@astryxdesign/*`, `@stylexjs/stylex`, `react` e `react-dom` no grupo `astryx`. Toda PR de atualizacao passa pelo workflow de CI que valida `npm ci`, `npm run build` e as regressoes HTTP e de navegador, exigindo `@astryxdesign/core` e `@astryxdesign/theme-neutral` em versoes compativeis, `package-lock.json` atualizado e prova funcional da aba verde antes do merge.
 
 Fluxo no painel:
 1. **Prontidao e demonstracao guiada** — a barra superior consulta `/api/readiness`

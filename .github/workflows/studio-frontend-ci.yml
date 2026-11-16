@@ -8,6 +8,7 @@ on:
       - 'tools/studio/app.js'
       - 'tools/video_studio.py'
       - 'tools/tests/test_studio_astryx_frontend.py'
+      - 'tools/tests/ci_studio_astryx_browser.py'
       - '.github/workflows/studio-frontend-ci.yml'
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - 'tools/studio/app.js'
       - 'tools/video_studio.py'
       - 'tools/tests/test_studio_astryx_frontend.py'
+      - 'tools/tests/ci_studio_astryx_browser.py'
       - '.github/workflows/studio-frontend-ci.yml'
   workflow_dispatch:
 
@@ -51,6 +53,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Instalar e compilar nucleo platform
+        working-directory: platform
+        run: |
+          npm ci
+          npm run build
+
       - name: Instalar e compilar interface React/Astryx
         working-directory: tools/studio/frontend
         run: |
@@ -58,7 +66,16 @@ jobs:
           npm run build
           test -f dist/.vite/manifest.json
 
-      - name: Regressao focada da entrega estatica e fallback
+      - name: Regressao HTTP da entrega estatica e fallback
         env:
           PYTHONPATH: tools
         run: python -m unittest tools/tests/test_studio_astryx_frontend.py -v
+
+      - name: Instalar Playwright Chromium para regressao de navegador
+        run: |
+          python -m pip install --no-cache-dir playwright
+          python -m playwright install chromium
+          if [ "${{ runner.os }}" = "Linux" ]; then python -m playwright install-deps chromium; fi
+
+      - name: Regressao focada de navegador (inicializacao, prontidao e acionamento unico)
+        run: python tools/tests/ci_studio_astryx_browser.py

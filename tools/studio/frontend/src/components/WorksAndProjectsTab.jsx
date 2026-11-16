@@ -72,9 +72,11 @@ export function WorksAndProjectsTab() {
   const [profiles, setProfiles] = useState([]);
   const [selectedWorks, setSelectedWorks] = useState(() => new Set());
 
-  // Demonstracao guiada
+  // Demonstracao guiada e prontidao
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoError, setDemoError] = useState('');
+  const [readinessBusy, setReadinessBusy] = useState(false);
+  const [readinessMessage, setReadinessMessage] = useState('');
 
   // Criar novo trabalho
   const [workName, setWorkName] = useState('');
@@ -192,10 +194,31 @@ export function WorksAndProjectsTab() {
   }
 
   async function handleRefreshReadiness() {
-    const bridge = getStudioBridge();
-    if (bridge?.checkReadiness) {
-      await bridge.checkReadiness();
-      notifyToast('Ambiente reverificado.');
+    setDemoError('');
+    setReadinessMessage('');
+    setReadinessBusy(true);
+    try {
+      const bridge = getStudioBridge();
+      if (bridge?.checkReadiness) {
+        const res = await bridge.checkReadiness();
+        if (res && res.ok === false) {
+          throw new Error(res.error || 'Erro ao verificar ambiente');
+        }
+        const summary = res?.readiness?.summary || 'Ambiente verificado.';
+        setReadinessMessage(summary);
+        notifyToast(summary);
+      } else {
+        const data = await apiGet('/api/readiness');
+        const summary = data?.readiness?.summary || 'Ambiente verificado.';
+        setReadinessMessage(summary);
+        notifyToast(summary);
+      }
+    } catch (err) {
+      const msg = err?.message || 'Erro ao verificar ambiente';
+      setDemoError(msg);
+      notifyToast(msg);
+    } finally {
+      setReadinessBusy(false);
     }
   }
 
@@ -437,12 +460,18 @@ export function WorksAndProjectsTab() {
             <Button
               id="btn-refresh-readiness"
               variant="secondary"
-              label="Reverificar ambiente"
+              label={readinessBusy ? 'Verificando…' : 'Reverificar ambiente'}
               onClick={handleRefreshReadiness}
+              isDisabled={readinessBusy}
             />
           </div>
+          {readinessMessage ? (
+            <Text id="astryx-readiness-feedback" size="sm" color="secondary">
+              {readinessMessage}
+            </Text>
+          ) : null}
           {demoError ? (
-            <Banner status="error" title="Erro na demonstração guiada" description={demoError} collapsible={false} />
+            <Banner status="error" title="Erro na demonstração / verificação" description={demoError} collapsible={false} />
           ) : null}
         </Stack>
       </Card>
