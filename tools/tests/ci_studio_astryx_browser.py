@@ -120,6 +120,7 @@ def run_browser_regression():
             # 3. Criar e abrir trabalho: exatamente 1 POST /api/works/create
             page.locator('#work-name').fill('CI Astryx Piloto 01')
             page.locator('#work-id').fill(work_id)
+            page.locator('#work-project').select_option('platform/examples/projects/marca-salao-social.project.json')
             before_create = len(create_requests)
             with page.expect_response(lambda r: '/api/works/create' in r.url and r.status == 200):
                 page.locator('#btn-create-work').click()
