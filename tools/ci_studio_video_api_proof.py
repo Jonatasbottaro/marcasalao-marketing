@@ -71,12 +71,12 @@ def _http_error(url, body, origin):
     raise AssertionError('esperava erro HTTP')
 
 
-def _make_clip_with_audio(path):
+def _make_clip_with_audio(path, width=320, height=240, duration_s=2.0, fps=15):
     ffmpeg = build_video.get_ffmpeg()
     cmd = [
         ffmpeg, '-y',
-        '-f', 'lavfi', '-i', 'color=c=0x28A03C:s=320x240:r=15:d=2',
-        '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2',
+        '-f', 'lavfi', '-i', f'color=c=0x28A03C:s={width}x{height}:r={fps}:d={duration_s}',
+        '-f', 'lavfi', '-i', f'sine=frequency=440:duration={duration_s}',
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', path,
     ]
     res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
@@ -84,9 +84,31 @@ def _make_clip_with_audio(path):
         raise RuntimeError(f'ffmpeg fixture failed: {res.stderr[-400:]}')
 
 
+def _probe(path):
+    return render_local.probe_asset(os.path.dirname(path), path)
+
+
+def _video_stream(info):
+    return next(s for s in info['streams'] if s.get('codec_type') == 'video')
+
+
+def _fps_of(stream):
+    for key in ('avg_frame_rate', 'r_frame_rate'):
+        raw = stream.get(key) or ''
+        if '/' in raw:
+            num, den = raw.split('/', 1)
+            try:
+                if float(den) > 0 and float(num) > 0:
+                    return float(num) / float(den)
+            except ValueError:
+                continue
+    return 30.0
+
+
 class _State:
-    def __init__(self, video_bytes, port):
+    def __init__(self, video_bytes, port, geometry_bytes=None):
         self.video_bytes = video_bytes
+        self.geometry_bytes = geometry_bytes or video_bytes
         self.port = port
         self.mode = 'complete'
         self.expected_key = None
@@ -201,6 +223,11 @@ class _Handler(BaseHTTPRequestHandler):
             return
         st.counter += 1
         iid = f'v1_ci_{st.counter}'
+        rf = body.get('response_format') or {}
+        geometry_case = (rf.get('duration') == '4s' and rf.get('aspect_ratio') == '9:16'
+                         and rf.get('resolution') == '720p')
+        clip = st.geometry_bytes if geometry_case else st.video_bytes
+        st.posts[-1]['fixture'] = '720x1280-4s' if geometry_case else '320x240-2s'
         if st.mode == 'invalid':
             payload = self._video_step({'type': 'video', 'mime_type': 'video/mp4', 'data': '!!invalido!!'})
         elif st.mode == 'uri':
@@ -209,14 +236,14 @@ class _Handler(BaseHTTPRequestHandler):
                                         'uri': f'http://127.0.0.1:{st.port}/v1beta/files/{fid}:download?alt=media'})
         elif st.mode == 'inprogress':
             payload = self._video_step({'type': 'video', 'mime_type': 'video/mp4',
-                                        'data': base64.b64encode(st.video_bytes).decode('ascii')})
+                                        'data': base64.b64encode(clip).decode('ascii')})
             payload['id'] = iid
             st.interactions[iid] = payload
             self._send(200, {'id': iid, 'status': 'in_progress', 'steps': []})
             return
         else:
             payload = self._video_step({'type': 'video', 'mime_type': 'video/mp4',
-                                        'data': base64.b64encode(st.video_bytes).decode('ascii')})
+                                        'data': base64.b64encode(clip).decode('ascii')})
         payload['id'] = iid
         st.interactions[iid] = payload
         self._send(200, payload)
@@ -233,6 +260,26 @@ def main(argv=None):
     _make_clip_with_audio(clip_path)
     with open(clip_path, 'rb') as handle:
         clip_bytes = handle.read()
+    # Caso de geometria: o pedido 4s/9:16/720p recebe um MP4 H.264 720x1280 de 4 s
+    # com audio sintetico, para conferir a preservacao na importacao da Biblioteca.
+    geometry_path = os.path.join(tmp, 'clip-720x1280-4s-with-audio.mp4')
+    _make_clip_with_audio(geometry_path, width=720, height=1280, duration_s=4.0, fps=30)
+    with open(geometry_path, 'rb') as handle:
+        geometry_bytes = handle.read()
+    geometry_input_info = _probe(geometry_path)
+    geometry_input_audio = [s for s in geometry_input_info['streams'] if s.get('codec_type') == 'audio']
+    assert geometry_input_audio, 'fixture de geometria sem faixa de audio'
+    # Medidas do insumo observadas por FFprobe; a tolerancia de duracao e
+    # 1 quadro do FPS da fixture (nao o FPS do arquivo importado).
+    geometry_input_vstream = _video_stream(geometry_input_info)
+    geometry_input_fps = _fps_of(geometry_input_vstream)
+    geometry_input_duration = float(geometry_input_vstream.get('duration')
+                                    or geometry_input_info.get('format', {}).get('duration'))
+    geometry_input_width = int(geometry_input_vstream['width'])
+    geometry_input_height = int(geometry_input_vstream['height'])
+    geometry_frame_tol = 1.0 / geometry_input_fps
+    assert (geometry_input_width, geometry_input_height) == (720, 1280), geometry_input_vstream
+    assert abs(geometry_input_duration - 4.0) <= geometry_frame_tol, geometry_input_duration
     env_backup = {k: os.environ.get(k) for k in (
         'STUDIO_CREDENTIAL_BACKEND', 'STUDIO_CREDENTIAL_STORE_PATH', 'GEMINI_API_KEY')}
     os.environ['STUDIO_CREDENTIAL_BACKEND'] = 'simulated'
@@ -240,7 +287,7 @@ def main(argv=None):
     os.environ.pop('GEMINI_API_KEY', None)
 
     mock_port = _free_port()
-    state = _State(clip_bytes, mock_port)
+    state = _State(clip_bytes, mock_port, geometry_bytes=geometry_bytes)
     handler = type('BoundCIHandler', (_Handler,), {'state': state})
     mock_srv = ThreadingHTTPServer(('127.0.0.1', mock_port), handler)
     threading.Thread(target=mock_srv.serve_forever, daemon=True).start()
@@ -352,12 +399,37 @@ def main(argv=None):
         assert version['provenance']['connectionId'] == 'ci-vapi-google'
         assert version['provenance']['model'] == 'gemini-omni-1.2-flash'
         clip_abs = studio.confine(version['path'])
-        info = render_local.probe_asset(os.path.dirname(clip_abs), clip_abs)
+        # FFprobe no arquivo da Biblioteca, antes de qualquer recorte ou montagem:
+        # geometria/duracao/codec preservados e zero faixas de audio.
+        info = _probe(clip_abs)
+        vstream = _video_stream(info)
         assert not any(s.get('codec_type') == 'audio' for s in info['streams']), 'clipe importado com audio'
+        assert int(vstream['width']) == 720 and int(vstream['height']) == 1280, \
+            f"geometria divergente na Biblioteca: {vstream['width']}x{vstream['height']}"
+        assert vstream.get('codec_name') == 'h264', vstream.get('codec_name')
+        fps = _fps_of(vstream)
+        duration = float(vstream.get('duration') or info.get('format', {}).get('duration'))
+        assert abs(duration - 4.0) <= geometry_frame_tol, \
+            f'duracao divergente na Biblioteca: {duration}s (tolerancia {geometry_frame_tol:.4f}s = 1 quadro da fixture)'
+        assert geometry_input_audio, 'insumo do simulador sem audio'
+        geometry_measures = {
+            'input': {'width': geometry_input_width, 'height': geometry_input_height,
+                      'durationSeconds': round(geometry_input_duration, 6), 'fps': geometry_input_fps,
+                      'audioStreams': len(geometry_input_audio),
+                      'audioCodec': geometry_input_audio[0].get('codec_name')},
+            'library': {'width': int(vstream['width']), 'height': int(vstream['height']),
+                        'durationSeconds': round(duration, 6), 'fps': fps,
+                        'frameToleranceSeconds': round(geometry_frame_tol, 6),
+                        'codec': vstream.get('codec_name'), 'audioStreams': 0,
+                        'sha256': version['sha256']},
+        }
         imp2 = post(f'{base}/api/works/video-requests/import', {'workId': 'ci-vapi-a', 'requestId': rid_a})
         assert imp2['deduplicated'] is True and imp2['versionId'] == imp['versionId']
-        assert state.posts[-1]['body']['model'] == 'gemini-omni-1.2-flash'
-        assert state.posts[-1]['body']['response_format']['duration'] == '4s'
+        sent = state.posts[-1]
+        assert sent['body']['model'] == 'gemini-omni-1.2-flash'
+        assert sent['fixture'] == '720x1280-4s', sent['fixture']
+        assert sent['body']['response_format'] == {'type': 'video', 'aspect_ratio': '9:16',
+                                                   'resolution': '720p', 'duration': '4s'}, sent['body']
         assert state.posts[-1]['key'] == secret
 
         # Imagem pela mesma conexao/chave
@@ -484,6 +556,7 @@ def main(argv=None):
             'queueCompleted': b['counts']['completed'],
             'deliveryAudioStreams': 0,
             'resumedAfterRestart': studio.video_api_recovery['resumed'],
+            'geometryCase': geometry_measures,
         }, ensure_ascii=False))
         return 0
     finally:
