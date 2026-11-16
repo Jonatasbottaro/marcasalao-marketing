@@ -53,13 +53,14 @@ Studio da branch em `127.0.0.1:8765`; trabalho fictício `browser-mcp-work` seed
 
 ## 4. Clientes verificados
 
-- **Codex e Claude Code (CLI) não estão instalados nesta estação.** As interações dos dois papéis foram provadas pelo **cliente MCP de teste sobre stdio** (`McpStdioClient`), que executa o handshake e as chamadas reais contra o servidor MCP subprocesso, com o Studio real em loopback. A configuração por projeto para ambos os clientes está documentada (seção 2 / README) e é reproduzível quando os CLIs estiverem disponíveis. Nenhum cliente real foi presumido como verificado.
+- **Codex e Claude Code (CLI) não estavam instalados nesta estação na data desta rodada.** As interações dos dois papéis foram provadas pelo **cliente MCP de teste sobre stdio** (`McpStdioClient`), que executa o handshake e as chamadas reais contra o servidor MCP subprocesso, com o Studio real em loopback. A configuração por projeto para ambos os clientes está documentada (seção 2 / README) e é reproduzível quando os CLIs estiverem disponíveis. Nenhum cliente real foi presumido como verificado.
+- **Atualização em 16/11/2026:** o **Codex CLI oficial 0.169.0** foi executado de fato nesta estação (login ChatGPT, modelo `gpt-6.1-sol`), com `--ignore-user-config` e o servidor MCP carregado por `-c`. Ver seção 8.
 
 ## 5. Limites e pendientes
 
 - V1: apenas consulta + registro de propostas `creative`; sem edição conversacional, sem geração de mídia, sem pesquisa de referências, sem publicação.
 - A incorporação e a aplicação aos editores permanecem ações do operador no Studio.
-- Publicação da branch e abertura da PR autorizadas pelo titular em 16/11/2026 (prompt "Revisão e abertura da PR do MCP"); a integração na `main` permanece etapa posterior, não autorizada nesta rodada.
+- Publicação da branch e abertura da PR autorizadas pelo titular em 16/11/2026 (prompt "Revisão e abertura da PR do MCP"); a integração na `main` permaneceu etapa posterior e **foi executada em 16/11/2026** (seção 8).
 
 ## 6. PR e checks (16/11/2026)
 
@@ -84,3 +85,53 @@ Provas observadas após as correções (build fresco da platform no checkout de 
 - Prova `tools/ci_studio_mcp_proof.py --port 8810`: **exit 0**, com `utf8UnderCp1252: true`, `studioBriefingImportOk: true`, `versionNegotiation: true`, `batchRejected: true`, `rejections.mcpBriefingStage: true`, além dos marcadores anteriores (2 clientes, 2 propostas, concorrência, 0 vazamentos, editores só após aplicar).
 - `git diff --check` limpo. Logs em `.workspace/logs/studio-mcp-fix/`.
 - Clientes: apenas o cliente MCP de teste sobre stdio (Codex/Claude Code oficiais seguem ausentes); nenhum teste oficial executado nesta rodada.
+
+## 8. Aceite em cliente oficial, merge de teste e integração (16/11/2026)
+
+### 8.1 Aceite no Codex CLI oficial (PR #17, `1cc1ecd`)
+
+Cliente: **Codex CLI 0.169.0** instalado localmente em `.workspace/tools/codex-mcp-aceite`
+(`@openai/codex@latest`), login ChatGPT, modelo padrão da conta `gpt-6.1-sol`.
+A CLI global 0.114.0 não executou o turno: não oferecia `--ignore-user-config` e falhava ao
+carregar `~/.codex/config.toml` (`unknown variant "default"` em `service_tier`). A instalação
+local resolveu os dois pontos **sem alterar a configuração global**.
+
+- Turno mínimo: `codex exec --ignore-user-config "Responda apenas OK."` → `OK`
+  (sessão `01a1e4ca-8611-7a30-88b5-9dda4502658b`).
+- Turno MCP: `codex exec --ignore-user-config --approve-for-me --json` com
+  `-c mcp_servers.video-studio-planejamento.command='python'` e
+  `-c ...args=['tools/studio_mcp_server.py','--port','8811']`.
+- Ferramentas descobertas: `consultar_planejamento`, `enviar_proposta`.
+- Handshake: `protocolVersion = 2025-06-18`, `serverInfo = video-studio-planejamento 1.0.0`.
+- Trabalho fictício `aceite-mcp-cliente-oficial` com briefing "Ação de divulgação da agenda"
+  (`contextFingerprint = 244a3e45…c082a`).
+- Proposta `creative` registrada pelo cliente oficial: **`sug-b5a65d9a90`**
+  (`createdAt 2026-11-16T14:45:29Z`), com `videoScenes`, `carouselCards` e `channelCopies`;
+  `lastApplied = null`, rascunhos de vídeo (2 cenas) e carrossel (3 cards) intactos.
+- Evidências: `.workspace/logs/studio-mcp-cliente-oficial/`.
+
+### 8.2 Merge de teste com a `main` atual
+
+Base do teste: `origin/main` = `b4f886971a9d996a1cd0e3bcf93cddfc143420f3` (PR #18, piloto Astryx),
+enquanto o CI anterior da PR #17 havia rodado sobre a main antiga `516a59d`.
+
+- Merge local (`git merge --no-commit --no-ff origin/main`) **sem conflitos**, com mesclagem
+  automática apenas em `tools/produce/README.md`.
+- `npm ci --prefix platform` e `npm run build --prefix platform` sem erros.
+- `python -m unittest tools.tests.test_studio_mcp -v` → **16/16 OK**.
+- Prova MCP no resultado do merge, no Codex CLI 0.169.0, trabalho `aceite-mcp-integracao`
+  (`contextFingerprint = 562785bd…47046`): **`suggestionId = sug-4205f0002f`**
+  (`createdAt 2026-11-16T15:07:46Z`), histórico com 1 registro, editores preservados
+  (`cena-1`/`cena-2` e `capa`/`conteudo`/`fechamento`), `lastApplied = null`.
+- Evidências: `.workspace/logs/studio-mcp-integracao/`.
+
+### 8.3 Integração e CI da `main`
+
+- Merge de integração `4976c2365900237c12ba013cb0ccb93eac4aeb95`
+  ("Merge pull request #17 from Jonatasbottaro/codex/studio-mcp-planning-v1"), enviado a `main`.
+- PR #17 **fechada como integrada** (`merged = true`, `merge_commit_sha = 4976c23`).
+- CI da `main` verde: run
+  [43906457080](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43906457080)
+  (`push`), `success` em **ubuntu-latest** e **windows-latest**, com os 31 passos
+  concluídos — incluindo "Suite Python com render obrigatório" e
+  "Prova de entrada MCP de Planejamento (Studio HTTP, cliente MCP de teste sobre stdio)".
