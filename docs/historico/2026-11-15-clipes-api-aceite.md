@@ -41,7 +41,7 @@ Comando: `python tools/ci_studio_video_api_proof.py --port 8808`
 - Logs: `.workspace/logs/studio-video-api-v1/ci-video-proof-*.log` (execuções 1–3 diagnosticaram caminho longo do Windows na limpeza/varredura e o formato do índice de entrega; corrigidos na própria prova; execução final verde).
 - Passo novo no CI: `.github/workflows/local-render-validation.yml` — "Prova de clipes por API texto para video (Studio HTTP, Interactions API simulada)", porta 8808, Ubuntu + Windows.
 
-### 3.2b Reforço do caso de geometria — pós-PR #15 (15/11/2026, branch `codex/studio-video-proof-geometry-v1`, commit `a1a5532`)
+### 3.2b Reforço do caso de geometria — pós-PR #15 (15/11/2026, branch `codex/studio-video-proof-geometry-v1`, commits `a1a5532`, `2b40972`, `2adeb76`; integrada na main pelo merge `1316154969349e14346fed2d49da2e5b107187ef`, PR #16)
 
 Ajuste pedido pelo titular: o caso que pede **4 s, 9:16 e 720p** passou a receber do simulador um **MP4 H.264 de 720×1280 e 4 s com áudio sintético** (lavfi color 720x1280@30 + sine, AAC), em vez do clipe genérico 320×240 de 2 s. A prova confere os parâmetros no corpo enviado (`response_format` exatamente `{type: video, aspect_ratio: 9:16, resolution: 720p, duration: 4s}`, modelo `gemini-omni-1.2-flash`) e, **depois da importação e antes de qualquer recorte ou montagem**, aplica FFprobe no arquivo da Biblioteca. A **tolerância de duração é 1 quadro do FPS da fixture lido pelo FFprobe** (não o FPS do arquivo importado), e as medidas de `geometryCase.input` são **observadas no insumo por FFprobe** (dimensões, duração, FPS, faixas e codec de áudio), com sanity check da própria fixture.
 
@@ -61,6 +61,7 @@ Medidas observadas (execução local, Windows, FFmpeg/FFprobe reais; reexecuçã
 - Verificações anteriores preservadas e verdes na mesma execução: retomada pós-reinício (`resumedAfterRestart: 1`), importação repetida = mesma versão, falhas/reenvio explícito, fila concluída com entrega final **0 faixas de áudio + SRT + TXT**, varredura de segredos.
 - Testes reexecutados: `REQUIRE_RENDER=1 python -m unittest tools.tests.test_studio_video_api tools.tests.test_studio_connections -v` → **15/15 OK** (84,1 s na primeira execução; 91,0 s na reexecução).
 - Logs: `.workspace/logs/studio-video-proof-geometry-v1/ci-proof-geometry-1.log`, `ci-proof-geometry-2.log`, `suite-video-conn-geometry.log` e `suite-video-conn-geometry2.log`.
+- Integração: PR [#16](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/16) mergeada em `1316154969349e14346fed2d49da2e5b107187ef` com diff restrito à prova e ao aceite, conforme condição do titular; CI do PR verde em Ubuntu + Windows (runs `43777315270` e `43777309672`) e CI pós-merge run `43780533387` verde.
 
 ### 3.3 Suítes afetadas e suíte completa
 
