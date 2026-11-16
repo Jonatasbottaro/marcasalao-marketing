@@ -102,6 +102,7 @@ O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as
 Registrar aqui apenas o que continua fora da main, conforme o Git real:
 
 - **PR #1 — integração de ai-memory**: [PR #1](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/1), aberta. Fora do escopo técnico deste estado; não considerá-la integrada por associação.
+- **Entrada MCP de Planejamento**: branch técnica **local** `codex/studio-mcp-planning-v1` (ainda não publicada), aguardando revisão/autorização; detalhe na seção própria. Não está na main nem no remoto.
 
 Nada acima está integrado, por mais que o trabalho exista e tenha evidência própria.
 
@@ -609,6 +610,15 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 - Conexões: capacidade `video` no `google-gemini` (mesma conexão para imagem e vídeo, modelo por capacidade, padrão Omni Flash); `Testar` segue diagnóstico de metadados e reporta o modelo de vídeo listado; histórico com uso/custo só quando o fornecedor informa. Importação na Biblioteca reutiliza `studio_media.py` (FFprobe, MP4 H.264, promoção conjunta, versões imutáveis) com exportação silenciosa (`-an`, 0 faixas verificadas), proveniência completa e idempotência por pedido; clipe selecionável na cena e saída pela Fila de Produção sem áudio + SRT + TXT.
 - Provas: `tools/tests/test_studio_video_api.py` 8/8 (fornecedor/cofre simulados, fixture MP4 com áudio), `tools/ci_studio_video_api_proof.py` (etapa nova no workflow de render local, porta 8808) com fila concluída e entrega final sem áudio, aceite em Chromium real (5 capturas), Conexões 7/7, platform typecheck + contratos 324/324 e suíte Python completa `REQUIRE_RENDER=1` **258/258 OK, 0 skips** (3ª execução; transientes Windows das corridas 1–2 revalidados isolados, com retry do índice atômico em `produce_video` no commit `4d8e8f8`).
 - Limites: V1 apenas texto para vídeo com Omni Flash, um clipe por pedido; sem edição/extensão conversacional, imagens de referência ou outros provedores; entrada MCP e pesquisa de referências em rodadas próprias; teste com conta real é validação operacional posterior; aprovação editorial e publicação seguem o fluxo vigente; API pública da platform inalterada.
+
+## Entrada local por agentes (MCP) no Planejamento — em branch técnica `codex/studio-mcp-planning-v1`
+
+- Status: **implementada em branch técnica local** `codex/studio-mcp-planning-v1` (base `516a59d98a8d326c41f1cbff166947338ab56d44`), aguardando revisão e autorização de publicação; **não integrada na main**. Registro em [2026-11-15-entrada-mcp-planejamento-aceite.md](../historico/2026-11-15-entrada-mcp-planejamento-aceite.md).
+- Servidor MCP stdio `tools/studio_mcp_server.py` (stdlib, sem SDK): ferramentas `consultar_planejamento` (briefing, perfis, `contextFingerprint`, instruções `creative` via `build_stage_prompt`) e `enviar_proposta` (importador validado, devolve `suggestionId`/diferenças/avisos). Conversa por HTTP de loopback com o Studio já em execução (porta configurável), preservando Host/Origin; stdout só MCP, diagnósticos no stderr; respostas sem conexões/chaves/caminhos.
+- Correção de causa em `studio_planning.validate_and_stage_suggestion`: reconferência do `contextFingerprint` **sob o lock** antes de gravar (fecha a janela validação→registro); conflito preserva estado; dois envios válidos concorrentes geram dois registros.
+- A interface MCP termina no registro; incorporar/aplicar seguem ações do operador no Planejamento (histórico → Visualizar / Incorporar → Aplicar). **Nenhuma mudança de UI** foi necessária.
+- Provas: regressão MCP 10/10; prova de uso `tools/ci_studio_mcp_proof.py --port 8810` exit 0 (2 clientes, 2 propostas, rejeições, concorrência, 0 vazamentos, editores só mudam após aplicar); gates afetados 18/18; Chromium real com 4 capturas (histórico com dois IDs após recarregar + incorporação). Codex/Claude Code CLI ausentes na estação: interações provadas pelo cliente MCP de teste sobre stdio; configuração por projeto documentada no README do Studio.
+- Limites: só consulta + registro de propostas `creative`; sem geração de mídia, pesquisa de referências ou publicação; API pública da platform inalterada.
 
 ## TEMPORAL-01
 
