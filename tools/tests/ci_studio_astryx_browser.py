@@ -43,13 +43,24 @@ def _wait_ready(base_url, timeout=15.0):
     raise RuntimeError(f'Studio nao respondeu em {base_url} dentro de {timeout}s')
 
 
-def _cleanup_test_artifacts(work_id, template_id):
+def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
     work_dir = os.path.join(ROOT, '.workspace', 'studio', 'works', work_id)
     if os.path.isdir(work_dir):
         shutil.rmtree(work_dir, ignore_errors=True)
     tpl_dir = os.path.join(ROOT, '.workspace', 'studio', 'templates', template_id)
     if os.path.isdir(tpl_dir):
         shutil.rmtree(tpl_dir, ignore_errors=True)
+    db_path = os.path.join(ROOT, '.workspace', 'studio', 'production-queue.sqlite')
+    if batch_id and os.path.isfile(db_path):
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.execute('DELETE FROM queue_items WHERE batch_id = ?', (batch_id,))
+            conn.execute('DELETE FROM queue_batches WHERE batch_id = ?', (batch_id,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
 
 def run_browser_regression():
@@ -158,6 +169,54 @@ def run_browser_regression():
             page.locator('#tpl-create-revision').wait_for(state='hidden', timeout=20000)
             assert page.locator('dialog[open]').count() == 0, 'Nenhum dialog deve permanecer aberto apos Escape'
 
+            # 5. Aba Fila de Producao em React/Astryx: montagem, atualizar fila, filtros e Abrir revisao
+            page.locator('#mode-queue-btn').click()
+            page.locator('[data-testid="astryx-queue-pilot"]').wait_for(state='visible', timeout=20000)
+            queue_legacy_hidden = page.locator('#queue-legacy-root').get_attribute('hidden')
+            assert queue_legacy_hidden is not None, '#queue-legacy-root deve estar oculto quando React monta'
+
+            with page.expect_response(lambda r: '/api/queue' in r.url and r.status == 200, timeout=20000):
+                page.locator('#btn-q-refresh').click()
+
+            # Enfileira 1 lote de teste via API oficial e valida na UI da fila
+            enqueue_res = page.evaluate(f"""async () => {{
+                const plan = await fetch('/api/queue/plan', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ workIds: ['{work_id}'] }})
+                }}).then(r => r.json());
+                const firstOpt = plan.works[0].options.find(o => o.available);
+                const res = await fetch('/api/queue/enqueue', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        label: 'Lote CI Astryx',
+                        items: [{{ workId: '{work_id}', modality: firstOpt.modality, profileId: firstOpt.profileId }}]
+                    }})
+                }}).then(r => r.json());
+                return res;
+            }}""")
+            assert enqueue_res.get('ok'), f'Falha ao enfileirar lote de teste: {enqueue_res}'
+
+            with page.expect_response(lambda r: '/api/queue' in r.url and r.status == 200, timeout=20000):
+                page.locator('#btn-q-refresh').click()
+
+            page.locator('#q-batches-list').wait_for(state='visible', timeout=20000)
+            assert 'Lote CI Astryx' in page.locator('#q-batches-list').inner_text()
+            page.locator('#q-items-list').wait_for(state='visible', timeout=20000)
+            assert work_id in page.locator('#q-items-list').inner_text()
+
+            # Filtro por trabalho preserva selecao e responde 200
+            with page.expect_response(lambda r: f'workId={work_id}' in r.url and r.status == 200, timeout=20000):
+                page.locator('#q-filter-work').select_option(work_id)
+            assert page.locator('#q-filter-work').input_value() == work_id
+
+            # Abrir revisao a partir da peca da fila ativa o trabalho em Revisao & Entrega
+            page.locator('#q-items-list .q-btn-open-review').first.click()
+            page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
+            assert work_id in page.locator('#active-work-title').inner_text()
+            assert not page.locator('#mode-review').is_hidden(), 'Aba Revisao & Entrega deve ficar visivel'
+
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
 
@@ -168,7 +227,7 @@ def run_browser_regression():
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
-        _cleanup_test_artifacts(work_id, template_id)
+        _cleanup_test_artifacts(work_id, template_id, enqueue_res.get('batch', {}).get('batchId') if 'enqueue_res' in locals() else None)
 
     print('Regressao de navegador Astryx concluida com sucesso (0 excecoes JS).')
 

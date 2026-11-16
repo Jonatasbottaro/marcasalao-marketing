@@ -2,7 +2,9 @@ export async function apiGet(url) {
   const res = await fetch(url);
   const data = await res.json();
   if (!res.ok || data.ok === false) {
-    throw new Error(data.error || `HTTP ${res.status}`);
+    const err = new Error(data.error || `HTTP ${res.status}`);
+    err.payload = data;
+    throw err;
   }
   return data;
 }
@@ -15,7 +17,9 @@ export async function apiPost(url, body) {
   });
   const data = await res.json();
   if (!res.ok || data.ok === false) {
-    throw new Error(data.error || `HTTP ${res.status}`);
+    const err = new Error(data.error || `HTTP ${res.status}`);
+    err.payload = data;
+    throw err;
   }
   return data;
 }
