@@ -53,6 +53,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Setup FFmpeg e FFprobe
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
       - name: Instalar e compilar nucleo platform
         working-directory: platform
         run: |

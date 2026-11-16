@@ -2306,7 +2306,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(503, str(exc), {'code': exc.code})
         except image_adapters.ImageAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
-        except (ValueError, OSError) as exc:
+        except (ValueError, OSError, build_video.DeliveryError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
             self.send_error_json(500, str(exc))
@@ -2474,7 +2474,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(503, str(exc), {'code': exc.code})
         except image_adapters.ImageAdapterError as exc:
             self.send_error_json(400, str(exc), {'code': exc.code})
-        except (ValueError, OSError) as exc:
+        except (ValueError, OSError, build_video.DeliveryError) as exc:
             self.send_error_json(400, str(exc))
         except RuntimeError as exc:
             self.send_error_json(500, str(exc))
