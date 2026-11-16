@@ -101,14 +101,17 @@ def creative_suggestion(profiles, focus="video"):
 class McpStdioClient:
     """Cliente MCP de teste sobre stdio (JSON-RPC delimitado por newline)."""
 
-    def __init__(self, port, label="test", timeout=120):
+    def __init__(self, port, label="test", timeout=120, env=None):
         self.port = port
         self.label = label
         self.timeout = timeout
+        proc_env = dict(os.environ)
+        if env:
+            proc_env.update(env)
         self.proc = subprocess.Popen(
             [sys.executable, MCP_SERVER, "--port", str(port)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", bufsize=1, cwd=WORKTREE,
+            text=True, encoding="utf-8", bufsize=1, cwd=WORKTREE, env=proc_env,
         )
         self._id = 0
         self._lines = queue.Queue()
@@ -157,9 +160,9 @@ class McpStdioClient:
             msg["params"] = params
         self._write(msg)
 
-    def initialize(self):
+    def initialize(self, version="2025-06-18"):
         res = self.request("initialize", {
-            "protocolVersion": "2025-06-18", "capabilities": {},
+            "protocolVersion": version, "capabilities": {},
             "clientInfo": {"name": self.label, "version": "1.0.0"},
         })
         self.notify("notifications/initialized")
@@ -167,6 +170,15 @@ class McpStdioClient:
 
     def call_tool(self, name, arguments):
         return self.request("tools/call", {"name": name, "arguments": arguments})
+
+    def send_raw(self, obj):
+        """Envia uma linha JSON-RPC crua (ex.: lote) e devolve a proxima resposta."""
+        self.proc.stdin.write(json.dumps(obj, ensure_ascii=False) + "\n")
+        self.proc.stdin.flush()
+        line = self._lines.get(timeout=self.timeout)
+        if line is None:
+            raise RuntimeError("stdout do servidor MCP encerrou")
+        return json.loads(line.strip())
 
     def close(self):
         try:
@@ -244,10 +256,10 @@ class StudioMcpTest(unittest.TestCase):
         work_dir = os.path.join(WORKTREE, ".workspace", "studio", "works", wid)
         shutil.rmtree(render_local.fs_path(work_dir, force=True), ignore_errors=True)
 
-    def _client(self, label="test", port=None):
-        c = McpStdioClient(port if port is not None else self.port, label=label)
+    def _client(self, label="test", port=None, env=None, version="2025-06-18"):
+        c = McpStdioClient(port if port is not None else self.port, label=label, env=env)
         self.clients.append(c)
-        c.initialize()
+        c.initialize(version=version)
         return c
 
     def _overview(self):
@@ -475,6 +487,129 @@ class StudioMcpTest(unittest.TestCase):
                           '"endpoint"', '"llmConfig"', '"textConnection"',
                           ".workspace", WORKTREE.replace("\\", "/")):
             self.assertNotIn(forbidden, blob, f"vazamento de {forbidden} na resposta MCP")
+
+    def test_11_import_without_fingerprint_stable_binds_preview(self):
+        before = self._history_ids()
+        fp_now = self._overview()["fingerprints"]["contextFingerprint"]
+        st, imp = self.http("POST", "/api/works/planning/import", {
+            "workId": self.wid, "suggestion": creative_suggestion(self._profiles(), "video")})
+        self.assertEqual(st, 200, imp)
+        rec = imp["suggestionRecord"]
+        self.assertEqual(rec["baseContextFingerprint"], fp_now)
+        self.assertTrue(rec["diffPreview"]["videoScenesAdded"])
+        self.assertEqual(len(self._history_ids()), len(before) + 1)
+
+    def test_12_import_without_fingerprint_concurrent_edit_conflicts(self):
+        before = self._history_ids()
+        profiles = self._profiles()
+        original = studio_planning.build_planning_overview
+        calls = {"n": 0}
+
+        def patched(studio, work_id):
+            ov = original(studio, work_id)
+            calls["n"] += 1
+            if calls["n"] == 1:
+                studio_planning.save_planning(studio, work_id, {"ideaText": "edicao concorrente sem fingerprint"})
+            return ov
+
+        studio_planning.build_planning_overview = patched
+        try:
+            st, d = self.http("POST", "/api/works/planning/import", {
+                "workId": self.wid, "suggestion": creative_suggestion(profiles, "video")})
+        finally:
+            studio_planning.build_planning_overview = original
+        self.assertEqual(st, 409, d)
+        self.assertTrue(d.get("conflict"))
+        self.assertEqual(self._history_ids(), before)
+        self.assertEqual(self._overview()["planning"]["ideaText"], "edicao concorrente sem fingerprint")
+
+    def test_13_two_concurrent_imports_without_fingerprint_both_recorded(self):
+        before = self._history_ids()
+        results = {}
+
+        def submit(key, focus):
+            results[key] = self.http("POST", "/api/works/planning/import", {
+                "workId": self.wid, "suggestion": creative_suggestion(self._profiles(), focus)})
+
+        t1 = threading.Thread(target=submit, args=("a", "video"))
+        t2 = threading.Thread(target=submit, args=("b", "carousel"))
+        t1.start(); t2.start(); t1.join(); t2.join()
+        self.assertEqual(results["a"][0], 200, results["a"])
+        self.assertEqual(results["b"][0], 200, results["b"])
+        after = self._history_ids()
+        self.assertIn(results["a"][1]["suggestionRecord"]["suggestionId"], after)
+        self.assertIn(results["b"][1]["suggestionRecord"]["suggestionId"], after)
+        self.assertEqual(len(after), len(before) + 2)
+
+    def test_14_mcp_rejects_briefing_stage_but_studio_import_ok(self):
+        c = self._client("codex")
+        ctx = self._consult(c)
+        before = self._history_ids()
+        res = self._enviar(c, ctx["contextFingerprint"], briefing_suggestion(ctx["allowedProfiles"]))
+        self.assertTrue(res["result"]["isError"])
+        self.assertEqual(res["result"]["structuredContent"]["code"], "PLANNING_STAGE_MISMATCH")
+        self.assertEqual(self._history_ids(), before)
+        # O fluxo normal de importacao de briefing pelo Studio continua disponivel.
+        st, imp = self.http("POST", "/api/works/planning/import", {
+            "workId": self.wid, "stage": "briefing",
+            "suggestion": briefing_suggestion(ctx["allowedProfiles"])})
+        self.assertEqual(st, 200, imp)
+        self.assertEqual(imp["suggestionRecord"]["stage"], "briefing")
+        self.assertEqual(len(self._history_ids()), len(before) + 1)
+
+    def test_15_handshake_versions_and_batch_rejected(self):
+        for ver in ("2025-06-18", "2024-11-05"):
+            c = McpStdioClient(self.port, label=f"ver-{ver}")
+            self.clients.append(c)
+            init = c.initialize(version=ver)
+            self.assertEqual(init["result"]["protocolVersion"], ver)
+        for ver in ("2025-03-26", "1999-01-01"):
+            c = McpStdioClient(self.port, label=f"out-{ver}")
+            self.clients.append(c)
+            init = c.initialize(version=ver)
+            self.assertEqual(init["result"]["protocolVersion"], "2025-06-18")
+        # Lote JSON-RPC: as versoes oferecidas nao suportam lotes -> Invalid Request.
+        c = self._client("codex")
+        batch = [{"jsonrpc": "2.0", "id": 900, "method": "ping"},
+                 {"jsonrpc": "2.0", "id": 901, "method": "ping"}]
+        resp = c.send_raw(batch)
+        self.assertEqual(resp["error"]["code"], -32600)
+
+    def test_16_utf8_transport_under_cp1252(self):
+        accented = "Ação e narração — coração da agenda"
+        st, _ = self.http("POST", "/api/works/planning/save", {
+            "workId": self.wid, "briefing": {"coreMessage": accented}})
+        self.assertEqual(st, 200)
+        c = self._client("codex", env={"PYTHONIOENCODING": "cp1252"})
+        ctx = self._consult(c)
+        # Texto recebido pelo cliente (sentido servidor->cliente) em UTF-8 correto.
+        self.assertEqual(ctx["briefing"]["coreMessage"], accented)
+        sug = creative_suggestion(ctx["allowedProfiles"], "video")
+        sug["videoScenes"][0]["caption"] = accented
+        sug["videoScenes"][0]["narration"] = accented
+        res = self._enviar(c, ctx["contextFingerprint"], sug)
+        self.assertFalse(res["result"].get("isError"), res)
+        sid = res["result"]["structuredContent"]["suggestionId"]
+        rec = next(r for r in self._overview()["planning"]["suggestionHistory"] if r["suggestionId"] == sid)
+        # Conteudo gravado no historico (sentido cliente->servidor) preservado.
+        self.assertEqual(rec["suggestion"]["videoScenes"][0]["caption"], accented)
+        self.assertEqual(rec["suggestion"]["videoScenes"][0]["narration"], accented)
+
+    def _profiles(self):
+        st, ov = self.http("GET", f"/api/works/planning?id={self.wid}")
+        self.assertEqual(st, 200)
+        return [p["id"] for p in ov["allowedProfiles"]]
+
+
+def briefing_suggestion(profiles):
+    return {
+        "schemaVersion": 1, "stage": "briefing",
+        "product": "Marca Salao", "objective": "Organizar horarios",
+        "audience": "Donos de salao", "coreMessage": "Agenda visual sem caderno",
+        "supportEvidence": "Captura da tela de agenda", "cta": "Conheca o Marca Salao",
+        "tone": "Direto", "recommendedProfiles": [profiles[0]],
+        "gaps": [], "questions": [], "claims": [],
+    }
 
 
 if __name__ == "__main__":

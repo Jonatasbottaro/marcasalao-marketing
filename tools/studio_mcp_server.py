@@ -11,8 +11,16 @@ Expoe duas ferramentas a clientes MCP (Codex, Claude Code, cliente de teste):
 O servidor NAO le nem grava o trabalho diretamente: conversa por HTTP de
 loopback com a instancia do Studio JA em execucao, que continua responsavel
 pela leitura, validacao (contrato do nucleo) e gravacao. O stdout transporta
-apenas mensagens MCP (JSON-RPC 2.0 delimitado por newline); diagnosticos vao
-para o stderr. Sem SDK de terceiros: somente biblioteca padrao do Python.
+apenas mensagens MCP (JSON-RPC 2.0 delimitado por newline) em **UTF-8 explicito
+nos dois sentidos** (independente do encoding padrao do processo, ex.: CP1252
+em Windows); diagnosticos vao para o stderr. Sem SDK de terceiros: somente
+biblioteca padrao do Python.
+
+Negociacao de versao: oferece apenas as versoes implementadas sem lotes
+JSON-RPC (``2025-06-18`` e ``2024-11-05``); a ``2025-03-26``, que exige receber
+lotes, nao e oferecida. Um lote recebido devolve ``Invalid Request`` nas
+versoes sem lotes. Versao pedida fora da lista -> o servidor responde com a
+suportada mais recente (``2025-06-18``).
 
 Uso (o cliente inicia o subprocesso via stdio):
 
@@ -22,6 +30,7 @@ Requer o Studio rodando em http://127.0.0.1:<porta> (``python tools/video_studio
 """
 
 import argparse
+import io
 import json
 import os
 import sys
@@ -29,7 +38,10 @@ import urllib.error
 import urllib.request
 
 PROTOCOL_VERSION = '2025-06-18'
-SUPPORTED_PROTOCOL_VERSIONS = ('2025-06-18', '2025-03-26', '2024-11-05')
+# Versoes efetivamente implementadas (sem lotes JSON-RPC). A 2025-03-26 exige
+# receber lotes e por isso NAO e oferecida; um lote recebido nas versoes sem
+# lotes devolve Invalid Request. Ver negociacao em _handle_message.
+SUPPORTED_PROTOCOL_VERSIONS = ('2025-06-18', '2024-11-05')
 SERVER_INFO = {'name': 'video-studio-planejamento', 'version': '1.0.0'}
 LOOPBACK_HOST = '127.0.0.1'
 DEFAULT_PORT = 8765
@@ -88,10 +100,11 @@ class StudioHttpClient:
         return self._request('POST', '/api/works/planning/prompt',
                              {'workId': work_id, 'stage': 'creative'})
 
-    def import_suggestion(self, work_id, expected_fingerprint, suggestion):
+    def import_suggestion(self, work_id, expected_fingerprint, suggestion, stage='creative'):
         return self._request('POST', '/api/works/planning/import', {
             'workId': work_id,
             'expectedContextFingerprint': expected_fingerprint,
+            'stage': stage,
             'suggestion': suggestion,
         })
 
@@ -323,9 +336,23 @@ def _handle_message(client, msg):
     return {'jsonrpc': '2.0', 'id': msg_id, 'error': {'code': -32601, 'message': f'Method not found: {method}'}}
 
 
+def _utf8_stream(stream, write):
+    """Forca UTF-8 no transporte, independente do encoding padrao do processo.
+
+    Em Windows o stdin/stdout podem assumir CP1252 (PYTHONIOENCODING/locale);
+    o transporte MCP e UTF-8 nos dois sentidos. Sem .buffer (stream de texto
+    injetado em teste), usa o stream como esta.
+    """
+    buf = getattr(stream, 'buffer', None)
+    if buf is None:
+        return stream
+    return io.TextIOWrapper(buf, encoding='utf-8', errors='replace',
+                            newline='' if write else None, write_through=True)
+
+
 def serve(client, stdin=None, stdout=None):
-    stdin = stdin if stdin is not None else sys.stdin
-    stdout = stdout if stdout is not None else sys.stdout
+    stdin = _utf8_stream(stdin if stdin is not None else sys.stdin, write=False)
+    stdout = _utf8_stream(stdout if stdout is not None else sys.stdout, write=True)
     _log(f'pronto; Studio alvo {client.base} (timeout {client.timeout}s)')
     for line in stdin:
         line = line.strip()
@@ -359,6 +386,10 @@ def main(argv=None):
     parser.add_argument('--timeout', type=float, default=DEFAULT_TIMEOUT_S,
                         help='Tempo limite por chamada HTTP ao Studio (segundos)')
     args = parser.parse_args(argv)
+    try:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, ValueError):
+        pass
     client = StudioHttpClient(args.port, timeout=args.timeout)
     serve(client)
     return 0

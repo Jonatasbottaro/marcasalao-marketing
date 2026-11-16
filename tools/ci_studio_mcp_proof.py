@@ -32,7 +32,7 @@ import render_local
 import studio_planning
 import studio_review
 import video_studio
-from tools.tests.test_studio_mcp import McpStdioClient, creative_suggestion
+from tools.tests.test_studio_mcp import McpStdioClient, creative_suggestion, briefing_suggestion
 
 PROJECT_MS = 'platform/examples/projects/marca-salao-social.project.json'
 WORK_ID = 'ci-mcp-planejamento'
@@ -85,10 +85,10 @@ def main(argv=None):
 
     clients = []
 
-    def new_client(label, port=None):
-        c = McpStdioClient(port if port is not None else args.port, label=label)
+    def new_client(label, port=None, env=None, version='2025-06-18'):
+        c = McpStdioClient(port if port is not None else args.port, label=label, env=env)
         clients.append(c)
-        init = c.initialize()
+        init = c.initialize(version=version)
         assert init['result']['serverInfo']['name'] == 'video-studio-planejamento'
         return c
 
@@ -267,6 +267,47 @@ def main(argv=None):
         assert r['result']['structuredContent']['code'] == 'STUDIO_UNAVAILABLE'
         assert 'video_studio.py --port' in r['result']['content'][0]['text']
         summary['rejections']['studioUnavailable'] = True
+
+        # UTF-8 sob PYTHONIOENCODING=cp1252: texto recebido e gravado com acentos.
+        accented = 'Ação e narração — coração da agenda'
+        st, _ = http('POST', '/api/works/planning/save', {'workId': WORK_ID, 'briefing': {'coreMessage': accented}})
+        assert st == 200
+        cp_client = new_client('codex-cp1252', env={'PYTHONIOENCODING': 'cp1252'})
+        ctx_cp = cp_client.call_tool('consultar_planejamento', {'workId': WORK_ID})['result']['structuredContent']
+        assert ctx_cp['briefing']['coreMessage'] == accented, ctx_cp['briefing']
+        sug_cp = creative_suggestion(profiles, 'video')
+        sug_cp['videoScenes'][0]['caption'] = accented
+        r_cp = enviar(cp_client, overview()['fingerprints']['contextFingerprint'], sug_cp)
+        assert not r_cp['result'].get('isError'), r_cp
+        sid_cp = r_cp['result']['structuredContent']['suggestionId']
+        rec_cp = next(r for r in overview()['planning']['suggestionHistory'] if r['suggestionId'] == sid_cp)
+        assert rec_cp['suggestion']['videoScenes'][0]['caption'] == accented
+        summary['utf8UnderCp1252'] = True
+
+        # Etapa: briefing valido enviado pelo MCP e rejeitado (stage creative); Studio segue importando briefing.
+        hist_before = history_ids()
+        r_b = enviar(codex, overview()['fingerprints']['contextFingerprint'], briefing_suggestion(profiles))
+        assert r_b['result']['isError']
+        assert r_b['result']['structuredContent']['code'] == 'PLANNING_STAGE_MISMATCH'
+        assert history_ids() == hist_before
+        st_b, imp_b = http('POST', '/api/works/planning/import', {
+            'workId': WORK_ID, 'stage': 'briefing', 'suggestion': briefing_suggestion(profiles)})
+        assert st_b == 200, imp_b
+        summary['rejections']['mcpBriefingStage'] = True
+        summary['studioBriefingImportOk'] = True
+
+        # Negociacao de versao: anunciadas ecoam; fora da lista -> 2025-06-18; lote -> Invalid Request.
+        v_old = new_client('ver-2024-11-05', version='2024-11-05')
+        assert v_old.request('initialize', {'protocolVersion': '2024-11-05', 'capabilities': {},
+                                            'clientInfo': {'name': 'v', 'version': '1'}})['result']['protocolVersion'] == '2024-11-05'
+        v_out = new_client('ver-out', version='2025-03-26')
+        assert v_out.request('initialize', {'protocolVersion': '2025-03-26', 'capabilities': {},
+                                            'clientInfo': {'name': 'v', 'version': '1'}})['result']['protocolVersion'] == '2025-06-18'
+        batch_resp = codex.send_raw([{'jsonrpc': '2.0', 'id': 900, 'method': 'ping'},
+                                     {'jsonrpc': '2.0', 'id': 901, 'method': 'ping'}])
+        assert batch_resp['error']['code'] == -32600, batch_resp
+        summary['versionNegotiation'] = True
+        summary['batchRejected'] = True
 
         # Varredura de segredos/caminhos internos em todas as respostas MCP.
         forbidden = ('"secret"', '"apiKey"', '"credentialValue"', '"connectionId"',

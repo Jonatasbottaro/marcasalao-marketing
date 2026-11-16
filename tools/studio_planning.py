@@ -1493,6 +1493,13 @@ def validate_and_stage_suggestion(studio, work_id, body, mode='import', model_na
             raise studio_review.ReviewVersionConflictError(
                 'O planejamento, o briefing ou os editores mudaram enquanto voce preparava a resposta; atualize o contexto antes de importar.'
             )
+        # Vincula a previa ao contexto validado: mesmo sem expectedContextFingerprint,
+        # o contexto atual sob o lock deve ser o mesmo snapshot usado para validar e
+        # calcular diffPreview; senao a previa registrada nao corresponderia a base.
+        if fps_locked['contextFingerprint'] != fps['contextFingerprint']:
+            raise studio_review.ReviewVersionConflictError(
+                'O contexto mudou entre a validacao da sugestao e a gravacao; atualize o contexto antes de importar.'
+            )
         sug_id = f'sug-{uuid.uuid4().hex[:10]}'
         record = {
             'suggestionId': sug_id,

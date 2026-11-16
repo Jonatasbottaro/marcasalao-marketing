@@ -68,3 +68,19 @@ Studio da branch em `127.0.0.1:8765`; trabalho fictício `browser-mcp-work` seed
 - Build da platform gerado no próprio checkout de teste (Node 22) antes das reexecuções; o workflow compila a platform (`npm ci` + `npm run build`) antes da prova MCP. Regressão MCP e prova reexecutadas no HEAD verificado: 10/10 e exit 0 (`.workspace/logs/studio-mcp-pr/suite-mcp-head.log`, `ci-mcp-proof-head.log`).
 - CI da PR verde em Ubuntu + Windows: run PR [43801496589](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43801496589) e run push [43801446279](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43801446279), ambos `success` nos dois jobs, com o passo "Prova de entrada MCP de Planejamento" `success` em ambos os sistemas.
 - Clientes executados: cliente MCP de teste sobre stdio (papéis Codex e Claude Code). Codex/Claude Code CLI oficiais ausentes na estação; não executados; configuração documentada no README do Studio.
+
+## 7. Correções da revisão da PR #17 (16/11/2026)
+
+Quatro casos apontados na revisão do checkpoint `14c4bfb6cd672e33614d9a3091709196b5e40a1c`, corrigidos na mesma branch:
+
+1. **UTF-8 no transporte**: `serve()` passou a envolver stdin/stdout em `io.TextIOWrapper(..., encoding='utf-8')` sobre os buffers, nos dois sentidos, independente do encoding padrão (CP1252 em Windows); stderr reconfigurado para UTF-8. Teste com subprocesso `PYTHONIOENCODING=cp1252`, cliente lendo/escrevendo bytes UTF-8 e proposta com acentos ("Ação e narração — coração da agenda"): texto recebido pelo cliente (`briefing.coreMessage`) e conteúdo gravado no histórico (`videoScenes[0].caption/narration`) conferidos iguais.
+2. **Prévia vinculada ao contexto validado**: `validate_and_stage_suggestion` compara sob o lock o contexto atual com o snapshot usado para validar/calcular `diffPreview`, **inclusive sem `expectedContextFingerprint`**; conflito preserva edição e histórico. Coberto: import sem fingerprint em contexto estável (base = fingerprint atual, prévia com cenas novas); import sem fingerprint com edição concorrente (409, histórico e edição preservados); dois imports válidos concorrentes sem fingerprint (dois registros). O conflito por fingerprint enviado desatualizado foi preservado.
+3. **Etapa no envio MCP**: `enviar_proposta` passa `stage: "creative"` ao importador. Proposta `briefing` válida em seu contrato enviada pelo MCP → `PLANNING_STAGE_MISMATCH`, histórico preservado; import de briefing pelo Studio (`stage: "briefing"`) continua 200.
+4. **Versões negociadas**: removida `2025-03-26` (exige lotes JSON-RPC) da lista suportada; oferecidas `2025-06-18` e `2024-11-05` (sem lotes), documentadas no servidor e no README. Lote de `ping` → `Invalid Request` (-32600). Handshake testado para as versões anunciadas (eco) e para versões fora da lista (`2025-03-26`, `1999-01-01` → `2025-06-18`).
+
+Provas observadas após as correções (build fresco da platform no checkout de teste, Node 22):
+- Regressão MCP `tools.tests.test_studio_mcp`: **16/16 OK** (~99 s), incluindo os novos testes 11–16.
+- Regressão Planejamento `test_video_studio.StudioPlanningAndLLMAdapterTest`: **8/8 OK** (~128 s).
+- Prova `tools/ci_studio_mcp_proof.py --port 8810`: **exit 0**, com `utf8UnderCp1252: true`, `studioBriefingImportOk: true`, `versionNegotiation: true`, `batchRejected: true`, `rejections.mcpBriefingStage: true`, além dos marcadores anteriores (2 clientes, 2 propostas, concorrência, 0 vazamentos, editores só após aplicar).
+- `git diff --check` limpo. Logs em `.workspace/logs/studio-mcp-fix/`.
+- Clientes: apenas o cliente MCP de teste sobre stdio (Codex/Claude Code oficiais seguem ausentes); nenhum teste oficial executado nesta rodada.
