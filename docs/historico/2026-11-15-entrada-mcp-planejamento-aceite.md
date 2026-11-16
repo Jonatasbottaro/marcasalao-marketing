@@ -59,4 +59,12 @@ Studio da branch em `127.0.0.1:8765`; trabalho fictício `browser-mcp-work` seed
 
 - V1: apenas consulta + registro de propostas `creative`; sem edição conversacional, sem geração de mídia, sem pesquisa de referências, sem publicação.
 - A incorporação e a aplicação aos editores permanecem ações do operador no Studio.
-- Publicação/PR/merge desta rodada dependem de autorização explícita do titular; a entrega inicial é branch técnica + commits + diff para revisão.
+- Publicação da branch e abertura da PR autorizadas pelo titular em 16/11/2026 (prompt "Revisão e abertura da PR do MCP"); a integração na `main` permanece etapa posterior, não autorizada nesta rodada.
+
+## 6. PR e checks (16/11/2026)
+
+- Branch publicada `codex/studio-mcp-planning-v1`; [PR #17](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/17) aberta para `main`, HEAD verificado `52ee9c0d4b11dab0467b3e2d6d53cbbbff38c5c9` (base `516a59d`, implementação `a7409e4`, aceite `52ee9c0`).
+- Revisão do diff conferida: transporte stdio newline-delimited com stdout só MCP; negociação de versão ecoa a versão suportada do cliente; duas ferramentas declaradas com schemas; reconferência do `contextFingerprint` sob o lock; teste de dois clientes comprova histórico + controle do operador na aplicação. `git diff --check` limpo; escopo restrito a `tools/`, workflow e docs.
+- Build da platform gerado no próprio checkout de teste (Node 22) antes das reexecuções; o workflow compila a platform (`npm ci` + `npm run build`) antes da prova MCP. Regressão MCP e prova reexecutadas no HEAD verificado: 10/10 e exit 0 (`.workspace/logs/studio-mcp-pr/suite-mcp-head.log`, `ci-mcp-proof-head.log`).
+- CI da PR verde em Ubuntu + Windows: run PR [43801496589](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43801496589) e run push [43801446279](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/43801446279), ambos `success` nos dois jobs, com o passo "Prova de entrada MCP de Planejamento" `success` em ambos os sistemas.
+- Clientes executados: cliente MCP de teste sobre stdio (papéis Codex e Claude Code). Codex/Claude Code CLI oficiais ausentes na estação; não executados; configuração documentada no README do Studio.

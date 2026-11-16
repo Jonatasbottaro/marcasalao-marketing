@@ -102,7 +102,7 @@ O hash identifica o ponto consultado. Reconferir `git rev-parse origin/main`, as
 Registrar aqui apenas o que continua fora da main, conforme o Git real:
 
 - **PR #1 — integração de ai-memory**: [PR #1](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/1), aberta. Fora do escopo técnico deste estado; não considerá-la integrada por associação.
-- **Entrada MCP de Planejamento**: branch técnica **local** `codex/studio-mcp-planning-v1` (ainda não publicada), aguardando revisão/autorização; detalhe na seção própria. Não está na main nem no remoto.
+- **Entrada MCP de Planejamento**: branch técnica `codex/studio-mcp-planning-v1` **publicada** com [PR #17](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/17) aberta para `main` (CI verde Ubuntu+Windows); aguardando revisão/merge. Não integrada na main.
 
 Nada acima está integrado, por mais que o trabalho exista e tenha evidência própria.
 
@@ -613,7 +613,7 @@ Os 626 testes pertencem a `7d919fc` e `d5761b1` e não devem ser atribuídos a u
 
 ## Entrada local por agentes (MCP) no Planejamento — em branch técnica `codex/studio-mcp-planning-v1`
 
-- Status: **implementada em branch técnica local** `codex/studio-mcp-planning-v1` (base `516a59d98a8d326c41f1cbff166947338ab56d44`), aguardando revisão e autorização de publicação; **não integrada na main**. Registro em [2026-11-15-entrada-mcp-planejamento-aceite.md](../historico/2026-11-15-entrada-mcp-planejamento-aceite.md).
+- Status: **publicada em branch técnica** `codex/studio-mcp-planning-v1` com [PR #17](https://github.com/Jonatasbottaro/marcasalao-marketing/pull/17) aberta para `main` (base `516a59d98a8d326c41f1cbff166947338ab56d44`; CI verde Ubuntu+Windows, runs `43801496589` e `43801446279`); **não integrada na main** (integração é etapa posterior). Registro em [2026-11-15-entrada-mcp-planejamento-aceite.md](../historico/2026-11-15-entrada-mcp-planejamento-aceite.md).
 - Servidor MCP stdio `tools/studio_mcp_server.py` (stdlib, sem SDK): ferramentas `consultar_planejamento` (briefing, perfis, `contextFingerprint`, instruções `creative` via `build_stage_prompt`) e `enviar_proposta` (importador validado, devolve `suggestionId`/diferenças/avisos). Conversa por HTTP de loopback com o Studio já em execução (porta configurável), preservando Host/Origin; stdout só MCP, diagnósticos no stderr; respostas sem conexões/chaves/caminhos.
 - Correção de causa em `studio_planning.validate_and_stage_suggestion`: reconferência do `contextFingerprint` **sob o lock** antes de gravar (fecha a janela validação→registro); conflito preserva estado; dois envios válidos concorrentes geram dois registros.
 - A interface MCP termina no registro; incorporar/aplicar seguem ações do operador no Planejamento (histórico → Visualizar / Incorporar → Aplicar). **Nenhuma mudança de UI** foi necessária.
