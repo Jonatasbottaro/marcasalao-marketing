@@ -1486,6 +1486,13 @@ def validate_and_stage_suggestion(studio, work_id, body, mode='import', model_na
         planning_doc, _, _ = _load_planning_doc(
             studio, work_id, work_doc, wpaths, editorial, listing, work_media
         )
+        # Reconferencia o fingerprint sob o lock: uma edicao concorrente entre a
+        # validacao (fora do lock) e a gravacao nao pode passar despercebida.
+        fps_locked = _compute_context_fingerprints(planning_doc, editorial, video_req, carousel_req, motion_plan)
+        if expected_ctx is not None and expected_ctx != fps_locked['contextFingerprint']:
+            raise studio_review.ReviewVersionConflictError(
+                'O planejamento, o briefing ou os editores mudaram enquanto voce preparava a resposta; atualize o contexto antes de importar.'
+            )
         sug_id = f'sug-{uuid.uuid4().hex[:10]}'
         record = {
             'suggestionId': sug_id,
@@ -1494,10 +1501,10 @@ def validate_and_stage_suggestion(studio, work_id, body, mode='import', model_na
             'mode': mode,
             'model': model_name,
             'createdAt': studio_review.now_iso(),
-            'baseContextFingerprint': fps['contextFingerprint'],
-            'baseBriefingSha256': fps['briefingSha256'],
-            'baseEditorialBriefingSha256': fps['editorialBriefingSha256'],
-            'baseDraftsSha256': fps['draftsSha256'],
+            'baseContextFingerprint': fps_locked['contextFingerprint'],
+            'baseBriefingSha256': fps_locked['briefingSha256'],
+            'baseEditorialBriefingSha256': fps_locked['editorialBriefingSha256'],
+            'baseDraftsSha256': fps_locked['draftsSha256'],
             'warnings': warnings,
             'diffPreview': diff_preview,
             'suggestion': validated,
