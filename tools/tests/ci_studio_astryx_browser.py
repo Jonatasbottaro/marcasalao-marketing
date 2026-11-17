@@ -61,17 +61,23 @@ def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
     db_path = os.path.join(ROOT, '.workspace', 'studio', 'production-queue.sqlite')
     if os.path.isfile(db_path):
         import sqlite3
+        conn = None
         try:
-            conn = sqlite3.connect(db_path)
+            conn = sqlite3.connect(db_path, timeout=5)
             conn.execute('DELETE FROM queue_items WHERE work_id = ?', (work_id,))
             if batch_id:
                 conn.execute('DELETE FROM queue_items WHERE batch_id = ?', (batch_id,))
                 conn.execute('DELETE FROM queue_batches WHERE batch_id = ?', (batch_id,))
             conn.execute('DELETE FROM queue_batches WHERE label IN (?, ?)', ('Lote CI Astryx', 'Lote Preflight UI'))
             conn.commit()
-            conn.close()
         except Exception:
             pass
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 def run_browser_regression():
