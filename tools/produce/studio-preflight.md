@@ -2,7 +2,16 @@
 
 Diagnóstico local sob demanda para verificar se um trabalho salvo no Video Studio está pronto para exportação em uma modalidade e perfil específicos — sem enfileirar, renderizar ou alterar rascunhos, revisões e entregas.
 
-## Uso
+## Uso no diálogo Exportar em lote (Video Studio)
+
+Em **Trabalhos & Projetos** (tanto na interface Astryx quanto no fallback sem bundle), selecione um ou mais trabalhos e clique em **Exportar em lote**:
+
+- **Verificar seleção** (`#btn-batch-verify`): consulta `POST /api/queue/preflight` apenas para os destinos marcados e exibe o resumo (`#batch-preflight-summary`) e os impedimentos, avisos, checagens pendentes e próximos passos por peça (`workId`, `modality`, `profileId`), sem enfileirar.
+- **Confirmar e enfileirar lote** (`#btn-batch-confirm`): executa um pré-voo fresco sobre a seleção atual antes do envio. Se houver qualquer bloqueio ou resposta incompleta/incompatível, mantém o diálogo aberto com a seleção preservada e exibe o motivo. Se todos os itens retornarem `ready`, envia **um único** `POST /api/queue/enqueue` preservando o nome do lote e a chave de idempotência por tentativa.
+- **Alterações não salvas**: se o trabalho ativo tiver edições em memória, o diálogo preserva o aviso e o botão **Salvar trabalho ativo antes de confirmar** (`#btn-batch-save-active`), que salva, recarrega o plano e descarta diagnósticos anteriores.
+- **Ciclo de vida**: fechar a janela (`Fechar`, `Cancelar` ou `Escape`) enquanto um pré-voo está em andamento descarta a resposta atrasada sem disparar enfileiramento.
+
+## Uso via CLI
 
 Com o servidor do Video Studio ativo em loopback (por exemplo `python tools/video_studio.py --port 8765`):
 

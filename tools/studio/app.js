@@ -3471,9 +3471,77 @@ function queueStatusBadge(status) {
   return map[status] || { cls: 'muted', label: status };
 }
 
+let activeBatchModalId = 0;
+let activeBatchKeyHandler = null;
+let lastBatchFocusEl = null;
+
 function closeBatchExportModal() {
+  activeBatchModalId += 1;
+  if (activeBatchKeyHandler) {
+    document.removeEventListener('keydown', activeBatchKeyHandler);
+    activeBatchKeyHandler = null;
+  }
   const root = $('#batch-dialog-root');
   if (root) root.innerHTML = '';
+  if (lastBatchFocusEl && lastBatchFocusEl.isConnected && typeof lastBatchFocusEl.focus === 'function') {
+    lastBatchFocusEl.focus();
+  }
+  lastBatchFocusEl = null;
+}
+
+function batchTupleKey(item) {
+  return `${item.workId || ''}\u0000${item.modality || ''}\u0000${item.profileId || ''}`;
+}
+
+function renderBatchPreflightDetail(item) {
+  const isReady = item.status === 'ready';
+  const detail = el('div', {
+    class: `batch-preflight-detail ${isReady ? 'ready' : 'blocked'}`,
+    'data-preflight-status': item.status,
+  });
+  const pending = Array.isArray(item.pendingChecks) ? item.pendingChecks : [];
+  const warnings = Array.isArray(item.warnings) ? item.warnings : [];
+  const blockers = Array.isArray(item.blockers) ? item.blockers : [];
+  const actions = Array.isArray(item.suggestedActions) ? item.suggestedActions : [];
+
+  let badgeLabel = isReady ? 'Pronto' : 'Bloqueado';
+  if (isReady && pending.length) badgeLabel = 'Pronto (com pendências)';
+
+  detail.append(el('div', {}, [
+    el('span', { class: `badge ${isReady ? 'ok' : 'err'}`, text: badgeLabel }),
+    el('span', { text: ` ${item.summary || ''}` }),
+  ]));
+
+  if (blockers.length) {
+    const ul = el('ul');
+    for (const b of blockers) {
+      const subj = b.subject ? ` (${b.subject})` : '';
+      ul.append(el('li', { text: `[${b.code || 'BLOCKED'}]${subj}: ${b.message || ''}` }));
+    }
+    detail.append(ul);
+  }
+  if (warnings.length) {
+    const ul = el('ul');
+    for (const w of warnings) {
+      const subj = w.subject ? ` (${w.subject})` : '';
+      ul.append(el('li', { text: `Aviso [${w.code || 'WARNING'}]${subj}: ${w.message || ''}` }));
+    }
+    detail.append(ul);
+  }
+  if (pending.length) {
+    const ul = el('ul');
+    for (const p of pending) {
+      ul.append(el('li', { text: `Pendente [${p.code || 'PENDING'}]: ${p.message || ''}` }));
+    }
+    detail.append(ul);
+  }
+  if (actions.length) {
+    detail.append(el('div', {
+      class: 'batch-preflight-actions',
+      text: `Próximo passo: ${actions.join(' ')}`,
+    }));
+  }
+  return detail;
 }
 
 async function openBatchExportModal() {
@@ -3482,20 +3550,52 @@ async function openBatchExportModal() {
     toast('Selecione pelo menos um trabalho na tabela para exportar em lote.');
     return;
   }
+  lastBatchFocusEl = document.activeElement;
+  activeBatchModalId += 1;
+  const modalId = activeBatchModalId;
   const plan = await post('/api/queue/plan', { workIds });
-  const idempotencyKey = `batch-ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  if (activeBatchModalId !== modalId) return;
+
   const root = $('#batch-dialog-root');
+  if (!root) return;
+  if (activeBatchKeyHandler) {
+    document.removeEventListener('keydown', activeBatchKeyHandler);
+    activeBatchKeyHandler = null;
+  }
   root.innerHTML = '';
 
+  const isCurrentModal = () => activeBatchModalId === modalId && Boolean(document.getElementById('batch-export-dialog'));
+  let busyState = false;
+  let lastEnqueueAttempt = { sig: null, key: null };
+
   const overlay = el('div', { class: 'media-dialog-overlay', id: 'batch-export-overlay' });
-  const dialog = el('div', { class: 'media-dialog', id: 'batch-export-dialog' });
+  const dialog = el('div', {
+    class: 'media-dialog',
+    id: 'batch-export-dialog',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-labelledby': 'batch-export-title',
+    tabindex: '-1',
+  });
   const head = el('div', { class: 'media-dialog-head' }, [
-    el('h2', { style: 'margin:0;', text: `Exportar em lote (${workIds.length} trabalho(s))` }),
-    el('button', { class: 'secondary', text: 'Fechar', onclick: closeBatchExportModal }),
+    el('h2', { id: 'batch-export-title', style: 'margin:0;', text: `Exportar em lote (${workIds.length} trabalho(s))` }),
+    el('button', { id: 'btn-batch-close', class: 'secondary', text: 'Fechar', onclick: closeBatchExportModal }),
   ]);
 
   const body = el('div', { class: 'media-dialog-body' });
   const unsavedBox = el('div', { id: 'batch-unsaved-box' });
+  const preflightSummaryBox = el('div', { id: 'batch-preflight-summary', role: 'status', 'aria-live': 'polite' });
+  const fb = el('div', { id: 'batch-confirm-feedback', role: 'status', 'aria-live': 'polite' });
+  const rowMap = new Map();
+
+  const clearPreflightDisplay = () => {
+    preflightSummaryBox.innerHTML = '';
+    for (const row of rowMap.values()) {
+      const slot = row.querySelector('.batch-preflight-slot');
+      if (slot) slot.innerHTML = '';
+    }
+  };
+
   const renderUnsaved = () => {
     unsavedBox.innerHTML = '';
     if (hasUnsavedWorkChanges()) {
@@ -3508,6 +3608,8 @@ async function openBatchExportModal() {
             text: 'Salvar trabalho ativo antes de confirmar',
             onclick: async () => {
               await saveWork();
+              if (!isCurrentModal()) return;
+              clearPreflightDisplay();
               closeBatchExportModal();
               await openBatchExportModal();
             },
@@ -3542,8 +3644,13 @@ async function openBatchExportModal() {
       });
       cb.checked = Boolean(opt.available && opt.selectedByDefault);
       cb.disabled = !opt.available;
-      group.append(el('div', { class: 'batch-option-row' }, [
-        el('label', { class: 'inline-check' }, [
+      const row = el('div', {
+        class: 'batch-option-row',
+        'data-work-id': opt.workId,
+        'data-modality': opt.modality,
+        'data-profile-id': opt.profileId,
+      }, [
+        el('label', { class: 'inline-check batch-option-main' }, [
           cb,
           el('span', { class: 'badge muted', text: opt.modalityLabel }),
           el('strong', { text: opt.profileLabel || opt.profileId }),
@@ -3552,60 +3659,216 @@ async function openBatchExportModal() {
         opt.available
           ? el('span', { class: 'badge ok', text: 'disponível' })
           : el('span', { class: 'badge err', text: opt.unavailableReason || 'indisponível' }),
-      ]));
+        el('div', { class: 'batch-preflight-slot', style: 'flex-basis:100%;' }),
+      ]);
+      rowMap.set(batchTupleKey(opt), row);
+      group.append(row);
     }
     groupsBox.append(group);
   }
 
-  const fb = el('div', { id: 'batch-confirm-feedback' });
+  const getSelectedTuples = () => Array.from(dialog.querySelectorAll('.batch-opt-cb:checked')).map((cb) => ({
+    workId: cb.getAttribute('data-work-id'),
+    modality: cb.getAttribute('data-modality'),
+    profileId: cb.getAttribute('data-profile-id'),
+  }));
+
+  const selectionSignature = (items, label) => {
+    const sorted = items.map((it) => batchTupleKey(it)).sort().join('\n');
+    return `${sorted}\u0001${label}`;
+  };
+
+  const validateAndRenderPreflight = (selected, res) => {
+    if (!res || res.ok !== true || res.schemaVersion !== 1 || !Array.isArray(res.items)) {
+      return { valid: false, error: 'Resposta inválida do pré-voo (formato ou versão desconhecida). Tente novamente.' };
+    }
+    const expectedKeys = new Set(selected.map((it) => batchTupleKey(it)));
+    const byKey = new Map();
+    for (const item of res.items) {
+      if (!item || typeof item !== 'object') {
+        return { valid: false, error: 'Resposta inválida do pré-voo (item malformado).' };
+      }
+      const key = batchTupleKey(item);
+      if (!expectedKeys.has(key) || byKey.has(key)) {
+        return { valid: false, error: 'Resposta do pré-voo não corresponde exatamente à seleção atual. Tente novamente.' };
+      }
+      byKey.set(key, item);
+    }
+    if (byKey.size !== expectedKeys.size) {
+      return { valid: false, error: 'Resposta do pré-voo incompleta para a seleção atual. Tente novamente.' };
+    }
+
+    clearPreflightDisplay();
+    let readyCount = 0;
+    let blockedCount = 0;
+    let pendingCount = 0;
+    for (const key of expectedKeys) {
+      const item = byKey.get(key);
+      if (item.status === 'ready') readyCount += 1;
+      else blockedCount += 1;
+      if (Array.isArray(item.pendingChecks) && item.pendingChecks.length) pendingCount += 1;
+      const row = rowMap.get(key);
+      const slot = row?.querySelector('.batch-preflight-slot');
+      if (slot) slot.append(renderBatchPreflightDetail(item));
+    }
+
+    const summaryCls = blockedCount > 0 ? 'err' : (pendingCount > 0 ? 'warn' : 'ok');
+    let summaryText = `Pré-voo: ${readyCount} destino(s) pronto(s), ${blockedCount} bloqueado(s).`;
+    if (blockedCount === 0 && pendingCount > 0) {
+      summaryText = `Pré-voo: ${readyCount} destino(s) pronto(s) nas checagens executadas (${pendingCount} com checagens pendentes).`;
+    }
+    preflightSummaryBox.append(el('div', { class: `alert-box ${summaryCls}`, text: summaryText }));
+    return { valid: true, allReady: blockedCount === 0 && res.ready === true, readyCount, blockedCount };
+  };
+
+  const verifyBtn = el('button', {
+    id: 'btn-batch-verify',
+    class: 'secondary',
+    text: 'Verificar seleção',
+  });
   const confirmBtn = el('button', {
     id: 'btn-batch-confirm',
     class: 'ok-btn',
     text: 'Confirmar e enfileirar lote',
-    onclick: async () => {
-      fb.innerHTML = '';
-      const selected = Array.from(dialog.querySelectorAll('.batch-opt-cb:checked')).map((cb) => ({
-        workId: cb.getAttribute('data-work-id'),
-        modality: cb.getAttribute('data-modality'),
-        profileId: cb.getAttribute('data-profile-id'),
-      }));
-      if (!selected.length) {
-        fb.append(el('div', { class: 'alert-box err', text: 'Selecione pelo menos uma peça disponível.' }));
-        return;
+  });
+
+  const setBusy = (busy, message = '') => {
+    busyState = busy;
+    verifyBtn.disabled = busy;
+    confirmBtn.disabled = busy;
+    if (busy && message) {
+      preflightSummaryBox.innerHTML = '';
+      preflightSummaryBox.append(el('div', { class: 'alert-box warn', text: message }));
+    }
+  };
+
+  verifyBtn.onclick = async () => {
+    if (busyState) return;
+    fb.innerHTML = '';
+    const selected = getSelectedTuples();
+    if (!selected.length) {
+      fb.append(el('div', { class: 'alert-box err', text: 'Selecione pelo menos uma peça disponível.' }));
+      return;
+    }
+    setBusy(true, 'Verificando destinos selecionados...');
+    try {
+      const res = await post('/api/queue/preflight', { items: selected });
+      if (!isCurrentModal()) return;
+      const check = validateAndRenderPreflight(selected, res);
+      if (!check.valid) {
+        preflightSummaryBox.innerHTML = '';
+        preflightSummaryBox.append(el('div', { class: 'alert-box err', text: check.error }));
       }
-      confirmBtn.disabled = true;
-      try {
-        const res = await post('/api/queue/enqueue', {
-          items: selected,
-          idempotencyKey,
-          label: labelInput.value.trim() || undefined,
-        });
+    } catch (err) {
+      if (!isCurrentModal()) return;
+      preflightSummaryBox.innerHTML = '';
+      preflightSummaryBox.append(el('div', {
+        class: 'alert-box err',
+        text: `Falha ao consultar pré-voo (${err.message}). Verifique a conexão e tente novamente.`,
+      }));
+    } finally {
+      if (isCurrentModal()) setBusy(false);
+    }
+  };
+
+  confirmBtn.onclick = async () => {
+    if (busyState) return;
+    fb.innerHTML = '';
+    const selected = getSelectedTuples();
+    const label = labelInput.value.trim();
+    if (!selected.length) {
+      fb.append(el('div', { class: 'alert-box err', text: 'Selecione pelo menos uma peça disponível.' }));
+      return;
+    }
+    setBusy(true, 'Validando seleção no pré-voo antes de enfileirar...');
+    let preflightRes;
+    try {
+      preflightRes = await post('/api/queue/preflight', { items: selected });
+    } catch (err) {
+      if (!isCurrentModal()) return;
+      preflightSummaryBox.innerHTML = '';
+      fb.append(el('div', {
+        class: 'alert-box err',
+        text: `Não foi possível validar o pré-voo (${err.message}). Tente confirmar novamente.`,
+      }));
+      setBusy(false);
+      return;
+    }
+    if (!isCurrentModal()) return;
+
+    const check = validateAndRenderPreflight(selected, preflightRes);
+    if (!check.valid) {
+      preflightSummaryBox.innerHTML = '';
+      fb.append(el('div', { class: 'alert-box err', text: check.error }));
+      setBusy(false);
+      return;
+    }
+    if (!check.allReady) {
+      fb.append(el('div', {
+        class: 'alert-box err',
+        text: 'Enfileiramento bloqueado: corrija os impedimentos destacados ou desmarque os itens bloqueados antes de confirmar.',
+      }));
+      setBusy(false);
+      return;
+    }
+
+    const sig = selectionSignature(selected, label);
+    if (lastEnqueueAttempt.sig !== sig) {
+      lastEnqueueAttempt = {
+        sig,
+        key: `batch-ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      };
+    }
+
+    try {
+      const res = await post('/api/queue/enqueue', {
+        items: selected,
+        idempotencyKey: lastEnqueueAttempt.key,
+        label: label || undefined,
+      });
+      const msg = res.deduplicated
+        ? `Lote ${res.batch.batchId} já enfileirado (requisição idempotente).`
+        : `Lote ${res.batch.batchId} enfileirado (${res.batch.counts.total} peça(s)).`;
+      if (isCurrentModal()) {
         closeBatchExportModal();
-        toast(res.deduplicated
-          ? `Lote ${res.batch.batchId} já enfileirado (requisição idempotente).`
-          : `Lote ${res.batch.batchId} enfileirado (${res.batch.counts.total} peça(s)).`);
+        toast(msg);
         setMode('queue');
         await loadQueue();
-      } catch (err) {
-        fb.append(el('div', { class: 'alert-box err', text: err.message }));
-        confirmBtn.disabled = false;
+      } else {
+        toast(msg);
+        loadQueue().catch(() => {});
       }
-    },
-  });
+    } catch (err) {
+      if (!isCurrentModal()) return;
+      fb.append(el('div', { class: 'alert-box err', text: `Falha ao enfileirar lote: ${err.message}` }));
+      setBusy(false);
+    }
+  };
+
+  activeBatchKeyHandler = (ev) => {
+    if (ev.key === 'Escape' && isCurrentModal()) {
+      ev.preventDefault();
+      closeBatchExportModal();
+    }
+  };
+  document.addEventListener('keydown', activeBatchKeyHandler);
 
   body.append(
     unsavedBox,
-    el('label', {}, 'Nome do lote (opcional)', labelInput),
+    el('label', {}, ['Nome do lote (opcional)', labelInput]),
+    preflightSummaryBox,
     groupsBox,
     fb,
     el('div', { class: 'row', style: 'margin-top:12px;' }, [
+      verifyBtn,
       confirmBtn,
-      el('button', { class: 'secondary', text: 'Cancelar', onclick: closeBatchExportModal }),
+      el('button', { id: 'btn-batch-cancel', class: 'secondary', text: 'Cancelar', onclick: closeBatchExportModal }),
     ]),
   );
   dialog.append(head, body);
   overlay.append(dialog);
   root.append(overlay);
+  dialog.focus();
 }
 
 function scheduleQueuePoll(hasActive) {
