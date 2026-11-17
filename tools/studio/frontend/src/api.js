@@ -3,6 +3,7 @@ export async function apiGet(url) {
   const data = await res.json();
   if (!res.ok || data.ok === false) {
     const err = new Error(data.error || `HTTP ${res.status}`);
+    err.status = res.status;
     err.payload = data;
     throw err;
   }
@@ -18,6 +19,7 @@ export async function apiPost(url, body) {
   const data = await res.json();
   if (!res.ok || data.ok === false) {
     const err = new Error(data.error || `HTTP ${res.status}`);
+    err.status = res.status;
     err.payload = data;
     throw err;
   }

@@ -6,6 +6,7 @@ import { neutralTheme } from '@astryxdesign/theme-neutral/built';
 import './styles/studio-astryx.css';
 import { WorksAndProjectsTab } from './components/WorksAndProjectsTab.jsx';
 import { ProductionQueueTab } from './components/ProductionQueueTab.jsx';
+import { ReviewPackagePanel } from './components/ReviewPackagePanel.jsx';
 
 function mountAstryxTab({ containerId, legacyId, flagName, Component }) {
   const container = document.getElementById(containerId);
@@ -43,6 +44,12 @@ function mountAstryxStudioPilots() {
     legacyId: 'queue-legacy-root',
     flagName: '__studioAstryxQueueActive',
     Component: ProductionQueueTab,
+  });
+  mountAstryxTab({
+    containerId: 'review-package-astryx-root',
+    legacyId: 'review-package-legacy-root',
+    flagName: '__studioAstryxReviewPackageActive',
+    Component: ReviewPackagePanel,
   });
 }
 

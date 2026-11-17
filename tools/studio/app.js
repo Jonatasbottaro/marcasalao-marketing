@@ -455,7 +455,9 @@ function applyOpenedWork(data) {
   catalog = (data.listing && data.listing.profiles) || [];
   cCatalog = catalog;
 
-  for (const sel of ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status', '#r-editorial-feedback', '#r-package-status']) {
+  const feedbackSelectors = ['#preview-output', '#c-preview-output', '#m-preview-output', '#export-status', '#c-export-status', '#m-export-status', '#r-editorial-feedback'];
+  if (!isAstryxReviewPackageActive()) feedbackSelectors.push('#r-package-status');
+  for (const sel of feedbackSelectors) {
     const node = $(sel);
     if (node) node.innerHTML = '';
   }
@@ -2930,7 +2932,9 @@ async function init() {
   $('#conn-project-select').addEventListener('change', () => fillConnectionSelection().catch((e) => toast(e.message)));
   $('#btn-r-refresh').addEventListener('click', () => loadReviewOverview().catch((e) => toast(e.message)));
   $('#btn-r-save-editorial').addEventListener('click', () => saveEditorialSheet().catch((e) => toast(e.message)));
-  $('#btn-r-build-package').addEventListener('click', () => buildPackageZip().catch((e) => toast(e.message)));
+  if (!isAstryxReviewPackageActive()) {
+    $('#btn-r-build-package')?.addEventListener('click', () => buildPackageZip().catch((e) => toast(e.message)));
+  }
 
   await initCarousel();
   await initMotion();
@@ -2940,6 +2944,22 @@ async function init() {
 }
 
 // ---- Revisão & Entrega ----
+function isAstryxReviewPackageActive() {
+  return Boolean(window.__studioAstryxReviewPackageActive);
+}
+
+function syncAstryxReviewPackageState(workId, review, pkg) {
+  const payload = {
+    workId: workId || null,
+    review: review || null,
+    packageDelivery: pkg || null,
+  };
+  window.__studioReviewPackageState = payload;
+  if (isAstryxReviewPackageActive()) {
+    window.dispatchEvent(new CustomEvent('studio:review-package-sync', { detail: payload }));
+  }
+}
+
 function reviewStatusClass(status) {
   if (status === 'approved') return 'ok';
   if (status === 'changes_requested' || status === 'unavailable') return 'err';
@@ -3138,6 +3158,7 @@ function renderReviewPanel(review, pkg) {
     noWork.hidden = false;
     content.hidden = true;
     reviewState = null;
+    syncAstryxReviewPackageState(null, null, null);
     return;
   }
   noWork.hidden = true;
@@ -3375,6 +3396,11 @@ function renderReviewPanel(review, pkg) {
     const hist = renderHistoryDetails(p.decisionHistory, false);
     if (hist) card.append(hist);
     pList.append(card);
+  }
+
+  if (isAstryxReviewPackageActive()) {
+    syncAstryxReviewPackageState(currentWork.id, review, pkg || null);
+    return;
   }
 
   // Checklist do ZIP
@@ -4641,6 +4667,18 @@ window.StudioBridge = {
   checkReadiness: () => loadReadiness(),
   loadProjects: () => loadProjects(),
   openQueueWorkReview: (workId) => openQueueWorkReview(workId),
+  applyReviewPackageResult: (workId, data) => {
+    if (currentWork && currentWork.id === workId && data) {
+      renderReviewPanel(data, data.packageDelivery || null);
+    }
+    loadWorks().catch(() => {});
+  },
+  refreshReviewOverview: (workId) => {
+    if (currentWork && currentWork.id === workId) {
+      return loadReviewOverview();
+    }
+    return Promise.resolve(null);
+  },
   updateQueueNavBadge: (pendingCount) => {
     const navBadge = $('#queue-nav-badge');
     if (navBadge) {

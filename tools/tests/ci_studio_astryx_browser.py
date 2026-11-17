@@ -11,14 +11,17 @@ Uso local:
   python tools/tests/ci_studio_astryx_browser.py
 """
 
+import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
 import sys
 import time
 import urllib.request
+import zipfile
 
 from playwright.sync_api import sync_playwright
 
@@ -80,6 +83,7 @@ def run_browser_regression():
     port = _free_port()
     base_url = f'http://127.0.0.1:{port}'
     work_id = 'ci-astryx-piloto-01'
+    second_work = 'ci-astryx-piloto-02'
     template_id = 'ci-modelo-astryx'
     _cleanup_test_artifacts(work_id, template_id)
 
@@ -102,6 +106,7 @@ def run_browser_regression():
             readiness_requests = []
             create_requests = []
             retry_requests = []
+            package_requests = []
             preflight_requests = []
             enqueue_requests = []
             allow_expected_409 = [False]
@@ -152,6 +157,7 @@ def run_browser_regression():
                 readiness_requests.append(req.url) if '/api/readiness' in req.url else None,
                 create_requests.append(req.url) if '/api/works/create' in req.url else None,
                 retry_requests.append((req.url, req.post_data)) if '/api/queue/retry' in req.url else None,
+                package_requests.append((req.url, req.post_data)) if '/api/works/package' in req.url and req.method == 'POST' else None,
                 preflight_requests.append((req.url, req.post_data)) if '/api/queue/preflight' in req.url else None,
                 enqueue_requests.append((req.url, req.post_data)) if '/api/queue/enqueue' in req.url else None,
             ))
@@ -356,6 +362,7 @@ def run_browser_regression():
                 page.locator('#btn-q-refresh').click()
 
             # Enfileira 1 lote de teste via API oficial e valida na UI da fila
+            batch_label = f'Lote CI Astryx {int(time.time())}'
             enqueue_res = page.evaluate(f"""async () => {{
                 const plan = await fetch('/api/queue/plan', {{
                     method: 'POST',
@@ -367,7 +374,7 @@ def run_browser_regression():
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify({{
-                        label: 'Lote CI Astryx',
+                        label: '{batch_label}',
                         items: [{{ workId: '{work_id}', modality: firstOpt.modality, profileId: firstOpt.profileId }}]
                     }})
                 }}).then(r => r.json());
@@ -378,7 +385,7 @@ def run_browser_regression():
             with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/queue') and r.status == 200, timeout=20000):
                 page.locator('#btn-q-refresh').click()
 
-            page.locator('#q-batches-list').get_by_text('Lote CI Astryx').wait_for(state='visible', timeout=20000)
+            page.locator('#q-batches-list').get_by_text(batch_label).first.wait_for(state='visible', timeout=20000)
             page.locator('#q-items-list').get_by_text(work_id).first.wait_for(state='visible', timeout=20000)
 
             # Filtro por trabalho preserva selecao e responde 200
@@ -468,6 +475,223 @@ def run_browser_regression():
             page.locator('#active-work-bar').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#active-work-title').inner_text()
 
+            # 6. Painel de pacote ZIP em React/Astryx na aba Revisao & Entrega
+            print('[ci_studio_astryx_browser] Etapa 6: painel ZIP em Revisao & Entrega...', flush=True)
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            pkg_legacy_hidden = page.locator('#review-package-legacy-root').get_attribute('hidden')
+            assert pkg_legacy_hidden is not None, '#review-package-legacy-root deve estar oculto quando React monta'
+            page.locator('#r-package-checklist').wait_for(state='visible', timeout=20000)
+            page.locator('#btn-r-build-package').wait_for(state='visible', timeout=20000)
+
+            # Aprova a peça renderizada para entrega local (o item da fila nasce pending_review).
+            profile_id = page.evaluate(
+                """() => {
+                    const el = [...document.querySelectorAll('#r-package-checklist input[data-pkg-type="piece"]')]
+                        .find(i => i.dataset.expectedVersion);
+                    return el ? el.dataset.profile : null;
+                }"""
+            )
+            assert profile_id, 'Nenhuma peça renderizada disponível para aprovar'
+            approve_res = page.evaluate(
+                """async ({workId, profileId}) => {
+                    const review = await fetch('/api/works/review?id=' + encodeURIComponent(workId)).then(r => r.json());
+                    const piece = review.pieces.find(p => p.modality === 'video' && p.profileId === profileId);
+                    if (!piece) return {status: 0, versionId: null, body: {error: 'piece not found'}};
+                    const res = await fetch('/api/works/review/decide', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            workId,
+                            targetType: 'piece',
+                            modality: 'video',
+                            profileId,
+                            decision: 'approved_for_local_delivery',
+                            expectedVersionId: piece.deliveryVersionId,
+                            expectedDraftFingerprint: piece.currentDraftFingerprint,
+                        }),
+                    });
+                    return {status: res.status, versionId: piece.deliveryVersionId, body: await res.json()};
+                }""",
+                {'workId': work_id, 'profileId': profile_id},
+            )
+            assert approve_res['status'] == 200, f'Falha ao aprovar peça: {approve_res}'
+            approved_version_id = approve_res['versionId']
+            assert approved_version_id, f'Aprovação sem deliveryVersionId: {approve_res}'
+
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/works/review') and r.status == 200, timeout=20000):
+                page.locator('#btn-r-refresh').click()
+            page.wait_for_function(
+                "sel => { const el = document.querySelector(sel); return el && el.checked; }",
+                arg=f'#r-package-checklist input[data-pkg-type="piece"][data-profile="{profile_id}"]',
+                timeout=20000,
+            )
+
+            # Um clique gera exatamente um POST /api/works/package.
+            before_pkg = len(package_requests)
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/works/package') and r.status == 200, timeout=30000):
+                page.locator('#btn-r-build-package').click()
+            new_pkg = package_requests[before_pkg:]
+            assert len(new_pkg) == 1, f'Esperado exatamente 1 POST /api/works/package, obtidos {len(new_pkg)}'
+            pkg_payload = json.loads(new_pkg[0][1] or '{}')
+            assert any(
+                p.get('profileId') == profile_id and p.get('expectedVersionId') == approved_version_id
+                for p in pkg_payload.get('pieces', [])
+            ), f'Payload inesperado em POST /api/works/package: {pkg_payload}'
+
+            # Baixa o ZIP e confere o SHA-256 informado pelo Studio.
+            page.locator('#r-package-result').get_by_text('Pacote ZIP promovido').wait_for(state='visible', timeout=20000)
+            result_text = page.locator('#r-package-result').inner_text()
+            pkg_match = re.search(r'Pacote ZIP promovido: (\S+)', result_text)
+            assert pkg_match, f'Resultado sem packageId: {result_text}'
+            package_id = pkg_match.group(1)
+            sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', result_text)
+            assert sha_match, f'Resultado sem SHA-256: {result_text}'
+            studio_sha = sha_match.group(1)
+            with page.expect_download(timeout=30000) as dl_info:
+                page.locator('#btn-r-download-zip').click()
+            zip_path = dl_info.value.path()
+            with open(zip_path, 'rb') as fh:
+                actual_sha = hashlib.sha256(fh.read()).hexdigest()
+            assert actual_sha == studio_sha, (
+                f'SHA-256 do ZIP baixado ({actual_sha}) difere do Studio ({studio_sha})'
+            )
+
+            # Manifesto: arquivos íntegros e peça amarrada à versão aprovada.
+            with zipfile.ZipFile(zip_path, 'r') as zf:
+                manifest = json.loads(zf.read('package-manifest.json').decode('utf-8'))
+                for item in manifest['files']:
+                    data = zf.read(item['archivePath'])
+                    assert hashlib.sha256(data).hexdigest() == item['sha256'], (
+                        f"Arquivo {item['archivePath']} não confere com o manifesto"
+                    )
+                pkg_piece = next(
+                    (p for p in manifest['pieces'] if p['profileId'] == profile_id),
+                    None,
+                )
+                assert pkg_piece is not None, f'Peça {profile_id} ausente no manifesto'
+                assert pkg_piece['deliveryVersionId'] == approved_version_id, (
+                    f"Versão empacotada {pkg_piece['deliveryVersionId']} difere da aprovada {approved_version_id}"
+                )
+                assert any(name.lower().endswith('.mp4') for name in zf.namelist()), (
+                    f'ZIP sem MP4 da peça renderizada: {zf.namelist()}'
+                )
+                assert any(name.lower().endswith('.srt') for name in zf.namelist()), (
+                    f'ZIP sem SRT da peça renderizada: {zf.namelist()}'
+                )
+
+            # 7. HTTP 409 esperado: versão obsoleta no payload gera conflito na rede e no painel.
+            print('[ci_studio_astryx_browser] Etapa 7: conflito HTTP 409 e ZIP valido preservado...', flush=True)
+            stale_version = 'versao-obsoleta-para-prova-409'
+
+            def force_stale_version(route):
+                payload = json.loads(route.request.post_data or '{}')
+                for piece in payload.get('pieces', []):
+                    piece['expectedVersionId'] = stale_version
+                route.continue_(post_data=json.dumps(payload))
+
+            page.route('**/api/works/package', force_stale_version)
+            allow_expected_409[0] = True
+            try:
+                with page.expect_response(
+                    lambda r: r.url.split('?')[0].endswith('/api/works/package') and r.status == 409,
+                    timeout=30000,
+                ) as conflict_resp:
+                    page.locator('#btn-r-build-package').click()
+                assert conflict_resp.value.status == 409, 'Conflito de versao nao retornou HTTP 409'
+                page.locator('#r-package-status').get_by_text('Conflito de versão', exact=False).wait_for(
+                    state='visible', timeout=20000
+                )
+            finally:
+                allow_expected_409[0] = False
+                page.unroute('**/api/works/package', force_stale_version)
+
+            # O pacote valido anterior permanece promovido, com o mesmo packageId e SHA-256.
+            page.locator('#btn-r-download-zip').wait_for(state='visible', timeout=20000)
+            preserved_text = page.locator('#r-package-result').inner_text()
+            assert package_id in preserved_text, f'packageId {package_id} nao preservado apos 409'
+            assert studio_sha in preserved_text, f'SHA-256 {studio_sha} nao preservado apos 409'
+            with page.expect_download(timeout=30000) as preserved_dl:
+                page.locator('#btn-r-download-zip').click()
+            preserved_path = preserved_dl.value.path()
+            with open(preserved_path, 'rb') as fh:
+                preserved_sha = hashlib.sha256(fh.read()).hexdigest()
+            assert preserved_sha == studio_sha, (
+                f'ZIP apos 409 divergiu: {preserved_sha} != {studio_sha}'
+            )
+
+            # 8. Troca de trabalho com geracao em andamento: dispara o clique e troca antes da resposta.
+            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
+            page.locator('#btn-r-build-package').click(no_wait_after=True)
+            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
+                state='visible', timeout=10000
+            )
+            # Cria o trabalho B enquanto a geracao em A ainda esta em voo, em seguida troca de trabalho.
+            page.evaluate(
+                """async ({workId}) => {
+                    await fetch('/api/works/create', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            id: workId,
+                            name: 'CI Astryx Piloto 02',
+                            project: 'platform/examples/projects/marca-salao-social.project.json',
+                            template: 'blank',
+                            overwrite: true,
+                        }),
+                    });
+                }""",
+                {'workId': second_work},
+            )
+            page.locator('#mode-home-btn').click()
+            row_b = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
+            row_b.wait_for(state='visible', timeout=20000)
+            row_b.click()
+            page.locator('#mode-review-btn').click()
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            page.locator('#mode-home-btn').click()
+            row_a = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
+            row_a.wait_for(state='visible', timeout=20000)
+            row_a.click()
+            page.locator('#mode-review-btn').click()
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            # A geracao disparada antes da troca pode ter promovido um ZIP novo; usa o SHA corrente do painel.
+            switched_result = page.locator('#r-package-result').inner_text()
+            switched_sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', switched_result)
+            assert switched_sha_match, f'Resultado apos troca sem SHA-256: {switched_result}'
+            current_sha = switched_sha_match.group(1)
+
+            # 9. Painel legado sem bundle: bloqueia o script React e valida o download da UI classica.
+            print('[ci_studio_astryx_browser] Etapa 9: download pelo painel legado sem bundle...', flush=True)
+            legacy_page = context.new_page()
+            legacy_errors = []
+            legacy_page.on('pageerror', lambda err: legacy_errors.append(str(err)))
+            legacy_page.route('**/static/frontend/**', lambda route: route.abort())
+            legacy_page.goto(base_url, wait_until='networkidle')
+            legacy_page.locator('#home-legacy-root').wait_for(state='visible', timeout=20000)
+            assert legacy_page.locator('#home-legacy-root').get_attribute('hidden') is None, (
+                'Painel legado deve estar ativo quando o bundle React nao carrega'
+            )
+            legacy_row = legacy_page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
+            legacy_row.wait_for(state='visible', timeout=20000)
+            legacy_row.click()
+            # O Reabrir legado chama setMode('video') de forma assíncrona; espera antes de trocar para Revisão.
+            legacy_page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#mode-review-btn').click()
+            legacy_page.locator('#mode-review').wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#active-work-title').get_by_text(work_id).wait_for(state='visible', timeout=20000)
+            legacy_page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            with legacy_page.expect_download(timeout=30000) as legacy_dl:
+                legacy_page.locator('#btn-r-download-zip').click()
+            legacy_path = legacy_dl.value.path()
+            with open(legacy_path, 'rb') as fh:
+                legacy_sha = hashlib.sha256(fh.read()).hexdigest()
+            assert legacy_sha == current_sha, (
+                f'ZIP do painel legado divergiu: {legacy_sha} != {current_sha}'
+            )
+            assert not legacy_errors, f'Excecoes JS no painel legado: {legacy_errors}'
+            legacy_page.close()
+
             assert not page_errors, f'Excecoes JS acumuladas: {page_errors}'
             assert not console_errors, f'Erros de console acumulados: {console_errors}'
             assert not http_error_responses, (
@@ -523,6 +747,7 @@ def run_browser_regression():
         except subprocess.TimeoutExpired:
             proc.kill()
         _cleanup_test_artifacts(work_id, template_id, enqueue_res.get('batch', {}).get('batchId') if 'enqueue_res' in locals() else None)
+        _cleanup_test_artifacts(second_work, template_id)
 
     print('Regressao de navegador Astryx concluida com sucesso (0 excecoes JS).')
 
