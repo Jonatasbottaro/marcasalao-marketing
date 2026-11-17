@@ -1,0 +1,4 @@
+campanha,cenario,destino_testado,data_hora_teste,url_final_apos_redirects,utms_preservados,acao_corresponde_cta,resultado_esperado,resultado_observado,acao_se_falhar,status_teste
+ns-001,link_direto,https://marcaselao.com.br,2026-11-20T10:00:00-03:00,https://marcaselao.com.br,nao_aplicavel,sim,Página carrega; ação corresponde ao CTA,Página carregou em celular; apresenta agenda do salão,-,aprovado
+ns-002,bio_compartilhada,https://marcaselao.com.br,2026-11-20T11:00:00-03:00,https://marcaselao.com.br,nao,sim,Link de bio leva ao site; UTMs do perfil preservados,Link de bio carregou; UTMs do perfil não foram preservados (rede não reporta),Confirmar com titular se UTMs do perfil são exigidos; ajustar link de bio se necessário,reprovado
+ns-001,sem_link_clicavel,(nenhum),2026-11-20T12:00:00-03:00,(nenhum),nao_aplicavel,nao,Sem destino clicável; CTA apenas de texto,Nenhum destino para testar; CTA é de texto apenas,-,pendente
