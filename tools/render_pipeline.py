@@ -94,18 +94,23 @@ def run_bridge_case(root, case_path, assets_path=None, asset_manifest_path=None,
     if visual_style_path:
         cmd.extend(['--visual-style', visual_style_path])
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True,
+        # Use encoding='utf-8' to avoid cp1252 issues on Windows
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8',
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError('ponte de validacao excedeu o tempo limite')
     if res.returncode == 2:
         raise render_local.InputFileError('arquivo de entrada ilegivel ou JSON invalido')
     if res.returncode not in (0, 3):
-        raise build_video.DeliveryError('ponte de validacao falhou de forma inesperada')
+        # Include stderr in error for debugging
+        stderr_preview = res.stderr[-500:] if res.stderr else ''
+        raise build_video.DeliveryError(f'ponte de validacao falhou de forma inesperada (exit {res.returncode}): {stderr_preview}')
+    if not res.stdout:
+        raise build_video.DeliveryError('ponte nao produziu saida no stdout')
     try:
         verdict = json.loads(res.stdout)
-    except ValueError:
-        raise build_video.DeliveryError('veredito da ponte ilegivel')
+    except ValueError as exc:
+        raise build_video.DeliveryError(f'veredito da ponte ilegivel: {exc}')
     return verdict
 
 

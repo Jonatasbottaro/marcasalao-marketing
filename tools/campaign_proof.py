@@ -14,6 +14,7 @@ Uso (a partir da raiz do checkout):
     python tools/campaign_proof.py verify <pedido.json>
     python tools/campaign_proof.py render <pedido.json> --profile <perfil> --output-dir <dir>
     python tools/campaign_proof.py review <pedido.json> [--output <pagina.html>]
+    python tools/campaign_proof.py run <pedido.json> --profile <perfil> --output-dir <dir>
 
 Com --json em qualquer subcomando, o resultado e emitido somente como JSON
 no stdout. Codigos de saida: 0 sucesso; 1 falha de entrega/render;
@@ -322,7 +323,9 @@ def _collect_media(request: dict) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 
 def cmd_prepare(request_path: str, output_dir: str, root: str) -> dict:
-    """Prepara mídia sintética e valida o pedido. Devolve relatório."""
+    """Prepara mídia sintética nos caminhos referenciados pelo pedido e valida.
+    Devolve relatório. Preserva o pedido original; as mídias são geradas nos
+    caminhos declarados em media[].path para que o render as encontre."""
     request = _load_json(request_path, root, "pedido")
     errors = validate_video_request(request, root)
     if errors:
@@ -344,8 +347,13 @@ def cmd_prepare(request_path: str, output_dir: str, root: str) -> dict:
     for scene in request.get("scenes", []):
         media_id = scene["mediaId"]
         media = media_index[media_id]
-        target_name = f"{media_id}.png"
-        target_abs = os.path.join(abs_output, target_name)
+        # Gera o asset no caminho exato referenciado pelo pedido (media.path)
+        target_abs = render_local.fs_path(os.path.join(root, media["path"]))
+        target_dir = os.path.dirname(target_abs)
+        if not render_local.contained(root, target_dir):
+            errors.append(ProofError("MEDIA_PATH_FORA_RAIZ", media["path"]))
+            continue
+        os.makedirs(target_dir, exist_ok=True)
         write_scene_png(target_abs, project_id, media_id, 1)
         if not os.path.isfile(target_abs):
             errors.append(ProofError("MEDIA_AUSENTE", media_id))
@@ -441,6 +449,9 @@ def cmd_render(request_path: str, profile: str, output_dir: str,
     if not render_local.contained(root, output_dir):
         raise ProofError("SAIDA_FORA_RAIZ", output_dir)
 
+    # Carrega o pedido para calcular duração total
+    request = _load_json(request_path, root, "pedido")
+
     result = {
         "ok": False,
         "operation": "render",
@@ -464,7 +475,7 @@ def cmd_render(request_path: str, profile: str, output_dir: str,
 
     abs_request = render_local.fs_path(os.path.join(root, request_path))
     cmd = [
-        "python", "tools/produce_video.py",
+        sys.executable, "tools/produce_video.py",
         "--input", abs_request,
         "--profile", profile,
         "--output-dir", abs_output,
@@ -531,8 +542,20 @@ def total_duration_s(request: dict) -> int:
     return sum(int(s["durationMs"]) for s in request.get("scenes", [])) // 1000
 
 
-def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
-    """Gera a página HTML de revisão local a partir dos resultados."""
+def html_escape(text: str) -> str:
+    """Escapa caracteres especiais para HTML."""
+    return (str(text)
+        .replace("&", "&")
+        .replace("<", "<")
+        .replace(">", ">")
+        .replace('"', """)
+        .replace("'", "'"))
+
+
+def cmd_review(request_path: str, output_html: str | None, root: str,
+               render_result: dict | None = None) -> dict:
+    """Gera a página HTML de revisão local a partir dos resultados.
+    Se render_result for fornecido, inclui player de vídeo, SRT e inspeção real."""
     request = _load_json(request_path, root, "pedido")
     errors = validate_video_request(request, root)
 
@@ -545,24 +568,79 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
             render_local.contained(root, media_path)
             and os.path.isfile(render_local.fs_path(os.path.join(root, media_path)))
         )
+        caption = html_escape(scene.get('caption', ''))
         scenes_html += f"""
         <tr>
             <td>{i}</td>
-            <td><code>{scene.get('id','')}</code></td>
+            <td><code>{html_escape(scene.get('id',''))}</code></td>
             <td>{scene.get('durationMs','')} ms</td>
-            <td>{scene.get('narrativeFunction','')}</td>
-            <td>{media.get('mediaId', scene.get('mediaId',''))}</td>
-            <td>{media.get('type','')}</td>
+            <td>{html_escape(scene.get('narrativeFunction',''))}</td>
+            <td>{html_escape(media.get('mediaId', scene.get('mediaId','')))}</td>
+            <td>{html_escape(media.get('type',''))}</td>
             <td>{"SIM" if media_exists else "NÃO (faltante)"}</td>
-            <td>{scene.get('caption','')}</td>
+            <td>{caption}</td>
         </tr>
         """
+
+    # Seção de render: usa resultado real se disponível
+    render_section = ""
+    if render_result and render_result.get("ok"):
+        mp4_rel = render_result.get("mp4Path", "")
+        ffprobe = render_result.get("ffprobe", {})
+        profile_status = render_result.get("profileStatus", "desconhecido")
+        profile_error = render_result.get("profileError")
+        srt_path = ""
+        if mp4_rel:
+            mp4_dir = os.path.dirname(mp4_rel)
+            import glob
+            srt_candidates = glob.glob(os.path.join(root, mp4_dir, "*.srt"))
+            if srt_candidates:
+                srt_path = render_local.rel(root, srt_candidates[0])
+
+        render_section = f"""
+    <div class="section">
+      <h2>Resultado do Render</h2>
+      <div class="grid">
+        <div class="card"><h3>Status</h3><p><span class="badge {'ok' if profile_status == 'completed' else 'blocked'}">{profile_status}</span></p></div>
+        <div class="card"><h3>Duração</h3><p>{ffprobe.get('duration', 'N/A')} s</p></div>
+        <div class="card"><h3>Resolução</h3><p>{ffprobe.get('width', 'N/A')}x{ffprobe.get('height', 'N/A')}</p></div>
+        <div class="card"><h3>FPS</h3><p>{ffprobe.get('fps', 'N/A')}</p></div>
+        <div class="card"><h3>Codec</h3><p>{ffprobe.get('codec', 'N/A')}</p></div>
+        <div class="card"><h3>Áudio</h3><p>{'Nenhuma faixa (OK)' if ffprobe.get('audioStreams', 1) == 0 else '⚠️ Faixas de áudio presentes'}</p></div>
+      </div>
+      <div class="section">
+        <h3>Player de vídeo</h3>
+        <div class="mp4-wrap">
+          <video controls preload="metadata" style="max-width:100%;height:auto;">
+            <source src="{mp4_rel}" type="video/mp4">
+            Seu navegador não suporta vídeo HTML5.
+          </video>
+        </div>
+        <p><strong>MP4:</strong> <a href="{mp4_rel}" target="_blank">{mp4_rel}</a></p>
+        {f'<p><strong>SRT:</strong> <a href="{srt_path}" target="_blank">{srt_path}</a></p>' if srt_path else '<p class="note">SRT não encontrado na pasta de entrega.</p>'}
+        <p><strong>Inspeção FFprobe:</strong></p>
+        <pre>{json.dumps(ffprobe, ensure_ascii=False, indent=2)}</pre>
+      </div>
+    """
+    else:
+        render_section = f"""
+    <div class="section">
+      <h2>Resultado do Render</h2>
+      <div class="note">
+        <strong>Render:</strong> pendente de ferramenta ffmpeg/ffprobe nesta estação.
+        Quando disponível, execute:
+        <code>python tools/produce_video.py --input {html_escape(request_path)} --profile instagram-reels-video --output-dir <entrega> --json</code>
+      </div>
+    </div>
+    """
+
+    repeat_cmd = f"""python tools/campaign_proof.py run {html_escape(request_path)} --profile instagram-reels-video --output-dir .workspace/tmp/prova-campanha-ns001-ns002/{html_escape(request.get('id','campanha'))}"""
 
     html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>Revisão de Prova — {request.get('id','campanha')}</title>
+<title>Revisão de Prova — {html_escape(request.get('id','campanha'))}</title>
 <style>
   body{{font-family:sans-serif;background:#f5f7fa;color:#111;margin:0;padding:24px;}}
   .container{{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);}}
@@ -574,6 +652,7 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   th{{background:#eef4fb;}}
   .section{{margin:24px 0;}}
   .section h2{{font-size:16px;border-bottom:2px solid #0b5ed7;padding-bottom:6px;color:#0b5ed7;}}
+  .section h3{{font-size:14px;color:#0b5ed7;margin-top:16px;}}
   .note{{background:#fff8e1;border-left:4px solid #f9a825;padding:10px;margin:12px 0;}}
   .error{{background:#ffebee;border-left:4px solid #c62828;padding:10px;margin:12px 0;}}
   .ok{{background:#e8f5e9;border-left:4px solid #2e7d32;padding:10px;margin:12px 0;}}
@@ -583,6 +662,15 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   .card h3{{margin:0 0 8px 0;font-size:14px;color:#0b5ed7;}}
   .card p{{margin:0;font-size:13px;color:#333;}}
   .mp4-wrap{{margin:12px 0;}}
+  video{{border:1px solid #ddd;border-radius:4px;background:#000;}}
+  a{{color:#0b5ed7;text-decoration:none;}}
+  a:hover{{text-decoration:underline;}}
+  @media (max-width: 600px) {{
+    .container{{padding:12px;margin:12px;}}
+    .grid{{grid-template-columns:1fr;}}
+    table{{font-size:12px;}}
+    th,td{{padding:6px;}}
+  }}
 </style>
 </head>
 <body>
@@ -592,16 +680,16 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   <div class="section">
     <h2>Identificação</h2>
     <div class="grid">
-      <div class="card"><h3>Campanha / Peça</h3><p><strong>{request.get('id','')}</strong></p></div>
-      <div class="card"><h3>Título</h3><p>{request.get('title','')}</p></div>
-      <div class="card"><h3>Projeto</h3><p>{request.get('project','')}</p></div>
+      <div class="card"><h3>Campanha / Peça</h3><p><strong>{html_escape(request.get('id',''))}</strong></p></div>
+      <div class="card"><h3>Título</h3><p>{html_escape(request.get('title',''))}</p></div>
+      <div class="card"><h3>Projeto</h3><p>{html_escape(request.get('project',''))}</p></div>
       <div class="card"><h3>Estado editorial</h3><p><span class="badge {'ok' if len(errors)==0 else 'blocked'}">{'Estrutura válida' if len(errors)==0 else 'Erros estruturais'}</span></p></div>
     </div>
   </div>
 
   <div class="section">
     <h2>Especificação da peça</h2>
-    <p><strong>Perfis:</strong> {', '.join(request.get('profiles', []))}</p>
+    <p><strong>Perfis:</strong> {', '.join(html_escape(p) for p in request.get('profiles', []))}</p>
     <p><strong>Geometria:</strong> {VIDEO_WIDTH}x{VIDEO_HEIGHT}, 9:16</p>
     <p><strong>FPS:</strong> {VIDEO_FPS}</p>
     <p><strong>Duração total:</strong> {total_duration_s(request)} s ({sum(s['durationMs'] for s in request.get('scenes',[]))} ms)</p>
@@ -626,7 +714,7 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
       <thead><tr><th>Cena</th><th>Mídia</th><th>Tipo</th><th>Origem</th><th>Licença</th><th>Presente</th></tr></thead>
       <tbody>
         {''.join(
-          f"<tr><td>{s.get('id','')}</td><td><code>{m.get('id','')}</code></td><td>{m.get('type','')}</td><td>{m.get('origin','')}</td><td>{m.get('license',DEFAULT_LICENSE)}</td><td>{'SIM' if (render_local.contained(root,m.get('path','')) and os.path.isfile(render_local.fs_path(os.path.join(root,m.get('path',''))))) else 'NÃO'}</td></tr>"
+          f"<tr><td>{html_escape(s.get('id',''))}</td><td><code>{html_escape(m.get('id',''))}</code></td><td>{html_escape(m.get('type',''))}</td><td>{html_escape(m.get('origin',''))}</td><td>{html_escape(m.get('license',DEFAULT_LICENSE))}</td><td>{'SIM' if (render_local.contained(root,m.get('path','')) and os.path.isfile(render_local.fs_path(os.path.join(root,m.get('path',''))))) else 'NÃO'}</td></tr>"
           for s in request.get('scenes',[]) for m in [media_index.get(s.get('mediaId'),{})]
         )}
       </tbody>
@@ -634,24 +722,19 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   </div>
 
   <div class="section">
-    <h2>Resultado da prova</h2>
+    <h2>Validação estrutural</h2>
     <div class="{'ok' if len(errors)==0 else 'error'}">
       <p><strong>Validação estrutural:</strong> {'APROVADA' if len(errors)==0 else 'REPROVADA'}</p>
       <p><strong>Erros:</strong> {len(errors)}</p>
-      {''.join(f"<p>- [{e.code}] {e.subject or ''}</p>" for e in errors) if errors else "<p>Nenhum erro estrutural.</p>"}
+      {''.join(f"<p>- [{html_escape(e.code)}] {html_escape(e.subject or '')}</p>" for e in errors) if errors else "<p>Nenhum erro estrutural.</p>"}
     </div>
-    <p class="note">
-      <strong>Render:</strong> pendente de ferramenta ffmpeg/ffprobe nesta estação.
-      Quando disponível, execute:
-      <code>python tools/produce_video.py --input {request_path} --profile instagram-reels-video --output-dir &lt;entrega&gt; --json</code>
-    </p>
   </div>
+
+  {render_section}
 
   <div class="section">
     <h2>Comando para repetir a prova</h2>
-    <pre>python tools/campaign_proof.py prepare {request_path} --output-dir .workspace/tmp/prova-campanha-ns001-ns002/{request.get('id','campanha')}
-python tools/campaign_proof.py verify {request_path}
-python tools/campaign_proof.py review {request_path} --output revisao-{request.get('id','campanha')}.html</pre>
+    <pre>{repeat_cmd}</pre>
   </div>
 </div>
 </body>
@@ -674,6 +757,45 @@ python tools/campaign_proof.py review {request_path} --output revisao-{request.g
         "htmlPath": output_html,
         "sceneCount": len(request.get("scenes", [])),
         "totalDurationMs": total_duration_s(request) * 1000,
+    }
+
+
+def cmd_run(request_path: str, profile: str, output_dir: str, root: str) -> dict:
+    """Executa o fluxo completo: prepare -> verify -> render -> review.
+    Devolve relatório consolidado. Falha em qualquer etapa interrompe o fluxo."""
+    # Prepare
+    prepare_dir = os.path.join(output_dir, "midias")
+    prepare_result = cmd_prepare(request_path, prepare_dir, root)
+    if not prepare_result.get("ok"):
+        return {"ok": False, "operation": "run", "stage": "prepare", "result": prepare_result}
+
+    # Verify
+    verify_result = cmd_verify(request_path, root)
+    if not verify_result.get("ok"):
+        return {"ok": False, "operation": "run", "stage": "verify", "result": verify_result}
+
+    # Render
+    render_dir = os.path.join(output_dir, "entrega")
+    render_result = cmd_render(request_path, profile, render_dir, root)
+    if not render_result.get("ok"):
+        return {"ok": False, "operation": "run", "stage": "render", "result": render_result}
+
+    # Review
+    review_html = os.path.join(output_dir, f"revisao-{verify_result.get('requestId', 'campanha')}.html")
+    review_result = cmd_review(request_path, review_html, root, render_result)
+    if not review_result.get("ok"):
+        return {"ok": False, "operation": "run", "stage": "review", "result": review_result}
+
+    return {
+        "ok": True,
+        "operation": "run",
+        "request": request_path,
+        "profile": profile,
+        "outputDir": output_dir,
+        "prepare": prepare_result,
+        "verify": verify_result,
+        "render": render_result,
+        "review": review_result,
     }
 
 
@@ -711,6 +833,14 @@ def _build_parser() -> argparse.ArgumentParser:
     p_review.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_review.add_argument("--json", action="store_true", help="Saída somente JSON")
 
+    # Comando de execução completa: prepare -> verify -> render -> review
+    p_run = sub.add_parser("run", help="Executa fluxo completo: prepare, verify, render, review")
+    p_run.add_argument("request", help="Caminho do pedido VideoRequest v1")
+    p_run.add_argument("--profile", required=True, help="Perfil de saída (ex: instagram-reels-video)")
+    p_run.add_argument("--output-dir", required=True, help="Diretório base para mídias e entrega")
+    p_run.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    p_run.add_argument("--json", action="store_true", help="Saída somente JSON")
+
     return parser
 
 
@@ -727,6 +857,8 @@ def main(argv=None) -> int:
             result = cmd_render(args.request, args.profile, args.output_dir, args.root)
         elif args.command == "review":
             result = cmd_review(args.request, args.output, args.root)
+        elif args.command == "run":
+            result = cmd_run(args.request, args.profile, args.output_dir, args.root)
         else:
             print("Comando desconhecido", file=sys.stderr)
             return 2
