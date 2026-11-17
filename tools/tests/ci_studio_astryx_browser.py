@@ -716,14 +716,8 @@ def run_browser_regression():
                 f'ZIP apos 409 divergiu: {preserved_sha} != {studio_sha}'
             )
 
-            # 8. Troca de trabalho com geracao em andamento: dispara o clique e troca antes da resposta.
+            # 8. Troca de trabalho com geracao em andamento: prepara B, recarrega, inicia a geracao e troca.
             print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
-            page.wait_for_timeout(1000)
-            page.locator('#btn-r-build-package').click(no_wait_after=True)
-            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
-                state='visible', timeout=10000
-            )
-            # Cria o trabalho B enquanto a geracao em A ainda esta em voo, em seguida troca de trabalho.
             page.evaluate(
                 """async ({workId}) => {
                     await fetch('/api/works/create', {
@@ -740,17 +734,43 @@ def run_browser_regression():
                 }""",
                 {'workId': second_work},
             )
+            page.reload(wait_until='networkidle')
+            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            row_a0 = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
+            row_a0.wait_for(state='visible', timeout=20000)
+            row_a0.click()
+            page.locator('#mode-review-btn').click()
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            page.locator('#btn-r-build-package').click(no_wait_after=True)
+            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
+                state='visible', timeout=10000
+            )
             page.locator('#mode-home-btn').click()
             row_b = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
             row_b.wait_for(state='visible', timeout=20000)
             row_b.click()
-            page.locator('#mode-review-btn').click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=second_work,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#mode-home-btn').click()
             row_a = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
             row_a.wait_for(state='visible', timeout=20000)
             row_a.click()
-            page.locator('#mode-review-btn').click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=work_id,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
             # A geracao disparada antes da troca pode ter promovido um ZIP novo; usa o SHA corrente do painel.
@@ -773,13 +793,15 @@ def run_browser_regression():
                 row_b2 = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
                 row_b2.wait_for(state='visible', timeout=20000)
                 row_b2.click()
-                page.locator('#mode-review-btn').click()
-                page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
                 page.wait_for_function(
                     "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
                     arg=second_work,
                     timeout=20000,
                 )
+                page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+                page.evaluate("() => setMode('review')")
+                page.locator('#mode-review').wait_for(state='visible', timeout=20000)
+                page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
                 page.wait_for_timeout(3500)
                 assert page.locator('#r-package-verify-result').count() == 0, (
                     'Resultado de verificação do trabalho A vazou para o trabalho B'
