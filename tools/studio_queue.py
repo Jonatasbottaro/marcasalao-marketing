@@ -446,6 +446,59 @@ class StudioQueue:
         snapshot_sha = studio_review.canonical_sha256(snapshot)
         return snapshot, snapshot_sha
 
+    @staticmethod
+    def _extract_preview_error(preview_res, default='Rascunho rejeitado na previa.'):
+        if not isinstance(preview_res, dict):
+            return default
+        result = preview_res.get('result')
+        if isinstance(result, dict):
+            overflow = result.get('overflowCards')
+            if isinstance(overflow, list) and overflow:
+                return (
+                    'Texto excede a area do card no carrossel ('
+                    + ', '.join(str(c) for c in overflow)
+                    + '). Reduza o texto dos cards indicados.'
+                )
+            err_msg = result.get('error')
+            if isinstance(err_msg, str) and err_msg.strip():
+                return err_msg.strip()
+            profiles = result.get('profiles')
+            if isinstance(profiles, list):
+                for entry in profiles:
+                    if isinstance(entry, dict) and entry.get('status') != 'compiled':
+                        return StudioQueue._extract_profile_preview_error(entry)
+        rc = preview_res.get('returncode')
+        if rc not in (None, 0):
+            return f'{default} (codigo {rc})'
+        return default
+
+    @staticmethod
+    def _extract_profile_preview_error(profile_entry):
+        if not isinstance(profile_entry, dict):
+            return 'Perfil rejeitado na previa.'
+        errors = profile_entry.get('errors') or []
+        parts = []
+        for item in errors:
+            if not isinstance(item, dict):
+                continue
+            msg = str(item.get('message') or '').strip()
+            code = str(item.get('code') or '').strip()
+            path = str(item.get('path') or '').strip()
+            if msg and code and code not in msg:
+                piece = f'{code}: {msg}'
+            else:
+                piece = msg or code
+            if path and path not in piece:
+                piece = f'{piece} ({path})' if piece else path
+            if piece:
+                parts.append(piece)
+        if parts:
+            return '; '.join(parts)
+        fcode = profile_entry.get('failureCode')
+        if isinstance(fcode, str) and fcode.strip():
+            return f'Perfil rejeitado na previa ({fcode.strip()}).'
+        return 'Perfil rejeitado na previa.'
+
     def plan_batch(self, work_ids):
         """Lista opcoes disponiveis e indisponiveis por trabalho antes da confirmacao."""
         if not isinstance(work_ids, list) or not work_ids:
@@ -469,12 +522,41 @@ class StudioQueue:
             # Videos
             v_check_ok = None
             v_check_err = None
+            v_profile_map = {}
+            v_preview_rc = 0
             if isinstance(v_req, dict) and v_req.get('scenes'):
                 try:
                     tmp_req = json.loads(json.dumps(v_req))
                     tmp_req['project'] = project_rel
-                    self.studio.preview(tmp_req, kind='video')
-                    v_check_ok = True
+                    req_profiles = list(tmp_req.get('profiles') or [])
+                    if req_profiles:
+                        for pid, pmeta in cat['all'].items():
+                            if (
+                                pmeta.get('mediaKind') == 'video'
+                                and pmeta.get('availability') == 'allowed'
+                                and pmeta.get('localExportVideo')
+                                and pid not in req_profiles
+                            ):
+                                req_profiles.append(pid)
+                        tmp_req['profiles'] = req_profiles
+                    v_prev = self.studio.preview(tmp_req, kind='video')
+                    v_preview_rc = v_prev.get('returncode', 0) if isinstance(v_prev, dict) else 1
+                    v_res = (v_prev.get('result') or {}) if isinstance(v_prev, dict) else {}
+                    v_profiles = v_res.get('profiles') if isinstance(v_res, dict) else None
+                    if v_res.get('status') == 'error' or (v_preview_rc != 0 and not isinstance(v_profiles, list)):
+                        v_check_ok = False
+                        v_check_err = self._extract_preview_error(v_prev, 'Rascunho de video rejeitado na previa.')
+                    else:
+                        if isinstance(v_profiles, list):
+                            v_profile_map = {
+                                p['profileId']: p for p in v_profiles
+                                if isinstance(p, dict) and p.get('profileId')
+                            }
+                        if v_preview_rc != 0 and not v_profile_map:
+                            v_check_ok = False
+                            v_check_err = self._extract_preview_error(v_prev, 'Rascunho de video rejeitado na previa.')
+                        else:
+                            v_check_ok = True
                 except Exception as exc:
                     v_check_ok = False
                     v_check_err = str(exc)
@@ -489,12 +571,21 @@ class StudioQueue:
                     continue
                 selected_in_req = isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])
                 local_ok = bool(pmeta.get('availability') == 'allowed' and pmeta.get('localExportVideo'))
-                avail = bool(v_check_ok and local_ok)
+                p_entry = v_profile_map.get(pid)
                 if not local_ok:
+                    avail = False
                     reason = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('video', {}).get('reason') or 'Perfil indisponivel para video local.'
                 elif not v_check_ok:
+                    avail = False
                     reason = v_check_err
+                elif p_entry is not None and p_entry.get('status') != 'compiled':
+                    avail = False
+                    reason = self._extract_profile_preview_error(p_entry)
+                elif v_preview_rc != 0 and p_entry is None:
+                    avail = False
+                    reason = self._extract_preview_error({'returncode': v_preview_rc, 'result': {}}, 'Rascunho de video rejeitado na previa.')
                 else:
+                    avail = True
                     reason = None
                 options.append({
                     'workId': wid,
@@ -518,8 +609,14 @@ class StudioQueue:
                 try:
                     tmp_creq = json.loads(json.dumps(c_req))
                     tmp_creq['project'] = project_rel
-                    self.studio.preview(tmp_creq, kind='carousel')
-                    c_check_ok = True
+                    c_prev = self.studio.preview(tmp_creq, kind='carousel')
+                    c_rc = c_prev.get('returncode', 0) if isinstance(c_prev, dict) else 1
+                    c_res = (c_prev.get('result') or {}) if isinstance(c_prev, dict) else {}
+                    if c_rc != 0 or c_res.get('status') == 'error' or c_res.get('overflowCards'):
+                        c_check_ok = False
+                        c_check_err = self._extract_preview_error(c_prev, 'Rascunho de carrossel rejeitado na previa.')
+                    else:
+                        c_check_ok = True
                 except Exception as exc:
                     c_check_ok = False
                     c_check_err = str(exc)
@@ -558,6 +655,44 @@ class StudioQueue:
 
             # Motion (somente 9:16 quando permitido)
             has_motion = isinstance(m_plan, dict) and bool(m_plan.get('effects'))
+            motion_candidates = [
+                pid for pid, pmeta in cat['all'].items()
+                if pmeta.get('mediaKind') == 'video'
+                and pmeta.get('availability') == 'allowed'
+                and pmeta.get('aspectRatio') == '9:16'
+                and pmeta.get('localExportMotion')
+            ]
+            m_check_ok = True
+            m_check_err = None
+            m_profile_map = {}
+            if v_check_ok and has_motion and motion_candidates:
+                try:
+                    tmp_mreq = json.loads(json.dumps(v_req))
+                    tmp_mreq['project'] = project_rel
+                    tmp_mreq['profiles'] = motion_candidates
+                    tmp_mplan = json.loads(json.dumps(m_plan))
+                    if tmp_mreq.get('id'):
+                        tmp_mplan['requestId'] = tmp_mreq['id']
+                    m_prev = self.studio.preview(tmp_mreq, kind='video', motion_plan=tmp_mplan)
+                    m_rc = m_prev.get('returncode', 0) if isinstance(m_prev, dict) else 1
+                    m_res = (m_prev.get('result') or {}) if isinstance(m_prev, dict) else {}
+                    m_profiles = m_res.get('profiles') if isinstance(m_res, dict) else None
+                    if m_res.get('status') == 'error' or (m_rc != 0 and not isinstance(m_profiles, list)):
+                        m_check_ok = False
+                        m_check_err = self._extract_preview_error(m_prev, 'Plano de Motion rejeitado na previa.')
+                    else:
+                        if isinstance(m_profiles, list):
+                            m_profile_map = {
+                                p['profileId']: p for p in m_profiles
+                                if isinstance(p, dict) and p.get('profileId')
+                            }
+                        if m_rc != 0 and not m_profile_map:
+                            m_check_ok = False
+                            m_check_err = self._extract_preview_error(m_prev, 'Plano de Motion rejeitado na previa.')
+                except Exception as exc:
+                    m_check_ok = False
+                    m_check_err = str(exc)
+
             for pid, pmeta in cat['all'].items():
                 if pmeta.get('mediaKind') != 'video':
                     continue
@@ -565,16 +700,27 @@ class StudioQueue:
                     continue
                 is_vertical = pmeta.get('aspectRatio') == '9:16'
                 local_ok = bool(pmeta.get('localExportMotion'))
-                avail = bool(v_check_ok and has_motion and is_vertical and local_ok)
+                m_entry = m_profile_map.get(pid)
                 if not is_vertical:
+                    avail = False
                     reason = f'Motion local exige perfil vertical 9:16 ({pid} e {pmeta.get("aspectRatio")}).'
                 elif not local_ok:
+                    avail = False
                     reason = pmeta.get('blockReason') or 'Perfil indisponivel para Motion local.'
                 elif not has_motion:
+                    avail = False
                     reason = 'Plano de Motion sem efeitos salvos.'
                 elif not v_check_ok:
+                    avail = False
                     reason = v_check_err
+                elif not m_check_ok:
+                    avail = False
+                    reason = m_check_err
+                elif m_entry is not None and m_entry.get('status') != 'compiled':
+                    avail = False
+                    reason = self._extract_profile_preview_error(m_entry)
                 else:
+                    avail = True
                     reason = None
                 options.append({
                     'workId': wid,
