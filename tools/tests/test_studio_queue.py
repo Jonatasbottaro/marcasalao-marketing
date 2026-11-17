@@ -535,6 +535,90 @@ class TestStudioQueue(unittest.TestCase):
         renewed = studio.queue.get_item(item_id)
         self.assertEqual(renewed['status'], 'completed', renewed.get('errorMessage'))
 
+    def test_07_plan_batch_marks_invalid_preview_unavailable_and_isolates_modalities(self):
+        """Contrato controlado: preview() retornando returncode != 0 sem excecao marca indisponivel."""
+        studio = self._make_studio(auto_start=False)
+        w1 = f'tq-prev-mock-{os.getpid()}'
+        self._seed_work(studio, w1, 'marca-salao')
+
+        def fake_preview(request, profile=None, kind='video', motion_plan=None):
+            if kind == 'video' and motion_plan is None:
+                return {
+                    'returncode': 3,
+                    'result': {
+                        'status': 'error',
+                        'error': 'Erro: entrada invalida (VIDEO_REQUEST_INVALID: scenes[0].durationMs)',
+                    },
+                }
+            if kind == 'carousel':
+                return {'returncode': 0, 'result': {'status': 'preview', 'overflowCards': []}}
+            return {'returncode': 0, 'result': {'status': 'preview', 'profiles': []}}
+
+        studio.preview = fake_preview
+        plan = studio.queue.plan_batch([w1])
+        opts = plan['works'][0]['options']
+        vid_opts = [o for o in opts if o['modality'] == 'video']
+        mot_opts = [o for o in opts if o['modality'] == 'motion']
+        car_opts = [o for o in opts if o['modality'] == 'carousel']
+
+        self.assertTrue(vid_opts)
+        for o in vid_opts:
+            self.assertFalse(o['available'])
+            self.assertFalse(o['selectedByDefault'])
+            self.assertIn('VIDEO_REQUEST_INVALID', o['unavailableReason'] or '')
+
+        self.assertTrue(mot_opts)
+        for o in mot_opts:
+            self.assertFalse(o['available'])
+            self.assertFalse(o['selectedByDefault'])
+
+        self.assertTrue(any(o['available'] for o in car_opts))
+        for o in car_opts:
+            if o['available']:
+                self.assertIsNone(o['unavailableReason'])
+
+    def test_08_plan_batch_real_producer_rejections(self):
+        """Produtor real: rascunho invalido em uma modalidade ou Motion nao bloqueia modalidades validas."""
+        studio = self._make_studio(auto_start=False)
+        w1 = f'tq-prev-real-{os.getpid()}'
+        opened = self._seed_work(studio, w1, 'marca-salao')
+
+        # 1) Carrossel valido, Video invalido (durationMs <= 0)
+        vreq_bad = json.loads(json.dumps(opened['videoRequest']))
+        vreq_bad['scenes'][0]['durationMs'] = 0
+        studio.save_work({'workId': w1, 'videoRequest': vreq_bad})
+        plan1 = studio.queue.plan_batch([w1])
+        opts1 = plan1['works'][0]['options']
+        v_reels1 = next(o for o in opts1 if o['modality'] == 'video' and o['profileId'] == 'instagram-reels-video')
+        c_port1 = next(o for o in opts1 if o['modality'] == 'carousel' and o['profileId'] == 'instagram-feed-image-portrait')
+        self.assertFalse(v_reels1['available'])
+        self.assertFalse(v_reels1['selectedByDefault'])
+        self.assertTrue(v_reels1['unavailableReason'])
+        self.assertTrue(c_port1['available'])
+        self.assertIsNone(c_port1['unavailableReason'])
+
+        # 2) Video valido, Motion invalido (endMs fora da cena), Carrossel invalido (overflow de texto)
+        vreq_ok = json.loads(json.dumps(opened['videoRequest']))
+        creq_bad = json.loads(json.dumps(opened['carouselRequest']))
+        creq_bad['cards'][0]['body'] = ('Texto muito longo para estourar a area do card. ' * 25).strip()
+        mplan_bad = json.loads(json.dumps(opened['motionPlan']))
+        mplan_bad['effects'][0]['endMs'] = 999999
+        studio.save_work({'workId': w1, 'videoRequest': vreq_ok, 'carouselRequest': creq_bad, 'motionPlan': mplan_bad})
+
+        plan2 = studio.queue.plan_batch([w1])
+        opts2 = plan2['works'][0]['options']
+        v_reels2 = next(o for o in opts2 if o['modality'] == 'video' and o['profileId'] == 'instagram-reels-video')
+        m_reels2 = next(o for o in opts2 if o['modality'] == 'motion' and o['profileId'] == 'instagram-reels-video')
+        c_port2 = next(o for o in opts2 if o['modality'] == 'carousel' and o['profileId'] == 'instagram-feed-image-portrait')
+
+        self.assertTrue(v_reels2['available'], v_reels2.get('unavailableReason'))
+        self.assertFalse(m_reels2['available'])
+        self.assertFalse(m_reels2['selectedByDefault'])
+        self.assertTrue(m_reels2['unavailableReason'])
+        self.assertFalse(c_port2['available'])
+        self.assertFalse(c_port2['selectedByDefault'])
+        self.assertIn(creq_bad['cards'][0]['id'], c_port2['unavailableReason'] or '')
+
 
 if __name__ == '__main__':
     unittest.main()
