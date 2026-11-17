@@ -93,15 +93,18 @@ Peça com URL de destino própria e clicável confirmada.
 - Preencha `url_parametrizada` com os parâmetros UTM.
 - `status_destino = confirmado`.
 - Cliques são atribuídos à peça pelo parâmetro `utm_content` (identifica a peça de forma estável).
+- Acessos identificados por UTM no site (analytics do site) são distintos de cliques reportados pela rede; registre cada origem no seu campo `*_fonte` apropriado.
 
-### 4.2 CTA que remete a link compartilhado na bio
+### 4.2 CTA que remete a link compartilhado na bio (bio/perfil compartilhado)
 
 Peça cujo CTA orienta "link na bio" e o perfil tem um único link externo compartilhado por várias peças.
 
+- Registre o URL do link cadastrado na bio/perfil e os parâmetros UTM efetivamente usados naquele link, quando confirmados.
 - Preencha `url_destino` com o destino do link na bio somente se estiver confirmado.
 - Preencha `url_parametrizada` com os UTM da peça.
 - `status_destino = confirmado` se o link da bio estiver confirmado; caso contrário, `pendente_de_decisao`.
-- **Atribuição do clique:** em um link de bio compartilhado, atribua o clique ao nível que a evidência sustenta. Se a rede não separar cliques por peça que apontam para o mesmo link da bio, registre a atribuição como nível de bio/perfil, não de peça. Deixe a atribuição por peça indisponível quando não houver uma forma confirmada de identificá-la (ex.: sem parâmetro distinto por peça no link da bio).
+- **Atribuição do clique:** em um link de bio compartilhado, atribua o clique ao nível que a evidência sustenta. Se a rede não separar cliques por peça que apontam para o mesmo link da bio, registre a medição no nível da bio/perfil, não de cada peça. Deixe a atribuição por peça indisponível (`cliques_status = indisponível`, valor vazio) enquanto a fonte não identificar qual peça originou o clique.
+- **Diferencie:** cliques reportados pela rede (painel nativo/insights da rede social no link da bio ou sticker) são distintos de acessos identificados por UTM no site (analytics do site). Não confunda um com o outro nem some valores de origens diferentes.
 
 ### 4.3 Peça sem destino clicável
 
@@ -122,6 +125,10 @@ Use como janelas padrão de coleta:
 - **7 dias** após a publicação.
 
 Outras janelas podem ser adicionadas desde que estejam definidas antes da coleta.
+
+### Coleta fora da janela definida
+
+Se uma coleta for feita fora da janela planejada (antes de 24h ou depois de 7d, por exemplo), registre o horário real em `data_hora_coleta` (ISO 8601 com fuso) e anote em `observacoes` que a coleta ocorreu fora da janela. Não compare essa linha como se estivesse dentro da janela; use apenas para registro histórico e nunca misture com linhas da janela padrão na comparação direta.
 
 ### Colunas
 
@@ -156,7 +163,9 @@ Outras janelas podem ser adicionadas desde que estejam definidas antes da coleta
 
 ### Como comparar resultados na mesma janela
 
-Para comparar duas peças, use apenas linhas com a mesma `janela` (ex.: ambas `24h`). Mantenha o nome e a definição da métrica conforme a fonte utilizada (não renomeie métricas entre fontes diferentes). Inclua `formula_comparacao` apenas quando o numerador e a base estiverem definidos para ambas as peças (ex.: `CTR = cliques / alcance` exige que ambas tenham `cliques` e `alcance` medidos).
+Para comparar duas peças, use apenas linhas com a mesma `janela` (ex.: ambas `24h`). Mantenha o nome e a definição da métrica conforme a fonte utilizada (não renomeie métricas entre fontes diferentes). Inclua `formula_comparacao` apenas quando o numerador e a base estiverem definidos para ambas as peças.
+
+Exemplo: `CTR = cliques / alcance` exige que ambas as peças tenham `cliques` e `alcance` medidos **e** que `alcance > 0`. Se o alcance for zero, vazio ou indisponível em qualquer uma das peças, não calcule a comparação e deixe `formula_comparacao` vazio. Não declare comparação válida quando a outra peça não tem os dados necessários na mesma janela.
 
 ## 6. Onde cada dado vem de
 
@@ -172,6 +181,10 @@ Para comparar duas peças, use apenas linhas com a mesma `janela` (ex.: ambas `2
 - Tempo de sessão, páginas visitadas, eventos de conversão.
 - Fonte: analytics do site (ex.: Google Analytics, Meta Pixel) — **não configurada neste escopo**.
 
+### Cliques por rede vs. acessos por UTM no site
+
+Cliques reportados pela rede (ex.: `instagram-insights` no link da bio ou sticker) são distintos de acessos identificados por UTM no site (analytics do site). São origens distintas: registre cada uma no seu campo `*_fonte` apropriado e não some valores de origens diferentes.
+
 ### Dependências pendentes
 
 Se não houver medição confirmada para uma conversão, registre a dependência em `observacoes` e deixe os campos de métrica relacionados como `nao_coletado` ou `indisponivel`, conforme o caso. Não assuma conversão a partir de clique.
@@ -183,14 +196,15 @@ Trate as primeiras publicações comparáveis (mesmo canal, mesmo formato, mesma
 ## 8. Ensaio local (dados fictícios)
 
 O ensaio valida que os modelos podem ser preenchidos seguindo o guia, sem uso de contas reais. Os arquivos de exemplo estão em:
-- `exaivo-registro-publicacoes.csv` — duas publicações fictícias (uma com link direto, outra com CTA para a bio).
-- `exaivo-registro-metricas.csv` — coleta de 24h e 7d para cada uma, incluindo zero medido e métrica indisponível.
+- `ensaio-registro-publicacoes.csv` — duas publicações fictícias (uma com link direto, outra com CTA para a bio).
+- `ensaio-registro-metricas.csv` — coleta de 24h e 7d para cada uma, incluindo zero medido e métrica indisponível.
 
 Validação feita:
 - As linhas de métricas apontam para a publicação correta via `id_publicacao` = `id_peca`.
 - Os CSVs abrem sem perda de colunas ou acentos (codificação UTF-8, vírgula como separador, aspas ao redor de campos com vírgula/acento).
-- Zero medido: `cliques = 0`, `cliques_status = medido`.
-- Métrica indisponível: `alcance_status = indisponivel`, valor vazio, motivo em `observacoes`.
+- Zero medido: `cliques = 0`, `cliques_status = medido` (peça com link direto, fonte fictícia retornou zero).
+- Métrica indisponível: `alcance_status = indisponível`, valor vazio, motivo em `observacoes` decorrente da própria fonte.
+- Cliques por peça indisponíveis: na peça com CTA para a bio, `cliques` vazio e `cliques_status = indisponível`, pois o link de bio é compartilhado e a fonte não identifica qual peça originou o clique.
 
 ## 9. Arquivos entregues
 
@@ -199,8 +213,8 @@ Validação feita:
 | `05-mensuracao/GUIA-MENSURACAO-NS001-NS002.md` | Este guia operacional. |
 | `05-mensuracao/modelo-registro-publicacoes.csv` | Modelo vazio para registro de publicações. |
 | `05-mensuracao/modelo-registro-metricas.csv` | Modelo vazio para registro de métricas. |
-| `05-mensuracao/exaivo-registro-publicacoes.csv` | Exemplo preenchido (ensaio, dados fictícios). |
-| `05-mensuracao/exaivo-registro-metricas.csv` | Exemplo preenchido (ensaio, dados fictícios). |
+| `05-mensuracao/ensaio-registro-publicacoes.csv` | Exemplo preenchido (ensaio, dados fictícios). |
+| `05-mensuracao/ensaio-registro-metricas.csv` | Exemplo preenchido (ensaio, dados fictícios). |
 
 ## 10. Decisões que ainda dependem do titular
 
