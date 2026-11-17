@@ -15,8 +15,9 @@
 - Responsável: pendente de definição (não há responsável documentado no repositório)
 - Data de criação: 2026-11-16
 - Data de atualização: 2026-11-16
-- Status: em validação — aguardando aprovação do titular
-- Versão: 0.1
+- Status: em validação — aprovação editorial parcial concedida em 2026-11-16 para avançar a hooks e roteiro; capturas, gravação e publicação permanecem bloqueadas
+- Aprovação editorial parcial: 2026-11-16, pelo titular, para o recorte e os rascunhos desta rodada
+- Versão: 0.2
 
 ## 2. Objetivo da campanha
 
@@ -120,7 +121,7 @@ Uma captura comprova somente o que aparece nela. A jornada E2E comprova a sequê
 
 ## 9. Estrutura do conteúdo
 
-- Hook: "Quando a cliente escolhe um horário, o salão consegue ver esse atendimento na agenda?"
+- Hook: "Como um horário escolhido pela cliente chega à agenda do salão?" — abertura definida pelo titular em 2026-11-16.
 - Problema: a escolha da cliente e a leitura do gestor precisam estar conectadas para que o agendamento seja acompanhado sem depender de anotação paralela. Hipótese a validar com o titular.
 - Consequência: sem essa ligação visível, o gestor pode precisar conferir ou repassar a informação manualmente. Hipótese qualitativa, sem dado de frequência.
 - Solução: fluxo público de agendamento do Marca Salão, com a cliente escolhendo serviço, profissional e horário disponível.
@@ -133,7 +134,8 @@ Uma captura comprova somente o que aparece nela. A jornada E2E comprova a sequê
 | 3 — O salão vê | O mesmo serviço/cliente/profissional aparecendo em `/gestor/agenda`. | Verificação manual e E2E etapa 9. | Usar captura nova com fixture editorial; não reaproveitar frames de validação E2E. |
 
 - Resultado esperado: o gestor reconheça a continuidade entre a escolha da cliente e a agenda do salão e queira conhecer o fluxo. Não prometer resultado medido.
-- CTA: "Conheça o agendamento online no Marca Salão. marcasalao.com.br" como texto principal; "link na bio" e sticker de link ficam como variantes condicionadas às confirmações de canal.
+- CTA: "Conheça o agendamento online no Marca Salão" com `marcasalao.com.br` como texto principal; "link na bio" e sticker de link ficam como variantes condicionadas às confirmações de canal.
+- Decisão editorial registrada em 2026-11-16: manter os três momentos; iniciar com a pergunta acima; usar **Meus Agendamentos** como evidência de apoio, não como cena obrigatória, já que o corte da confirmação para a agenda do gestor mostra a ligação entre as duas pontas; pagamento simulado fora da peça; textos em **Marca Salão**, com a diferença para **Meu Salão** na interface sinalizada para resolução antes das capturas.
 
 ## 10. Materiais necessários
 
@@ -156,22 +158,24 @@ Uma captura comprova somente o que aparece nela. A jornada E2E comprova a sequê
 | 4 | Seleção de profissional | Momento 1 | **Sim** | Profissional fictício aprovado e vinculado ao serviço. |
 | 5 | Calendário e horário disponível | Momento 2 | **Sim** | Mostrar dia e horário selecionados; não exibir regras internas não validadas em tela. |
 | 6 | Confirmação do agendamento | Momento 2 | **Sim** | Mensagem de sucesso da interface; não incluir cobrança como promessa. |
-| 7 | Área da cliente com o agendamento | Ponte opcional | **Sim** | Confirmar se entrará no corte final; hoje é evidência, não obrigatoriedade de cena. |
+| 7 | Área da cliente com o agendamento — **Meus Agendamentos** | Evidência de apoio | **Sim** | Decisão de 2026-11-16: não entra como cena obrigatória; o corte da confirmação para a agenda do gestor já estabelece a ligação. |
 | 8 | Agenda do gestor com o mesmo atendimento | Momento 3 | **Sim** | Enquadramento vertical, sem menu administrativo amplo, sem E2E namespace. |
-| 9 | Card final de CTA | Fechamento | Não | "Conheça o agendamento online no Marca Salão. marcasalao.com.br"; sem botão clicível desenhado. |
+| 9 | Card final de CTA | Fechamento | Não | "Conheça o agendamento online no Marca Salão" + `marcasalao.com.br`; sem botão clicível desenhado. |
 
 A fixture editorial deve usar somente dados fictícios, campos completos, valores plausíveis e nomes neutros. Cada quadro precisa ser revisado quanto a dados pessoais, credenciais, console aberto, namespace de teste e coerência de marca.
 
 ## 11. Canais e adaptações
+
+Decisão de 2026-11-16: começar por **Instagram Reels e Instagram Stories**. Facebook, YouTube Shorts, TikTok e WhatsApp Status seguem como extensões opcionais, mediante decisão específica de canal e link.
 
 ### Canal 1
 
 - Canal: Instagram Reels.
 - Formato: vídeo vertical, sem áudio, com legendas visíveis e `.srt`.
 - Proporção: 9:16, 1080 × 1920.
-- Duração: proposta 25–35 s, a definir no roteiro por leitura cronometrada.
+- Duração: roteiro 001 prevê 30 s, dentro da faixa aprovada de 25–35 s; conferir na leitura cronometrada.
 - Tom: direto, para gestores; pergunta de reconhecimento seguida de demonstração.
-- CTA: "Conheça o agendamento online no Marca Salão. marcasalao.com.br"; "link na bio" somente se o link externo do perfil for confirmado.
+- CTA: "Conheça o agendamento online no Marca Salão" com `marcasalao.com.br` como texto; "link na bio" somente se o link externo do perfil for confirmado.
 - Adaptações necessárias: sem botão clicível desenhado; URL em legenda não é clicável no Instagram.
 
 ### Canal 2
@@ -180,8 +184,8 @@ A fixture editorial deve usar somente dados fictícios, campos completos, valore
 - Formato: sequência curta de telas, sem áudio.
 - Proporção: 9:16, 1080 × 1920.
 - Duração: três telas, uma ação por tela; tempo final no roteiro.
-- Tom: mesma pergunta do Reels, com textos mais curtos.
-- CTA: texto principal com frase e domínio; sticker de link somente com autorização de publicação.
+- Tom: mesma pergunta do Reels, com textos mais curtos; três telas previstas na adaptação `stories-001.md`.
+- CTA: "Conheça o agendamento online no Marca Salão" com `marcasalao.com.br` como texto; sticker de link somente com autorização de publicação.
 - Adaptações necessárias: não inferir que botão desenhado cria sticker.
 
 ### Canal 3
@@ -196,7 +200,7 @@ A fixture editorial deve usar somente dados fictícios, campos completos, valore
 
 ## 12. CTA
 
-- CTA principal: "Conheça o agendamento online no Marca Salão. marcasalao.com.br"
+- CTA principal: "Conheça o agendamento online no Marca Salão" com `marcasalao.com.br` como texto principal.
 - Destino: `marcasalao.com.br`; URL completa `https://marcasalao.com.br` quando o canal exigir link por descrição.
 - Ação esperada: o gestor acessar o site para conhecer o sistema ou solicitar demonstração. Não prometer acesso direto ao painel `/gestor`, que exige credenciais.
 - Como será rastreado: pendente. Não há mecanismo de rastreamento definido; registrar como não rastreado até decisão.
@@ -229,7 +233,7 @@ Sem meta numérica obrigatória enquanto não houver histórico.
 
 ## 15. Checklist de validação
 
-- [ ] A dor é real e compreensível — formulada, mas ainda pendente de validação com o titular/público.
+- [ ] A dor é real e compreensível — pergunta de abertura aprovada pelo titular; ainda sem pesquisa com o público.
 - [x] O público está definido — gestores de salões de beleza.
 - [x] O impacto não foi inventado — somente hipóteses qualitativas rotuladas e "sem dado disponível".
 - [x] A funcionalidade existe no sistema atual — código conferido no Salao02 HEAD `91bb5e0` e em documentos da NS-001.
@@ -239,7 +243,7 @@ Sem meta numérica obrigatória enquanto não houver histórico.
 - [x] O conteúdo não promete lembretes automáticos.
 - [x] O conteúdo não promete resultados garantidos.
 - [x] A responsabilidade do estabelecimento está clara quando aplicável — cadastro de serviços, profissional aprovado, dados e processo próprio de contato.
-- [x] O CTA está definido como proposta — depende de aprovação e confirmação de canal.
+- [x] O CTA está definido — "Conheça o agendamento online no Marca Salão" + `marcasalao.com.br`; bio, sticker e rastreamento seguem pendentes.
 - [ ] As métricas estão definidas — linha de base e fontes pendentes.
 - [ ] As pendências críticas foram resolvidas.
 - [ ] O briefing foi aprovado antes da produção.
@@ -247,19 +251,31 @@ Sem meta numérica obrigatória enquanto não houver histórico.
 ## 16. Aprovação
 
 - Elaborado por: agente de marketing do Marca Salão, em 2026-11-16.
-- Revisado por: pendente.
-- Aprovado por: pendente.
-- Data da aprovação: pendente.
-- Observações: rascunho para apreciação do titular. Aprovação deste briefing não autoriza hooks, roteiro, gravação, renderização, agendamento nem publicação. A produção seguirá [`../../../WORKFLOW.md`](../../../WORKFLOW.md) e [`../../../AGENTS.md`](../../../AGENTS.md).
+- Revisado por: titular, em 2026-11-16 — decisão editorial parcial.
+- Aprovado por: titular, em 2026-11-16, para o recorte da campanha, os três momentos, a abertura, os canais iniciais e a passagem aos rascunhos de hooks e roteiro.
+- Data da aprovação: 2026-11-16 (parcial; não é aprovação de produção).
+- Observações: a aprovação não autoriza capturas, gravação, renderização, agendamento nem publicação. A produção seguirá [`../../../WORKFLOW.md`](../../../WORKFLOW.md) e [`../../../AGENTS.md`](../../../AGENTS.md). A diferença entre "Marca Salão" nos textos e "Meu Salão" na interface foi sinalizada para resolução antes das capturas.
 
-## 17. Decisões antes de hooks e roteiro
+## 17. Decisões registradas e pendências
 
-1. **Aprovar o enquadramento da NS-002** como complemento da NS-001: cliente escolhe o horário e o atendimento aparece na agenda do salão.
-2. **Validar a dor formulada** — "quando a cliente agenda, o salão consegue ver isso na agenda?" — ou substituí-la por outra pergunta de reconhecimento.
-3. **Aprovar os três momentos da demonstração** e decidir se a tela `/cliente/bookings` entra como ponte explícita ou permanece apenas como evidência.
-4. **Aprovar o CTA principal** "Conheça o agendamento online no Marca Salão. marcasalao.com.br" e os destinos por canal; manter "link na bio" e sticker como variantes condicionadas.
-5. **Decidir como tratar o pagamento mock**: omitido da peça pública, como está proposto, ou citado apenas como detalhe de teste — nunca como benefício.
-6. **Confirmar o nome de marca para uso público** ("Marca Salão" vs. "Meu Salão" na interface) antes de qualquer arte ou captura final.
-7. **Autorizar a criação da fixture editorial e das novas capturas** em ambiente local com emuladores e dados fictícios, além de indicar o responsável e o commit do Salao02 que será usado.
-8. **Definir canais, rastreamento e linha de base de métricas**, ou registrar explicitamente "não rastreado" e "linha de base ainda não disponível".
-9. **Autorizar a passagem para hooks e roteiro** — decisão separada de autorização de gravação, renderização e publicação.
+**Decisões aprovadas em 2026-11-16 para esta rodada:**
+
+1. [x] Enquadramento da NS-002 como complemento da NS-001: a cliente escolhe o horário e o atendimento aparece na agenda do salão.
+2. [x] Abertura: "Como um horário escolhido pela cliente chega à agenda do salão?"
+3. [x] Três momentos mantidos: a cliente escolhe serviço e profissional; seleciona o horário e confirma; o salão vê o mesmo atendimento na agenda.
+4. [x] Canais iniciais: Instagram Reels e Instagram Stories.
+5. [x] **Meus Agendamentos** fica como evidência de apoio, não como cena obrigatória; o corte da confirmação para a agenda do gestor já estabelece a ligação entre as duas pontas.
+6. [x] Pagamento simulado fica fora da peça e não vira benefício nem cena de destaque.
+7. [x] Textos usam **Marca Salão**; a diferença para **Meu Salão** na interface fica sinalizada para resolução antes das capturas.
+8. [x] CTA principal: "Conheça o agendamento online no Marca Salão" com `marcasalao.com.br` como texto.
+9. [x] Passagem autorizada para rascunhos de hooks e roteiro.
+
+**Pendências que continuam em aberto:**
+
+10. [ ] Confirmar o link externo do perfil antes de usar "link na bio" no Instagram.
+11. [ ] Autorizar sticker de link antes de usá-lo nos Stories.
+12. [ ] Definir mecanismo de rastreamento; registrar como "não rastreado" até decisão.
+13. [ ] Criar a fixture editorial com dados fictícios e indicar responsável, ambiente e commit do Salao02 para as capturas.
+14. [ ] Resolver a diferença de nome entre "Marca Salão" e "Meu Salão" na interface antes das artes finais.
+15. [ ] Definir linha de base e fonte das métricas.
+16. [ ] Autorizar separadamente capturas, gravação, renderização e publicação.
