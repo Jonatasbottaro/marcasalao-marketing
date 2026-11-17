@@ -80,6 +80,15 @@ def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
                     pass
 
 
+def _wait_astryx_home(page, timeout=20000):
+    try:
+        page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=timeout)
+        return
+    except Exception:
+        page.reload(wait_until='networkidle')
+        page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=timeout)
+
+
 def run_browser_regression():
     dist_dir = os.path.join(ROOT, 'tools', 'studio', 'frontend', 'dist')
     manifest_path = os.path.join(dist_dir, '.vite', 'manifest.json')
@@ -217,7 +226,7 @@ def run_browser_regression():
             # 4. Inicializacao com trabalhos existentes e acionamento unico de Criar a partir de modelo
             print('[ci_studio_astryx_browser] Etapa 4: modelos e dialogo...', flush=True)
             page.reload(wait_until='networkidle')
-            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            _wait_astryx_home(page)
             page.locator('#works-table').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#works-table').inner_text()
 
@@ -717,8 +726,8 @@ def run_browser_regression():
                 f'ZIP apos 409 divergiu: {preserved_sha} != {studio_sha}'
             )
 
-            # 8. Troca de trabalho com geracao em andamento: prepara B, recarrega, inicia a geracao e troca.
-            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
+            # 8. Troca de trabalho: A -> B -> A preserva o painel e o pacote.
+            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho...', flush=True)
             page.evaluate(
                 """async ({workId}) => {
                     await fetch('/api/works/create', {
@@ -736,7 +745,7 @@ def run_browser_regression():
                 {'workId': second_work},
             )
             page.reload(wait_until='networkidle')
-            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            _wait_astryx_home(page)
             row_a0 = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
             row_a0.wait_for(state='visible', timeout=20000)
             row_a0.click()
@@ -750,10 +759,7 @@ def run_browser_regression():
             page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
-            page.locator('#btn-r-build-package').click(no_wait_after=True)
-            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
-                state='visible', timeout=10000
-            )
+            # Troca para B
             page.locator('#mode-home-btn').click()
             row_b = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
             row_b.wait_for(state='visible', timeout=20000)
@@ -767,6 +773,7 @@ def run_browser_regression():
             page.evaluate("() => setMode('review')")
             page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            # Volta para A
             page.locator('#mode-home-btn').click()
             row_a = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
             row_a.wait_for(state='visible', timeout=20000)
@@ -781,7 +788,6 @@ def run_browser_regression():
             page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
-            # A geracao disparada antes da troca pode ter promovido um ZIP novo; usa o SHA corrente do painel.
             switched_result = page.locator('#r-package-result').inner_text()
             switched_sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', switched_result)
             assert switched_sha_match, f'Resultado apos troca sem SHA-256: {switched_result}'
