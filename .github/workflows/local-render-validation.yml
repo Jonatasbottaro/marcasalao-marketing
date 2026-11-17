@@ -650,3 +650,87 @@ jobs:
       - name: Prova de entrada MCP de Planejamento (Studio HTTP, cliente MCP de teste sobre stdio)
         run: |
           python tools/ci_studio_mcp_proof.py --port 8810
+
+  prova-campanha:
+    name: Prova de campanha NS-001 e NS-002
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (ponte TypeScript)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: FFmpeg e FFprobe (builds verificaveis BtbN via acao oficial)
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
+      - name: Versoes registradas das ferramentas
+        run: |
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+          node --version
+          python --version
+
+      - name: Instalar e compilar a ponte TypeScript
+        working-directory: platform
+        run: |
+          npm ci
+          npm run build
+          test -f dist/src/validate-local-render-input.js
+
+      - name: Preparar e validar campanha NS-001 (reels, 7 cenas, 30s)
+        run: |
+          python tools/campaign_proof.py prepare tools/produce/examples/marca-salao-ns-001-p001.video-request.json --output-dir .workspace/tmp/prova-campanha-ns001-ns002/ns-001-p001 --json
+          python tools/campaign_proof.py verify tools/produce/examples/marca-salao-ns-001-p001.video-request.json --json
+
+      - name: Preparar e validar campanha NS-002 (reels, 6 cenas, 30s)
+        run: |
+          python tools/campaign_proof.py prepare tools/produce/examples/marca-salao-ns-002-p001.video-request.json --output-dir .workspace/tmp/prova-campanha-ns001-ns002/ns-002-p001 --json
+          python tools/campaign_proof.py verify tools/produce/examples/marca-salao-ns-002-p001.video-request.json --json
+
+      - name: Renderizar NS-001 perfil Instagram Reels
+        run: |
+          python tools/campaign_proof.py render tools/produce/examples/marca-salao-ns-001-p001.video-request.json --profile instagram-reels-video --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/instagram-reels-video --json
+
+      - name: Renderizar NS-002 perfil Instagram Reels
+        run: |
+          python tools/campaign_proof.py render tools/produce/examples/marca-salao-ns-002-p001.video-request.json --profile instagram-reels-video --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-002-p001/instagram-reels-video --json
+
+      - name: Gerar paginas de revisao HTML
+        run: |
+          python tools/campaign_proof.py review tools/produce/examples/marca-salao-ns-001-p001.video-request.json --output .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/revisao-ns-001-p001.html --json
+          python tools/campaign_proof.py review tools/produce/examples/marca-salao-ns-002-p001.video-request.json --output .workspace/archives/prova-campanha-ns001-ns002/ns-002-p001/revisao-ns-002-p001.html --json
+
+      - name: Inspecao FFprobe dos MP4 produzidos
+        run: |
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/instagram-reels-video/*-primary-output.mp4
+          ffprobe -v error -show_streams -show_format -of json \
+            .workspace/archives/prova-campanha-ns001-ns002/ns-002-p001/instagram-reels-video/*-primary-output.mp4
+
+      - name: Upload de artifacts de prova
+        uses: actions/upload-artifact@v4
+        with:
+          name: prova-campanha-ns001-ns002-${{ matrix.os }}
+          path: |
+            .workspace/archives/prova-campanha-ns001-ns002/**
+            !.workspace/archives/prova-campanha-ns001-ns002/**/staging/**
+            !.workspace/archives/prova-campanha-ns001-ns002/**/.backup/**

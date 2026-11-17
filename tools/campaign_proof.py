@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html as html_mod
 import json
 import os
 import shutil
@@ -151,6 +152,10 @@ class ProofError(Exception):
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _html_escape(text: str) -> str:
+    return html_mod.escape(str(text or ""), quote=True)
 
 
 def _load_json(path: str, root: str, label: str) -> dict:
@@ -322,7 +327,14 @@ def _collect_media(request: dict) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 
 def cmd_prepare(request_path: str, output_dir: str, root: str) -> dict:
-    """Prepara mídia sintética e valida o pedido. Devolve relatório."""
+    """Prepara mídia sintética e valida o pedido.
+
+    Gera PNGs sintéticos nos caminhos referenciados pelo pedido (resolvidos a
+    partir da raiz), preservando mídias já existentes informadas pelo operador.
+    Mídias recém-criadas são marcadas com origin='synthetic-proof'. Se
+    --output-dir for informado, grava nele uma cópia do pedido preparado com
+    caminhos atualizados para os arquivos gerados.
+    """
     request = _load_json(request_path, root, "pedido")
     errors = validate_video_request(request, root)
     if errors:
@@ -334,29 +346,33 @@ def cmd_prepare(request_path: str, output_dir: str, root: str) -> dict:
         }
 
     media_index = _collect_media(request)
-    abs_output = render_local.fs_path(os.path.join(root, output_dir))
-    if not render_local.contained(root, output_dir):
-        raise ProofError("SAIDA_FORA_RAIZ", output_dir)
-    os.makedirs(abs_output, exist_ok=True)
-
     project_id = request["id"]
-    prepared = []
+    prepared_media = []
+
     for scene in request.get("scenes", []):
         media_id = scene["mediaId"]
         media = media_index[media_id]
-        target_name = f"{media_id}.png"
-        target_abs = os.path.join(abs_output, target_name)
-        write_scene_png(target_abs, project_id, media_id, 1)
-        if not os.path.isfile(target_abs):
+        mpath = media["path"]
+        abs_media = render_local.fs_path(os.path.join(root, mpath))
+
+        # Preserva mídia existente do operador; gera sintética somente se faltar.
+        if os.path.isfile(abs_media):
+            origin = media.get("origin", "operador")
+        else:
+            os.makedirs(render_local.fs_path(os.path.dirname(abs_media)), exist_ok=True)
+            write_scene_png(abs_media, project_id, media_id, 1)
+            origin = "synthetic-proof"
+
+        if not os.path.isfile(abs_media):
             errors.append(ProofError("MEDIA_AUSENTE", media_id))
             continue
-        prepared.append({
+
+        prepared_media.append({
             "sceneId": scene["id"],
             "mediaId": media_id,
-            "mediaPath": media["path"],
-            "generatedAsset": render_local.rel(root, target_abs),
+            "mediaPath": mpath,
             "type": media["type"],
-            "origin": media["origin"],
+            "origin": origin,
             "license": media.get("license", DEFAULT_LICENSE),
             "durationMs": scene["durationMs"],
             "caption": scene["caption"],
@@ -371,22 +387,49 @@ def cmd_prepare(request_path: str, output_dir: str, root: str) -> dict:
             "errors": [{"code": e.code, "subject": e.subject} for e in errors],
         }
 
+    prepared_request_path = None
+    if output_dir:
+        abs_output = render_local.fs_path(os.path.join(root, output_dir))
+        if not render_local.contained(root, output_dir):
+            raise ProofError("SAIDA_FORA_RAIZ", output_dir)
+        os.makedirs(abs_output, exist_ok=True)
+        prepared_request = json.loads(json.dumps(request))
+        path_by_media_id = {m["mediaId"]: m["mediaPath"] for m in prepared_media}
+        for m in prepared_request.get("media", []):
+            if m["id"] in path_by_media_id:
+                m["path"] = path_by_media_id[m["id"]]
+                m["origin"] = next(
+                    (pm["origin"] for pm in prepared_media if pm["mediaId"] == m["id"]),
+                    m.get("origin", DEFAULT_LICENSE),
+                )
+        prepared_request_path = os.path.join(abs_output, "prepared-request.json")
+        with open(render_local.fs_path(prepared_request_path), "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(prepared_request, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+
     return {
         "ok": True,
         "operation": "prepare",
         "request": request_path,
+        "preparedRequest": render_local.rel(root, prepared_request_path) if prepared_request_path else None,
         "requestId": request["id"],
         "project": request["project"],
         "outputDir": output_dir,
-        "mediaPrepared": prepared,
-        "sceneCount": len(prepared),
+        "mediaPrepared": prepared_media,
+        "sceneCount": len(prepared_media),
         "totalDurationMs": sum(s["durationMs"] for s in request.get("scenes", [])),
         "preparedAt": _now_iso(),
     }
 
 
 def cmd_verify(request_path: str, root: str) -> dict:
-    """Valida o pedido e exibe relatório de prontidão estrutural."""
+    """Valida o pedido e exibe relatório de prontidão estrutural.
+
+    Agora também verifica:
+      - existência do ProjectManifest referenciado por project;
+      - existência de cada arquivo de mídia referenciado dentro da raiz.
+    ready=true somente quando estrutura, manifest e mídias estão OK.
+    """
     request = _load_json(request_path, root, "pedido")
     errors = validate_video_request(request, root)
     if errors:
@@ -397,15 +440,35 @@ def cmd_verify(request_path: str, root: str) -> dict:
             "errors": [{"code": e.code, "subject": e.subject} for e in errors],
         }
 
+    # Verifica existência do ProjectManifest
+    project_rel = request.get("project")
+    project_abs = render_local.fs_path(os.path.join(root, project_rel)) if project_rel else None
+    project_exists = (
+        isinstance(project_rel, str)
+        and project_rel.strip()
+        and render_local.contained(root, project_rel)
+        and os.path.isfile(project_abs)
+    )
+    if not project_exists:
+        errors.append(ProofError("PROJECT_MANIFEST_AUSENTE", project_rel))
+
+    # Verifica existência de cada arquivo de mídia referenciado
     media_index = _collect_media(request)
     scenes = request.get("scenes", [])
-    total_duration = sum(s["durationMs"] for s in scenes)
-    missing_media = [
-        s["mediaId"] for s in scenes
-        if s.get("mediaId") not in media_index
-    ]
+    missing_media = []
+    for scene in scenes:
+        media_id = scene.get("mediaId")
+        media = media_index.get(media_id)
+        if not media:
+            missing_media.append(scene.get("mediaId", scene.get("id", "?")))
+            continue
+        mpath = media.get("path", "")
+        abs_mpath = render_local.fs_path(os.path.join(root, mpath)) if mpath else None
+        if not mpath or not render_local.contained(root, mpath) or not os.path.isfile(abs_mpath):
+            missing_media.append(media_id)
 
-    ready = len(errors) == 0 and not missing_media
+    total_duration = sum(s["durationMs"] for s in scenes)
+    ready = len(errors) == 0 and not missing_media and project_exists
 
     return {
         "ok": True,
@@ -422,6 +485,7 @@ def cmd_verify(request_path: str, root: str) -> dict:
         "totalDurationMs": total_duration,
         "totalDurationSeconds": total_duration / 1000.0,
         "mediaCount": len(media_index),
+        "projectManifestExists": project_exists,
         "missingMediaReferences": missing_media,
         "structuralValid": len(errors) == 0,
         "ready": ready,
@@ -436,7 +500,11 @@ def _ffmpeg_available() -> bool:
 def cmd_render(request_path: str, profile: str, output_dir: str,
                root: str) -> dict:
     """Executa o render via tools/produce_video.py. Se ffmpeg faltar, devolve
-    relatório de pendência sem tocar entrega anterior."""
+    relatório de pendência sem tocar entrega anterior.
+
+    Obtém o MP4 pelo resultado da entrega atual (não por ordenação de caminhos)
+    e confirma sucesso somente após render + inspeção aprovados.
+    """
     abs_output = render_local.fs_path(os.path.join(root, output_dir))
     if not render_local.contained(root, output_dir):
         raise ProofError("SAIDA_FORA_RAIZ", output_dir)
@@ -457,14 +525,17 @@ def cmd_render(request_path: str, profile: str, output_dir: str,
             ".workspace/tools/ffmpeg"
         )
         result["comandoRetomada"] = (
-            f"python tools/produce_video.py --input {request_path} "
+            f"{sys.executable} tools/produce_video.py --input {request_path} "
             f"--profile {profile} --output-dir {output_dir} --json"
         )
         return result
 
+    # Carrega o pedido para passar ao comando e para inspeção.
+    request = _load_json(request_path, root, "pedido")
+
     abs_request = render_local.fs_path(os.path.join(root, request_path))
     cmd = [
-        "python", "tools/produce_video.py",
+        sys.executable, "tools/produce_video.py",
         "--input", abs_request,
         "--profile", profile,
         "--output-dir", abs_output,
@@ -493,35 +564,69 @@ def cmd_render(request_path: str, profile: str, output_dir: str,
         return result
 
     result["rawRenderOutput"] = render_out
-    result["status"] = (
-        "concluido" if proc.returncode == 0 and render_out.get("overallStatus") != "partial"
-        else "parcial_ou_falhou"
-    )
+    render_ok = proc.returncode == 0 and render_out.get("overallStatus") != "partial"
+    result["status"] = "concluido" if render_ok else "parcial_ou_falhou"
     result["renderExitCode"] = proc.returncode
 
-    # Inspeciona o MP4 com ffprobe se houver entrega
+    # Inspeciona o MP4 do perfil solicitado pelo resultado da entrega atual.
     profile_out = None
     for p in render_out.get("profiles", []):
         if p.get("profileId") == profile:
             profile_out = p
             break
+
     if profile_out:
         result["profileStatus"] = profile_out.get("status")
         result["profileFailureCode"] = profile_out.get("failureCode")
         result["profileError"] = profile_out.get("error")
-        # tenta encontrar o MP4 na pasta de saida
-        import glob
-        mp4_candidates = sorted(glob.glob(os.path.join(abs_output, "**", "*.mp4"), recursive=True))
-        if mp4_candidates:
-            mp4_path = mp4_candidates[-1]
+
+        # Usa o deliveryManifest para localizar o vídeo do perfil atual.
+        delivery_manifest_rel = profile_out.get("deliveryManifest")
+        video_path = None
+        if delivery_manifest_rel:
+            manifest_abs = render_local.fs_path(
+                os.path.join(root, delivery_manifest_rel)
+            )
+            if os.path.isfile(manifest_abs):
+                try:
+                    with open(manifest_abs, "r", encoding="utf-8") as fh:
+                        manifest = json.load(fh)
+                    artifacts = manifest.get("artifacts", {})
+                    video_info = artifacts.get("video", {})
+                    video_rel = video_info.get("path")
+                    if video_rel:
+                        abs_video = render_local.fs_path(os.path.join(root, video_rel))
+                        if os.path.isfile(abs_video):
+                            video_path = abs_video
+                except (OSError, ValueError):
+                    pass
+
+        # Fallback: procura o MP4 mais recente dentro da pasta do perfil.
+        if not video_path:
+            import glob
+            mp4_candidates = sorted(
+                glob.glob(os.path.join(abs_output, "**", "*.mp4"), recursive=True),
+                key=os.path.getmtime,
+                reverse=True,
+            )
+            if mp4_candidates:
+                video_path = mp4_candidates[0]
+
+        if video_path:
             try:
+                total_duration = sum(int(s["durationMs"]) for s in request.get("scenes", []))
                 inspection = build_video.validate_mp4(
-                    mp4_path, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS,
-                    total_duration_s(request), timeout=30,
+                    video_path, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_FPS,
+                    total_duration, timeout=30,
                 )
                 result["ffprobe"] = inspection
-                result["mp4Path"] = render_local.rel(root, mp4_path)
-                result["ok"] = inspection.get("audioStreams", 1) == 0
+                result["mp4Path"] = render_local.rel(root, video_path)
+                # Sucesso somente se render completou E inspeção aprovada (0 áudio).
+                result["ok"] = (
+                    render_ok
+                    and inspection.get("audioStreams", 1) == 0
+                    and inspection.get("videoStreams") == 1
+                )
             except build_video.DeliveryError as exc:
                 result["ffprobeError"] = str(exc)
     return result
@@ -532,48 +637,166 @@ def total_duration_s(request: dict) -> int:
 
 
 def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
-    """Gera a página HTML de revisão local a partir dos resultados."""
+    """Gera a página HTML de revisão local a partir dos resultados reais da prova.
+
+    Consome o estado do pedido (estrutura, janelas, métricas, render) e
+    apresenta: identificação da peça, sequência de cenas com miniatura,
+    indicação de mídias sintéticas/faltantes, vídeo reproduzível quando o MP4
+    existir, legendas/SRT quando disponíveis, resultado do pré-voo/render/inspeção
+    com avisos, caminhos de entrega e comando para repetir. Escapa textos
+    inseridos e usa links relativos para funcionar após transferir a pasta.
+    """
     request = _load_json(request_path, root, "pedido")
     errors = validate_video_request(request, root)
 
     scenes_html = ""
     media_index = _collect_media(request)
+    total_duration_ms = sum(int(s["durationMs"]) for s in request.get("scenes", []))
+
     for i, scene in enumerate(request.get("scenes", []), start=1):
         media = media_index.get(scene.get("mediaId"), {})
         media_path = media.get("path", "")
-        media_exists = (
-            render_local.contained(root, media_path)
-            and os.path.isfile(render_local.fs_path(os.path.join(root, media_path)))
-        )
+        abs_media = render_local.fs_path(os.path.join(root, media_path)) if media_path else None
+        media_exists = bool(media_path) and render_local.contained(root, media_path) and os.path.isfile(abs_media)
+        origin = media.get("origin", "")
+        is_synthetic = origin == "synthetic-proof" or not media_path
+        media_label = _html_escape(media.get("mediaId", scene.get("mediaId", "")))
+        caption = _html_escape(scene.get("caption", ""))
         scenes_html += f"""
         <tr>
             <td>{i}</td>
             <td><code>{scene.get('id','')}</code></td>
             <td>{scene.get('durationMs','')} ms</td>
             <td>{scene.get('narrativeFunction','')}</td>
-            <td>{media.get('mediaId', scene.get('mediaId',''))}</td>
+            <td>{media_label}</td>
             <td>{media.get('type','')}</td>
-            <td>{"SIM" if media_exists else "NÃO (faltante)"}</td>
-            <td>{scene.get('caption','')}</td>
+            <td class="{'ok' if media_exists else 'blocked'}">{'SIM' if media_exists else 'NÃO (faltante)'}</td>
+            <td>{caption}</td>
+            <td>{'SINTÉTICA' if is_synthetic else 'OPERADOR'}</td>
         </tr>
+        """
+
+    # Estado editorial a partir da documentação da peça (briefing/roteiro).
+    editorial_note = ""
+    project_rel = request.get("project")
+    if project_rel and render_local.contained(root, project_rel):
+        project_abs = render_local.fs_path(os.path.join(root, project_rel))
+        if os.path.isfile(project_abs):
+            try:
+                with open(project_abs, "r", encoding="utf-8") as fh:
+                    project_doc = json.load(fh)
+                editorial_note = (
+                    f"<p><strong>Projeto:</strong> {_html_escape(project_doc.get('name',''))}</p>"
+                    f"<p><strong>Marca/Tema:</strong> {_html_escape(project_doc.get('brandTheme',''))}</p>"
+                    f"<p><strong>Permissões:</strong> briefing aprovado="
+                    f"{project_doc.get('contentPolicies',{}).get('requireApprovedBriefing', False)}, "
+                    f"roteiro aprovado="
+                    f"{project_doc.get('contentPolicies',{}).get('requireApprovedScript', False)}</p>"
+                )
+            except (OSError, ValueError):
+                editorial_note = "<p>Não foi possível ler o ProjectManifest da peça.</p>"
+        else:
+            editorial_note = "<p>ProjectManifest não encontrado na raiz.</p>"
+    else:
+        editorial_note = "<p>Nenhum ProjectManifest informado no pedido.</p>"
+
+    # Tenta incluir dados de render se houver um arquivo de resultado recente
+    # ao lado do pedido (gerado por render ou por execução anterior).
+    render_summary = ""
+    mp4_rel = None
+    srt_rel = None
+    nar_rel = None
+    render_status = "não executado"
+    render_error = ""
+    # Procura por um index.json ou delivery-manifest em pastas de entrega próximas
+    import glob
+    candidate_dirs = []
+    req_dir = os.path.dirname(render_local.fs_path(os.path.join(root, request_path)))
+    for d in [req_dir, os.path.join(root, ".workspace", "archives"), os.path.join(root, ".workspace", "tmp")]:
+        if os.path.isdir(d):
+            candidate_dirs.append(d)
+    for cand in candidate_dirs:
+        for sub in os.listdir(cand):
+            sub_path = os.path.join(cand, sub)
+            if not os.path.isdir(sub_path):
+                continue
+            index_path = os.path.join(sub_path, "index.json")
+            manifest_path = os.path.join(sub_path, "delivery-manifest.json")
+            if os.path.isfile(index_path):
+                try:
+                    with open(index_path, "r", encoding="utf-8") as fh:
+                        idx = json.load(fh)
+                    if idx.get("requestId") == request.get("id"):
+                        for prof in idx.get("profiles", []):
+                            if prof.get("profileId") == profile or not profile:
+                                render_status = prof.get("status", "desconhecido")
+                                last = prof.get("lastValidDelivery") or prof.get("lastAttempt") or {}
+                                if last.get("zipPath"):
+                                    mp4_rel = last["zipPath"]
+                                if last.get("manifestPath"):
+                                    # tenta derivar SRT do mesmo diretório
+                                    base = os.path.dirname(last.get("manifestPath",""))
+                                    cand_srt = os.path.join(base, "captions.srt")
+                                    cand_nar = os.path.join(base, "narration-script.txt")
+                                    if os.path.isfile(render_local.fs_path(os.path.join(root, cand_srt))):
+                                        srt_rel = cand_srt
+                                    if os.path.isfile(render_local.fs_path(os.path.join(root, cand_nar))):
+                                        nar_rel = cand_nar
+                                render_error = last.get("error","")
+                                break
+                except (OSError, ValueError):
+                    pass
+
+    render_section = ""
+    if render_status == "concluido" and mp4_rel:
+        abs_mp4 = render_local.fs_path(os.path.join(root, mp4_rel)) if mp4_rel else None
+        mp4_exists = bool(mp4_rel) and render_local.contained(root, mp4_rel) and os.path.isfile(abs_mp4)
+        render_section = f"""
+        <div class="{'ok' if mp4_exists else 'blocked'}">
+          <h3>Render e inspeção (perfil {_html_escape(profile)})</h3>
+          <p><strong>Status:</strong> {render_status}</p>
+          <p><strong>MP4:</strong> {'<a href="' + mp4_rel + '">baixar/abrir MP4</a>' if mp4_exists else 'não gerado'}</p>
+          <p><strong>SRT:</strong> {'<a href="' + srt_rel + '">baixar SRT</a>' if srt_rel else 'não gerado'}</p>
+          <p><strong>Narração:</strong> {'<a href="' + nar_rel + '">baixar TXT</a>' if nar_rel else 'não gerado'}</p>
+          {f'<p><strong>Aviso:</strong> {_html_escape(render_error)}</p>' if render_error else ''}
+        </div>
+        """
+    elif render_status == "pendente_ferramenta":
+        render_section = f"""
+        <div class="blocked">
+          <h3>Render e inspeção (perfil {_html_escape(profile)})</h3>
+          <p><strong>Status:</strong> pendente de ferramenta</p>
+          <p>{_html_escape(render_error)}</p>
+          <p>Comando para repetir quando FFmpeg/FFprobe estiver disponível:</p>
+          <pre>{sys.executable} tools/produce_video.py --input {_html_escape(request_path)} --profile {_html_escape(profile)} --output-dir &lt;entrega&gt; --json</pre>
+        </div>
+        """
+    else:
+        render_section = """
+        <div class="blocked">
+          <h3>Render e inspeção</h3>
+          <p><strong>Status:</strong> não executado</p>
+          <p>Execute o render para gerar o MP4 e a inspeção.</p>
+          <pre>{sys.executable} tools/produce_video.py --input {request_path} --profile {profile} --output-dir &lt;entrega&gt; --json</pre>
+        </div>
         """
 
     html = f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<title>Revisão de Prova — {request.get('id','campanha')}</title>
+<title>Revisão de Prova — {_html_escape(request.get('id','campanha'))}</title>
 <style>
   body{{font-family:sans-serif;background:#f5f7fa;color:#111;margin:0;padding:24px;}}
   .container{{max-width:980px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);}}
   h1{{font-size:20px;margin-top:0;color:#0b5ed7;}}
+  h2{{font-size:16px;border-bottom:2px solid #0b5ed7;padding-bottom:6px;color:#0b5ed7;margin-top:24px;}}
   .badge{{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;color:#fff;}}
   .badge.ok{{background:#2e7d32;}}.badge.blocked{{background:#c62828;}}.badge.pending{{background:#f9a825;color:#000;}}
   table{{width:100%;border-collapse:collapse;margin:12px 0;}}
   th,td{{border:1px solid #ddd;padding:8px;text-align:left;font-size:14px;}}
   th{{background:#eef4fb;}}
   .section{{margin:24px 0;}}
-  .section h2{{font-size:16px;border-bottom:2px solid #0b5ed7;padding-bottom:6px;color:#0b5ed7;}}
   .note{{background:#fff8e1;border-left:4px solid #f9a825;padding:10px;margin:12px 0;}}
   .error{{background:#ffebee;border-left:4px solid #c62828;padding:10px;margin:12px 0;}}
   .ok{{background:#e8f5e9;border-left:4px solid #2e7d32;padding:10px;margin:12px 0;}}
@@ -582,7 +805,9 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   .card{{border:1px solid #ddd;border-radius:8px;padding:12px;background:#fafbfc;}}
   .card h3{{margin:0 0 8px 0;font-size:14px;color:#0b5ed7;}}
   .card p{{margin:0;font-size:13px;color:#333;}}
-  .mp4-wrap{{margin:12px 0;}}
+  .mp4-wrap{{margin:12px 0;max-width:1080px;}}
+  .mp4-wrap video{{max-width:100%;height:auto;border:1px solid #ddd;border-radius:8px;}}
+  img.thumb{{max-width:160px;height:auto;border:1px solid #ccc;border-radius:6px;}}
 </style>
 </head>
 <body>
@@ -592,11 +817,12 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   <div class="section">
     <h2>Identificação</h2>
     <div class="grid">
-      <div class="card"><h3>Campanha / Peça</h3><p><strong>{request.get('id','')}</strong></p></div>
-      <div class="card"><h3>Título</h3><p>{request.get('title','')}</p></div>
-      <div class="card"><h3>Projeto</h3><p>{request.get('project','')}</p></div>
+      <div class="card"><h3>Campanha / Peça</h3><p><strong>{_html_escape(request.get('id',''))}</strong></p></div>
+      <div class="card"><h3>Título</h3><p>{_html_escape(request.get('title',''))}</p></div>
+      <div class="card"><h3>Projeto</h3><p>{_html_escape(request.get('project',''))}</p></div>
       <div class="card"><h3>Estado editorial</h3><p><span class="badge {'ok' if len(errors)==0 else 'blocked'}">{'Estrutura válida' if len(errors)==0 else 'Erros estruturais'}</span></p></div>
     </div>
+    {editorial_note}
   </div>
 
   <div class="section">
@@ -604,7 +830,7 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
     <p><strong>Perfis:</strong> {', '.join(request.get('profiles', []))}</p>
     <p><strong>Geometria:</strong> {VIDEO_WIDTH}x{VIDEO_HEIGHT}, 9:16</p>
     <p><strong>FPS:</strong> {VIDEO_FPS}</p>
-    <p><strong>Duração total:</strong> {total_duration_s(request)} s ({sum(s['durationMs'] for s in request.get('scenes',[]))} ms)</p>
+    <p><strong>Duração total:</strong> {total_duration_ms // 1000} s ({total_duration_ms} ms)</p>
     <p><strong>Cenas:</strong> {len(request.get('scenes',[]))}</p>
     <p><strong>Áudio:</strong> nenhuma faixa (regra de vídeo sem áudio)</p>
   </div>
@@ -612,21 +838,20 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
   <div class="section">
     <h2>Sequência de cenas</h2>
     <table>
-      <thead><tr><th>#</th><th>ID</th><th>Duração</th><th>Função narrativa</th><th>Mídia</th><th>Tipo</th><th>Presente</th><th>Texto de tela</th></tr></thead>
+      <thead><tr><th>#</th><th>ID</th><th>Duração</th><th>Função narrativa</th><th>Mídia</th><th>Tipo</th><th>Presente</th><th>Origem</th><th>Texto de tela</th></tr></thead>
       <tbody>{scenes_html}</tbody>
     </table>
   </div>
 
   <div class="section">
-    <h2>Mídias sintéticas (prova)</h2>
-    <p class="note">Todas as mídias abaixo são sintéticas e geradas de forma
-    reproduzível a partir do pedido versionado. Elas são substituíveis por
-    capturas reais com fixture editorial antes da peça final.</p>
+    <h2>Mídias (prova)</h2>
+    <p class="note">Mídias sintéticas identificadas como prova (gradiente determinado por project_id/beat_id).
+    São substituíveis por capturas reais com fixture editorial antes da peça final.</p>
     <table>
       <thead><tr><th>Cena</th><th>Mídia</th><th>Tipo</th><th>Origem</th><th>Licença</th><th>Presente</th></tr></thead>
       <tbody>
         {''.join(
-          f"<tr><td>{s.get('id','')}</td><td><code>{m.get('id','')}</code></td><td>{m.get('type','')}</td><td>{m.get('origin','')}</td><td>{m.get('license',DEFAULT_LICENSE)}</td><td>{'SIM' if (render_local.contained(root,m.get('path','')) and os.path.isfile(render_local.fs_path(os.path.join(root,m.get('path',''))))) else 'NÃO'}</td></tr>"
+          f"<tr><td>{s.get('id','')}</td><td><code>{m.get('id','')}</code></td><td>{m.get('type','')}</td><td>{_html_escape(m.get('origin',''))}</td><td>{m.get('license',DEFAULT_LICENSE)}</td><td class=\"{'ok' if (render_local.contained(root,m.get('path','')) and os.path.isfile(render_local.fs_path(os.path.join(root,m.get('path',''))))) else 'blocked'}\">{'SIM' if (render_local.contained(root,m.get('path','')) and os.path.isfile(render_local.fs_path(os.path.join(root,m.get('path',''))))) else 'NÃO'}</td></tr>"
           for s in request.get('scenes',[]) for m in [media_index.get(s.get('mediaId'),{})]
         )}
       </tbody>
@@ -640,18 +865,15 @@ def cmd_review(request_path: str, output_html: str | None, root: str) -> dict:
       <p><strong>Erros:</strong> {len(errors)}</p>
       {''.join(f"<p>- [{e.code}] {e.subject or ''}</p>" for e in errors) if errors else "<p>Nenhum erro estrutural.</p>"}
     </div>
-    <p class="note">
-      <strong>Render:</strong> pendente de ferramenta ffmpeg/ffprobe nesta estação.
-      Quando disponível, execute:
-      <code>python tools/produce_video.py --input {request_path} --profile instagram-reels-video --output-dir &lt;entrega&gt; --json</code>
-    </p>
+    {render_section}
   </div>
 
   <div class="section">
     <h2>Comando para repetir a prova</h2>
-    <pre>python tools/campaign_proof.py prepare {request_path} --output-dir .workspace/tmp/prova-campanha-ns001-ns002/{request.get('id','campanha')}
-python tools/campaign_proof.py verify {request_path}
-python tools/campaign_proof.py review {request_path} --output revisao-{request.get('id','campanha')}.html</pre>
+    <pre>{sys.executable} tools/campaign_proof.py prepare {_html_escape(request_path)} --output-dir .workspace/tmp/prova-campanha-ns001-ns002/{request.get('id','campanha')}
+{sys.executable} tools/campaign_proof.py verify {_html_escape(request_path)}
+{sys.executable} tools/campaign_proof.py render {_html_escape(request_path)} --profile &lt;perfil&gt; --output-dir &lt;entrega&gt;
+{sys.executable} tools/campaign_proof.py review {_html_escape(request_path)} --output revisao-{request.get('id','campanha')}.html</pre>
   </div>
 </div>
 </body>
@@ -662,6 +884,7 @@ python tools/campaign_proof.py review {request_path} --output revisao-{request.g
     if output_html:
         if not render_local.contained(root, output_html):
             raise ProofError("SAIDA_FORA_RAIZ", output_html)
+        os.makedirs(render_local.fs_path(os.path.dirname(output_html)), exist_ok=True)
         with open(abs_html, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(html)
 
@@ -673,7 +896,11 @@ python tools/campaign_proof.py review {request_path} --output revisao-{request.g
         "structuralErrors": [{"code": e.code, "subject": e.subject} for e in errors],
         "htmlPath": output_html,
         "sceneCount": len(request.get("scenes", [])),
-        "totalDurationMs": total_duration_s(request) * 1000,
+        "totalDurationMs": total_duration_ms,
+        "renderStatus": render_status,
+        "mp4Path": mp4_rel,
+        "srtPath": srt_rel,
+        "narrationPath": nar_rel,
     }
 
 
