@@ -312,6 +312,8 @@ def run_browser_regression():
             page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
 
             # Alteracoes nao salvas no trabalho ativo
+            with page.expect_response(lambda r: '/api/works/open' in r.url and r.status == 200, timeout=20000):
+                work_row.get_by_role('button', name='Reabrir').click()
             page.locator('#mode-video-btn').click()
             page.locator('#v-title').wait_for(state='visible', timeout=20000)
             page.locator('#v-title').fill('Titulo alterado sem salvar')
