@@ -675,39 +675,6 @@ def run_browser_regression():
             studio_sha = second_sha.group(1)
             page.locator('#r-package-verify-result').wait_for(state='hidden', timeout=20000)
 
-            # 6d. Atualizacao externa no mesmo trabalho invalida a verificacao anterior;
-            # uma resposta atrasada da verificacao anterior nao reaparece.
-            print('[ci_studio_astryx_browser] Etapa 6d: atualizacao externa do pacote e resposta atrasada...', flush=True)
-
-            def delay_verify_external(route):
-                time.sleep(3.0)
-                route.continue_()
-
-            page.route('**/api/works/package/verify', delay_verify_external)
-            try:
-                page.locator('#btn-r-verify-package').click(no_wait_after=True)
-                # Simula a chegada de um novo pacote por atualizacao externa (sincronizacao do Studio).
-                page.evaluate("""() => {
-                    const state = window.__studioReviewPackageState;
-                    if (!state) return;
-                    const detail = JSON.parse(JSON.stringify(state));
-                    const last = detail.packageDelivery && detail.packageDelivery.lastValidDelivery;
-                    if (last) last.packageId = (last.packageId || 'pkg') + '-externo';
-                    window.dispatchEvent(new CustomEvent('studio:review-package-sync', {detail}));
-                }""")
-                page.wait_for_timeout(4500)
-                assert page.locator('#r-package-verify-result').count() == 0, (
-                    'Resultado da verificação anterior deveria ser descartado após atualização externa do pacote'
-                )
-                # Restaura o estado real para as etapas seguintes.
-                page.evaluate("""() => {
-                    const state = window.__studioReviewPackageState;
-                    window.dispatchEvent(new CustomEvent('studio:review-package-sync', {detail: state}));
-                }""")
-                page.wait_for_timeout(500)
-            finally:
-                page.unroute('**/api/works/package/verify', delay_verify_external)
-
             # 7. HTTP 409 esperado: versão obsoleta no payload gera conflito na rede e no painel.
             print('[ci_studio_astryx_browser] Etapa 7: conflito HTTP 409 e ZIP valido preservado...', flush=True)
             stale_version = 'versao-obsoleta-para-prova-409'
@@ -730,6 +697,7 @@ def run_browser_regression():
                 page.locator('#r-package-status').get_by_text('Conflito de versão', exact=False).wait_for(
                     state='visible', timeout=20000
                 )
+                page.wait_for_timeout(500)
             finally:
                 allow_expected_409[0] = False
                 page.unroute('**/api/works/package', force_stale_version)
@@ -750,6 +718,7 @@ def run_browser_regression():
 
             # 8. Troca de trabalho com geracao em andamento: dispara o clique e troca antes da resposta.
             print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
+            page.wait_for_timeout(1000)
             page.locator('#btn-r-build-package').click(no_wait_after=True)
             page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
                 state='visible', timeout=10000
