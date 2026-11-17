@@ -87,15 +87,25 @@ def run_browser_regression():
     template_id = 'ci-modelo-astryx'
     _cleanup_test_artifacts(work_id, template_id)
 
+    server_log = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-server.log')
+    os.makedirs(os.path.dirname(server_log), exist_ok=True)
+    log_fh = open(server_log, 'w', encoding='utf-8', errors='replace')
     proc = subprocess.Popen(
         [sys.executable, os.path.join(ROOT, 'tools', 'video_studio.py'), '--port', str(port)],
         cwd=ROOT,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_fh,
+        stderr=subprocess.STDOUT,
     )
 
     try:
-        _wait_ready(base_url)
+        try:
+            _wait_ready(base_url)
+        except Exception:
+            log_fh.flush()
+            with open(server_log, encoding='utf-8', errors='replace') as fh:
+                tail = fh.read()[-4000:]
+            print(f'[ci_studio_astryx_browser] Servidor nao respondeu. Log do Studio:\n{tail}', flush=True)
+            raise
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={'width': 1280, 'height': 840})
@@ -854,6 +864,7 @@ def run_browser_regression():
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
+        log_fh.close()
         _cleanup_test_artifacts(work_id, template_id, enqueue_res.get('batch', {}).get('batchId') if 'enqueue_res' in locals() else None)
         _cleanup_test_artifacts(second_work, template_id)
 
