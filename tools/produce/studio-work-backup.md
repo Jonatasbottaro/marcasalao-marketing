@@ -85,10 +85,17 @@ Resultado: OK — backup integro e dependencias satisfeitas.
 
 > [!IMPORTANT]
 > A validação é **compartilhada** de forma idêntica entre `inspect` e `restore`:
+> - Formato estrito de `MANIFEST.json`: validação do tipo raiz (objeto), schemaVersion, workId e estrutura antes de acessar campos.
+> - Presença obrigatória de `work.json` no manifesto e no ZIP.
+> - Correspondência exata 1:1 entre arquivos declarados no manifesto e entradas do ZIP (rejeita arquivos extras ou faltantes).
+> - Rejeição expressa de entradas duplicadas no arquivo ZIP, na lista `files` e na lista `dependencies.sharedMedia`.
+> - Confinamento rigoroso contra path traversal: caminhos de dependências e destino validados contra a raiz resolvida do workspace antes de ler ou gravar.
 > - Integridade interna do ZIP (tamanho e SHA-256 de cada entrada).
-> - Restrição estrita: apenas arquivos permitidos do trabalho indicado podem constar no ZIP.
+> - Restrição estrita de escopo: apenas arquivos permitidos do trabalho indicado podem constar no ZIP (exclui `review-state.json`, deliveries, etc.).
 > - Presença e hash SHA-256 do `ProjectManifest` no checkout de destino.
 > - Presença e hash SHA-256 de todas as **mídias compartilhadas** (arquivos fora da pasta do trabalho).
+> - Dependência obrigatória ausente na origem (ProjectManifest ou mídia compartilhada referenciada) impede a criação de um backup anunciado como íntegro.
+> - Para arquivos inválidos, tanto `inspect` quanto `restore` retornam código 1 com diagnóstico claro.
 
 ---
 
@@ -118,14 +125,17 @@ python tools/studio_work_backup.py restore \
 
 > [!CAUTION]
 > A restauração **recusa expressamente** qualquer diretório de destino já existente,
-> mesmo que vazio. Não há sobrescrita cega.
+> mesmo que vazio. Não há sobrescrita cega. Essa garantia é verificada no início da
+> operação e **reconfirmada imediatamente antes da publicação** (`os.replace`), prevenindo
+> condições de corrida (TOCTOU) mesmo que o diretório seja criado durante o staging.
 
 ### Montagem segura (staging e publicação atômica)
 
-1. A validação compartilhada roda antes de qualquer escrita. Se houver divergência ou dependência ausente, aborta imediatamente.
+1. A validação compartilhada roda antes de qualquer escrita. Se houver divergência ou dependência ausente, aborta imediatamente com diagnóstico.
 2. O trabalho é montado em um diretório temporário exclusivo (`.backup-staging-<work-id>-...`) no **mesmo sistema de arquivos** do destino final.
 3. Todo o conteúdo do staging é validado contra o manifesto antes da promoção.
-4. O diretório final é publicado em uma **única operação atômica** (`os.replace`). Se ocorrer qualquer erro ou interrupção no meio do processo, o staging é descartado e nenhum trabalho parcial aparece no destino.
+4. O backup preserva o arquivo ZIP anterior: a promoção utiliza `os.replace` atômico sem remover o arquivo prévio previamente. Se ocorrer falha durante o empacotamento, o arquivo anterior permanece intacto.
+5. Na restauração, o diretório final é publicado em uma **única operação atômica** (`os.replace`) após revalidação de ausência do destino. Se ocorrer qualquer erro ou interrupção, o staging é descartado e nenhum trabalho parcial aparece no destino (comportamento garantido tanto no Windows quanto no Linux/Ubuntu).
 
 ---
 

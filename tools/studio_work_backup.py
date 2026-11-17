@@ -11,7 +11,7 @@ Uso:
   python tools/studio_work_backup.py restore backup.zip --workspace /outro/checkout
 
 Regras de escopo (v1):
-  Inclui: work.json, editorial.json, planning.json,
+  Inclui: work.json (obrigatorio), editorial.json, planning.json,
           media-library.json, drafts/ (video, carousel, motion), media/ do trabalho.
   Exclui: review-state.json (aprovacoes fora desta versao), credenciais,
           caches, fila, entregas renderizadas, SQLite.
@@ -39,6 +39,7 @@ from typing import Any
 SCHEMA_VERSION = 1
 MANIFEST_ARCHIVE_PATH = "MANIFEST.json"
 KEBAB_CASE_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+SHA256_HEX_RE = re.compile(r'^[0-9a-f]{64}$')
 
 # Chaves de work_paths() que fazem parte do backup.
 # reviewStateFile (review-state.json) foi explicitamente excluido para manter
@@ -95,7 +96,7 @@ def _find_root(start: str | None = None) -> str:
     )
     if result.returncode != 0:
         raise RuntimeError('Nao foi possivel encontrar a raiz do repositório Git.')
-    return result.stdout.strip().replace('/', os.sep)
+    return os.path.realpath(result.stdout.strip())
 
 
 def _contained(root: str, path: str) -> bool:
@@ -106,6 +107,8 @@ def _contained(root: str, path: str) -> bool:
 
 def _confine(root: str, rel_or_abs: str) -> str:
     """Resolve e confirma que o caminho está dentro de root."""
+    if not isinstance(rel_or_abs, str) or not rel_or_abs.strip():
+        raise ValueError('Caminho vazio.')
     candidate = rel_or_abs if os.path.isabs(rel_or_abs) else os.path.join(root, rel_or_abs)
     real = os.path.realpath(candidate)
     if not _contained(root, real):
@@ -216,20 +219,28 @@ def _collect_dependencies(root: str, work_id: str) -> dict[str, Any]:
 
     # 1. ProjectManifest
     work_abs = _confine(root, paths['workFile'])
-    if os.path.isfile(work_abs):
-        try:
-            with open(work_abs, 'r', encoding='utf-8') as fh:
-                work_doc = json.load(fh)
-            project_rel = (work_doc.get('project') or '').strip().replace('\\', '/')
-            if project_rel:
-                project_abs = _confine(root, project_rel)
-                if os.path.isfile(project_abs):
-                    deps['projectManifest'] = {
-                        'rel': project_rel,
-                        'sha256': sha256_file(project_abs),
-                    }
-        except (json.JSONDecodeError, OSError):
-            pass
+    if not os.path.isfile(work_abs):
+        raise ValueError(f'Arquivo essencial work.json nao encontrado: {paths["workFile"]!r}')
+
+    try:
+        with open(work_abs, 'r', encoding='utf-8') as fh:
+            work_doc = json.load(fh)
+    except Exception as exc:
+        raise ValueError(f'Falha ao ler work.json: {exc}') from exc
+
+    project_rel = (work_doc.get('project') or '').strip().replace('\\', '/')
+    if not project_rel:
+        raise ValueError(f'Trabalho "{work_id}" sem ProjectManifest configurado em work.json')
+
+    # Validar caminho do projectManifest contra a raiz
+    project_abs = _confine(root, project_rel)
+    if not os.path.isfile(project_abs):
+        raise FileNotFoundError(f'Dependencia obrigatoria ProjectManifest ausente na origem: {project_rel!r}')
+
+    deps['projectManifest'] = {
+        'rel': project_rel,
+        'sha256': sha256_file(project_abs),
+    }
 
     # 2. Mídias compartilhadas (fora de .workspace/studio/works/{work_id}/)
     work_base_norm = paths['workDir'].replace('\\', '/') + '/'
@@ -243,50 +254,54 @@ def _collect_dependencies(root: str, work_id: str) -> dict[str, Any]:
             return
         if rel in shared_media_map:
             return
-        try:
-            abs_p = _confine(root, rel)
-            if os.path.isfile(abs_p):
-                shared_media_map[rel] = sha256_file(abs_p)
-        except (ValueError, OSError):
-            pass
+        abs_p = _confine(root, rel)
+        if not os.path.isfile(abs_p):
+            raise FileNotFoundError(f'Midia compartilhada referenciada ausente na origem: {rel!r}')
+        shared_media_map[rel] = sha256_file(abs_p)
 
-    # Rascunho de vídeo
+    # Rascunho de vídeo (opcional)
     video_abs = _confine(root, paths['videoDraft'])
     if os.path.isfile(video_abs):
+        vreq = None
         try:
             with open(video_abs, 'r', encoding='utf-8') as fh:
                 vreq = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            vreq = None
+        if isinstance(vreq, dict):
             for m in vreq.get('media') or []:
                 if isinstance(m, dict):
                     _consider_media_path(m.get('path'))
-        except (json.JSONDecodeError, OSError):
-            pass
 
-    # Rascunho de carrossel
+    # Rascunho de carrossel (opcional)
     carousel_abs = _confine(root, paths['carouselDraft'])
     if os.path.isfile(carousel_abs):
+        creq = None
         try:
             with open(carousel_abs, 'r', encoding='utf-8') as fh:
                 creq = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            creq = None
+        if isinstance(creq, dict):
             for m in creq.get('media') or []:
                 if isinstance(m, dict):
                     _consider_media_path(m.get('path'))
-        except (json.JSONDecodeError, OSError):
-            pass
 
-    # Biblioteca de mídia
+    # Biblioteca de mídia (opcional)
     medialib_abs = _confine(root, paths['mediaLibraryFile'])
     if os.path.isfile(medialib_abs):
+        lib = None
         try:
             with open(medialib_abs, 'r', encoding='utf-8') as fh:
                 lib = json.load(fh)
+        except (json.JSONDecodeError, OSError):
+            lib = None
+        if isinstance(lib, dict):
             for asset in lib.get('assets') or []:
                 if isinstance(asset, dict):
                     for ver in asset.get('versions') or []:
                         if isinstance(ver, dict):
                             _consider_media_path(ver.get('path'))
-        except (json.JSONDecodeError, OSError):
-            pass
 
     deps['sharedMedia'] = [
         {'rel': rel, 'sha256': digest}
@@ -320,7 +335,7 @@ def _build_manifest(root: str, work_id: str, files: list[tuple[str, str]]) -> di
 @dataclass
 class FileCheck:
     rel: str
-    status: str  # 'OK', 'MISSING_IN_ZIP', 'HASH_MISMATCH', 'SIZE_MISMATCH', 'FORBIDDEN'
+    status: str  # 'OK', 'MISSING_IN_ZIP', 'UNEXPECTED_IN_ZIP', 'HASH_MISMATCH', 'SIZE_MISMATCH', 'FORBIDDEN'
     expected_sha256: str = ''
     actual_sha256: str = ''
     expected_size: int = 0
@@ -332,7 +347,7 @@ class FileCheck:
 class DependencyCheck:
     dep_type: str  # 'projectManifest' ou 'sharedMedia'
     rel: str
-    status: str    # 'OK', 'MISSING', 'HASH_MISMATCH'
+    status: str    # 'OK', 'MISSING', 'HASH_MISMATCH', 'INVALID_PATH'
     expected_sha256: str = ''
     actual_sha256: str = ''
     message: str = ''
@@ -356,11 +371,20 @@ def validate_backup(zip_path: str, target_root: str) -> ValidationReport:
             errors=[f'Arquivo de backup nao encontrado: {zip_path!r}']
         )
 
-    # 1. Leitura e validação do ZIP e MANIFEST.json
+    resolved_target = os.path.realpath(target_root)
+    errors: list[str] = []
+    file_checks: list[FileCheck] = []
+    dependency_checks: list[DependencyCheck] = []
+
+    # 1. Leitura do ZIP e verificação de integridade estrutural e duplicadas
     try:
         with zipfile.ZipFile(zip_path, 'r') as zf:
-            zip_names = set(zf.namelist())
-            if MANIFEST_ARCHIVE_PATH not in zip_names:
+            zip_infolist = zf.infolist()
+            raw_names = [info.filename for info in zip_infolist]
+            if len(raw_names) != len(set(raw_names)):
+                errors.append('Arquivo ZIP contem entradas duplicadas no arquivo comprimido.')
+
+            if MANIFEST_ARCHIVE_PATH not in raw_names:
                 return ValidationReport(
                     is_valid=False, work_id='', manifest={},
                     errors=[f'Arquivo {MANIFEST_ARCHIVE_PATH!r} ausente no ZIP.']
@@ -372,62 +396,116 @@ def validate_backup(zip_path: str, target_root: str) -> ValidationReport:
             errors=[f'Arquivo ZIP corrompido ou invalido: {exc}']
         )
 
+    # 2. Parse e validação estrita do formato de MANIFEST.json antes de acessar campos
     try:
         manifest = json.loads(manifest_bytes.decode('utf-8'))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         return ValidationReport(
             is_valid=False, work_id='', manifest={},
-            errors=[f'MANIFEST.json invalido: {exc}']
+            errors=[f'MANIFEST.json invalido: falha ao decodificar JSON ({exc})']
         )
 
-    if manifest.get('schemaVersion') != SCHEMA_VERSION:
+    if not isinstance(manifest, dict):
         return ValidationReport(
-            is_valid=False, work_id='', manifest=manifest,
-            errors=[
-                f'Versao de schema incompativel: esperado {SCHEMA_VERSION}, '
-                f'obtido {manifest.get("schemaVersion")!r}'
-            ]
+            is_valid=False, work_id='', manifest={},
+            errors=['MANIFEST.json invalido: a raiz deve ser um objeto JSON.']
         )
 
-    work_id = manifest.get('workId', '')
+    schema_ver = manifest.get('schemaVersion')
+    if not isinstance(schema_ver, int) or schema_ver != SCHEMA_VERSION:
+        errors.append(f'Versao de schema incompativel: esperado {SCHEMA_VERSION}, obtido {schema_ver!r}')
+
+    work_id = manifest.get('workId')
     if not isinstance(work_id, str) or not KEBAB_CASE_RE.match(work_id):
-        return ValidationReport(
-            is_valid=False, work_id=str(work_id), manifest=manifest,
-            errors=[f'workId invalido no manifesto: {work_id!r}']
-        )
+        errors.append(f'workId invalido no manifesto: {work_id!r}')
+        work_id = str(work_id or '')
 
-    errors: list[str] = []
-    file_checks: list[FileCheck] = []
-    dependency_checks: list[DependencyCheck] = []
+    files_list = manifest.get('files')
+    if not isinstance(files_list, list):
+        errors.append('Campo "files" deve ser uma lista de arquivos no manifesto.')
+        files_list = []
 
-    # 2. Restringir entradas do pacote aos arquivos permitidos
+    deps_dict = manifest.get('dependencies')
+    if deps_dict is not None and not isinstance(deps_dict, dict):
+        errors.append('Campo "dependencies" deve ser um objeto no manifesto.')
+        deps_dict = {}
+    elif deps_dict is None:
+        deps_dict = {}
+
+    # Checar duplicadas em files declarados no manifesto
+    declared_rels = []
+    for entry in files_list:
+        if isinstance(entry, dict) and isinstance(entry.get('rel'), str):
+            declared_rels.append(entry['rel'])
+    if len(declared_rels) != len(set(declared_rels)):
+        errors.append('Manifesto contem entradas duplicadas na lista de arquivos "files".')
+
+    # Checar duplicadas em sharedMedia declaradas no manifesto
+    shared_media_list = deps_dict.get('sharedMedia') or []
+    if not isinstance(shared_media_list, list):
+        errors.append('Campo "dependencies.sharedMedia" deve ser uma lista.')
+        shared_media_list = []
+    else:
+        sm_rels = [sm.get('rel') for sm in shared_media_list if isinstance(sm, dict) and isinstance(sm.get('rel'), str)]
+        if len(sm_rels) != len(set(sm_rels)):
+            errors.append('Manifesto contem entradas duplicadas em dependencies.sharedMedia.')
+
+    # 3. Exigir work.json
+    expected_work_json = f'.workspace/studio/works/{work_id}/work.json'
+    declared_rels_set = set(declared_rels)
+    if expected_work_json not in declared_rels_set:
+        errors.append(f'Arquivo essencial work.json ({expected_work_json}) ausente na declaracao do manifesto.')
+
+    # 4. Restringir entradas do pacote aos arquivos permitidos e verificar correspondência 1:1
     with zipfile.ZipFile(zip_path, 'r') as zf:
-        all_zip_names = zf.namelist()
-        manifest_files_set = {f['rel'] for f in manifest.get('files', []) if isinstance(f, dict)}
+        zip_names = set(zf.namelist())
+        zip_files_set = zip_names - {MANIFEST_ARCHIVE_PATH}
 
-        for name in all_zip_names:
+        # Todas as entradas do zip devem ser permitidas
+        for name in zip_files_set:
             if not _is_allowed_package_entry(work_id, name):
                 msg = f'Entrada nao permitida ou caminho perigoso no ZIP: {name!r}'
                 errors.append(msg)
                 file_checks.append(FileCheck(rel=name, status='FORBIDDEN', message=msg))
 
-        # 3. Conferir cada arquivo listado no manifesto contra o ZIP
-        for entry in manifest.get('files', []):
+        # Correspondência exata 1:1 entre arquivos declarados no manifesto e entradas do ZIP
+        missing_in_zip = declared_rels_set - zip_files_set
+        for m in sorted(missing_in_zip):
+            msg = f'Arquivo declarado no manifesto ausente no ZIP: {m!r}'
+            errors.append(msg)
+            file_checks.append(FileCheck(rel=m, status='MISSING_IN_ZIP', message=msg))
+
+        unexpected_in_zip = zip_files_set - declared_rels_set
+        for u in sorted(unexpected_in_zip):
+            msg = f'Arquivo presente no ZIP nao declarado no manifesto: {u!r}'
+            errors.append(msg)
+            file_checks.append(FileCheck(rel=u, status='UNEXPECTED_IN_ZIP', message=msg))
+
+        # 5. Conferir cada arquivo listado no manifesto contra o ZIP
+        for entry in files_list:
+            if not isinstance(entry, dict):
+                errors.append(f'Entrada invalida na lista "files": {entry!r}')
+                continue
+
             rel = entry.get('rel', '')
             exp_sha = entry.get('sha256', '')
             exp_size = entry.get('size', 0)
 
-            if not _is_allowed_package_entry(work_id, rel):
-                msg = f'Arquivo no manifesto fora do escopo permitido: {rel!r}'
-                errors.append(msg)
-                file_checks.append(FileCheck(rel=rel, status='FORBIDDEN', message=msg))
+            if not isinstance(rel, str) or not rel:
+                errors.append('Entrada na lista "files" sem "rel" valido.')
                 continue
 
+            if not isinstance(exp_size, int) or exp_size < 0:
+                errors.append(f'Tamanho invalido no manifesto para {rel!r}: {exp_size!r}')
+
+            if not isinstance(exp_sha, str) or not SHA256_HEX_RE.match(exp_sha):
+                errors.append(f'SHA-256 invalido no manifesto para {rel!r}: {exp_sha!r}')
+
             if rel not in zip_names:
-                msg = f'Arquivo do manifesto ausente no ZIP: {rel!r}'
-                errors.append(msg)
-                file_checks.append(FileCheck(rel=rel, status='MISSING_IN_ZIP', message=msg))
-                continue
+                continue  # já registrado como MISSING_IN_ZIP
+
+            if not _is_allowed_package_entry(work_id, rel):
+                continue  # já registrado como FORBIDDEN
 
             try:
                 data = zf.read(rel)
@@ -462,66 +540,98 @@ def validate_backup(zip_path: str, target_root: str) -> ValidationReport:
                 errors.append(msg)
                 file_checks.append(FileCheck(rel=rel, status='READ_ERROR', message=msg))
 
-    # 4. Validar dependências no target_root (ProjectManifest e mídias compartilhadas)
-    deps = manifest.get('dependencies') or {}
+    # 6. Validar dependências contra a raiz resolvida do workspace de destino
+    pm_dep = deps_dict.get('projectManifest') or {}
+    if not isinstance(pm_dep, dict):
+        errors.append('Campo "dependencies.projectManifest" deve ser um objeto.')
+        pm_dep = {}
 
-    # 4a. ProjectManifest
-    pm_dep = deps.get('projectManifest') or {}
     pm_rel = pm_dep.get('rel')
     if pm_rel:
-        exp_pm_sha = pm_dep.get('sha256', '')
-        pm_abs = os.path.join(target_root, pm_rel.replace('/', os.sep))
-        if not os.path.isfile(pm_abs):
-            msg = f'ProjectManifest ausente no destino: {pm_rel}'
+        exp_pm_sha = str(pm_dep.get('sha256') or '')
+        # Validar caminho do projectManifest contra o target_root resolvido
+        norm_pm_rel = str(pm_rel).replace('\\', '/')
+        if norm_pm_rel.startswith('/') or '..' in norm_pm_rel.split('/') or ':' in norm_pm_rel:
+            msg = f'Caminho de ProjectManifest invalido ou com path traversal: {pm_rel!r}'
             errors.append(msg)
             dependency_checks.append(DependencyCheck(
-                dep_type='projectManifest', rel=pm_rel, status='MISSING',
-                expected_sha256=exp_pm_sha, message=msg
+                dep_type='projectManifest', rel=norm_pm_rel, status='INVALID_PATH', message=msg
             ))
         else:
-            act_pm_sha = sha256_file(pm_abs)
-            if act_pm_sha != exp_pm_sha:
-                msg = f'ProjectManifest com hash divergente no destino: {pm_rel}'
+            cand_pm = os.path.join(resolved_target, norm_pm_rel.replace('/', os.sep))
+            real_pm = os.path.realpath(cand_pm)
+            if not _contained(resolved_target, real_pm):
+                msg = f'ProjectManifest resolve fora do workspace de destino: {pm_rel!r}'
                 errors.append(msg)
                 dependency_checks.append(DependencyCheck(
-                    dep_type='projectManifest', rel=pm_rel, status='HASH_MISMATCH',
-                    expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha, message=msg
+                    dep_type='projectManifest', rel=norm_pm_rel, status='INVALID_PATH', message=msg
+                ))
+            elif not os.path.isfile(real_pm):
+                msg = f'ProjectManifest ausente no destino: {pm_rel}'
+                errors.append(msg)
+                dependency_checks.append(DependencyCheck(
+                    dep_type='projectManifest', rel=pm_rel, status='MISSING',
+                    expected_sha256=exp_pm_sha, message=msg
                 ))
             else:
-                dependency_checks.append(DependencyCheck(
-                    dep_type='projectManifest', rel=pm_rel, status='OK',
-                    expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha
-                ))
+                act_pm_sha = sha256_file(real_pm)
+                if act_pm_sha != exp_pm_sha:
+                    msg = f'ProjectManifest com hash divergente no destino: {pm_rel}'
+                    errors.append(msg)
+                    dependency_checks.append(DependencyCheck(
+                        dep_type='projectManifest', rel=pm_rel, status='HASH_MISMATCH',
+                        expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha, message=msg
+                    ))
+                else:
+                    dependency_checks.append(DependencyCheck(
+                        dep_type='projectManifest', rel=pm_rel, status='OK',
+                        expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha
+                    ))
 
-    # 4b. Mídias compartilhadas
-    shared_media_deps = deps.get('sharedMedia') or []
-    for sm in shared_media_deps:
+    for sm in shared_media_list:
+        if not isinstance(sm, dict):
+            continue
         sm_rel = sm.get('rel', '')
-        exp_sm_sha = sm.get('sha256', '')
+        exp_sm_sha = str(sm.get('sha256') or '')
         if not sm_rel:
             continue
-        sm_abs = os.path.join(target_root, sm_rel.replace('/', os.sep))
-        if not os.path.isfile(sm_abs):
-            msg = f'Midia compartilhada ausente no destino: {sm_rel}'
+        norm_sm_rel = str(sm_rel).replace('\\', '/')
+        if norm_sm_rel.startswith('/') or '..' in norm_sm_rel.split('/') or ':' in norm_sm_rel:
+            msg = f'Caminho de midia compartilhada invalido ou com path traversal: {sm_rel!r}'
             errors.append(msg)
             dependency_checks.append(DependencyCheck(
-                dep_type='sharedMedia', rel=sm_rel, status='MISSING',
-                expected_sha256=exp_sm_sha, message=msg
+                dep_type='sharedMedia', rel=norm_sm_rel, status='INVALID_PATH', message=msg
             ))
         else:
-            act_sm_sha = sha256_file(sm_abs)
-            if act_sm_sha != exp_sm_sha:
-                msg = f'Midia compartilhada com hash divergente no destino: {sm_rel}'
+            cand_sm = os.path.join(resolved_target, norm_sm_rel.replace('/', os.sep))
+            real_sm = os.path.realpath(cand_sm)
+            if not _contained(resolved_target, real_sm):
+                msg = f'Midia compartilhada resolve fora do workspace de destino: {sm_rel!r}'
                 errors.append(msg)
                 dependency_checks.append(DependencyCheck(
-                    dep_type='sharedMedia', rel=sm_rel, status='HASH_MISMATCH',
-                    expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha, message=msg
+                    dep_type='sharedMedia', rel=norm_sm_rel, status='INVALID_PATH', message=msg
+                ))
+            elif not os.path.isfile(real_sm):
+                msg = f'Midia compartilhada ausente no destino: {sm_rel}'
+                errors.append(msg)
+                dependency_checks.append(DependencyCheck(
+                    dep_type='sharedMedia', rel=sm_rel, status='MISSING',
+                    expected_sha256=exp_sm_sha, message=msg
                 ))
             else:
-                dependency_checks.append(DependencyCheck(
-                    dep_type='sharedMedia', rel=sm_rel, status='OK',
-                    expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha
-                ))
+                act_sm_sha = sha256_file(real_sm)
+                if act_sm_sha != exp_sm_sha:
+                    msg = f'Midia compartilhada com hash divergente no destino: {sm_rel}'
+                    errors.append(msg)
+                    dependency_checks.append(DependencyCheck(
+                        dep_type='sharedMedia', rel=sm_rel, status='HASH_MISMATCH',
+                        expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha, message=msg
+                    ))
+                else:
+                    dependency_checks.append(DependencyCheck(
+                        dep_type='sharedMedia', rel=sm_rel, status='OK',
+                        expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha
+                    ))
 
     is_valid = len(errors) == 0
     return ValidationReport(
@@ -565,7 +675,13 @@ def cmd_backup(args: argparse.Namespace) -> int:
         print('ERRO: Nenhum arquivo encontrado para o trabalho.', file=sys.stderr)
         return 1
 
-    manifest = _build_manifest(root, work_id, files)
+    # Construir manifesto e verificar dependências na origem
+    try:
+        manifest = _build_manifest(root, work_id, files)
+    except (ValueError, FileNotFoundError) as exc:
+        print(f'ERRO: Dependencia obrigatoria ausente na origem: {exc}', file=sys.stderr)
+        return 1
+
     manifest_bytes = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
 
     out_dir = os.path.dirname(output_path) or '.'
@@ -587,11 +703,12 @@ def cmd_backup(args: argparse.Namespace) -> int:
                 print(f'  - {err}', file=sys.stderr)
             return 1
 
-        # Promover atomicamente
-        if os.path.exists(output_path):
-            os.remove(output_path)
-        shutil.move(staging_path, output_path)
+        # Promover atomicamente usando os.replace: preserva o ZIP anterior até a substituição
+        os.replace(staging_path, output_path)
         staging_path = None
+    except Exception as exc:
+        print(f'ERRO ao criar arquivo de backup: {exc}', file=sys.stderr)
+        return 1
     finally:
         if staging_path and os.path.exists(staging_path):
             os.remove(staging_path)
@@ -621,6 +738,9 @@ def cmd_inspect(args: argparse.Namespace) -> int:
 
     root = _find_root()
     dest_root = os.path.realpath(args.workspace) if getattr(args, 'workspace', None) else root
+    if not _contained(root, dest_root):
+        print(f'ERRO: Workspace fora da raiz do projeto: {dest_root!r}', file=sys.stderr)
+        return 1
 
     report = validate_backup(zip_path, dest_root)
 
@@ -641,6 +761,8 @@ def cmd_inspect(args: argparse.Namespace) -> int:
             print(f'  TAMANHO_ERRADO : {fc.rel}  ({fc.actual_size} != {fc.expected_size})')
         elif fc.status == 'MISSING_IN_ZIP':
             print(f'  AUSENTE NO ZIP : {fc.rel}')
+        elif fc.status == 'UNEXPECTED_IN_ZIP':
+            print(f'  NAO DECLARADO  : {fc.rel}')
         elif fc.status == 'FORBIDDEN':
             print(f'  NAO PERMITIDO  : {fc.rel}')
         else:
@@ -659,6 +781,8 @@ def cmd_inspect(args: argparse.Namespace) -> int:
                 print(f'  AUSENTE [{tipo}]  : {dc.rel}')
             elif dc.status == 'HASH_MISMATCH':
                 print(f'  HASH_DIVERGENTE [{tipo}]: {dc.rel}')
+            elif dc.status == 'INVALID_PATH':
+                print(f'  CAMINHO INVALIDO [{tipo}]: {dc.rel}')
 
     print()
     if report.is_valid:
@@ -699,9 +823,9 @@ def cmd_restore(args: argparse.Namespace) -> int:
     work_id = report.work_id
     files_in_manifest = report.manifest.get('files', [])
 
-    # Recusar expressamente qualquer diretório de destino já existente
+    # 1. Checagem inicial: Recusar expressamente qualquer diretório de destino já existente
     dest_work_dir = os.path.join(dest_root, '.workspace', 'studio', 'works', work_id)
-    if os.path.exists(dest_work_dir):
+    if os.path.lexists(dest_work_dir):
         print(
             f'ERRO: O diretorio de destino ja existe: {dest_work_dir!r}.\n'
             f'      A restauracao so e permitida em destinos onde o trabalho nao existe.',
@@ -725,6 +849,7 @@ def cmd_restore(args: argparse.Namespace) -> int:
                     raise ValueError(f'Entrada nao esperada para o trabalho: {rel!r}')
                 rel_in_work = rel[len(base_prefix):]
                 dest_file = os.path.join(staging_work_dir, rel_in_work.replace('/', os.sep))
+                _confine(staging_work_dir, dest_file)
                 os.makedirs(os.path.dirname(dest_file), exist_ok=True)
                 data = zf.read(rel)
                 if sha256_bytes(data) != entry['sha256']:
@@ -743,7 +868,14 @@ def cmd_restore(args: argparse.Namespace) -> int:
             if sha256_file(staged_abs) != entry['sha256']:
                 raise RuntimeError(f'Hash divergente no staging para: {rel_in_work!r}')
 
-        # Publicar o diretório final em uma única operação
+        # 2. Checagem final imediata antes da promoção: previne criação durante staging (TOCTOU)
+        if os.path.lexists(dest_work_dir):
+            raise FileExistsError(
+                f'O diretorio de destino ja existe no momento da publicacao: {dest_work_dir!r}. '
+                f'Restauracao cancelada.'
+            )
+
+        # Publicar o diretório final em uma única operação atômica
         print(f'Publicando trabalho em operacao atomica: {dest_work_dir}')
         os.replace(staging_work_dir, dest_work_dir)
         staging_work_dir = None  # Marcador de promoção bem-sucedida
