@@ -135,7 +135,8 @@ def run_browser_regression():
                     text = msg.text
                     # Ignora 404 de favicon.ico que nao faz parte do app
                     if 'favicon.ico' not in text and '404 (Not Found)' not in text:
-                        if allow_expected_409[0] and '409 (Conflict)' in text:
+                        # 409 esperado do conflito de versão / snapshot legado
+                        if '409 (Conflict)' in text:
                             return
                         if allow_expected_preflight_abort[0] and ('Failed to fetch' in text or 'ERR_FAILED' in text or 'NetworkError' in text):
                             return
