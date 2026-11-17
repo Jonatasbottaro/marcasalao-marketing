@@ -100,10 +100,10 @@ Peça com URL de destino própria e clicável confirmada.
 Peça cujo CTA orienta "link na bio" e o perfil tem um único link externo compartilhado por várias peças.
 
 - Registre o URL do link cadastrado na bio/perfil e os parâmetros UTM efetivamente usados naquele link, quando confirmados.
-- Preencha `url_destino` com o destino do link na bio somente se estiver confirmado.
-- Preencha `url_parametrizada` com os UTM da peça.
+- Preencha `url_destino` com o destino do link da bio somente se estiver confirmado.
+- `url_parametrizada` usa o mesmo destino do link da bio acrescido dos UTMs do perfil (compartilhado entre todas as peças do perfil). Não aplique UTMs de cada peça individualmente ao link compartilhado.
 - `status_destino = confirmado` se o link da bio estiver confirmado; caso contrário, `pendente_de_decisao`.
-- **Atribuição do clique:** em um link de bio compartilhado, atribua o clique ao nível que a evidência sustenta. Se a rede não separar cliques por peça que apontam para o mesmo link da bio, registre a medição no nível da bio/perfil, não de cada peça. Deixe a atribuição por peça indisponível (`cliques_status = indisponível`, valor vazio) enquanto a fonte não identificar qual peça originou o clique.
+- **Atribuição do clique:** em um link de bio compartilhado, atribua o clique ao nível que a evidência sustenta. Se a rede não separar cliques por peça que apontam para o mesmo link da bio, registre a medição no nível da bio/perfil, não de cada peça. Deixe a métrica de cliques por peça vazia com status `indisponivel` enquanto a fonte não identificar qual peça originou o clique.
 - **Diferencie:** cliques reportados pela rede (painel nativo/insights da rede social no link da bio ou sticker) são distintos de acessos identificados por UTM no site (analytics do site). Não confunda um com o outro nem some valores de origens diferentes.
 
 ### 4.3 Peça sem destino clicável
@@ -203,8 +203,8 @@ Validação feita:
 - As linhas de métricas apontam para a publicação correta via `id_publicacao` = `id_peca`.
 - Os CSVs abrem sem perda de colunas ou acentos (codificação UTF-8, vírgula como separador, aspas ao redor de campos com vírgula/acento).
 - Zero medido: `cliques = 0`, `cliques_status = medido` (peça com link direto, fonte fictícia retornou zero).
-- Métrica indisponível: `alcance_status = indisponível`, valor vazio, motivo em `observacoes` decorrente da própria fonte.
-- Cliques por peça indisponíveis: na peça com CTA para a bio, `cliques` vazio e `cliques_status = indisponível`, pois o link de bio é compartilhado e a fonte não identifica qual peça originou o clique.
+- Métrica indisponível: `alcance_status = indisponivel`, valor vazio, motivo em `observacoes` decorrente da própria fonte.
+- Cliques por peça indisponíveis: na peça com CTA para a bio, `cliques` vazio e `cliques_status = indisponivel`, pois o link de bio é compartilhado e a fonte não identifica qual peça originou o clique.
 
 ## 9. Arquivos entregues
 
