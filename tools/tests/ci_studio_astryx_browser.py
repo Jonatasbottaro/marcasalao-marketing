@@ -241,31 +241,25 @@ def run_browser_regression():
             page.keyboard.press('Escape')
             page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
 
-            # Introduz divergencia de hash na midia apos o plano para provocar bloqueio real no pre-voo
-            opened_data = page.evaluate(f"() => fetch('/api/works/open?id={work_id}').then(r => r.json())")
-            orig_vreq = opened_data['videoRequest']
-            bad_vreq = json.loads(json.dumps(orig_vreq))
-            if bad_vreq.get('media'):
-                bad_vreq['media'][0]['sha256'] = '0' * 64
-            page.evaluate(
-                "async (payload) => { const r = await fetch('/api/works/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); return r.json(); }",
-                {'workId': work_id, 'videoRequest': bad_vreq},
-            )
+            # Remove obrigatoriamente um arquivo de midia apos o plano para provocar bloqueio real no pre-voo
+            media_file = os.path.join(ROOT, '.workspace', 'studio', 'works', work_id, 'media', 'tela-abertura.png')
+            media_bak = media_file + '.bak'
             with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
                 batch_btn.click()
             page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
             page.locator('#batch-label-input').fill('Lote Preflight UI')
-            with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
-                page.locator('#btn-batch-confirm').click()
-            page.locator('#batch-confirm-feedback').get_by_text('Enfileiramento bloqueado').wait_for(state='visible', timeout=20000)
-            page.locator('#batch-export-dialog').get_by_text('MEDIA_HASH_MISMATCH').first.wait_for(state='visible', timeout=20000)
-            assert len(enqueue_requests) == before_enq, 'Confirmacao bloqueada nao deve enviar enqueue'
+            shutil.move(media_file, media_bak)
+            try:
+                with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
+                    page.locator('#btn-batch-confirm').click()
+                page.locator('#batch-confirm-feedback').get_by_text('Enfileiramento bloqueado').wait_for(state='visible', timeout=20000)
+                page.locator('#batch-export-dialog').get_by_text('MEDIA_FILE_MISSING').first.wait_for(state='visible', timeout=20000)
+                assert len(enqueue_requests) == before_enq, 'Confirmacao bloqueada nao deve enviar enqueue'
+            finally:
+                if os.path.exists(media_bak) and not os.path.exists(media_file):
+                    shutil.move(media_bak, media_file)
 
-            # Restaura a midia e confirma novamente -> 1 preflight + 1 enqueue
-            page.evaluate(
-                "async (payload) => { const r = await fetch('/api/works/save', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); return r.json(); }",
-                {'workId': work_id, 'videoRequest': orig_vreq},
-            )
+            # Apos restaurar a midia, confirma novamente -> 1 preflight + 1 enqueue
             with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
                 with page.expect_response(lambda r: '/api/queue/enqueue' in r.url and r.status == 200, timeout=30000):
                     page.locator('#btn-batch-confirm').click()
