@@ -32,7 +32,7 @@ Reaproveite a convenção abaixo para todas as peças das campanhas NS-001 e NS-
 | `utm_source` | rede social | `instagram`, `facebook`, `youtube`, `tiktok`, `whatsapp`. Minúsculo, sem acentos. |
 | `utm_medium` | formato/posicionamento | `reels`, `stories`, `shorts`, `status`, `feed`. Minúsculo, sem acentos. |
 | `utm_campaign` | código da campanha | `ns-001` ou `ns-002`. Minúsculo, sem acentos. |
-| `utm_content` | identificador da peça | `<id_peca>-<variante>`, ex.: `ns-001-p001-reels-v1`. Reprodutível e estável. |
+| `utm_content` | identificador da peça | `<id_peca>-<variante>` para links próprios da peça (ex.: `ns-001-p001-reels-v1`). Para o link compartilhado na bio, informe os parâmetros efetivamente cadastrados no perfil; se o perfil não usar `utm_content`, deixe o campo vazio. Reprodutível e estável. |
 
 ### Exemplo fictício
 
@@ -74,7 +74,7 @@ Preencha uma linha por peça publicada (ou planejada) no modelo `modelo-registro
 | `utm_source` | Não | Preencher apenas se houver link clicável confirmado. |
 | `utm_medium` | Não | Idem. |
 | `utm_campaign` | Não | Idem. |
-| `utm_content` | Não | Idem. Deve conter `id_peca` + variante. |
+| `utm_content` | Não | Idem. Para links próprios da peça, deve conter `id_peca` + variante. Para o link compartilhado na bio, informe os parâmetros efetivamente cadastrados no perfil; se o perfil não usar `utm_content`, deixe o campo vazio. |
 
 ### Regras de preenchimento
 
@@ -101,7 +101,7 @@ Peça cujo CTA orienta "link na bio" e o perfil tem um único link externo compa
 
 - Registre o URL do link cadastrado na bio/perfil e os parâmetros UTM efetivamente usados naquele link, quando confirmados.
 - Preencha `url_destino` com o destino do link da bio somente se estiver confirmado.
-- `url_parametrizada` usa o mesmo destino do link da bio acrescido dos UTMs do perfil (compartilhado entre todas as peças do perfil). Não aplique UTMs de cada peça individualmente ao link compartilhado.
+- `url_parametrizada` usa o mesmo destino do link da bio acrescido dos parâmetros UTM efetivamente cadastrados no perfil (compartilhado entre todas as peças do perfil). Não aplique UTMs de cada peça individualmente ao link compartilhado. Se o perfil não cadastrar `utm_content` no link da bio, deixe o campo `utm_content` vazio.
 - `status_destino = confirmado` se o link da bio estiver confirmado; caso contrário, `pendente_de_decisao`.
 - **Atribuição do clique:** em um link de bio compartilhado, atribua o clique ao nível que a evidência sustenta. Se a rede não separar cliques por peça que apontam para o mesmo link da bio, registre a medição no nível da bio/perfil, não de cada peça. Deixe a métrica de cliques por peça vazia com status `indisponivel` enquanto a fonte não identificar qual peça originou o clique.
 - **Diferencie:** cliques reportados pela rede (painel nativo/insights da rede social no link da bio ou sticker) são distintos de acessos identificados por UTM no site (analytics do site). Não confunda um com o outro nem some valores de origens diferentes.
