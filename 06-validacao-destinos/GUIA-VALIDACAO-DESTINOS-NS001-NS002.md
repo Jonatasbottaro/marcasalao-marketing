@@ -97,59 +97,64 @@ Registre como pendência qualquer medição que ainda não tenha fonte confirmad
 - Analytics do site — não configurado
 - Fonte de dados para coleta de métricas — não definida
 
-## 5. Ensaio local (dados fictícios)
+## 5. Ensaio local (redirecionamento em localhost)
 
-O ensaio valida o fluxo de validação de destinos com três cenários: link direto, bio compartilhada e sem link clicável. Inclui um redirecionamento de teste para verificar parâmetros.
+O ensaio valida o fluxo de validação de destinos executando um teste HTTP em **localhost** com duas rotas de redirecionamento fictícias. Não consulta a bio real nem destinos de produção; todos os dados são fictícios.
 
-### 5.1 Cenários do ensaio
+### 5.1 Como reproduzir o teste
 
-| Cenário | Campanha | Peça | Destino | Tipo de link |
-| --- | --- | --- | --- | --- |
-| A | ns-001 | NS-001-P001-reels | https://marcaselao.com.br | Link direto |
-| B | ns-002 | NS-002-P001-stories | https://marcaselao.com.br (link de bio compartilhado) | Bio compartilhada |
-| C | ns-001 | NS-001-P001-status | (nenhum) | Sem link clicável |
+1. Inicie um servidor de teste local com três rotas:
+   - `GET /redirect-passa?<utms>` — responde `302` encaminhando a query string (os quatro UTMs) para `/destino`.
+   - `GET /redirect-descarta?<utms>` — responde `302` descartando a query string, redirecionando para `/destino` sem parâmetros.
+   - `GET /destino` — espelha a query string recebida no corpo da resposta.
+2. Acesse cada rota de redirecionamento com a **mesma entrada** de UTMs (ex.: `utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1`).
+3. Siga o redirecionamento até o destino final (`/destino`).
+4. Compare os parâmetros recebidos no destino final com os parâmetros de entrada.
+5. Se os parâmetros coincidem → preservados (`sim`). Se faltarem → não preservados (`nao`).
 
-### 5.2 Redirecionamento de teste
+### 5.2 Cenários do ensaio
 
-Para verificar a preservação de parâmetros, use um URL de redirecionamento fictício em modo de leitura:
+| Cenário | Destino testado | Tipo de link |
+| --- | --- | --- |
+| `redirecionamento_passa` | `http://127.0.0.1:8765/redirect-passa?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1` | Redirecionamento que encaminha UTMs |
+| `redirecionamento_descarta` | `http://127.0.0.1:8765/redirect-descarta?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1` | Redirecionamento que descarta query string |
+| `sem_link_clicavel` | (nenhum) | Sem link clicável |
 
-```
-https://exemplo-teste.local/redirect?destino=https://marcaselao.com.br&utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1
-```
+### 5.3 Preservação de UTMs na bio real e medição no site
 
-Este URL é fictício e serve apenas para verificar que o fluxo de validação captura os parâmetros. Não inserir em produção.
+A preservação de UTMs em cliques de link de **bio real** e a medição de chegada/conversão no **site** **não foram verificadas neste ensaio**. O ensaio roda somente em `localhost` com rotas fictícias. Registre como **pendente de verificação** quando houver acesso à bio real e ao analytics do site.
 
-### 5.3 Registro do ensaio
+### 5.4 Registro do ensaio
 
 Preencha o modelo `ensaio-validacao-destinos.csv`.
 
 | Coluna | Descrição |
 | --- | --- |
 | `campanha` | `ns-001` ou `ns-002` |
-| `cenario` | `link_direto`, `bio_compartilhada`, `sem_link_clicavel` |
-| `destino_testado` | URL testado no ensaio |
+| `cenario` | `redirecionamento_passa`, `redirecionamento_descarta`, `sem_link_clicavel` |
+| `destino_testado` | URL inicial testada no ensaio |
 | `data_hora_teste` | Data e hora do teste, ISO 8601 com fuso |
-| `url_final_apos_redirects` | URL final após redirecionamentos |
+| `url_final_apos_redirects` | URL final após seguir os redirecionamentos |
 | `utms_preservados` | `sim`, `nao` ou `nao_aplicavel` |
 | `acao_corresponde_cta` | `sim` ou `nao` |
 | `resultado_esperado` | O que se espera do teste |
-| `resultado_observado` | O que foi observado (fictício para o ensaio) |
+| `resultado_observado` | O que foi observado (resultado do localhost) |
 | `acao_se_falhar` | Ação necessária se a validação falhar |
 | `status_teste` | `aprovado`, `reprovado`, `pendente` |
 
-### 5.4 Linhas do ensaio (dados fictícios)
+### 5.5 Linhas do ensaio (resultados do localhost)
 
 | campanha | cenario | destino_testado | data_hora_teste | url_final_apos_redirects | utms_preservados | acao_corresponde_cta | resultado_esperado | resultado_observado | acao_se_falhar | status_teste |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ns-001 | link_direto | https://marcaselao.com.br | 2026-11-20T10:00:00-03:00 | https://marcaselao.com.br | nao_aplicavel | sim | Página carrega; ação corresponde ao CTA | Página carregou em celular; apresenta agenda do salão | — | aprovado |
-| ns-002 | bio_compartilhada | https://marcaselao.com.br | 2026-11-20T11:00:00-03:00 | https://marcaselao.com.br | nao | sim | Link de bio leva ao site; UTMs do perfil preservados | Link de bio carregou; UTMs do perfil não foram preservados (rede não reporta) | Confirmar com titular se UTMs do perfil são exigidos; ajustar link de bio se necessário | reprovado |
-| ns-001 | sem_link_clicavel | (nenhum) | 2026-11-20T12:00:00-03:00 | (nenhum) | nao_aplicavel | nao | Sem destino clicável; CTA apenas de texto | Nenhum destino para testar; CTA é de texto apenas | — | pendente |
+| ns-001 | redirecionamento_passa | http://127.0.0.1:8765/redirect-passa?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1 | 2026-11-17T10:00:00-03:00 | http://127.0.0.1:8765/destino?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1 | sim | nao_aplicavel | Os quatro UTMs de entrada chegam ao destino final | Os quatro UTMs de entrada chegaram ao destino final (localhost). | — | aprovado |
+| ns-001 | redirecionamento_descarta | http://127.0.0.1:8765/redirect-descarta?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1 | 2026-11-17T10:05:00-03:00 | http://127.0.0.1:8765/destino | nao | nao_aplicavel | Nenhum UTM de entrada chega ao destino final | Nenhum parâmetro chegou ao destino final (query string descartada no redirecionamento). | Tratar como perda de rastreamento; investigar rota de redirecionamento. | reprovado |
+| ns-001 | sem_link_clicavel | (nenhum) | 2026-11-17T10:10:00-03:00 | (nenhum) | nao_aplicavel | nao | Sem destino clicável; CTA apenas de texto | Nenhum destino para testar; CTA é de texto apenas. | — | pendente |
 
-### 5.5 Interpretação dos resultados do ensaio
+### 5.6 Interpretação dos resultados
 
-- **Cenário A (link direto):** aprovado. Destino carrega, ação corresponde ao CTA, sem UTMs exigidos.
-- **Cenário B (bio compartilhada):** reprovado no quesito preservação de UTMs. A rede não preserva UTMs do perfil no clique do bio. Isso é esperado para links de bio compartilhados; registrar como limitação e não como falha da peça. Decisão necessária: confirmar com o titular se UTMs do perfil são exigidos ou se o clique na bio é aceitável sem rastreamento por UTM.
-- **Cenário C (sem link clicável):** pendente. Não há destino para testar; o CTA é apenas de texto. Não há validação de destino a realizar.
+- **redirecionamento_passa:** aprovado. O redirecionamento encaminhou os quatro UTMs ao destino final; a checagem confirma a preservação.
+- **redirecionamento_descarta:** reprovado. O redirecionamento descartou a query string; nenhum UTM chegou ao destino final. A checagem detecta a perda de rastreamento.
+- **sem_link_clicavel:** pendente. Não há destino para testar; o CTA é apenas de texto. `utms_preservados = nao_aplicavel`.
 
 ## 6. Decisões que o Jonatas precisa tomar antes da primeira publicação
 
@@ -158,7 +163,7 @@ Preencha o modelo `ensaio-validacao-destinos.csv`.
 | Destino clicável confirmado por campanha | Confirmar se `https://marcaselao.com.br` é o destino para todas as peças ou se há destino diferente por canal | Sem destino confirmado, não há como validar nem parametrizar links |
 | Link externo cadastrado na bio/perfil do Instagram | Confirmar qual URL está cadastrada na bio do perfil @marcaselao | Necessário para peças com CTA "link na bio" (NS-001 Stories, NS-002 Reels/Stories) |
 | Uso de sticker de link nos Stories (NS-002) | Autorizar ou não o sticker de link; confirmar se o link externo está cadastrado | Sticker requer autorização separada de publicação |
-| UTMs do perfil para bio compartilhada | Definir se UTMs são exigidos no link de bio ou se o clique na bio é aceitável sem rastreamento por UTM | O ensaio mostrou que a rede não preserva UTMs em links de bio compartilhados |
+| UTMs do perfil para bio compartilhada | Definir se UTMs são exigidos no link de bio ou se o clique na bio é aceitável sem rastreamento por UTM | **Pendente de verificação:** não há evidência real sobre preservação de UTMs em links de bio compartilhados; o ensaio de localhost não testa a bio real. |
 | Mecanismo de rastreamento (utm, pixel) | Definir qual mecanismo será usado para rastrear cliques e conversões | Sem rastreamento, não é possível medir eficácia das peças |
 | Analytics do site configurado | Confirmar se analytics do site está ativo para medir chegada e conversão | Sem analytics, não há como confirmar conversão após o clique |
 | Evento de conversão documentado | Definir qual ação no site representa conversão (ex.: solicitar demonstração) | Sem evento definido, não há conversão a medir |
