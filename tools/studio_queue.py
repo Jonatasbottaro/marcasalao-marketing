@@ -29,6 +29,7 @@ import studio_review
 
 
 QUEUE_SCHEMA_VERSION = 1
+PREFLIGHT_SCHEMA_VERSION = 1
 SNAPSHOT_SCHEMA_VERSION = 2
 VALID_STATUSES = ('queued', 'running', 'completed', 'failed', 'cancelled', 'interrupted')
 VALID_MODALITIES = ('video', 'carousel', 'motion')
@@ -446,6 +447,59 @@ class StudioQueue:
         snapshot_sha = studio_review.canonical_sha256(snapshot)
         return snapshot, snapshot_sha
 
+    @staticmethod
+    def _extract_preview_error(preview_res, default='Rascunho rejeitado na previa.'):
+        if not isinstance(preview_res, dict):
+            return default
+        result = preview_res.get('result')
+        if isinstance(result, dict):
+            overflow = result.get('overflowCards')
+            if isinstance(overflow, list) and overflow:
+                return (
+                    'Texto excede a area do card no carrossel ('
+                    + ', '.join(str(c) for c in overflow)
+                    + '). Reduza o texto dos cards indicados.'
+                )
+            err_msg = result.get('error')
+            if isinstance(err_msg, str) and err_msg.strip():
+                return err_msg.strip()
+            profiles = result.get('profiles')
+            if isinstance(profiles, list):
+                for entry in profiles:
+                    if isinstance(entry, dict) and entry.get('status') != 'compiled':
+                        return StudioQueue._extract_profile_preview_error(entry)
+        rc = preview_res.get('returncode')
+        if rc not in (None, 0):
+            return f'{default} (codigo {rc})'
+        return default
+
+    @staticmethod
+    def _extract_profile_preview_error(profile_entry):
+        if not isinstance(profile_entry, dict):
+            return 'Perfil rejeitado na previa.'
+        errors = profile_entry.get('errors') or []
+        parts = []
+        for item in errors:
+            if not isinstance(item, dict):
+                continue
+            msg = str(item.get('message') or '').strip()
+            code = str(item.get('code') or '').strip()
+            path = str(item.get('path') or '').strip()
+            if msg and code and code not in msg:
+                piece = f'{code}: {msg}'
+            else:
+                piece = msg or code
+            if path and path not in piece:
+                piece = f'{piece} ({path})' if piece else path
+            if piece:
+                parts.append(piece)
+        if parts:
+            return '; '.join(parts)
+        fcode = profile_entry.get('failureCode')
+        if isinstance(fcode, str) and fcode.strip():
+            return f'Perfil rejeitado na previa ({fcode.strip()}).'
+        return 'Perfil rejeitado na previa.'
+
     def plan_batch(self, work_ids):
         """Lista opcoes disponiveis e indisponiveis por trabalho antes da confirmacao."""
         if not isinstance(work_ids, list) or not work_ids:
@@ -469,12 +523,41 @@ class StudioQueue:
             # Videos
             v_check_ok = None
             v_check_err = None
+            v_profile_map = {}
+            v_preview_rc = 0
             if isinstance(v_req, dict) and v_req.get('scenes'):
                 try:
                     tmp_req = json.loads(json.dumps(v_req))
                     tmp_req['project'] = project_rel
-                    self.studio.preview(tmp_req, kind='video')
-                    v_check_ok = True
+                    req_profiles = list(tmp_req.get('profiles') or [])
+                    if req_profiles:
+                        for pid, pmeta in cat['all'].items():
+                            if (
+                                pmeta.get('mediaKind') == 'video'
+                                and pmeta.get('availability') == 'allowed'
+                                and pmeta.get('localExportVideo')
+                                and pid not in req_profiles
+                            ):
+                                req_profiles.append(pid)
+                        tmp_req['profiles'] = req_profiles
+                    v_prev = self.studio.preview(tmp_req, kind='video')
+                    v_preview_rc = v_prev.get('returncode', 0) if isinstance(v_prev, dict) else 1
+                    v_res = (v_prev.get('result') or {}) if isinstance(v_prev, dict) else {}
+                    v_profiles = v_res.get('profiles') if isinstance(v_res, dict) else None
+                    if v_res.get('status') == 'error' or (v_preview_rc != 0 and not isinstance(v_profiles, list)):
+                        v_check_ok = False
+                        v_check_err = self._extract_preview_error(v_prev, 'Rascunho de video rejeitado na previa.')
+                    else:
+                        if isinstance(v_profiles, list):
+                            v_profile_map = {
+                                p['profileId']: p for p in v_profiles
+                                if isinstance(p, dict) and p.get('profileId')
+                            }
+                        if v_preview_rc != 0 and not v_profile_map:
+                            v_check_ok = False
+                            v_check_err = self._extract_preview_error(v_prev, 'Rascunho de video rejeitado na previa.')
+                        else:
+                            v_check_ok = True
                 except Exception as exc:
                     v_check_ok = False
                     v_check_err = str(exc)
@@ -489,12 +572,21 @@ class StudioQueue:
                     continue
                 selected_in_req = isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])
                 local_ok = bool(pmeta.get('availability') == 'allowed' and pmeta.get('localExportVideo'))
-                avail = bool(v_check_ok and local_ok)
+                p_entry = v_profile_map.get(pid)
                 if not local_ok:
+                    avail = False
                     reason = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('video', {}).get('reason') or 'Perfil indisponivel para video local.'
                 elif not v_check_ok:
+                    avail = False
                     reason = v_check_err
+                elif p_entry is not None and p_entry.get('status') != 'compiled':
+                    avail = False
+                    reason = self._extract_profile_preview_error(p_entry)
+                elif v_preview_rc != 0 and p_entry is None:
+                    avail = False
+                    reason = self._extract_preview_error({'returncode': v_preview_rc, 'result': {}}, 'Rascunho de video rejeitado na previa.')
                 else:
+                    avail = True
                     reason = None
                 options.append({
                     'workId': wid,
@@ -518,8 +610,14 @@ class StudioQueue:
                 try:
                     tmp_creq = json.loads(json.dumps(c_req))
                     tmp_creq['project'] = project_rel
-                    self.studio.preview(tmp_creq, kind='carousel')
-                    c_check_ok = True
+                    c_prev = self.studio.preview(tmp_creq, kind='carousel')
+                    c_rc = c_prev.get('returncode', 0) if isinstance(c_prev, dict) else 1
+                    c_res = (c_prev.get('result') or {}) if isinstance(c_prev, dict) else {}
+                    if c_rc != 0 or c_res.get('status') == 'error' or c_res.get('overflowCards'):
+                        c_check_ok = False
+                        c_check_err = self._extract_preview_error(c_prev, 'Rascunho de carrossel rejeitado na previa.')
+                    else:
+                        c_check_ok = True
                 except Exception as exc:
                     c_check_ok = False
                     c_check_err = str(exc)
@@ -558,6 +656,44 @@ class StudioQueue:
 
             # Motion (somente 9:16 quando permitido)
             has_motion = isinstance(m_plan, dict) and bool(m_plan.get('effects'))
+            motion_candidates = [
+                pid for pid, pmeta in cat['all'].items()
+                if pmeta.get('mediaKind') == 'video'
+                and pmeta.get('availability') == 'allowed'
+                and pmeta.get('aspectRatio') == '9:16'
+                and pmeta.get('localExportMotion')
+            ]
+            m_check_ok = True
+            m_check_err = None
+            m_profile_map = {}
+            if v_check_ok and has_motion and motion_candidates:
+                try:
+                    tmp_mreq = json.loads(json.dumps(v_req))
+                    tmp_mreq['project'] = project_rel
+                    tmp_mreq['profiles'] = motion_candidates
+                    tmp_mplan = json.loads(json.dumps(m_plan))
+                    if tmp_mreq.get('id'):
+                        tmp_mplan['requestId'] = tmp_mreq['id']
+                    m_prev = self.studio.preview(tmp_mreq, kind='video', motion_plan=tmp_mplan)
+                    m_rc = m_prev.get('returncode', 0) if isinstance(m_prev, dict) else 1
+                    m_res = (m_prev.get('result') or {}) if isinstance(m_prev, dict) else {}
+                    m_profiles = m_res.get('profiles') if isinstance(m_res, dict) else None
+                    if m_res.get('status') == 'error' or (m_rc != 0 and not isinstance(m_profiles, list)):
+                        m_check_ok = False
+                        m_check_err = self._extract_preview_error(m_prev, 'Plano de Motion rejeitado na previa.')
+                    else:
+                        if isinstance(m_profiles, list):
+                            m_profile_map = {
+                                p['profileId']: p for p in m_profiles
+                                if isinstance(p, dict) and p.get('profileId')
+                            }
+                        if m_rc != 0 and not m_profile_map:
+                            m_check_ok = False
+                            m_check_err = self._extract_preview_error(m_prev, 'Plano de Motion rejeitado na previa.')
+                except Exception as exc:
+                    m_check_ok = False
+                    m_check_err = str(exc)
+
             for pid, pmeta in cat['all'].items():
                 if pmeta.get('mediaKind') != 'video':
                     continue
@@ -565,16 +701,27 @@ class StudioQueue:
                     continue
                 is_vertical = pmeta.get('aspectRatio') == '9:16'
                 local_ok = bool(pmeta.get('localExportMotion'))
-                avail = bool(v_check_ok and has_motion and is_vertical and local_ok)
+                m_entry = m_profile_map.get(pid)
                 if not is_vertical:
+                    avail = False
                     reason = f'Motion local exige perfil vertical 9:16 ({pid} e {pmeta.get("aspectRatio")}).'
                 elif not local_ok:
+                    avail = False
                     reason = pmeta.get('blockReason') or 'Perfil indisponivel para Motion local.'
                 elif not has_motion:
+                    avail = False
                     reason = 'Plano de Motion sem efeitos salvos.'
                 elif not v_check_ok:
+                    avail = False
                     reason = v_check_err
+                elif not m_check_ok:
+                    avail = False
+                    reason = m_check_err
+                elif m_entry is not None and m_entry.get('status') != 'compiled':
+                    avail = False
+                    reason = self._extract_profile_preview_error(m_entry)
                 else:
+                    avail = True
                     reason = None
                 options.append({
                     'workId': wid,
@@ -1578,3 +1725,527 @@ class StudioQueue:
                 pass
             self._wake_event.wait(timeout=0.5)
             self._wake_event.clear()
+
+    # ---- Diagnostico de pre-voo por destino ----
+    def _preflight_environment(self, readiness, modality):
+        items_by_id = {
+            it['id']: it for it in (readiness.get('items') or [])
+            if isinstance(it, dict) and it.get('id')
+        }
+        required_ids = ['python', 'node', 'platformBuild']
+        if modality in ('video', 'motion'):
+            required_ids.extend(['ffmpeg', 'ffprobe'])
+        elif modality == 'carousel':
+            required_ids.append('ffmpeg')
+
+        checks = []
+        blockers = []
+        for req_id in required_ids:
+            info = items_by_id.get(req_id) or {'id': req_id, 'label': req_id, 'ok': False, 'detail': f'{req_id} ausente.', 'instruction': None}
+            if info.get('ok'):
+                checks.append({
+                    'id': f'env:{req_id}',
+                    'label': info.get('label') or req_id,
+                    'status': 'passed',
+                    'code': 'ENV_OK',
+                    'message': f"{info.get('label') or req_id} disponivel.",
+                })
+            else:
+                code = f'ENV_MISSING_{req_id.upper()}'
+                msg = info.get('detail') or f'{req_id} ausente.'
+                action = info.get('instruction') or f'Instale ou configure {req_id}.'
+                checks.append({
+                    'id': f'env:{req_id}',
+                    'label': info.get('label') or req_id,
+                    'status': 'failed',
+                    'code': code,
+                    'message': msg,
+                    'subject': req_id,
+                    'action': action,
+                })
+                blockers.append({
+                    'code': code,
+                    'message': msg,
+                    'subject': req_id,
+                    'action': action,
+                })
+        has_bridge = bool((items_by_id.get('node') or {}).get('ok') and (items_by_id.get('platformBuild') or {}).get('ok'))
+        has_ffprobe = bool((items_by_id.get('ffprobe') or {}).get('ok'))
+        return checks, blockers, has_bridge, has_ffprobe
+
+    def _preflight_check_file(self, rel_path, expected_sha256, media_type, has_ffprobe, file_cache):
+        cache_key = (rel_path, media_type, has_ffprobe)
+        cached = file_cache.get(cache_key)
+        if cached is None:
+            entry = {
+                'confined': True,
+                'exists': False,
+                'actualSha256': None,
+                'probe': None,
+                'probeError': None,
+            }
+            try:
+                abs_path = self.studio.confine(rel_path)
+            except ValueError:
+                entry['confined'] = False
+            else:
+                fs_p = render_local.fs_path(abs_path)
+                if os.path.isfile(fs_p):
+                    entry['exists'] = True
+                    try:
+                        entry['actualSha256'] = render_local.sha256_file(abs_path)
+                    except OSError as exc:
+                        entry['probeError'] = str(exc)
+                    if media_type == 'video' and has_ffprobe and entry['probeError'] is None:
+                        try:
+                            import render_pipeline
+                            entry['probe'] = render_pipeline._probe_and_extract_media_metadata(
+                                self.studio.root, rel_path, 'video', abs_path
+                            )
+                        except Exception as exc:
+                            entry['probeError'] = str(exc)
+            file_cache[cache_key] = entry
+            cached = entry
+
+        if not cached['confined']:
+            return {
+                'status': 'failed',
+                'code': 'MEDIA_PATH_OUTSIDE_ROOT',
+                'message': f"Caminho de midia fora da raiz do projeto: '{rel_path}'.",
+                'action': 'Mova ou reimporte a midia para dentro da pasta do trabalho.',
+                'probe': None,
+            }
+        if not cached['exists']:
+            return {
+                'status': 'failed',
+                'code': 'MEDIA_FILE_MISSING',
+                'message': f"Arquivo de midia ausente: '{rel_path}'.",
+                'action': f"Restaure o arquivo '{rel_path}' ou associe outra midia no Studio.",
+                'probe': None,
+            }
+        if expected_sha256 and cached['actualSha256'] and cached['actualSha256'] != expected_sha256:
+            return {
+                'status': 'failed',
+                'code': 'MEDIA_HASH_MISMATCH',
+                'message': f"Arquivo '{rel_path}' diverge do hash SHA-256 esperado.",
+                'action': f"Restaure a versao original de '{rel_path}' ou atualize a midia no trabalho.",
+                'probe': cached['probe'],
+            }
+        if cached['probeError'] is not None:
+            return {
+                'status': 'failed',
+                'code': 'MEDIA_INSPECTION_FAILED',
+                'message': f"Falha ao inspecionar midia '{rel_path}': {cached['probeError']}",
+                'action': f"Verifique se '{rel_path}' e um arquivo valido e legivel.",
+                'probe': None,
+            }
+        return {
+            'status': 'passed',
+            'code': 'MEDIA_OK',
+            'message': f"Midia '{rel_path}' acessivel.",
+            'action': None,
+            'probe': cached['probe'],
+        }
+
+    def _expected_media_sha256(self, media_item, media_library):
+        if isinstance(media_item, dict):
+            for key in ('expectedSha256', 'sha256'):
+                val = media_item.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+        if not isinstance(media_library, dict):
+            return None
+        mid = (media_item or {}).get('id')
+        rel_path = str((media_item or {}).get('path') or '').strip()
+        for asset in media_library.get('assets') or []:
+            if not isinstance(asset, dict):
+                continue
+            active_vid = asset.get('activeVersionId')
+            for ver in asset.get('versions') or []:
+                if not isinstance(ver, dict):
+                    continue
+                if active_vid and ver.get('versionId') != active_vid:
+                    continue
+                if (rel_path and ver.get('path') == rel_path) or (mid and asset.get('assetId') == mid):
+                    sha = ver.get('sha256')
+                    if isinstance(sha, str) and sha.strip():
+                        return sha.strip()
+        return None
+
+    def _preflight_media(self, opened, modality, has_ffprobe, file_cache):
+        checks = []
+        blockers = []
+        pending = []
+        req = opened.get('carouselRequest') if modality == 'carousel' else opened.get('videoRequest')
+        if not isinstance(req, dict):
+            return checks, blockers, pending
+        media_by_id = {
+            m.get('id'): m for m in (req.get('media') or [])
+            if isinstance(m, dict) and m.get('id')
+        }
+        media_library = opened.get('mediaLibrary')
+
+        if modality == 'carousel':
+            refs = [(c.get('id') or f'card-{idx}', c.get('mediaId'), None) for idx, c in enumerate(req.get('cards') or []) if isinstance(c, dict)]
+            required_media = False
+        else:
+            refs = [(s.get('id') or f'scene-{idx}', s.get('mediaId'), s) for idx, s in enumerate(req.get('scenes') or []) if isinstance(s, dict)]
+            required_media = True
+
+        referenced_count = 0
+        pending_ffprobe_added = False
+        for item_id, media_id, scene_obj in refs:
+            if not media_id:
+                if required_media:
+                    msg = f"Cena '{item_id}' sem midia associada."
+                    act = f"Associe uma midia a cena '{item_id}' no editor de Videos e salve."
+                    blockers.append({'code': 'MEDIA_PENDING', 'message': msg, 'subject': item_id, 'action': act})
+                    checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'MEDIA_PENDING', 'message': msg, 'subject': item_id, 'action': act})
+                continue
+            if media_id == 'pending_media':
+                msg = f"Item '{item_id}' esta com midia pendente (pending_media)."
+                act = f"Selecione ou importe uma midia para '{item_id}' e salve o trabalho."
+                blockers.append({'code': 'MEDIA_PENDING', 'message': msg, 'subject': item_id, 'action': act})
+                checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'MEDIA_PENDING', 'message': msg, 'subject': item_id, 'action': act})
+                continue
+            media_item = media_by_id.get(media_id)
+            if media_item is None:
+                msg = f"Item '{item_id}' referencia midia inexistente '{media_id}'."
+                act = f"Cadastre a midia '{media_id}' ou selecione uma midia valida para '{item_id}'."
+                blockers.append({'code': 'MEDIA_REFERENCE_MISSING', 'message': msg, 'subject': f'{item_id}:{media_id}', 'action': act})
+                checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'MEDIA_REFERENCE_MISSING', 'message': msg, 'subject': f'{item_id}:{media_id}', 'action': act})
+                continue
+
+            referenced_count += 1
+            rel_path = str(media_item.get('path') or '').strip()
+            if not rel_path:
+                msg = f"Midia '{media_id}' usada em '{item_id}' esta sem caminho."
+                act = f"Associe um arquivo valido a midia '{media_id}'."
+                blockers.append({'code': 'MEDIA_PATH_MISSING', 'message': msg, 'subject': f'{item_id}:{media_id}', 'action': act})
+                checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'MEDIA_PATH_MISSING', 'message': msg, 'subject': f'{item_id}:{media_id}', 'action': act})
+                continue
+
+            expected_sha = self._expected_media_sha256(media_item, media_library)
+            mtype = media_item.get('type') or ('image' if modality == 'carousel' else 'video')
+            res = self._preflight_check_file(rel_path, expected_sha, mtype, has_ffprobe, file_cache)
+            if res['status'] != 'passed':
+                blockers.append({'code': res['code'], 'message': res['message'], 'subject': f'{item_id}:{rel_path}', 'action': res['action']})
+                checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': res['code'], 'message': res['message'], 'subject': f'{item_id}:{rel_path}', 'action': res['action']})
+                continue
+
+            if mtype == 'video' and scene_obj is not None:
+                if not has_ffprobe:
+                    if not pending_ffprobe_added:
+                        pending_ffprobe_added = True
+                        p_entry = {
+                            'id': f'media:{item_id}:duration',
+                            'code': 'MEDIA_PROBE_PENDING_FFPROBE',
+                            'message': 'Duracao da midia de video nao verificada porque FFprobe esta ausente.',
+                            'action': 'Instale FFprobe para validar cortes e duracao dos clipes.',
+                        }
+                        pending.append(p_entry)
+                        checks.append({'id': p_entry['id'], 'label': f'Duracao ({item_id})', 'status': 'pending', 'code': p_entry['code'], 'message': p_entry['message'], 'subject': item_id, 'action': p_entry['action']})
+                elif res['probe'] is not None:
+                    asset_dur_s = res['probe'].get('_rawDurationSeconds')
+                    dur_ms = int(scene_obj.get('durationMs') or 0)
+                    src_start_ms = int(scene_obj.get('sourceStartMs') or 0)
+                    if src_start_ms > 0:
+                        req_end_s = (src_start_ms + dur_ms) / 1000.0
+                        if asset_dur_s is None or req_end_s > asset_dur_s + 0.001:
+                            msg = f"Corte da cena '{item_id}' [{src_start_ms}ms -> {src_start_ms + dur_ms}ms] excede a duracao do clipe ({0.0 if asset_dur_s is None else asset_dur_s:.3f}s)."
+                            act = f"Reduza sourceStartMs ou durationMs da cena '{item_id}'."
+                            blockers.append({'code': 'SOURCE_CUT_OUT_OF_RANGE', 'message': msg, 'subject': item_id, 'action': act})
+                            checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'SOURCE_CUT_OUT_OF_RANGE', 'message': msg, 'subject': item_id, 'action': act})
+                            continue
+                    elif asset_dur_s is None or (asset_dur_s + 0.05) < (dur_ms / 1000.0):
+                        msg = f"Clipe '{rel_path}' ({0.0 if asset_dur_s is None else asset_dur_s:.3f}s) e menor que a cena '{item_id}' ({dur_ms / 1000.0:.3f}s)."
+                        act = f"Reduza a duracao da cena '{item_id}' ou escolha um clipe mais longo."
+                        blockers.append({'code': 'ASSET_VIDEO_TOO_SHORT', 'message': msg, 'subject': item_id, 'action': act})
+                        checks.append({'id': f'media:{item_id}', 'label': f'Midia ({item_id})', 'status': 'failed', 'code': 'ASSET_VIDEO_TOO_SHORT', 'message': msg, 'subject': item_id, 'action': act})
+                        continue
+
+            checks.append({
+                'id': f'media:{item_id}',
+                'label': f'Midia ({item_id})',
+                'status': 'passed',
+                'code': 'MEDIA_OK',
+                'message': f"Midia de '{item_id}' verificada ({rel_path}).",
+                'subject': item_id,
+            })
+
+        if modality == 'carousel' and referenced_count == 0 and not blockers:
+            checks.append({
+                'id': 'media:carousel',
+                'label': 'Midias do carrossel',
+                'status': 'passed',
+                'code': 'MEDIA_OPTIONAL_TEXT_ONLY',
+                'message': 'Carrossel usa apenas fundo e texto nos cards.',
+            })
+        return checks, blockers, pending
+
+    def _preflight_single_item(self, item, readiness, opened_cache, catalog_cache, file_cache):
+        work_id = str(item.get('workId') or '').strip()
+        modality = str(item.get('modality') or '').strip()
+        profile_id = str(item.get('profileId') or '').strip()
+
+        checks = []
+        blockers = []
+        warnings = []
+        pending_checks = []
+
+        env_checks, env_blockers, has_bridge, has_ffprobe = self._preflight_environment(readiness, modality)
+        checks.extend(env_checks)
+        blockers.extend(env_blockers)
+
+        if modality not in VALID_MODALITIES:
+            msg = f"Modalidade invalida: '{modality}'. Use video, carousel ou motion."
+            act = 'Informe uma modalidade valida: video, carousel ou motion.'
+            blockers.append({'code': 'INVALID_MODALITY', 'message': msg, 'subject': modality, 'action': act})
+            checks.append({'id': 'modality', 'label': 'Modalidade', 'status': 'failed', 'code': 'INVALID_MODALITY', 'message': msg, 'subject': modality, 'action': act})
+
+        opened = None
+        if not work_id:
+            msg = 'Identificador do trabalho (workId) nao informado.'
+            act = 'Informe um workId valido.'
+            blockers.append({'code': 'WORK_ID_MISSING', 'message': msg, 'action': act})
+            checks.append({'id': 'work', 'label': 'Trabalho', 'status': 'failed', 'code': 'WORK_ID_MISSING', 'message': msg, 'action': act})
+        else:
+            if work_id not in opened_cache:
+                try:
+                    opened_cache[work_id] = (self.studio.open_work(work_id), None)
+                except ValueError as exc:
+                    opened_cache[work_id] = (None, str(exc))
+            opened, open_err = opened_cache[work_id]
+            if opened is None:
+                msg = open_err or f'Trabalho nao encontrado: {work_id}.'
+                act = f"Verifique o workId '{work_id}' ou crie/abra o trabalho no Video Studio."
+                blockers.append({'code': 'WORK_NOT_FOUND', 'message': msg, 'subject': work_id, 'action': act})
+                checks.append({'id': 'work', 'label': 'Trabalho', 'status': 'failed', 'code': 'WORK_NOT_FOUND', 'message': msg, 'subject': work_id, 'action': act})
+            else:
+                checks.append({'id': 'work', 'label': 'Trabalho', 'status': 'passed', 'code': 'WORK_OK', 'message': f"Trabalho '{work_id}' carregado.", 'subject': work_id})
+
+        work = (opened or {}).get('work') or {}
+        work_title = work.get('title') or work.get('name') or work_id
+        project_rel = work.get('project')
+        cat = None
+        if opened is not None:
+            if not project_rel:
+                msg = f"Trabalho '{work_id}' sem ProjectManifest configurado."
+                act = 'Associe um ProjectManifest valido ao trabalho no Studio.'
+                blockers.append({'code': 'PROJECT_MANIFEST_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                checks.append({'id': 'project', 'label': 'Projeto', 'status': 'failed', 'code': 'PROJECT_MANIFEST_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+            else:
+                if project_rel not in catalog_cache:
+                    try:
+                        catalog_cache[project_rel] = (self._catalog_for_project(project_rel), None)
+                    except Exception as exc:
+                        catalog_cache[project_rel] = (None, str(exc))
+                cat, cat_err = catalog_cache[project_rel]
+                if cat is None:
+                    msg = f"Falha ao carregar ProjectManifest '{project_rel}': {cat_err}"
+                    act = 'Corrija ou recrie o ProjectManifest do trabalho.'
+                    blockers.append({'code': 'PROJECT_MANIFEST_INVALID', 'message': msg, 'subject': project_rel, 'action': act})
+                    checks.append({'id': 'project', 'label': 'Projeto', 'status': 'failed', 'code': 'PROJECT_MANIFEST_INVALID', 'message': msg, 'subject': project_rel, 'action': act})
+
+        profile_ok = False
+        if cat is not None and modality in VALID_MODALITIES:
+            pmeta = cat['all'].get(profile_id)
+            if pmeta is None:
+                msg = f"Perfil '{profile_id}' nao encontrado no catalogo."
+                act = 'Escolha um profileId valido do catalogo de saida.'
+                blockers.append({'code': 'PROFILE_NOT_FOUND', 'message': msg, 'subject': profile_id, 'action': act})
+                checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_NOT_FOUND', 'message': msg, 'subject': profile_id, 'action': act})
+            else:
+                expected_kind = 'image' if modality == 'carousel' else 'video'
+                if pmeta.get('mediaKind') != expected_kind:
+                    msg = f"Perfil '{profile_id}' ({pmeta.get('mediaKind')}) e incompativel com a modalidade '{modality}'."
+                    act = f"Escolha um perfil compativel com '{modality}'."
+                    blockers.append({'code': 'PROFILE_MODALITY_INCOMPATIBLE', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_MODALITY_INCOMPATIBLE', 'message': msg, 'subject': profile_id, 'action': act})
+                elif pmeta.get('availability') != 'allowed':
+                    msg = pmeta.get('blockReason') or f"Perfil '{profile_id}' bloqueado pela allowlist do projeto."
+                    act = f"Adicione '{profile_id}' em outputProfiles no ProjectManifest ou escolha um perfil permitido."
+                    blockers.append({'code': 'PROFILE_NOT_ALLOWED', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_NOT_ALLOWED', 'message': msg, 'subject': profile_id, 'action': act})
+                elif modality == 'video' and not pmeta.get('localExportVideo'):
+                    msg = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('video', {}).get('reason') or f"Perfil '{profile_id}' indisponivel para video local."
+                    act = 'Escolha um perfil suportado para exportacao local de video.'
+                    blockers.append({'code': 'PROFILE_LOCAL_EXPORT_UNSUPPORTED', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_LOCAL_EXPORT_UNSUPPORTED', 'message': msg, 'subject': profile_id, 'action': act})
+                elif modality == 'carousel' and not pmeta.get('localExportCarousel'):
+                    msg = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('carousel', {}).get('reason') or f"Perfil '{profile_id}' indisponivel para carrossel local."
+                    act = 'Escolha um perfil suportado para exportacao local de carrossel.'
+                    blockers.append({'code': 'PROFILE_LOCAL_EXPORT_UNSUPPORTED', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_LOCAL_EXPORT_UNSUPPORTED', 'message': msg, 'subject': profile_id, 'action': act})
+                elif modality == 'motion' and (pmeta.get('aspectRatio') != '9:16' or not pmeta.get('localExportMotion')):
+                    msg = f"Motion local exige perfil vertical 9:16 ({profile_id} e {pmeta.get('aspectRatio')})."
+                    act = 'Selecione um perfil vertical 9:16 (ex.: instagram-reels-video) para Motion.'
+                    blockers.append({'code': 'MOTION_LOCAL_UNSUPPORTED_GEOMETRY', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'MOTION_LOCAL_UNSUPPORTED_GEOMETRY', 'message': msg, 'subject': profile_id, 'action': act})
+                else:
+                    profile_ok = True
+                    checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'passed', 'code': 'PROFILE_OK', 'message': f"Perfil '{profile_id}' autorizado para '{modality}'.", 'subject': profile_id})
+
+        draft_ok = False
+        if opened is not None and modality in VALID_MODALITIES:
+            v_req = opened.get('videoRequest')
+            c_req = opened.get('carouselRequest')
+            m_plan = opened.get('motionPlan')
+            if modality == 'carousel':
+                if not isinstance(c_req, dict) or not c_req.get('cards'):
+                    msg = f"Trabalho '{work_id}' sem rascunho de carrossel salvo com cards."
+                    act = 'Abra a aba Carrosseis no Studio, adicione ao menos um card e salve.'
+                    blockers.append({'code': 'DRAFT_CAROUSEL_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                    checks.append({'id': 'draft', 'label': 'Rascunho salvo', 'status': 'failed', 'code': 'DRAFT_CAROUSEL_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                else:
+                    draft_ok = True
+                    checks.append({'id': 'draft', 'label': 'Rascunho salvo', 'status': 'passed', 'code': 'DRAFT_OK', 'message': f"Rascunho de carrossel com {len(c_req['cards'])} card(s)."})
+            else:
+                if not isinstance(v_req, dict) or not v_req.get('scenes'):
+                    msg = f"Trabalho '{work_id}' sem rascunho de video salvo com cenas."
+                    act = 'Abra a aba Videos no Studio, adicione ao menos uma cena e salve.'
+                    blockers.append({'code': 'DRAFT_VIDEO_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                    checks.append({'id': 'draft', 'label': 'Rascunho salvo', 'status': 'failed', 'code': 'DRAFT_VIDEO_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                elif modality == 'motion' and (not isinstance(m_plan, dict) or not m_plan.get('effects')):
+                    msg = f"Trabalho '{work_id}' sem MotionPlan salvo com efeitos."
+                    act = 'Abra a aba Motion no Studio, configure ao menos um efeito e salve.'
+                    blockers.append({'code': 'DRAFT_MOTION_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                    checks.append({'id': 'draft', 'label': 'Rascunho salvo', 'status': 'failed', 'code': 'DRAFT_MOTION_MISSING', 'message': msg, 'subject': work_id, 'action': act})
+                else:
+                    draft_ok = True
+                    checks.append({'id': 'draft', 'label': 'Rascunho salvo', 'status': 'passed', 'code': 'DRAFT_OK', 'message': f"Rascunho de {modality} salvo com {len(v_req['scenes'])} cena(s)."})
+
+        if opened is not None and draft_ok and project_rel and profile_ok:
+            if not has_bridge:
+                p_entry = {
+                    'id': 'preview',
+                    'code': 'PREVIEW_PENDING_PREREQUISITES',
+                    'message': 'Previa do produtor pendente porque Node.js ou o build de platform/ estao ausentes.',
+                    'action': 'Instale Node.js >= 22 e execute npm run build em platform/.',
+                }
+                pending_checks.append(p_entry)
+                checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'pending', 'code': p_entry['code'], 'message': p_entry['message'], 'action': p_entry['action']})
+            else:
+                try:
+                    if modality == 'carousel':
+                        tmp_creq = json.loads(json.dumps(opened['carouselRequest']))
+                        tmp_creq['project'] = project_rel
+                        tmp_creq['profile'] = profile_id
+                        prev = self.studio.preview(tmp_creq, profile=profile_id, kind='carousel')
+                        rc = prev.get('returncode', 0)
+                        res = prev.get('result') or {}
+                        overflow = res.get('overflowCards') or []
+                        if overflow:
+                            msg = self._extract_preview_error(prev)
+                            act = f"Reduza o texto dos cards indicados ({', '.join(str(c) for c in overflow)}) e salve."
+                            blockers.append({'code': 'CAROUSEL_TEXT_OVERFLOW', 'message': msg, 'subject': ','.join(str(c) for c in overflow), 'action': act})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'failed', 'code': 'CAROUSEL_TEXT_OVERFLOW', 'message': msg, 'subject': ','.join(str(c) for c in overflow), 'action': act})
+                        elif rc != 0 or res.get('status') == 'error':
+                            msg = self._extract_preview_error(prev, 'Carrossel rejeitado na previa.')
+                            act = 'Corrija os campos do carrossel indicados pela previa e salve o trabalho.'
+                            blockers.append({'code': 'PREVIEW_REJECTED', 'message': msg, 'subject': profile_id, 'action': act})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'failed', 'code': 'PREVIEW_REJECTED', 'message': msg, 'subject': profile_id, 'action': act})
+                        else:
+                            for w in res.get('warnings') or []:
+                                if isinstance(w, dict):
+                                    warnings.append({'code': w.get('code') or 'PREVIEW_WARNING', 'message': w.get('message') or w.get('code') or 'Aviso', 'subject': w.get('path')})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'passed', 'code': 'PREVIEW_OK', 'message': f"Previa do carrossel aprovada para '{profile_id}'.", 'subject': profile_id})
+                    else:
+                        tmp_req = json.loads(json.dumps(opened['videoRequest']))
+                        tmp_req['project'] = project_rel
+                        tmp_req['profiles'] = [profile_id]
+                        tmp_mplan = None
+                        if modality == 'motion':
+                            tmp_mplan = json.loads(json.dumps(opened['motionPlan']))
+                            if tmp_req.get('id'):
+                                tmp_mplan['requestId'] = tmp_req['id']
+                        prev = self.studio.preview(tmp_req, profile=profile_id, kind='video', motion_plan=tmp_mplan)
+                        rc = prev.get('returncode', 0)
+                        res = prev.get('result') or {}
+                        profiles_out = res.get('profiles') if isinstance(res, dict) else None
+                        p_entry = None
+                        if isinstance(profiles_out, list):
+                            p_entry = next((p for p in profiles_out if isinstance(p, dict) and p.get('profileId') == profile_id), profiles_out[0] if profiles_out else None)
+                        if res.get('status') == 'error' or (rc != 0 and p_entry is None):
+                            msg = self._extract_preview_error(prev, 'Rascunho rejeitado na previa.')
+                            act = 'Corrija o rascunho conforme o erro indicado pela previa e salve.'
+                            blockers.append({'code': 'PREVIEW_REJECTED', 'message': msg, 'subject': profile_id, 'action': act})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'failed', 'code': 'PREVIEW_REJECTED', 'message': msg, 'subject': profile_id, 'action': act})
+                        elif p_entry is not None and p_entry.get('status') != 'compiled':
+                            fcode = p_entry.get('failureCode') or 'PREVIEW_REJECTED'
+                            msg = self._extract_profile_preview_error(p_entry)
+                            subj = next((e.get('path') for e in (p_entry.get('errors') or []) if isinstance(e, dict) and e.get('path')), profile_id)
+                            act = 'Corrija o item apontado na previa e salve o trabalho.'
+                            blockers.append({'code': fcode, 'message': msg, 'subject': subj, 'action': act})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'failed', 'code': fcode, 'message': msg, 'subject': subj, 'action': act})
+                        else:
+                            for w in (p_entry or {}).get('warnings') or []:
+                                if isinstance(w, dict):
+                                    warnings.append({'code': w.get('code') or 'PREVIEW_WARNING', 'message': w.get('message') or w.get('code') or 'Aviso', 'subject': w.get('path')})
+                            checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'passed', 'code': 'PREVIEW_OK', 'message': f"Previa aprovada para '{profile_id}'.", 'subject': profile_id})
+                except Exception as exc:
+                    msg = f'Falha ao executar previa: {exc}'
+                    act = 'Verifique os rascunhos salvos e tente novamente.'
+                    blockers.append({'code': 'PREVIEW_EXECUTION_ERROR', 'message': msg, 'subject': profile_id, 'action': act})
+                    checks.append({'id': 'preview', 'label': 'Previa do produtor', 'status': 'failed', 'code': 'PREVIEW_EXECUTION_ERROR', 'message': msg, 'subject': profile_id, 'action': act})
+
+        if opened is not None and draft_ok and modality in VALID_MODALITIES:
+            m_checks, m_blockers, m_pending = self._preflight_media(opened, modality, has_ffprobe, file_cache)
+            checks.extend(m_checks)
+            blockers.extend(m_blockers)
+            pending_checks.extend(m_pending)
+
+        suggested_actions = []
+        seen_actions = set()
+        for b in blockers:
+            act = b.get('action')
+            if act and act not in seen_actions:
+                seen_actions.add(act)
+                suggested_actions.append(act)
+        for p in pending_checks:
+            act = p.get('action')
+            if act and act not in seen_actions:
+                seen_actions.add(act)
+                suggested_actions.append(act)
+
+        status = 'ready' if not blockers else 'blocked'
+        if status == 'ready' and pending_checks:
+            summary = 'Destino pronto nas verificacoes executadas (ha checagens pendentes).'
+        elif status == 'ready':
+            summary = 'Destino pronto para producao local.'
+        else:
+            summary = f"Destino bloqueado ({len(blockers)} impedimento(s)): {blockers[0]['message']}"
+
+        return {
+            'workId': work_id,
+            'workTitle': work_title,
+            'project': project_rel,
+            'modality': modality,
+            'profileId': profile_id,
+            'status': status,
+            'summary': summary,
+            'checks': checks,
+            'blockers': blockers,
+            'warnings': warnings,
+            'pendingChecks': pending_checks,
+            'suggestedActions': suggested_actions,
+        }
+
+    def preflight(self, items):
+        """Diagnostico de pre-voo sem efeitos colaterais para uma lista de destinos."""
+        if not isinstance(items, list) or not items:
+            raise ValueError('informe ao menos um item para diagnostico')
+        readiness = self.studio.check_readiness()
+        opened_cache = {}
+        catalog_cache = {}
+        file_cache = {}
+        results = []
+        for item in items:
+            if not isinstance(item, dict):
+                raise ValueError('item de diagnostico invalido')
+            results.append(self._preflight_single_item(item, readiness, opened_cache, catalog_cache, file_cache))
+        return {
+            'schemaVersion': PREFLIGHT_SCHEMA_VERSION,
+            'ready': all(r['status'] == 'ready' for r in results) and bool(results),
+            'items': results,
+        }

@@ -2427,6 +2427,17 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'jobId': job_id})
             elif path == '/api/queue/plan':
                 self.send_json(200, {'ok': True, **studio.queue.plan_batch(body.get('workIds') or [])})
+            elif path == '/api/queue/preflight':
+                items = body.get('items')
+                if items is None and isinstance(body, dict) and (
+                    'workId' in body or 'modality' in body or 'profileId' in body
+                ):
+                    items = [{
+                        'workId': body.get('workId'),
+                        'modality': body.get('modality'),
+                        'profileId': body.get('profileId'),
+                    }]
+                self.send_json(200, {'ok': True, **studio.queue.preflight(items)})
             elif path == '/api/queue/enqueue':
                 batch = studio.queue.enqueue_batch(
                     body.get('items') or [],

@@ -63,8 +63,11 @@ def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
         import sqlite3
         try:
             conn = sqlite3.connect(db_path)
-            conn.execute('DELETE FROM queue_items WHERE batch_id = ?', (batch_id,))
-            conn.execute('DELETE FROM queue_batches WHERE batch_id = ?', (batch_id,))
+            conn.execute('DELETE FROM queue_items WHERE work_id = ?', (work_id,))
+            if batch_id:
+                conn.execute('DELETE FROM queue_items WHERE batch_id = ?', (batch_id,))
+                conn.execute('DELETE FROM queue_batches WHERE batch_id = ?', (batch_id,))
+            conn.execute('DELETE FROM queue_batches WHERE label IN (?, ?)', ('Lote CI Astryx', 'Lote Preflight UI'))
             conn.commit()
             conn.close()
         except Exception:
@@ -104,7 +107,10 @@ def run_browser_regression():
             create_requests = []
             retry_requests = []
             package_requests = []
+            preflight_requests = []
+            enqueue_requests = []
             allow_expected_409 = [False]
+            allow_expected_preflight_abort = [False]
 
             page.on('pageerror', lambda err: page_errors.append(str(err)))
 
@@ -114,6 +120,8 @@ def run_browser_regression():
                     # Ignora 404 de favicon.ico que nao faz parte do app
                     if 'favicon.ico' not in text and '404 (Not Found)' not in text:
                         if allow_expected_409[0] and '409 (Conflict)' in text:
+                            return
+                        if allow_expected_preflight_abort[0] and ('Failed to fetch' in text or 'ERR_FAILED' in text or 'NetworkError' in text):
                             return
                         console_errors.append(text)
 
@@ -150,6 +158,8 @@ def run_browser_regression():
                 create_requests.append(req.url) if '/api/works/create' in req.url else None,
                 retry_requests.append((req.url, req.post_data)) if '/api/queue/retry' in req.url else None,
                 package_requests.append((req.url, req.post_data)) if '/api/works/package' in req.url and req.method == 'POST' else None,
+                preflight_requests.append((req.url, req.post_data)) if '/api/queue/preflight' in req.url else None,
+                enqueue_requests.append((req.url, req.post_data)) if '/api/queue/enqueue' in req.url else None,
             ))
 
             # 1. Inicializacao com lista (potencialmente) vazia
@@ -215,6 +225,131 @@ def run_browser_regression():
             page.keyboard.press('Escape')
             page.locator('#tpl-create-revision').wait_for(state='hidden', timeout=20000)
             assert page.locator('dialog[open]').count() == 0, 'Nenhum dialog deve permanecer aberto apos Escape'
+
+            # 4b. Pre-voo no dialogo Exportar em lote (backend real + bloqueio corrigivel + simulacoes)
+            print('[ci_studio_astryx_browser] Etapa 4b: pre-voo no dialogo Exportar em lote...', flush=True)
+            work_row = page.locator('#works-table tr', has_text=work_id)
+            work_row.locator('input[type="checkbox"]').check()
+            batch_btn = page.get_by_role('button', name='Exportar em lote')
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+            assert page.locator('#batch-export-dialog').count() == 1
+
+            # Verificar selecao (leitura): 1 preflight, 0 enqueue
+            before_pf = len(preflight_requests)
+            before_enq = len(enqueue_requests)
+            with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
+                page.locator('#btn-batch-verify').click()
+            page.locator('#batch-preflight-summary').get_by_text('pronto(s)').wait_for(state='visible', timeout=20000)
+            assert len(preflight_requests) - before_pf == 1, 'Esperado 1 POST /api/queue/preflight ao verificar'
+            assert len(enqueue_requests) - before_enq == 0, 'Verificar selecao nao deve enviar enqueue'
+            page.keyboard.press('Escape')
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+
+            # Remove obrigatoriamente um arquivo de midia apos o plano para provocar bloqueio real no pre-voo
+            media_file = os.path.join(ROOT, '.workspace', 'studio', 'works', work_id, 'media', 'tela-abertura.png')
+            media_bak = media_file + '.bak'
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+            page.locator('#batch-label-input').fill('Lote Preflight UI')
+            shutil.move(media_file, media_bak)
+            try:
+                with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
+                    page.locator('#btn-batch-confirm').click()
+                page.locator('#batch-confirm-feedback').get_by_text('Enfileiramento bloqueado').wait_for(state='visible', timeout=20000)
+                page.locator('#batch-export-dialog').get_by_text('MEDIA_FILE_MISSING').first.wait_for(state='visible', timeout=20000)
+                assert len(enqueue_requests) == before_enq, 'Confirmacao bloqueada nao deve enviar enqueue'
+            finally:
+                if os.path.exists(media_bak) and not os.path.exists(media_file):
+                    shutil.move(media_bak, media_file)
+
+            # Apos restaurar a midia, confirma novamente -> 1 preflight + 1 enqueue
+            with page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
+                with page.expect_response(lambda r: '/api/queue/enqueue' in r.url and r.status == 200, timeout=30000):
+                    page.locator('#btn-batch-confirm').click()
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+            assert len(enqueue_requests) - before_enq == 1, 'Esperado exatamente 1 POST /api/queue/enqueue apos correcao'
+            page.locator('#q-batches-list').get_by_text('Lote Preflight UI').wait_for(state='visible', timeout=20000)
+
+            # Volta para Trabalhos & Projetos para testar resposta atrasada, duplo clique, erro e 390px
+            page.locator('#mode-home-btn').click()
+            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+
+            # Duplo clique + fechar durante pre-voo atrasado
+            def _delay_route(route):
+                time.sleep(0.35)
+                route.continue_()
+
+            page.route('**/api/queue/preflight', _delay_route)
+            before_pf_delay = len(preflight_requests)
+            page.evaluate("() => { const b = document.getElementById('btn-batch-verify'); b.click(); b.click(); }")
+            page.locator('#btn-batch-close').click()
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+            time.sleep(0.45)
+            assert len(preflight_requests) - before_pf_delay == 1, 'Duplo clique nao deve disparar dois preflights'
+            page.unroute('**/api/queue/preflight', _delay_route)
+
+            # Erro de transporte e resposta incompleta
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+            allow_expected_preflight_abort[0] = True
+            page.route('**/api/queue/preflight', lambda route: route.abort())
+            page.locator('#btn-batch-verify').click()
+            page.locator('#batch-preflight-summary').get_by_text('Falha ao consultar').wait_for(state='visible', timeout=20000)
+            page.unroute('**/api/queue/preflight')
+            allow_expected_preflight_abort[0] = False
+
+            page.route('**/api/queue/preflight', lambda route: route.fulfill(
+                status=200, content_type='application/json',
+                body=json.dumps({'ok': True, 'schemaVersion': 1, 'ready': True, 'items': []}),
+            ))
+            before_enq_inc = len(enqueue_requests)
+            page.locator('#btn-batch-confirm').click()
+            page.locator('#batch-confirm-feedback').get_by_text('incompleta').wait_for(state='visible', timeout=20000)
+            assert len(enqueue_requests) == before_enq_inc
+            page.unroute('**/api/queue/preflight')
+            page.keyboard.press('Escape')
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+
+            # Alteracoes nao salvas no trabalho ativo
+            with page.expect_response(lambda r: '/api/works/open' in r.url and r.status == 200, timeout=20000):
+                work_row.get_by_role('button', name='Reabrir').click()
+            page.locator('#mode-video-btn').click()
+            page.locator('#req-title').wait_for(state='visible', timeout=20000)
+            page.locator('#req-title').fill('Titulo alterado sem salvar')
+            page.locator('#mode-home-btn').click()
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#btn-batch-save-active').wait_for(state='visible', timeout=20000)
+            with page.expect_response(lambda r: '/api/works/save' in r.url and r.status == 200, timeout=20000):
+                page.locator('#btn-batch-save-active').click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+            assert page.locator('#btn-batch-save-active').count() == 0
+            page.keyboard.press('Escape')
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+
+            # Largura de 390px e teclado
+            page.set_viewport_size({'width': 390, 'height': 844})
+            with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                batch_btn.click()
+            page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+            overflow_390 = page.evaluate("""() => {
+                const dlg = document.getElementById('batch-export-dialog');
+                return {
+                    docOverflow: document.documentElement.scrollWidth > 392,
+                    dlgOverflow: dlg ? dlg.scrollWidth > dlg.clientWidth + 2 : true,
+                };
+            }""")
+            assert not overflow_390['docOverflow'] and not overflow_390['dlgOverflow'], f'Overflow em 390px: {overflow_390}'
+            page.keyboard.press('Escape')
+            page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
+            page.set_viewport_size({'width': 1280, 'height': 840})
 
             # 5. Aba Fila de Producao em React/Astryx: montagem, atualizar fila, filtros e Abrir revisao
             print('[ci_studio_astryx_browser] Etapa 5: aba Fila de Producao...', flush=True)
@@ -563,6 +698,46 @@ def run_browser_regression():
                 'Respostas HTTP de erro inesperadas (metodo, rota, status): '
                 f'{http_error_responses}'
             )
+
+            # 6. Fallback sem bundle em instancia isolada (sem modificar frontend/dist)
+            print('[ci_studio_astryx_browser] Etapa 6: fallback sem bundle...', flush=True)
+            import tempfile
+            import threading
+            sys.path.insert(0, os.path.join(ROOT, 'tools'))
+            import video_studio as vs_mod
+
+            fb_tmp = tempfile.mkdtemp(prefix='ci-astryx-fallback-', dir=os.path.join(ROOT, '.workspace', 'tmp'))
+            fb_studio_dir = os.path.join(fb_tmp, 'studio')
+            os.makedirs(fb_studio_dir, exist_ok=True)
+            for fname in ('index.html', 'app.js', 'style.css', 'planning.js', 'media.js'):
+                shutil.copy2(os.path.join(ROOT, 'tools', 'studio', fname), os.path.join(fb_studio_dir, fname))
+            fb_server, fb_studio = vs_mod.make_server(ROOT, 0, auto_start_queue=False)
+            fb_studio.studio_dir = fb_studio_dir
+            fb_port = fb_server.server_address[1]
+            fb_studio.port = fb_port
+            fb_thread = threading.Thread(target=fb_server.serve_forever, daemon=True)
+            fb_thread.start()
+            try:
+                fb_page = context.new_page()
+                fb_errors = []
+                fb_page.on('pageerror', lambda err: fb_errors.append(str(err)))
+                fb_page.goto(f'http://127.0.0.1:{fb_port}', wait_until='networkidle')
+                fb_page.locator('#home-legacy-root').wait_for(state='visible', timeout=20000)
+                fb_row = fb_page.locator('#works-table tr', has_text=work_id)
+                fb_row.locator('input[type="checkbox"]').check()
+                with fb_page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
+                    fb_page.locator('#btn-open-batch-export').click()
+                fb_page.locator('#batch-export-dialog').wait_for(state='visible', timeout=20000)
+                with fb_page.expect_response(lambda r: '/api/queue/preflight' in r.url and r.status == 200, timeout=30000):
+                    fb_page.locator('#btn-batch-verify').click()
+                fb_page.locator('#batch-preflight-summary').get_by_text('pronto(s)').wait_for(state='visible', timeout=20000)
+                assert fb_page.locator('#btn-batch-confirm').is_visible()
+                assert not fb_errors, f'Excecoes JS no fallback: {fb_errors}'
+                fb_page.close()
+            finally:
+                fb_server.shutdown()
+                fb_server.server_close()
+                shutil.rmtree(fb_tmp, ignore_errors=True)
 
             browser.close()
     finally:
