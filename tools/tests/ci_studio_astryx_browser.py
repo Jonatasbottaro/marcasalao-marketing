@@ -59,7 +59,7 @@ def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
     if os.path.isdir(tpl_dir):
         shutil.rmtree(tpl_dir, ignore_errors=True)
     db_path = os.path.join(ROOT, '.workspace', 'studio', 'production-queue.sqlite')
-    if batch_id and os.path.isfile(db_path):
+    if os.path.isfile(db_path):
         import sqlite3
         try:
             conn = sqlite3.connect(db_path)
@@ -271,7 +271,7 @@ def run_browser_regression():
                     page.locator('#btn-batch-confirm').click()
             page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
             assert len(enqueue_requests) - before_enq == 1, 'Esperado exatamente 1 POST /api/queue/enqueue apos correcao'
-            page.locator('#q-batches-list').get_by_text('Lote Preflight UI').wait_for(state='visible', timeout=20000)
+            page.locator('#q-batches-list').get_by_text('Lote Preflight UI').first.wait_for(state='visible', timeout=20000)
 
             # Volta para Trabalhos & Projetos para testar resposta atrasada, duplo clique, erro e 390px
             page.locator('#mode-home-btn').click()
@@ -579,6 +579,86 @@ def run_browser_regression():
                     f'ZIP sem SRT da peça renderizada: {zf.namelist()}'
                 )
 
+            # 6b. Verificação técnica no painel e pela CLI sobre o ZIP baixado.
+            print('[ci_studio_astryx_browser] Etapa 6b: verificação do pacote no painel e na CLI...', flush=True)
+            page.locator('#btn-r-verify-package').wait_for(state='visible', timeout=20000)
+            with page.expect_response(
+                lambda r: r.url.split('?')[0].endswith('/api/works/package/verify') and r.status == 200,
+                timeout=60000,
+            ):
+                page.locator('#btn-r-verify-package').click()
+            page.locator('#r-package-verify-result').wait_for(state='visible', timeout=20000)
+            verify_text = page.locator('#r-package-verify-result').inner_text()
+            assert 'Verificação técnica do pacote ZIP' in verify_text, f'Painel sem verificação: {verify_text}'
+            assert package_id in verify_text, f'Verificação do painel sem packageId {package_id}: {verify_text}'
+
+            cli_script = os.path.join(ROOT, 'tools', 'delivery_verify.py')
+            ok_proc = subprocess.run(
+                [sys.executable, cli_script, zip_path, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert ok_proc.returncode == 0, f'CLI deveria validar o ZIP: {ok_proc.stderr}\n{ok_proc.stdout}'
+            ok_payload = json.loads(ok_proc.stdout)
+            assert ok_payload['ok'] is True, ok_payload
+            assert ok_payload['packageId'] == package_id, ok_payload
+
+            bad_sha_proc = subprocess.run(
+                [sys.executable, cli_script, zip_path, '--json', '--expected-sha256', '0' * 64],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert bad_sha_proc.returncode != 0, 'CLI deveria falhar com SHA-256 externo divergente'
+
+            missing_zip = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-missing.zip')
+            with zipfile.ZipFile(zip_path, 'r') as src, zipfile.ZipFile(missing_zip, 'w') as dst:
+                manifest = json.loads(src.read('package-manifest.json').decode('utf-8'))
+                for item in manifest['files']:
+                    arc = item['archivePath']
+                    if arc.endswith('.srt'):
+                        continue
+                    dst.writestr(arc, src.read(arc))
+                dst.writestr('package-manifest.json', json.dumps(manifest, ensure_ascii=False))
+            missing_proc = subprocess.run(
+                [sys.executable, cli_script, missing_zip, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert missing_proc.returncode != 0, 'CLI deveria falhar com arquivo declarado ausente'
+            missing_payload = json.loads(missing_proc.stdout)
+            assert any('ausente' in (e.get('message') or '') for e in missing_payload['errors']), missing_payload
+
+            divergent_zip = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-divergent.zip')
+            with zipfile.ZipFile(zip_path, 'r') as src, zipfile.ZipFile(divergent_zip, 'w') as dst:
+                for item in src.infolist():
+                    data = src.read(item.filename)
+                    if item.filename.endswith('.mp4'):
+                        data = data + b'divergente'
+                    dst.writestr(item.filename, data)
+            divergent_proc = subprocess.run(
+                [sys.executable, cli_script, divergent_zip, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert divergent_proc.returncode != 0, 'CLI deveria falhar com conteúdo divergente'
+            divergent_payload = json.loads(divergent_proc.stdout)
+            assert any('sha256' in (e.get('field') or '') for e in divergent_payload['errors']), divergent_payload
+
+            for tmp_zip in (missing_zip, divergent_zip):
+                try:
+                    os.remove(tmp_zip)
+                except OSError:
+                    pass
+
+            # 6c. Um novo pacote não reaproveita a verificação anterior.
+            print('[ci_studio_astryx_browser] Etapa 6c: novo pacote descarta verificação anterior...', flush=True)
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/works/package') and r.status == 200, timeout=30000):
+                page.locator('#btn-r-build-package').click()
+            page.locator('#r-package-result').get_by_text('Pacote ZIP promovido').wait_for(state='visible', timeout=20000)
+            second_result = page.locator('#r-package-result').inner_text()
+            second_pkg = re.search(r'Pacote ZIP promovido: (\S+)', second_result)
+            second_sha = re.search(r'SHA-256 ([0-9a-f]{64})', second_result)
+            assert second_pkg and second_sha, f'Resultado do segundo pacote incompleto: {second_result}'
+            package_id = second_pkg.group(1)
+            studio_sha = second_sha.group(1)
+            page.locator('#r-package-verify-result').wait_for(state='hidden', timeout=20000)
+
             # 7. HTTP 409 esperado: versão obsoleta no payload gera conflito na rede e no painel.
             print('[ci_studio_astryx_browser] Etapa 7: conflito HTTP 409 e ZIP valido preservado...', flush=True)
             stale_version = 'versao-obsoleta-para-prova-409'
@@ -660,6 +740,34 @@ def run_browser_regression():
             switched_sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', switched_result)
             assert switched_sha_match, f'Resultado apos troca sem SHA-256: {switched_result}'
             current_sha = switched_sha_match.group(1)
+
+            # 8b. Verificação em andamento + troca de trabalho: resultado não pode vazar.
+            print('[ci_studio_astryx_browser] Etapa 8b: verificação em andamento e troca de trabalho...', flush=True)
+
+            def delay_verify(route):
+                time.sleep(3.0)
+                route.continue_()
+
+            page.route('**/api/works/package/verify', delay_verify)
+            try:
+                page.locator('#btn-r-verify-package').click(no_wait_after=True)
+                page.locator('#mode-home-btn').click()
+                row_b2 = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
+                row_b2.wait_for(state='visible', timeout=20000)
+                row_b2.click()
+                page.locator('#mode-review-btn').click()
+                page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+                page.wait_for_function(
+                    "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                    arg=second_work,
+                    timeout=20000,
+                )
+                page.wait_for_timeout(3500)
+                assert page.locator('#r-package-verify-result').count() == 0, (
+                    'Resultado de verificação do trabalho A vazou para o trabalho B'
+                )
+            finally:
+                page.unroute('**/api/works/package/verify', delay_verify)
 
             # 9. Painel legado sem bundle: bloqueia o script React e valida o download da UI classica.
             print('[ci_studio_astryx_browser] Etapa 9: download pelo painel legado sem bundle...', flush=True)
