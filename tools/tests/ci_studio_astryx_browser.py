@@ -281,8 +281,7 @@ def run_browser_regression():
 
             page.route('**/api/queue/preflight', _delay_route)
             before_pf_delay = len(preflight_requests)
-            page.locator('#btn-batch-verify').click()
-            page.locator('#btn-batch-verify').click()
+            page.evaluate("() => { const b = document.getElementById('btn-batch-verify'); b.click(); b.click(); }")
             page.locator('#btn-batch-close').click()
             page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
             time.sleep(0.45)
