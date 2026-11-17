@@ -48,36 +48,41 @@ Formato vertical 1080×1920. Textos curtos, uma ação por tela.
 
 ### Story 3 — CTA
 
-- **Texto da tela:** "Conheça a agenda do Marca Salão."
-- **Visual:** arte final com a identidade da marca; sem botão clicível desenhado.
-- **CTA condicional:** "link na bio" somente após confirmar o link externo do perfil; "sticker de link" somente após autorização para publicação (ver seção 4).
+- **Texto da tela (principal):** "Conheça a agenda do Marca Salão. marcasalao.com.br"
+- **Visual:** arte final com a identidade da marca; sem botão clicível desenhado e sem sticker desenhado.
+- **Texto principal:** funciona sem link na bio e sem sticker; não depende de confirmação pendente.
+- **Variantes condicionadas:** acrescentar "link na bio" somente após confirmar o link externo do perfil; usar "sticker de link" somente após autorização para publicação (ver seção 4). Nenhuma das duas integra o texto principal.
 
 ---
 
 ## 3. Legenda do Reels (Instagram)
 
-> Você consegue visualizar os agendamentos do seu salão com clareza?
->
-> Na agenda do Marca Salão, você acompanha os atendimentos do dia, da semana ou do mês, filtra por profissional e abre cada agendamento para conferir os dados.
->
-> Conheça a agenda do Marca Salão. [LINK NA BIO — usar somente após confirmar o link externo do perfil]
-
-**Alternativa neutra, válida sem confirmação do link:**
+**Texto principal — válido sem confirmação de link:**
 
 > Você consegue visualizar os agendamentos do seu salão com clareza?
 >
 > Na agenda do Marca Salão, você acompanha os atendimentos do dia, da semana ou do mês, filtra por profissional e abre cada agendamento para conferir os dados.
 >
-> Conheça a agenda do Marca Salão.
+> Conheça a agenda do Marca Salão. marcasalao.com.br
 
-Observações: no Instagram, URL em legenda não é clicável; não prometer "link na bio" sem confirmar o link externo do perfil. No Facebook, usar a URL completa `https://marcasalao.com.br` na legenda com "Acesse pelo link da descrição". O destino oficial é `https://marcasalao.com.br`; o painel de demonstração (`/gestor`) exige credenciais que não ficam neste repositório e não deve ser prometido como acesso direto.
+**Variante condicional — Instagram, somente após confirmar o link externo do perfil:**
+
+> Você consegue visualizar os agendamentos do seu salão com clareza?
+>
+> Na agenda do Marca Salão, você acompanha os atendimentos do dia, da semana ou do mês, filtra por profissional e abre cada agendamento para conferir os dados.
+>
+> Conheça a agenda do Marca Salão. marcasalao.com.br
+>
+> link na bio.
+
+Observações: o texto principal já traz a frase de CTA e `marcasalao.com.br` como texto; "link na bio" é apenas variante condicionada à confirmação do link do perfil. No Instagram, URL em legenda não é clicável. No Facebook, usar a URL completa `https://marcasalao.com.br` na legenda com "Acesse pelo link da descrição". O destino oficial é `https://marcasalao.com.br`; o painel de demonstração (`/gestor`) exige credenciais que não ficam neste repositório e não deve ser prometido como acesso direto.
 
 ---
 
 ## 4. Confirmações pendentes antes do CTA por canal
 
-- [ ] **Instagram — link na bio:** confirmar o link externo cadastrado no perfil na data da publicação. Sem confirmação, encerrar apenas com "Conheça a agenda do Marca Salão.", sem prometer acesso clicável.
-- [ ] **Instagram Stories — sticker de link:** depende de autorização para publicação; botão desenhado na imagem não cria sticker. Não inferir que a arte faz isso.
+- [ ] **Instagram — link na bio:** variante opcional; confirmar o link externo cadastrado no perfil na data da publicação. Sem confirmação, usar o texto principal com "Conheça a agenda do Marca Salão. marcasalao.com.br", sem prometer acesso clicável.
+- [ ] **Instagram Stories — sticker de link:** variante opcional; depende de autorização para publicação. O texto principal do último Story já funciona sem sticker; botão desenhado na imagem não cria sticker. Não inferir que a arte faz isso.
 - [ ] **Facebook (se entrar na campanha):** usar URL completa na legenda com "Acesse pelo link da descrição"; registrar antes de produzir.
 - [ ] **YouTube Shorts / TikTok / WhatsApp Status:** confirmar política de link e formato vigente de cada canal antes de produzir.
 - [ ] **Rastreamento:** não há mecanismo definido; registrar como não rastreado até haver definição.
@@ -89,9 +94,11 @@ Observações: no Instagram, URL em legenda não é clicável; não prometer "li
 - [ ] Hook NS-001-H15 (texto revisado): "Você consegue visualizar os agendamentos do seu salão com clareza?"
 - [ ] Roteiro do Reels: 6 cenas, 30 s.
 - [ ] Textos dos 3 Stories.
-- [ ] Legenda do Reels (versão com link na bio ou versão neutra).
-- [ ] CTA: "Conheça a agenda do Marca Salão."
+- [ ] Legenda do Reels: texto principal com "Conheça a agenda do Marca Salão. marcasalao.com.br"; variante com link na bio fica condicionada à confirmação.
+- [ ] CTA: "Conheça a agenda do Marca Salão."; a legenda do Reels e o último Story acrescentam `marcasalao.com.br` como texto e não dependem de bio ou sticker.
+- [ ] Variantes condicionadas: "link na bio" e "sticker de link" somente após as confirmações da seção 4.
 - [ ] Destino por canal (Instagram, Facebook, YouTube Shorts, TikTok, WhatsApp Status).
+- [ ] Novas capturas com dados fictícios para as cenas 3, 4 e 5 do Reels (ver seção 6).
 - [ ] Nome de marca para uso público: a interface capturada exibe "Meu Salão", enquanto a campanha usa "Marca Salão"; confirmar antes das capturas e artes finais.
 - [ ] Autorização de gravação (etapa posterior, não coberta por este kit).
 
@@ -100,6 +107,8 @@ Observações: no Instagram, URL em legenda não é clicável; não prometer "li
 ## 6. Capturas necessárias com dados fictícios
 
 As capturas de [capturas/2026-11-05/](../../../00-briefings/campanhas/NS-001/capturas/2026-11-05/) são **evidência técnica**, não frames aprovados: trazem identificação E2E, enquadramento de validação, menu administrativo amplo, preço fictício inadequado (R$ 12.000,00) e o nome "Meu Salão". Servem para planejar as cenas, não para publicar.
+
+**Novas capturas com dados fictícios são necessárias nas cenas 3, 4 e 5 do Reels.** As cenas 1, 2 e 6 usam arte de marca e não dependem de captura de produto.
 
 | Cena | Precisa de nova captura? | Observação |
 | --- | --- | --- |
