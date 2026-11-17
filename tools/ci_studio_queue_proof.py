@@ -130,6 +130,30 @@ def main(argv=None):
             {'workId': w1, 'modality': 'motion', 'profileId': 'instagram-reels-video'},
             {'workId': w2, 'modality': 'video', 'profileId': 'instagram-reels-video'},
         ]
+        preflight = post_json(f'{base}/api/queue/preflight', {
+            'items': items + [{'workId': w1, 'modality': 'motion', 'profileId': 'youtube-video-horizontal'}],
+        })
+        assert preflight.get('schemaVersion') == 1 and preflight.get('ready') is False
+        assert all(it['status'] == 'ready' for it in preflight['items'][:5]), f'expected ready items: {preflight["items"][:5]}'
+        assert preflight['items'][5]['status'] == 'blocked', 'expected incompatible motion to be blocked'
+
+        cli_ready = subprocess.run(
+            [sys.executable, os.path.join(TOOLS, 'studio_preflight.py'),
+             '--port', str(args.port), '--work-id', w1,
+             '--modality', 'video', '--profile', 'instagram-reels-video', '--json'],
+            capture_output=True, text=True, timeout=60,
+        )
+        assert cli_ready.returncode == 0, f'cli ready failed: {cli_ready.stderr}'
+        assert json.loads(cli_ready.stdout)['items'][0]['status'] == 'ready'
+
+        cli_blocked = subprocess.run(
+            [sys.executable, os.path.join(TOOLS, 'studio_preflight.py'),
+             '--port', str(args.port), '--work-id', w1,
+             '--modality', 'motion', '--profile', 'youtube-video-horizontal'],
+            capture_output=True, text=True, timeout=60,
+        )
+        assert cli_blocked.returncode == 1, f'cli blocked exit code unexpected: {cli_blocked.returncode}'
+        assert 'BLOQUEADO:' in cli_blocked.stdout
         idem_key = f'ci-queue-idem-{int(time.time())}'
         e1 = post_json(f'{base}/api/queue/enqueue', {'items': items, 'idempotencyKey': idem_key, 'label': 'CI Lote'})
         e2 = post_json(f'{base}/api/queue/enqueue', {'items': items, 'idempotencyKey': idem_key, 'label': 'CI Lote'})
