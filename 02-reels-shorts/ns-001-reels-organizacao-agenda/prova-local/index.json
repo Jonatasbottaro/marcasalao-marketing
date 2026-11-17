@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "requestId": "marca-salao-social-reel-demo",
+  "profileCount": 3,
+  "completedCount": 0,
+  "overallStatus": "partial",
+  "profiles": [
+    {
+      "profileId": "facebook-reels-video",
+      "caseId": "marca-salao-social-reel-demo-facebook-reels-video",
+      "status": "failed",
+      "lastAttempt": {
+        "profileId": "facebook-reels-video",
+        "caseId": "marca-salao-social-reel-demo-facebook-reels-video",
+        "status": "failed",
+        "failureCode": null,
+        "errors": [],
+        "error": "ffmpeg/ffprobe nao encontrados; exponha no PATH ou em .workspace/tools/ffmpeg"
+      },
+      "lastValidDelivery": null
+    },
+    {
+      "profileId": "instagram-reels-video",
+      "caseId": "marca-salao-social-reel-demo-instagram-reels-video",
+      "status": "failed",
+      "lastAttempt": {
+        "profileId": "instagram-reels-video",
+        "caseId": "marca-salao-social-reel-demo-instagram-reels-video",
+        "status": "failed",
+        "failureCode": null,
+        "errors": [],
+        "error": "ffmpeg/ffprobe nao encontrados; exponha no PATH ou em .workspace/tools/ffmpeg"
+      },
+      "lastValidDelivery": null
+    },
+    {
+      "profileId": "youtube-shorts",
+      "caseId": "marca-salao-social-reel-demo-youtube-shorts",
+      "status": "failed",
+      "lastAttempt": {
+        "profileId": "youtube-shorts",
+        "caseId": "marca-salao-social-reel-demo-youtube-shorts",
+        "status": "failed",
+        "failureCode": null,
+        "errors": [],
+        "error": "ffmpeg/ffprobe nao encontrados; exponha no PATH ou em .workspace/tools/ffmpeg"
+      },
+      "lastValidDelivery": null
+    }
+  ]
+}
