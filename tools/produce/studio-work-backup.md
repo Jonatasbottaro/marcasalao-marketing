@@ -130,6 +130,7 @@ python tools/studio_work_backup.py restore \
 > condições de corrida (TOCTOU) mesmo que o diretório seja criado durante o staging:
 > - No **Windows**: `os.rename()` recusa a operação atomicamente no nível de sistema de arquivos se o destino existir (`FileExistsError`).
 > - No **Linux (Ubuntu)**: `renameat2(..., RENAME_NOREPLACE)` garante a recusa no kernel mesmo contra diretórios vazios (`EEXIST` -> `FileExistsError`), evitando a semântica POSIX padrão que substituiria diretórios vazios.
+> - **Ambiente sem `renameat2`**: Se `renameat2` não estiver disponível no kernel/libc do ambiente não-Windows, a restauração é abortada com erro explícito de recurso indisponível e código diferente de zero (`RuntimeError`), sem recorrer a `os.rename` comum (o qual permitiria a substituição de diretórios vazios). O destino existente é preservado e o staging é descartado pelo `finally`.
 
 ### Montagem segura (staging e publicação atômica)
 
@@ -137,7 +138,7 @@ python tools/studio_work_backup.py restore \
 2. O trabalho é montado em um diretório temporário exclusivo (`.backup-staging-<work-id>-...`) no **mesmo sistema de arquivos** do destino final.
 3. Todo o conteúdo do staging é validado contra o manifesto antes da promoção.
 4. O backup preserva o arquivo ZIP anterior: a promoção utiliza `os.replace` atômico sem remover o arquivo prévio previamente. Se ocorrer falha durante o empacotamento, o arquivo anterior permanece intacto.
-5. Na restauração, o diretório final é publicado em uma **operação atômica não-substitutiva** (`_publish_work_directory`) que recusa o destino se ele já existir (mesmo vazio). Se ocorrer qualquer erro, recusa ou interrupção, o diretório de destino pré-existente permanece intacto, o staging é descartado e nenhum trabalho parcial aparece no destino (comportamento garantido tanto no Windows quanto no Linux/Ubuntu).
+5. Na restauração, o diretório final é publicado em uma **operação atômica não-substitutiva** (`_publish_work_directory`) que recusa o destino se ele já existir (mesmo vazio). Se `renameat2(RENAME_NOREPLACE)` não estiver disponível no Linux/POSIX, a operação é encerrada com diagnóstico claro de recurso indisponível (código 1), sem chamada a `os.rename` comum. Se ocorrer qualquer erro, recusa ou interrupção, o diretório de destino pré-existente permanece intacto, o staging é descartado e nenhum trabalho parcial aparece no destino (comportamento garantido tanto no Windows quanto no Linux/Ubuntu).
 
 ---
 

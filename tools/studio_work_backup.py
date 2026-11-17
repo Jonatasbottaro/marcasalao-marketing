@@ -804,7 +804,7 @@ def _rename_noreplace_linux(src: str, dst: str) -> bool:
 
     Lanca FileExistsError se o destino ja existir no momento da publicacao (inclusive diretorio vazio).
     Retorna True se renomeou com sucesso.
-    Retorna False se renameat2 nao estiver disponivel no ambiente (permitindo fallback).
+    Retorna False se renameat2 nao estiver disponivel no ambiente.
     """
     import ctypes
     import ctypes.util
@@ -859,7 +859,8 @@ def _publish_work_directory(staging_dir: str, dest_dir: str) -> None:
     operacao (mesmo que seja um diretorio vazio), preservando o destino existente intacto.
     - No Windows: os.rename() recusa atomicamente se o destino existir (FileExistsError).
     - No Linux: renameat2() com RENAME_NOREPLACE recusa atomicamente mesmo diretorio vazio (EEXIST).
-    - Fallback: checagem via os.path.lexists() imediatamente antes de os.rename().
+    - Se renameat2 nao estiver disponivel no ambiente, a operacao e recusada com erro claro,
+      sem executar rename comum (que sobrescreveria diretorios vazios no Linux).
     """
     if os.path.lexists(dest_dir):
         raise FileExistsError(
@@ -883,12 +884,11 @@ def _publish_work_directory(staging_dir: str, dest_dir: str) -> None:
     except FileExistsError:
         raise
 
-    if os.path.lexists(dest_dir):
-        raise FileExistsError(
-            f'O diretorio de destino ja existe no momento da publicacao: {dest_dir!r}. '
-            f'Restauracao cancelada.'
-        )
-    os.rename(staging_dir, dest_dir)
+    raise RuntimeError(
+        'Publicacao atomica nao-substitutiva indisponivel: '
+        'o ambiente nao suporta renameat2(RENAME_NOREPLACE) para garantir '
+        'a recusa atomica de destino existente. Restauracao cancelada.'
+    )
 
 
 # ---------------------------------------------------------------------------

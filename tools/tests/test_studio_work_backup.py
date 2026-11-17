@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -534,6 +535,165 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
         with patch('ctypes.CDLL', return_value=mock_libc), patch('ctypes.util.find_library', return_value='libc.so.6'), patch('ctypes.get_errno', return_value=errno.ENOSYS):
             res = swb._rename_noreplace_linux('src', 'dst')
             self.assertFalse(res)
+
+    def test_publish_work_directory_refuses_when_renameat2_unavailable(self) -> None:
+        """Quando renameat2 for indisponivel no Linux/POSIX, recusa sem chamar os.rename e preserva destino."""
+        staging_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='stg-nounavail-')
+        dest_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='dst-nounavail-')
+        try:
+            with open(os.path.join(staging_dir, 'sample.txt'), 'w', encoding='utf-8') as f:
+                f.write('conteudo de staging')
+            with open(os.path.join(dest_dir, 'existente.txt'), 'w', encoding='utf-8') as f:
+                f.write('arquivo destino preservado')
+
+            # Simula race condition onde o destino nao foi detectado no lexists inicial,
+            # mas renameat2 nao esta disponivel no sistema: deve abortar com RuntimeError
+            # e JAMAIS chamar os.rename comum.
+            with patch('studio_work_backup.os.path.lexists', return_value=False), \
+                 patch('studio_work_backup.os.name', 'posix'), \
+                 patch('studio_work_backup._rename_noreplace_linux', return_value=False), \
+                 patch('studio_work_backup.os.rename') as mock_rename:
+                with self.assertRaises(RuntimeError) as ctx:
+                    swb._publish_work_directory(staging_dir, dest_dir)
+                self.assertIn('renameat2(RENAME_NOREPLACE)', str(ctx.exception))
+                mock_rename.assert_not_called()
+
+            # Destino preservado
+            self.assertTrue(os.path.isfile(os.path.join(dest_dir, 'existente.txt')))
+            with open(os.path.join(dest_dir, 'existente.txt'), 'r', encoding='utf-8') as f:
+                self.assertEqual(f.read(), 'arquivo destino preservado')
+            # Staging preservado (limpeza e responsabilidade do chamador/CLI)
+            self.assertTrue(os.path.isfile(os.path.join(staging_dir, 'sample.txt')))
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            shutil.rmtree(dest_dir, ignore_errors=True)
+
+    def test_publish_work_directory_refuses_even_nonexistent_dest_when_renameat2_unavailable(self) -> None:
+        """Mesmo com destino inexistente, recusa se renameat2 nao estiver disponivel no Linux/POSIX."""
+        staging_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='stg-nonex-')
+        dest_dir = os.path.join(self.base_tmp, 'dst-never-created')
+        try:
+            with open(os.path.join(staging_dir, 'sample.txt'), 'w', encoding='utf-8') as f:
+                f.write('conteudo de staging')
+
+            with patch('studio_work_backup.os.name', 'posix'), \
+                 patch('studio_work_backup._rename_noreplace_linux', return_value=False), \
+                 patch('studio_work_backup.os.rename') as mock_rename:
+                with self.assertRaises(RuntimeError) as ctx:
+                    swb._publish_work_directory(staging_dir, dest_dir)
+                self.assertIn('renameat2(RENAME_NOREPLACE)', str(ctx.exception))
+                mock_rename.assert_not_called()
+
+            self.assertFalse(os.path.exists(dest_dir), 'Destino nao deve ter sido criado')
+            self.assertTrue(os.path.isdir(staging_dir))
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+
+    def test_restore_cli_refuses_when_renameat2_unavailable(self) -> None:
+        """CLI: simula renameat2 indisponivel no restore e confirma recusa com erro, ausencia de os.rename, destino preservado e limpeza do staging."""
+        work_id = 'unavail-work'
+        project_rel = 'platform/examples/projects/test.project.json'
+        _make_fake_project(self.ws, project_rel)
+        _make_fake_work(self.ws, work_id, project_rel)
+
+        zip_path = self._zip_path('unavail.zip')
+        swb.cmd_backup(_make_args('backup', work_id=work_id, output=zip_path))
+
+        ws2 = tempfile.mkdtemp(dir=self.base_tmp, prefix='ws2-unavail-')
+        try:
+            proj_dst = os.path.join(ws2, project_rel.replace('/', os.sep))
+            os.makedirs(os.path.dirname(proj_dst), exist_ok=True)
+            shutil.copy2(os.path.join(self.ws, project_rel.replace('/', os.sep)), proj_dst)
+
+            dest_work_dir = os.path.join(ws2, '.workspace', 'studio', 'works', work_id)
+            works_parent = os.path.dirname(dest_work_dir)
+            self.assertFalse(os.path.exists(dest_work_dir))
+
+            # Simular criacao de um diretorio concorrente no destino durante o staging
+            created_flag = [False]
+            orig_open = open
+
+            def open_and_create_dest(path, mode='r', *args, **kwargs):
+                if 'wb' in mode and '.backup-staging-' in str(path) and not created_flag[0]:
+                    created_flag[0] = True
+                    os.makedirs(dest_work_dir, exist_ok=True)
+                    with orig_open(os.path.join(dest_work_dir, 'concorrente.txt'), 'w', encoding='utf-8') as cf:
+                        cf.write('destino existente intacto')
+                return orig_open(path, mode, *args, **kwargs)
+
+            stderr_buf = io.StringIO()
+            with patch('builtins.open', side_effect=open_and_create_dest), \
+                 patch('studio_work_backup._find_root', return_value=ws2), \
+                 patch('studio_work_backup.os.name', 'posix'), \
+                 patch('studio_work_backup._rename_noreplace_linux', return_value=False), \
+                 patch('studio_work_backup.os.rename') as mock_rename, \
+                 patch('sys.stderr', stderr_buf):
+                rc = swb.cmd_restore(_make_args('restore', archive=zip_path, workspace=ws2))
+
+            self.assertEqual(rc, 1, 'Restore deve retornar codigo diferente de zero quando recurso estiver indisponivel')
+            mock_rename.assert_not_called()
+
+            # Diagnostico claro no stderr
+            stderr_text = stderr_buf.getvalue()
+            self.assertTrue(
+                'renameat2(RENAME_NOREPLACE)' in stderr_text or 'ja existe' in stderr_text,
+                f'Diagnostico deve relatar erro/recurso indisponivel: {stderr_text}'
+            )
+
+            # Destino preservado intacto
+            self.assertTrue(os.path.isdir(dest_work_dir))
+            with open(os.path.join(dest_work_dir, 'concorrente.txt'), 'r', encoding='utf-8') as cf:
+                self.assertEqual(cf.read(), 'destino existente intacto')
+
+            # Staging completamente limpo pelo finally
+            staging_leftovers = [
+                d for d in os.listdir(works_parent)
+                if d.startswith(f'.backup-staging-{work_id}')
+            ]
+            self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
+        finally:
+            shutil.rmtree(ws2, ignore_errors=True)
+
+    def test_restore_cli_refuses_clean_destination_when_renameat2_unavailable(self) -> None:
+        """CLI: mesmo com destino livre, restore aborta se renameat2 for indisponivel, sem chamar rename e limpando staging."""
+        work_id = 'unavail-clean'
+        project_rel = 'platform/examples/projects/test.project.json'
+        _make_fake_project(self.ws, project_rel)
+        _make_fake_work(self.ws, work_id, project_rel)
+
+        zip_path = self._zip_path('unavail-clean.zip')
+        swb.cmd_backup(_make_args('backup', work_id=work_id, output=zip_path))
+
+        ws2 = tempfile.mkdtemp(dir=self.base_tmp, prefix='ws2-unavail-clean-')
+        try:
+            proj_dst = os.path.join(ws2, project_rel.replace('/', os.sep))
+            os.makedirs(os.path.dirname(proj_dst), exist_ok=True)
+            shutil.copy2(os.path.join(self.ws, project_rel.replace('/', os.sep)), proj_dst)
+
+            dest_work_dir = os.path.join(ws2, '.workspace', 'studio', 'works', work_id)
+            works_parent = os.path.dirname(dest_work_dir)
+            self.assertFalse(os.path.exists(dest_work_dir))
+
+            stderr_buf = io.StringIO()
+            with patch('studio_work_backup._find_root', return_value=ws2), \
+                 patch('studio_work_backup.os.name', 'posix'), \
+                 patch('studio_work_backup._rename_noreplace_linux', return_value=False), \
+                 patch('studio_work_backup.os.rename') as mock_rename, \
+                 patch('sys.stderr', stderr_buf):
+                rc = swb.cmd_restore(_make_args('restore', archive=zip_path, workspace=ws2))
+
+            self.assertEqual(rc, 1, 'Restore deve abortar com codigo != 0')
+            mock_rename.assert_not_called()
+            self.assertIn('renameat2(RENAME_NOREPLACE)', stderr_buf.getvalue())
+            self.assertFalse(os.path.exists(dest_work_dir), 'Destino nao deve ter sido criado')
+
+            staging_leftovers = [
+                d for d in os.listdir(works_parent)
+                if d.startswith(f'.backup-staging-{work_id}')
+            ]
+            self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
+        finally:
+            shutil.rmtree(ws2, ignore_errors=True)
 
 
 class TestRestoreFailureInjection(_WorkspaceTest):
