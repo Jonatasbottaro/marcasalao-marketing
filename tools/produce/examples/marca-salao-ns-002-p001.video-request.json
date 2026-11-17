@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-002-p001",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-002 — Agendamento online no Marca Salão — Reels",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "marca-salao-ns-002-p001-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 46,
+      "marginTop": 180,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "cena-01-hook",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-01-hook.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-02-escolha",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-02-escolha.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-03-confirma",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-03-confirma.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-04-ponte",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-04-ponte.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-05-salao-ve",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-05-salao-ve.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-06-cta",
+      "path": ".workspace/tmp/ns-002-p001/assets/cena-06-cta.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "durationMs": 4000,
+      "mediaId": "cena-01-hook",
+      "caption": "Como um horário escolhido pela cliente chega à agenda do salão?",
+      "narration": "Como um horário escolhido pela cliente chega à agenda do salão?",
+      "title": "Abertura — agendamento online",
+      "narrativeFunction": "hook",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-02-escolha",
+      "durationMs": 6000,
+      "mediaId": "cena-02-escolha",
+      "caption": "A cliente escolhe o serviço e o profissional.",
+      "narration": "A cliente informa os dados, escolhe o serviço e o profissional.",
+      "title": "A cliente escolhe",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-03-confirma",
+      "durationMs": 7000,
+      "mediaId": "cena-03-confirma",
+      "caption": "Seleciona o horário disponível e confirma.",
+      "narration": "Na sequência, escolhe um horário disponível e confirma o agendamento.",
+      "title": "Confirmação do agendamento",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-04-ponte",
+      "durationMs": 3000,
+      "mediaId": "cena-04-ponte",
+      "caption": "Agendamento realizado.",
+      "narration": "E o mesmo registro segue para a agenda do salão.",
+      "title": "Ponte — agendamento realizado",
+      "narrativeFunction": "transition",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-05-salao-ve",
+      "durationMs": 6000,
+      "mediaId": "cena-05-salao-ve",
+      "caption": "O mesmo atendimento aparece na agenda do salão.",
+      "narration": "O mesmo atendimento aparece na agenda do salão.",
+      "title": "O salão vê o atendimento",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-06-cta",
+      "durationMs": 4000,
+      "mediaId": "cena-06-cta",
+      "caption": "Conheça o agendamento online no Marca Salão. marcasalao.com.br",
+      "narration": "Conheça o agendamento online no Marca Salão. marcasalao.com.br",
+      "title": "CTA — Conheça o agendamento online",
+      "narrativeFunction": "cta",
+      "motionIntent": "none"
+    }
+  ]
+}
