@@ -315,8 +315,8 @@ def run_browser_regression():
             with page.expect_response(lambda r: '/api/works/open' in r.url and r.status == 200, timeout=20000):
                 work_row.get_by_role('button', name='Reabrir').click()
             page.locator('#mode-video-btn').click()
-            page.locator('#v-title').wait_for(state='visible', timeout=20000)
-            page.locator('#v-title').fill('Titulo alterado sem salvar')
+            page.locator('#req-title').wait_for(state='visible', timeout=20000)
+            page.locator('#req-title').fill('Titulo alterado sem salvar')
             page.locator('#mode-home-btn').click()
             with page.expect_response(lambda r: '/api/queue/plan' in r.url and r.status == 200, timeout=20000):
                 batch_btn.click()
