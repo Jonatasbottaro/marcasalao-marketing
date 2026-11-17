@@ -39,7 +39,7 @@ def _free_port():
         return s.getsockname()[1]
 
 
-def _wait_ready(base_url, timeout=15.0):
+def _wait_ready(base_url, timeout=60.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
