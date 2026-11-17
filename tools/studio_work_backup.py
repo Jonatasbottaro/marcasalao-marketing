@@ -1,24 +1,26 @@
 """CLI de backup e restauracao de um trabalho salvo do Video Studio.
 
 Subcomandos:
-  backup  <work-id> <saida.zip>  — empacota o trabalho num ZIP portátil
-  inspect <arquivo.zip>          — lista conteúdo e verifica dependências
+  backup  <work-id> <saida.zip>  — empacota o trabalho num ZIP portatil
+  inspect <arquivo.zip>          — lista conteudo e verifica dependencias
   restore <arquivo.zip>          — restaura o trabalho num workspace de destino
 
 Uso:
-  python -m studio_work_backup backup meu-trabalho backup.zip
-  python -m studio_work_backup inspect backup.zip
-  python -m studio_work_backup restore backup.zip --workspace /outro/checkout
+  python tools/studio_work_backup.py backup meu-trabalho backup.zip
+  python tools/studio_work_backup.py inspect backup.zip
+  python tools/studio_work_backup.py restore backup.zip --workspace /outro/checkout
 
 Regras de escopo (v1):
-  Inclui: work.json, editorial.json, review-state.json, planning.json,
+  Inclui: work.json, editorial.json, planning.json,
           media-library.json, drafts/ (video, carousel, motion), media/ do trabalho.
-  Exclui: credenciais, caches, fila, aprovações, entregas renderizadas, SQLite.
+  Exclui: review-state.json (aprovacoes fora desta versao), credenciais,
+          caches, fila, entregas renderizadas, SQLite.
 """
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass, field
 import hashlib
 import json
 import os
@@ -28,7 +30,6 @@ import sys
 import tempfile
 import zipfile
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -39,17 +40,28 @@ SCHEMA_VERSION = 1
 MANIFEST_ARCHIVE_PATH = "MANIFEST.json"
 KEBAB_CASE_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 
-# Chaves de work_paths() que fazem parte do backup (apenas arquivos individuais)
+# Chaves de work_paths() que fazem parte do backup.
+# reviewStateFile (review-state.json) foi explicitamente excluido para manter
+# aprovacoes fora da versao v1.
 _FILE_PATH_KEYS = (
     'workFile',
     'editorialFile',
-    'reviewStateFile',
     'planningFile',
     'mediaLibraryFile',
     'videoDraft',
     'carouselDraft',
     'motionPlan',
 )
+
+_ALLOWED_INDIVIDUAL_REL_FILES = {
+    'work.json',
+    'editorial.json',
+    'planning.json',
+    'media-library.json',
+    'drafts/video.request.json',
+    'drafts/carousel.request.json',
+    'drafts/motion.plan.json',
+}
 
 
 # ---------------------------------------------------------------------------
@@ -125,16 +137,43 @@ def _work_paths(work_id: str) -> dict[str, str]:
     }
 
 
+def _is_allowed_package_entry(work_id: str, rel_path: str) -> bool:
+    """Valida se uma entrada do ZIP pertence aos arquivos permitidos do trabalho."""
+    norm = rel_path.replace('\\', '/')
+    if norm == MANIFEST_ARCHIVE_PATH:
+        return True
+    base_prefix = f'.workspace/studio/works/{work_id}/'
+    if not norm.startswith(base_prefix):
+        return False
+
+    rel_in_work = norm[len(base_prefix):]
+    if not rel_in_work or rel_in_work.startswith('/'):
+        return False
+
+    # Prevenir path traversal e streams/letras de drive
+    parts = rel_in_work.split('/')
+    if any(p in ('..', '.', '') for p in parts) or ':' in rel_in_work:
+        return False
+
+    # Proibir expressamente review-state.json, deliveries, fila e banco
+    if rel_in_work == 'review-state.json' or rel_in_work.startswith('deliveries/'):
+        return False
+
+    if rel_in_work in _ALLOWED_INDIVIDUAL_REL_FILES:
+        return True
+
+    if rel_in_work.startswith('media/'):
+        return len(parts) >= 2
+
+    return False
+
+
 # ---------------------------------------------------------------------------
-# Coleta de arquivos de um trabalho
+# Coleta de arquivos e dependências
 # ---------------------------------------------------------------------------
 
 def _collect_work_files(root: str, work_id: str) -> list[tuple[str, str]]:
-    """Retorna lista de (rel_path, abs_path) dos arquivos do trabalho que existem.
-
-    Inclui: arquivos individuais definidos em _FILE_PATH_KEYS + toda a pasta media/
-    Exclui: deliveries/, video-requests.json e production-queue.sqlite
-    """
+    """Retorna lista de (rel_path, abs_path) dos arquivos do trabalho que existem."""
     paths = _work_paths(work_id)
     collected: list[tuple[str, str]] = []
     seen: set[str] = set()
@@ -143,12 +182,14 @@ def _collect_work_files(root: str, work_id: str) -> list[tuple[str, str]]:
         rel_norm = rel.replace('\\', '/')
         if rel_norm in seen:
             return
+        if not _is_allowed_package_entry(work_id, rel_norm):
+            return
         abs_path = _confine(root, rel)
         if os.path.isfile(abs_path):
             seen.add(rel_norm)
             collected.append((rel_norm, abs_path))
 
-    # Arquivos individuais definidos
+    # Arquivos individuais permitidos
     for key in _FILE_PATH_KEYS:
         _add(paths[key])
 
@@ -165,37 +206,98 @@ def _collect_work_files(root: str, work_id: str) -> list[tuple[str, str]]:
     return sorted(collected, key=lambda x: x[0])
 
 
-def _read_project_rel(root: str, work_id: str) -> str | None:
-    """Lê o campo 'project' de work.json e retorna o caminho relativo."""
+def _collect_dependencies(root: str, work_id: str) -> dict[str, Any]:
+    """Coleta dependências verificáveis (ProjectManifest e mídias compartilhadas)."""
     paths = _work_paths(work_id)
+    deps: dict[str, Any] = {
+        'projectManifest': {},
+        'sharedMedia': [],
+    }
+
+    # 1. ProjectManifest
     work_abs = _confine(root, paths['workFile'])
-    if not os.path.isfile(work_abs):
-        return None
-    try:
-        with open(work_abs, 'r', encoding='utf-8') as fh:
-            work = json.load(fh)
-        project_rel = (work.get('project') or '').strip()
-        return project_rel or None
-    except (json.JSONDecodeError, OSError):
-        return None
+    if os.path.isfile(work_abs):
+        try:
+            with open(work_abs, 'r', encoding='utf-8') as fh:
+                work_doc = json.load(fh)
+            project_rel = (work_doc.get('project') or '').strip().replace('\\', '/')
+            if project_rel:
+                project_abs = _confine(root, project_rel)
+                if os.path.isfile(project_abs):
+                    deps['projectManifest'] = {
+                        'rel': project_rel,
+                        'sha256': sha256_file(project_abs),
+                    }
+        except (json.JSONDecodeError, OSError):
+            pass
 
+    # 2. Mídias compartilhadas (fora de .workspace/studio/works/{work_id}/)
+    work_base_norm = paths['workDir'].replace('\\', '/') + '/'
+    shared_media_map: dict[str, str] = {}
 
-# ---------------------------------------------------------------------------
-# Manifesto
-# ---------------------------------------------------------------------------
+    def _consider_media_path(raw_path: Any) -> None:
+        if not isinstance(raw_path, str):
+            return
+        rel = raw_path.strip().replace('\\', '/')
+        if not rel or rel.startswith(work_base_norm):
+            return
+        if rel in shared_media_map:
+            return
+        try:
+            abs_p = _confine(root, rel)
+            if os.path.isfile(abs_p):
+                shared_media_map[rel] = sha256_file(abs_p)
+        except (ValueError, OSError):
+            pass
+
+    # Rascunho de vídeo
+    video_abs = _confine(root, paths['videoDraft'])
+    if os.path.isfile(video_abs):
+        try:
+            with open(video_abs, 'r', encoding='utf-8') as fh:
+                vreq = json.load(fh)
+            for m in vreq.get('media') or []:
+                if isinstance(m, dict):
+                    _consider_media_path(m.get('path'))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Rascunho de carrossel
+    carousel_abs = _confine(root, paths['carouselDraft'])
+    if os.path.isfile(carousel_abs):
+        try:
+            with open(carousel_abs, 'r', encoding='utf-8') as fh:
+                creq = json.load(fh)
+            for m in creq.get('media') or []:
+                if isinstance(m, dict):
+                    _consider_media_path(m.get('path'))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Biblioteca de mídia
+    medialib_abs = _confine(root, paths['mediaLibraryFile'])
+    if os.path.isfile(medialib_abs):
+        try:
+            with open(medialib_abs, 'r', encoding='utf-8') as fh:
+                lib = json.load(fh)
+            for asset in lib.get('assets') or []:
+                if isinstance(asset, dict):
+                    for ver in asset.get('versions') or []:
+                        if isinstance(ver, dict):
+                            _consider_media_path(ver.get('path'))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    deps['sharedMedia'] = [
+        {'rel': rel, 'sha256': digest}
+        for rel, digest in sorted(shared_media_map.items())
+    ]
+    return deps
+
 
 def _build_manifest(root: str, work_id: str, files: list[tuple[str, str]]) -> dict[str, Any]:
     """Constrói o manifesto JSON v1."""
-    project_rel = _read_project_rel(root, work_id)
-    dependency: dict[str, Any] = {}
-    if project_rel:
-        project_abs = _confine(root, project_rel)
-        if os.path.isfile(project_abs):
-            dependency = {
-                'rel': project_rel,
-                'sha256': sha256_file(project_abs),
-            }
-
+    dependencies = _collect_dependencies(root, work_id)
     file_entries = []
     for rel, abs_path in files:
         size = os.path.getsize(abs_path)
@@ -207,10 +309,229 @@ def _build_manifest(root: str, work_id: str, files: list[tuple[str, str]]) -> di
         'workId': work_id,
         'exportedAt': datetime.now(timezone.utc).isoformat(),
         'files': file_entries,
-        'dependencies': {
-            'projectManifest': dependency,
-        },
+        'dependencies': dependencies,
     }
+
+
+# ---------------------------------------------------------------------------
+# Validação compartilhada (inspect & restore)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FileCheck:
+    rel: str
+    status: str  # 'OK', 'MISSING_IN_ZIP', 'HASH_MISMATCH', 'SIZE_MISMATCH', 'FORBIDDEN'
+    expected_sha256: str = ''
+    actual_sha256: str = ''
+    expected_size: int = 0
+    actual_size: int = 0
+    message: str = ''
+
+
+@dataclass
+class DependencyCheck:
+    dep_type: str  # 'projectManifest' ou 'sharedMedia'
+    rel: str
+    status: str    # 'OK', 'MISSING', 'HASH_MISMATCH'
+    expected_sha256: str = ''
+    actual_sha256: str = ''
+    message: str = ''
+
+
+@dataclass
+class ValidationReport:
+    is_valid: bool
+    work_id: str
+    manifest: dict
+    file_checks: list[FileCheck] = field(default_factory=list)
+    dependency_checks: list[DependencyCheck] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+
+
+def validate_backup(zip_path: str, target_root: str) -> ValidationReport:
+    """Validação compartilhada de integridade do arquivo e dependências no destino."""
+    if not os.path.isfile(zip_path):
+        return ValidationReport(
+            is_valid=False, work_id='', manifest={},
+            errors=[f'Arquivo de backup nao encontrado: {zip_path!r}']
+        )
+
+    # 1. Leitura e validação do ZIP e MANIFEST.json
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            zip_names = set(zf.namelist())
+            if MANIFEST_ARCHIVE_PATH not in zip_names:
+                return ValidationReport(
+                    is_valid=False, work_id='', manifest={},
+                    errors=[f'Arquivo {MANIFEST_ARCHIVE_PATH!r} ausente no ZIP.']
+                )
+            manifest_bytes = zf.read(MANIFEST_ARCHIVE_PATH)
+    except zipfile.BadZipFile as exc:
+        return ValidationReport(
+            is_valid=False, work_id='', manifest={},
+            errors=[f'Arquivo ZIP corrompido ou invalido: {exc}']
+        )
+
+    try:
+        manifest = json.loads(manifest_bytes.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return ValidationReport(
+            is_valid=False, work_id='', manifest={},
+            errors=[f'MANIFEST.json invalido: {exc}']
+        )
+
+    if manifest.get('schemaVersion') != SCHEMA_VERSION:
+        return ValidationReport(
+            is_valid=False, work_id='', manifest=manifest,
+            errors=[
+                f'Versao de schema incompativel: esperado {SCHEMA_VERSION}, '
+                f'obtido {manifest.get("schemaVersion")!r}'
+            ]
+        )
+
+    work_id = manifest.get('workId', '')
+    if not isinstance(work_id, str) or not KEBAB_CASE_RE.match(work_id):
+        return ValidationReport(
+            is_valid=False, work_id=str(work_id), manifest=manifest,
+            errors=[f'workId invalido no manifesto: {work_id!r}']
+        )
+
+    errors: list[str] = []
+    file_checks: list[FileCheck] = []
+    dependency_checks: list[DependencyCheck] = []
+
+    # 2. Restringir entradas do pacote aos arquivos permitidos
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        all_zip_names = zf.namelist()
+        manifest_files_set = {f['rel'] for f in manifest.get('files', []) if isinstance(f, dict)}
+
+        for name in all_zip_names:
+            if not _is_allowed_package_entry(work_id, name):
+                msg = f'Entrada nao permitida ou caminho perigoso no ZIP: {name!r}'
+                errors.append(msg)
+                file_checks.append(FileCheck(rel=name, status='FORBIDDEN', message=msg))
+
+        # 3. Conferir cada arquivo listado no manifesto contra o ZIP
+        for entry in manifest.get('files', []):
+            rel = entry.get('rel', '')
+            exp_sha = entry.get('sha256', '')
+            exp_size = entry.get('size', 0)
+
+            if not _is_allowed_package_entry(work_id, rel):
+                msg = f'Arquivo no manifesto fora do escopo permitido: {rel!r}'
+                errors.append(msg)
+                file_checks.append(FileCheck(rel=rel, status='FORBIDDEN', message=msg))
+                continue
+
+            if rel not in zip_names:
+                msg = f'Arquivo do manifesto ausente no ZIP: {rel!r}'
+                errors.append(msg)
+                file_checks.append(FileCheck(rel=rel, status='MISSING_IN_ZIP', message=msg))
+                continue
+
+            try:
+                data = zf.read(rel)
+                act_sha = sha256_bytes(data)
+                act_size = len(data)
+                if act_sha != exp_sha:
+                    msg = f'Hash divergente no ZIP para {rel}'
+                    errors.append(msg)
+                    file_checks.append(FileCheck(
+                        rel=rel, status='HASH_MISMATCH',
+                        expected_sha256=exp_sha, actual_sha256=act_sha,
+                        expected_size=exp_size, actual_size=act_size,
+                        message=msg
+                    ))
+                elif act_size != exp_size:
+                    msg = f'Tamanho divergente no ZIP para {rel}'
+                    errors.append(msg)
+                    file_checks.append(FileCheck(
+                        rel=rel, status='SIZE_MISMATCH',
+                        expected_sha256=exp_sha, actual_sha256=act_sha,
+                        expected_size=exp_size, actual_size=act_size,
+                        message=msg
+                    ))
+                else:
+                    file_checks.append(FileCheck(
+                        rel=rel, status='OK',
+                        expected_sha256=exp_sha, actual_sha256=act_sha,
+                        expected_size=exp_size, actual_size=act_size
+                    ))
+            except Exception as exc:
+                msg = f'Erro ao ler {rel} do ZIP: {exc}'
+                errors.append(msg)
+                file_checks.append(FileCheck(rel=rel, status='READ_ERROR', message=msg))
+
+    # 4. Validar dependências no target_root (ProjectManifest e mídias compartilhadas)
+    deps = manifest.get('dependencies') or {}
+
+    # 4a. ProjectManifest
+    pm_dep = deps.get('projectManifest') or {}
+    pm_rel = pm_dep.get('rel')
+    if pm_rel:
+        exp_pm_sha = pm_dep.get('sha256', '')
+        pm_abs = os.path.join(target_root, pm_rel.replace('/', os.sep))
+        if not os.path.isfile(pm_abs):
+            msg = f'ProjectManifest ausente no destino: {pm_rel}'
+            errors.append(msg)
+            dependency_checks.append(DependencyCheck(
+                dep_type='projectManifest', rel=pm_rel, status='MISSING',
+                expected_sha256=exp_pm_sha, message=msg
+            ))
+        else:
+            act_pm_sha = sha256_file(pm_abs)
+            if act_pm_sha != exp_pm_sha:
+                msg = f'ProjectManifest com hash divergente no destino: {pm_rel}'
+                errors.append(msg)
+                dependency_checks.append(DependencyCheck(
+                    dep_type='projectManifest', rel=pm_rel, status='HASH_MISMATCH',
+                    expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha, message=msg
+                ))
+            else:
+                dependency_checks.append(DependencyCheck(
+                    dep_type='projectManifest', rel=pm_rel, status='OK',
+                    expected_sha256=exp_pm_sha, actual_sha256=act_pm_sha
+                ))
+
+    # 4b. Mídias compartilhadas
+    shared_media_deps = deps.get('sharedMedia') or []
+    for sm in shared_media_deps:
+        sm_rel = sm.get('rel', '')
+        exp_sm_sha = sm.get('sha256', '')
+        if not sm_rel:
+            continue
+        sm_abs = os.path.join(target_root, sm_rel.replace('/', os.sep))
+        if not os.path.isfile(sm_abs):
+            msg = f'Midia compartilhada ausente no destino: {sm_rel}'
+            errors.append(msg)
+            dependency_checks.append(DependencyCheck(
+                dep_type='sharedMedia', rel=sm_rel, status='MISSING',
+                expected_sha256=exp_sm_sha, message=msg
+            ))
+        else:
+            act_sm_sha = sha256_file(sm_abs)
+            if act_sm_sha != exp_sm_sha:
+                msg = f'Midia compartilhada com hash divergente no destino: {sm_rel}'
+                errors.append(msg)
+                dependency_checks.append(DependencyCheck(
+                    dep_type='sharedMedia', rel=sm_rel, status='HASH_MISMATCH',
+                    expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha, message=msg
+                ))
+            else:
+                dependency_checks.append(DependencyCheck(
+                    dep_type='sharedMedia', rel=sm_rel, status='OK',
+                    expected_sha256=exp_sm_sha, actual_sha256=act_sm_sha
+                ))
+
+    is_valid = len(errors) == 0
+    return ValidationReport(
+        is_valid=is_valid,
+        work_id=work_id,
+        manifest=manifest,
+        file_checks=file_checks,
+        dependency_checks=dependency_checks,
+        errors=errors,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -247,8 +568,8 @@ def cmd_backup(args: argparse.Namespace) -> int:
     manifest = _build_manifest(root, work_id, files)
     manifest_bytes = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
 
-    # Escrever em arquivo temporário staging, depois mover atomicamente
     out_dir = os.path.dirname(output_path) or '.'
+    os.makedirs(out_dir, exist_ok=True)
     fd, staging_path = tempfile.mkstemp(prefix='studio-backup-staging-', suffix='.zip', dir=out_dir)
     os.close(fd)
     try:
@@ -258,15 +579,19 @@ def cmd_backup(args: argparse.Namespace) -> int:
                 zf.write(abs_path, rel)
                 print(f'  + {rel}')
 
-        # Verificação de integridade do arquivo staging gerado
-        _verify_zip_integrity(staging_path, manifest)
+        # Validar o arquivo gerado usando a validação compartilhada
+        report = validate_backup(staging_path, root)
+        if not report.is_valid:
+            print('ERRO: Falha ao validar o backup recem-gerado:', file=sys.stderr)
+            for err in report.errors:
+                print(f'  - {err}', file=sys.stderr)
+            return 1
 
-        # Promoção atômica
+        # Promover atomicamente
         if os.path.exists(output_path):
             os.remove(output_path)
         shutil.move(staging_path, output_path)
-        staging_path = None  # não deletar no finally
-
+        staging_path = None
     finally:
         if staging_path and os.path.exists(staging_path):
             os.remove(staging_path)
@@ -278,21 +603,10 @@ def cmd_backup(args: argparse.Namespace) -> int:
     dep = manifest['dependencies'].get('projectManifest') or {}
     if dep.get('rel'):
         print(f'  ProjectManifest: {dep["rel"]}')
+    shared = manifest['dependencies'].get('sharedMedia') or []
+    if shared:
+        print(f'  Midias compartilhadas: {len(shared)}')
     return 0
-
-
-def _verify_zip_integrity(zip_path: str, manifest: dict) -> None:
-    """Verifica que todos os arquivos no ZIP correspondem ao manifesto."""
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        names = set(zf.namelist())
-        for entry in manifest['files']:
-            rel = entry['rel']
-            if rel not in names:
-                raise RuntimeError(f'Arquivo ausente no ZIP: {rel!r}')
-            data = zf.read(rel)
-            actual = sha256_bytes(data)
-            if actual != entry['sha256']:
-                raise RuntimeError(f'SHA-256 divergente no ZIP para {rel!r}')
 
 
 # ---------------------------------------------------------------------------
@@ -306,70 +620,54 @@ def cmd_inspect(args: argparse.Namespace) -> int:
         return 1
 
     root = _find_root()
+    dest_root = os.path.realpath(args.workspace) if getattr(args, 'workspace', None) else root
 
-    manifest = _load_manifest_from_zip(zip_path)
-    work_id = manifest.get('workId', '?')
-    exported_at = manifest.get('exportedAt', '?')
-    files = manifest.get('files', [])
+    report = validate_backup(zip_path, dest_root)
 
-    print(f'=== Inspecao do backup ===')
-    print(f'Trabalho : {work_id}')
-    print(f'Exportado: {exported_at}')
-    print(f'Schema   : v{manifest.get("schemaVersion", "?")}')
-    print(f'Arquivos : {len(files)}')
+    print('=== Inspecao do backup ===')
+    print(f'Trabalho : {report.work_id or "?"}')
+    print(f'Exportado: {report.manifest.get("exportedAt", "?")}')
+    print(f'Schema   : v{report.manifest.get("schemaVersion", "?")}')
+    print(f'Arquivos : {len(report.manifest.get("files", []))}')
     print()
 
-    # Verificar integridade do ZIP
-    errors = 0
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        zip_names = set(zf.namelist())
-        for entry in files:
-            rel = entry['rel']
-            exp_sha = entry['sha256']
-            exp_size = entry['size']
-            if rel not in zip_names:
-                print(f'  AUSENTE NO ZIP : {rel}')
-                errors += 1
-                continue
-            data = zf.read(rel)
-            actual_sha = sha256_bytes(data)
-            actual_size = len(data)
-            if actual_sha != exp_sha:
-                print(f'  HASH_DIVERGENTE: {rel}  (esperado {exp_sha[:12]}… obtido {actual_sha[:12]}…)')
-                errors += 1
-            elif actual_size != exp_size:
-                print(f'  TAMANHO_ERRADO : {rel}  ({actual_size} != {exp_size})')
-                errors += 1
-            else:
-                print(f'  OK             : {rel}')
-
-    # Verificar dependências no destino
-    print()
-    print('--- Dependências ---')
-    dep = (manifest.get('dependencies') or {}).get('projectManifest') or {}
-    if not dep.get('rel'):
-        print('  Nenhuma dependência de ProjectManifest registrada.')
-    else:
-        dep_rel = dep['rel']
-        dep_sha = dep.get('sha256', '')
-        dep_abs = os.path.join(root, dep_rel.replace('/', os.sep))
-        if not os.path.isfile(dep_abs):
-            print(f'  AUSENTE       : {dep_rel}')
-            errors += 1
+    print('--- Arquivos no pacote ---')
+    for fc in report.file_checks:
+        if fc.status == 'OK':
+            print(f'  OK             : {fc.rel}')
+        elif fc.status == 'HASH_MISMATCH':
+            print(f'  HASH_DIVERGENTE: {fc.rel}  (esperado {fc.expected_sha256[:12]}… obtido {fc.actual_sha256[:12]}…)')
+        elif fc.status == 'SIZE_MISMATCH':
+            print(f'  TAMANHO_ERRADO : {fc.rel}  ({fc.actual_size} != {fc.expected_size})')
+        elif fc.status == 'MISSING_IN_ZIP':
+            print(f'  AUSENTE NO ZIP : {fc.rel}')
+        elif fc.status == 'FORBIDDEN':
+            print(f'  NAO PERMITIDO  : {fc.rel}')
         else:
-            actual_dep_sha = sha256_file(dep_abs)
-            if actual_dep_sha != dep_sha:
-                print(f'  HASH_DIVERGENTE: {dep_rel}  (esperado {dep_sha[:12]}… obtido {actual_dep_sha[:12]}…)')
-                errors += 1
-            else:
-                print(f'  OK            : {dep_rel}')
+            print(f'  ERRO ({fc.status}): {fc.rel}')
 
     print()
-    if errors == 0:
-        print('Resultado: OK — backup integro e dependências satisfeitas.')
+    print('--- Dependencias ---')
+    if not report.dependency_checks:
+        print('  Nenhuma dependencia registrada.')
+    else:
+        for dc in report.dependency_checks:
+            tipo = 'Manifest' if dc.dep_type == 'projectManifest' else 'Midia'
+            if dc.status == 'OK':
+                print(f'  OK [{tipo}]       : {dc.rel}')
+            elif dc.status == 'MISSING':
+                print(f'  AUSENTE [{tipo}]  : {dc.rel}')
+            elif dc.status == 'HASH_MISMATCH':
+                print(f'  HASH_DIVERGENTE [{tipo}]: {dc.rel}')
+
+    print()
+    if report.is_valid:
+        print('Resultado: OK — backup integro e dependencias satisfeitas.')
         return 0
     else:
-        print(f'Resultado: ERRO — {errors} problema(s) encontrado(s).')
+        print(f'Resultado: ERRO — {len(report.errors)} problema(s) encontrado(s).')
+        for err in report.errors:
+            print(f'  - {err}', file=sys.stderr)
         return 1
 
 
@@ -384,165 +682,84 @@ def cmd_restore(args: argparse.Namespace) -> int:
         return 1
 
     root = _find_root()
-
-    # Destino do workspace pode ser sobrescrito via --workspace
     dest_root = os.path.realpath(args.workspace) if args.workspace else root
     if not _contained(root, dest_root):
         print(f'ERRO: Destino fora da raiz do projeto: {dest_root!r}', file=sys.stderr)
         return 1
 
-    manifest = _load_manifest_from_zip(zip_path)
-    work_id = manifest.get('workId', '')
-    if not work_id or not KEBAB_CASE_RE.match(work_id):
-        print(f'ERRO: Manifesto com workId invalido: {work_id!r}', file=sys.stderr)
+    # Validação compartilhada com inspect antes de qualquer modificação
+    print('Validando integridade e dependencias do backup...')
+    report = validate_backup(zip_path, dest_root)
+    if not report.is_valid:
+        print('ERRO: O backup nao passou na validacao de integridade e dependencias. Restauracao cancelada.', file=sys.stderr)
+        for err in report.errors:
+            print(f'  - {err}', file=sys.stderr)
         return 1
 
-    # Verificar que o trabalho NÃO existe no destino
+    work_id = report.work_id
+    files_in_manifest = report.manifest.get('files', [])
+
+    # Recusar expressamente qualquer diretório de destino já existente
     dest_work_dir = os.path.join(dest_root, '.workspace', 'studio', 'works', work_id)
-    dest_work_file = os.path.join(dest_work_dir, 'work.json')
-    if os.path.exists(dest_work_file):
+    if os.path.exists(dest_work_dir):
         print(
-            f'ERRO: O trabalho "{work_id}" ja existe em {dest_work_file!r}.\n'
+            f'ERRO: O diretorio de destino ja existe: {dest_work_dir!r}.\n'
             f'      A restauracao so e permitida em destinos onde o trabalho nao existe.',
             file=sys.stderr,
         )
         return 1
 
-    # Verificar integridade do ZIP antes de extrair
-    print('Verificando integridade do arquivo...')
-    files_in_manifest = manifest.get('files', [])
-    errors_found = _check_zip_entries(zip_path, files_in_manifest)
-    if errors_found:
-        print(f'ERRO: {errors_found} arquivo(s) com problema(s) de integridade. Restauracao cancelada.', file=sys.stderr)
-        return 1
-    print(f'  {len(files_in_manifest)} arquivo(s) verificados — OK')
+    # Staging em diretório temporário exclusivo no MESMO sistema de arquivos do destino
+    works_parent = os.path.dirname(dest_work_dir)
+    os.makedirs(works_parent, exist_ok=True)
+    staging_work_dir = tempfile.mkdtemp(prefix=f'.backup-staging-{work_id}-', dir=works_parent)
 
-    # Staging: extrair em diretório temporário dentro de <RAIZ>/.workspace/tmp/
-    tmp_base = os.path.join(root, '.workspace', 'tmp', 'studio-work-backup')
-    os.makedirs(tmp_base, exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    staging_dir = os.path.join(tmp_base, f'restore-{timestamp}')
-    os.makedirs(staging_dir, exist_ok=True)
+    base_prefix = f'.workspace/studio/works/{work_id}/'
 
     try:
-        print(f'Extraindo para staging: {staging_dir}')
+        print(f'Extraindo para staging exclusivo: {staging_work_dir}')
         with zipfile.ZipFile(zip_path, 'r') as zf:
             for entry in files_in_manifest:
                 rel = entry['rel']
-                dest_file = os.path.join(staging_dir, rel.replace('/', os.sep))
+                if not rel.startswith(base_prefix):
+                    raise ValueError(f'Entrada nao esperada para o trabalho: {rel!r}')
+                rel_in_work = rel[len(base_prefix):]
+                dest_file = os.path.join(staging_work_dir, rel_in_work.replace('/', os.sep))
                 os.makedirs(os.path.dirname(dest_file), exist_ok=True)
                 data = zf.read(rel)
-                # Verificação dupla após leitura
                 if sha256_bytes(data) != entry['sha256']:
                     raise RuntimeError(f'Falha de integridade ao extrair: {rel!r}')
                 with open(dest_file, 'wb') as fh:
                     fh.write(data)
 
-        # Verificar staging antes de promover
-        print('Validando staging...')
-        errors_staging = _check_staging_entries(staging_dir, files_in_manifest)
-        if errors_staging:
-            raise RuntimeError(f'{errors_staging} arquivo(s) com problema no staging')
+        # Validação completa do staging antes da promoção
+        print('Validando conteudo montado no staging...')
+        for entry in files_in_manifest:
+            rel = entry['rel']
+            rel_in_work = rel[len(base_prefix):]
+            staged_abs = os.path.join(staging_work_dir, rel_in_work.replace('/', os.sep))
+            if not os.path.isfile(staged_abs):
+                raise RuntimeError(f'Arquivo ausente no staging: {rel_in_work!r}')
+            if sha256_file(staged_abs) != entry['sha256']:
+                raise RuntimeError(f'Hash divergente no staging para: {rel_in_work!r}')
 
-        # Promover staging → destino final (atômico dentro do mesmo filesystem)
-        print(f'Promovendo para: {dest_work_dir}')
-        _promote_staging(staging_dir, dest_work_dir, work_id, files_in_manifest, dest_root)
+        # Publicar o diretório final em uma única operação
+        print(f'Publicando trabalho em operacao atomica: {dest_work_dir}')
+        os.replace(staging_work_dir, dest_work_dir)
+        staging_work_dir = None  # Marcador de promoção bem-sucedida
 
     except Exception as exc:
         print(f'ERRO durante a restauracao: {exc}', file=sys.stderr)
-        # Garantir que staging seja limpo
-        shutil.rmtree(staging_dir, ignore_errors=True)
         return 1
-    else:
-        # Remover staging após promoção bem-sucedida
-        shutil.rmtree(staging_dir, ignore_errors=True)
+    finally:
+        if staging_work_dir and os.path.exists(staging_work_dir):
+            shutil.rmtree(staging_work_dir, ignore_errors=True)
 
-    print(f'\nRestauracao concluida!')
+    print('\nRestauracao concluida!')
     print(f'  Trabalho: {work_id}')
     print(f'  Local   : {dest_work_dir}')
     print(f'  Arquivos: {len(files_in_manifest)}')
     return 0
-
-
-def _check_zip_entries(zip_path: str, entries: list[dict]) -> int:
-    """Retorna a quantidade de erros de integridade no ZIP."""
-    errors = 0
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        zip_names = set(zf.namelist())
-        for entry in entries:
-            rel = entry['rel']
-            if rel not in zip_names:
-                print(f'  AUSENTE: {rel}', file=sys.stderr)
-                errors += 1
-                continue
-            data = zf.read(rel)
-            if sha256_bytes(data) != entry['sha256']:
-                print(f'  HASH_DIVERGENTE: {rel}', file=sys.stderr)
-                errors += 1
-    return errors
-
-
-def _check_staging_entries(staging_dir: str, entries: list[dict]) -> int:
-    """Verifica hashes dos arquivos extraídos no staging."""
-    errors = 0
-    for entry in entries:
-        rel = entry['rel']
-        staged_abs = os.path.join(staging_dir, rel.replace('/', os.sep))
-        if not os.path.isfile(staged_abs):
-            print(f'  STAGING AUSENTE: {rel}', file=sys.stderr)
-            errors += 1
-            continue
-        if sha256_file(staged_abs) != entry['sha256']:
-            print(f'  STAGING HASH_DIVERGENTE: {rel}', file=sys.stderr)
-            errors += 1
-    return errors
-
-
-def _promote_staging(staging_dir: str, dest_work_dir: str, work_id: str,
-                     entries: list[dict], dest_root: str) -> None:
-    """Move os arquivos do staging para o destino final.
-
-    Estratégia: copiar arquivo a arquivo para o destino garantindo que
-    todos os trabalhos existentes permaneçam intactos.
-    """
-    paths = _work_paths(work_id)
-    work_base_rel = paths['workDir']
-
-    for entry in entries:
-        rel = entry['rel']
-        # rel é relativo à RAIZ do repositório (e.g. .workspace/studio/works/x/work.json)
-        # Precisamos escrever no dest_root
-        dest_file = os.path.join(dest_root, rel.replace('/', os.sep))
-
-        # Garantir que o destino está dentro do dest_root
-        if not _contained(dest_root, os.path.realpath(dest_file)):
-            raise ValueError(f'Destino fora da raiz: {rel!r}')
-
-        staged_abs = os.path.join(staging_dir, rel.replace('/', os.sep))
-        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-        shutil.copy2(staged_abs, dest_file)
-
-
-# ---------------------------------------------------------------------------
-# Utilitário compartilhado
-# ---------------------------------------------------------------------------
-
-def _load_manifest_from_zip(zip_path: str) -> dict[str, Any]:
-    """Lê e valida o MANIFEST.json de dentro do ZIP."""
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        if MANIFEST_ARCHIVE_PATH not in zf.namelist():
-            raise ValueError(f'ZIP invalido: {MANIFEST_ARCHIVE_PATH!r} nao encontrado.')
-        raw = zf.read(MANIFEST_ARCHIVE_PATH)
-    try:
-        manifest = json.loads(raw.decode('utf-8'))
-    except json.JSONDecodeError as exc:
-        raise ValueError(f'MANIFEST.json invalido: {exc}') from exc
-    if manifest.get('schemaVersion') != SCHEMA_VERSION:
-        raise ValueError(
-            f'Versao de schema incompativel: esperado {SCHEMA_VERSION}, '
-            f'obtido {manifest.get("schemaVersion")!r}'
-        )
-    return manifest
 
 
 # ---------------------------------------------------------------------------
@@ -562,6 +779,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_inspect = sub.add_parser('inspect', help='Inspeciona e verifica um arquivo de backup')
     p_inspect.add_argument('archive', help='Caminho do arquivo ZIP a inspecionar')
+    p_inspect.add_argument(
+        '--workspace', metavar='DIR',
+        help='Raiz do workspace para checagem de dependencias (padrao: raiz atual)',
+    )
 
     p_restore = sub.add_parser('restore', help='Restaura um trabalho a partir de um backup')
     p_restore.add_argument('archive', help='Caminho do arquivo ZIP a restaurar')

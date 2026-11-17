@@ -32,7 +32,6 @@ python tools/studio_work_backup.py backup meu-anuncio-novembro .workspace/tmp/me
 |---|---|
 | `work.json` | Configuração do trabalho (projeto, título, ID) |
 | `editorial.json` | Ficha editorial e textos por canal |
-| `review-state.json` | Estado de revisão por perfil |
 | `planning.json` | Planejamento do trabalho |
 | `media-library.json` | Referências da biblioteca de mídia |
 | `drafts/video.request.json` | Rascunho de vídeo |
@@ -43,9 +42,9 @@ python tools/studio_work_backup.py backup meu-anuncio-novembro .workspace/tmp/me
 
 **O que é excluído (v1):**
 
+- `review-state.json` (aprovações mantidas fora desta versão para evitar transporte acidental de estado aprovado)
 - Credenciais e configurações de máquina
 - `production-queue.sqlite` (fila de produção)
-- Aprovações e estado de review enviado
 - Entregas renderizadas (`deliveries/`)
 - Caches
 
@@ -54,7 +53,7 @@ python tools/studio_work_backup.py backup meu-anuncio-novembro .workspace/tmp/me
 ### `inspect` — Verificar a integridade de um backup
 
 ```bash
-python tools/studio_work_backup.py inspect <arquivo.zip>
+python tools/studio_work_backup.py inspect <arquivo.zip> [--workspace <dir>]
 ```
 
 **Exemplo:**
@@ -68,25 +67,28 @@ python tools/studio_work_backup.py inspect .workspace/tmp/meu-anuncio-novembro.z
 ```
 === Inspecao do backup ===
 Trabalho : meu-anuncio-novembro
-Exportado: 2026-11-15T10:30:00+00:00
+Exportado: 2026-11-17T10:30:00+00:00
 Schema   : v1
-Arquivos : 10
+Arquivos : 8
 
+--- Arquivos no pacote ---
   OK             : .workspace/studio/works/meu-anuncio-novembro/work.json
   OK             : .workspace/studio/works/meu-anuncio-novembro/editorial.json
   ...
 
---- Dependências ---
-  OK            : platform/examples/projects/marca-salao-social.project.json
+--- Dependencias ---
+  OK [Manifest]       : platform/examples/projects/marca-salao-social.project.json
+  OK [Midia]          : platform/examples/media/logo-compartilhado.png
 
-Resultado: OK — backup integro e dependências satisfeitas.
+Resultado: OK — backup integro e dependencias satisfeitas.
 ```
 
 > [!IMPORTANT]
-> `inspect` verifica tanto a integridade interna do ZIP (SHA-256 de cada arquivo)
-> quanto a presença e hash do `ProjectManifest` no **checkout atual**.
-> Se o `ProjectManifest` estiver ausente ou modificado, a inspeção reporta o problema
-> antes de tentar uma restauração.
+> A validação é **compartilhada** de forma idêntica entre `inspect` e `restore`:
+> - Integridade interna do ZIP (tamanho e SHA-256 de cada entrada).
+> - Restrição estrita: apenas arquivos permitidos do trabalho indicado podem constar no ZIP.
+> - Presença e hash SHA-256 do `ProjectManifest` no checkout de destino.
+> - Presença e hash SHA-256 de todas as **mídias compartilhadas** (arquivos fora da pasta do trabalho).
 
 ---
 
@@ -112,13 +114,18 @@ python tools/studio_work_backup.py restore \
 
 > [!NOTE]
 > `--workspace` deve apontar para a **raiz de outro checkout compatível** do repositório,
-> que ainda precisa estar dentro da raiz do repositório atual (conforme `AGENTS.md`).
-> Ambos os checkouts devem ter o mesmo `ProjectManifest` referenciado pelo trabalho.
+> que precisa estar dentro da raiz do repositório conforme o `AGENTS.md`.
 
 > [!CAUTION]
-> A restauração só é permitida em destinos onde o trabalho **ainda não existe**.
-> Não há `--overwrite` nesta versão. Para atualizar um trabalho, delete o diretório
-> antes de restaurar.
+> A restauração **recusa expressamente** qualquer diretório de destino já existente,
+> mesmo que vazio. Não há sobrescrita cega.
+
+### Montagem segura (staging e publicação atômica)
+
+1. A validação compartilhada roda antes de qualquer escrita. Se houver divergência ou dependência ausente, aborta imediatamente.
+2. O trabalho é montado em um diretório temporário exclusivo (`.backup-staging-<work-id>-...`) no **mesmo sistema de arquivos** do destino final.
+3. Todo o conteúdo do staging é validado contra o manifesto antes da promoção.
+4. O diretório final é publicado em uma **única operação atômica** (`os.replace`). Se ocorrer qualquer erro ou interrupção no meio do processo, o staging é descartado e nenhum trabalho parcial aparece no destino.
 
 ---
 
@@ -132,40 +139,11 @@ python tools/studio_work_backup.py backup meu-trabalho .workspace/tmp/meu-trabal
 # Verificar antes de transferir
 python tools/studio_work_backup.py inspect .workspace/tmp/meu-trabalho.zip
 
-# Copiar o ZIP para o outro computador (Git, pen drive, nuvem…)
-# O ProjectManifest já versionado no Git estará disponível no outro checkout
-
-# Máquina de destino (após git pull)
+# Máquina de destino (após git pull para ter o ProjectManifest e mídias compartilhadas)
 cd /outro/checkout/marcasalao-marketing
 python tools/studio_work_backup.py inspect .workspace/tmp/meu-trabalho.zip
 python tools/studio_work_backup.py restore .workspace/tmp/meu-trabalho.zip
 ```
-
----
-
-## Dependências verificáveis
-
-O `ProjectManifest` (`.project.json`) é um arquivo **versionado no Git** e referenciado
-por `work.json`. O backup registra seu caminho relativo e SHA-256.
-
-- `inspect` verifica se o manifest existe no destino com o hash correto.
-- `restore` não reescreve o manifest — ele deve já estar presente no checkout de destino.
-- Se o manifest estiver ausente, `inspect` reporta `AUSENTE` e `restore` continua
-  (a restauração do trabalho em si funciona; o Studio abrirá o trabalho com o manifest
-  local, que pode ter evoluído no Git).
-
----
-
-## Erros comuns
-
-| Mensagem | Causa | Solução |
-|---|---|---|
-| `id do trabalho deve usar kebab-case` | Work ID com maiúsculas ou `_` | Use `meu-trabalho`, não `Meu_Trabalho` |
-| `trabalho nao encontrado` | Work não existe neste checkout | Confirme o ID com a lista de trabalhos |
-| `O trabalho já existe` | Destino já tem o trabalho | Delete o diretório do trabalho no destino |
-| `HASH_DIVERGENTE` | Arquivo corrompido ou modificado | Regenere o backup na origem |
-| `AUSENTE NO ZIP` | ZIP incompleto | Regenere o backup |
-| `ProjectManifest nao encontrado` | Destino não tem o manifest | Faça `git pull` no destino |
 
 ---
 
@@ -177,4 +155,4 @@ python -m unittest tools/tests/test_studio_work_backup.py -v
 ```
 
 Todos os workspaces de teste ficam em `.workspace/tmp/studio-work-backup/tests/`
-e são limpos após cada teste.
+e são limpos automaticamente após cada teste.
