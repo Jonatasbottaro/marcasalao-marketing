@@ -334,7 +334,7 @@ export function WorksAndProjectsTab() {
           id="works-select-all"
           label="Selecionar todos"
           isLabelHidden
-          checked={allWorksSelected}
+          value={allWorksSelected}
           onChange={(checked) => toggleAllWorks(checked)}
         />
       ),
@@ -342,7 +342,7 @@ export function WorksAndProjectsTab() {
         <CheckboxInput
           label={`Selecionar ${w.id}`}
           isLabelHidden
-          checked={selectedWorks.has(w.id)}
+          value={selectedWorks.has(w.id)}
           onChange={(checked) => toggleWorkSelection(w.id, checked)}
         />
       ),
