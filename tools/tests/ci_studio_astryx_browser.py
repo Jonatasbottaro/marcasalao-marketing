@@ -739,7 +739,14 @@ def run_browser_regression():
             row_a0 = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
             row_a0.wait_for(state='visible', timeout=20000)
             row_a0.click()
-            page.locator('#mode-review-btn').click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=work_id,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
             page.locator('#btn-r-build-package').click(no_wait_after=True)
