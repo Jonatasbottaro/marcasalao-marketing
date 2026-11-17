@@ -3855,7 +3855,7 @@ async function openBatchExportModal() {
 
   body.append(
     unsavedBox,
-    el('label', {}, 'Nome do lote (opcional)', labelInput),
+    el('label', {}, ['Nome do lote (opcional)', labelInput]),
     preflightSummaryBox,
     groupsBox,
     fb,
