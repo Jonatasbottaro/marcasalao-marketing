@@ -54,6 +54,20 @@ def _decision_value(value):
     return value
 
 
+def _list_or_empty(value):
+    return value if isinstance(value, list) else []
+
+
+def _as_list(value, field, result):
+    """Valida que um campo é lista; reporta erro e devolve [] quando não é."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        _add_error(result, f'{field} deve ser uma lista', field=field)
+        return []
+    return value
+
+
 def _empty_result():
     return {
         'ok': False,
@@ -89,24 +103,20 @@ def _add_error(result, message, field=None, file=None):
 
 
 def _populate_metadata(result, manifest):
-    schema = manifest.get('schemaVersion')
-    if schema != SUPPORTED_SCHEMA_VERSION:
-        result['limitations'].append(
-            f'schemaVersion {schema!r} não suportado (esperado {SUPPORTED_SCHEMA_VERSION}); '
-            'lacunas são reportadas como limitação.'
-        )
     result['packageId'] = manifest.get('packageId')
     result['workId'] = manifest.get('workId')
     result['workName'] = manifest.get('workName')
     result['project'] = manifest.get('project')
     result['createdAt'] = manifest.get('createdAt')
-    result['modalities'] = [str(x) for x in (manifest.get('modalities') or [])]
-    result['profiles'] = [str(x) for x in (manifest.get('profiles') or [])]
+    result['modalities'] = [str(x) for x in _as_list(manifest.get('modalities'), 'modalities', result)]
+    result['profiles'] = [str(x) for x in _as_list(manifest.get('profiles'), 'profiles', result)]
 
     pieces = []
-    for piece in manifest.get('pieces') or []:
+    for piece in _as_list(manifest.get('pieces'), 'pieces', result):
         if not isinstance(piece, dict):
+            _add_error(result, 'item inválido em pieces', field='pieces')
             continue
+        files = _as_list(piece.get('files'), 'pieces.files', result)
         pieces.append({
             'modality': piece.get('modality'),
             'profileId': piece.get('profileId'),
@@ -114,25 +124,43 @@ def _populate_metadata(result, manifest):
             'draftFingerprint': piece.get('draftFingerprint'),
             'reviewedDecision': _decision_value(piece.get('reviewedDecision')),
             'folderInZip': piece.get('folderInZip'),
-            'fileCount': len(piece.get('files') or []),
+            'fileCount': len(files),
         })
     result['pieces'] = pieces
 
     channels = []
-    for channel in manifest.get('channels') or []:
+    for channel in _as_list(manifest.get('channels'), 'channels', result):
         if not isinstance(channel, dict):
+            _add_error(result, 'item inválido em channels', field='channels')
             continue
+        files = _as_list(channel.get('files'), 'channels.files', result)
         channels.append({
             'profileId': channel.get('profileId'),
             'profileLabel': channel.get('profileLabel'),
             'network': channel.get('network'),
             'copySha256': channel.get('copySha256'),
             'reviewedDecision': _decision_value(channel.get('reviewedDecision')),
-            'fileCount': len(channel.get('files') or []),
+            'fileCount': len(files),
         })
     result['channels'] = channels
 
-    _add_check(result, 'schemaVersion', schema == SUPPORTED_SCHEMA_VERSION, repr(schema))
+    schema = manifest.get('schemaVersion')
+    if schema is None:
+        result['limitations'].append(
+            'schemaVersion ausente; verificação limitada ao contrato legado.'
+        )
+        _add_check(result, 'schemaVersion', True, 'ausente (contrato legado)')
+    elif schema == SUPPORTED_SCHEMA_VERSION:
+        _add_check(result, 'schemaVersion', True, repr(schema))
+    else:
+        _add_error(
+            result,
+            f'schemaVersion {schema!r} não suportado (esperado {SUPPORTED_SCHEMA_VERSION})',
+            field='schemaVersion',
+        )
+        _add_check(result, 'schemaVersion', False, repr(schema))
+        return False
+
     _add_check(
         result,
         'identificação do pacote',
@@ -141,13 +169,19 @@ def _populate_metadata(result, manifest):
     )
     if not result['packageId'] or not result['workId']:
         _add_error(result, 'manifesto sem packageId/workId', field='packageId')
+    return True
 
 
 def _verify_manifest_files(result, zf, names, manifest):
-    files = manifest.get('files')
-    if not isinstance(files, list) or not files:
+    raw_files = manifest.get('files')
+    if raw_files is None:
         _add_error(result, 'manifesto sem lista files', field='files')
         _add_check(result, 'arquivos do manifesto', False, 'lista files ausente')
+        return
+
+    files = _as_list(raw_files, 'files', result)
+    if not files:
+        _add_check(result, 'arquivos do manifesto', False, 'lista files vazia')
         return
 
     ok_count = 0
@@ -218,11 +252,11 @@ def _verify_nested_files(result, zf, names, manifest):
     """Confere as listas de arquivos por peça/canal contra o ZIP e o manifesto."""
     ok_count = 0
     total = 0
-    for piece in manifest.get('pieces') or []:
+    for piece in _list_or_empty(manifest.get('pieces')):
         if not isinstance(piece, dict):
             continue
         label = f"{piece.get('modality')}/{piece.get('profileId')}"
-        for item in piece.get('files') or []:
+        for item in _list_or_empty(piece.get('files')):
             if not isinstance(item, dict):
                 continue
             total += 1
@@ -246,11 +280,11 @@ def _verify_nested_files(result, zf, names, manifest):
                 _add_error(result, f'tamanho divergente na peça {label}', field='pieces.files.bytes', file=arc)
                 continue
             ok_count += 1
-    for channel in manifest.get('channels') or []:
+    for channel in _list_or_empty(manifest.get('channels')):
         if not isinstance(channel, dict):
             continue
         label = f"canal {channel.get('profileId')}"
-        for item in channel.get('files') or []:
+        for item in _list_or_empty(channel.get('files')):
             if not isinstance(item, dict):
                 continue
             total += 1
@@ -274,7 +308,7 @@ def _verify_nested_files(result, zf, names, manifest):
 
 
 def _verify_approved_versions(result, manifest):
-    pieces = manifest.get('pieces') or []
+    pieces = _list_or_empty(manifest.get('pieces'))
     if not pieces:
         result['limitations'].append('manifesto sem peças; aprovação por versão não verificável.')
         return
@@ -330,14 +364,7 @@ def _build_summary(result):
     return f"Pacote {result['packageId'] or '?'} inválido: {first['message']}{location}."
 
 
-def verify_package_zip(zip_path, expected_zip_sha256=None):
-    """Verifica um ZIP de entrega contra o seu próprio manifesto.
-
-    Retorna um dicionário estruturado com `ok`, `summary`, `packageId`,
-    `pieces`, `channels`, `files`, `checks`, `errors`, `limitations` e
-    `zipSha256`. Não altera o ZIP.
-    """
-    result = _empty_result()
+def _verify_package_zip(result, zip_path, expected_zip_sha256):
     expected = _normalize_sha(expected_zip_sha256)
     result['zipSha256']['expected'] = expected
 
@@ -406,7 +433,11 @@ def verify_package_zip(zip_path, expected_zip_sha256=None):
             result['summary'] = 'Manifesto inválido.'
             return result
 
-        _populate_metadata(result, manifest)
+        if not _populate_metadata(result, manifest):
+            result['ok'] = False
+            result['summary'] = _build_summary(result)
+            return result
+
         _verify_manifest_files(result, archive, names, manifest)
         _verify_nested_files(result, archive, names, manifest)
         _verify_approved_versions(result, manifest)
@@ -414,6 +445,24 @@ def verify_package_zip(zip_path, expected_zip_sha256=None):
     result['ok'] = not result['errors']
     result['summary'] = _build_summary(result)
     return result
+
+
+def verify_package_zip(zip_path, expected_zip_sha256=None):
+    """Verifica um ZIP de entrega contra o seu próprio manifesto.
+
+    Retorna um dicionário estruturado com `ok`, `summary`, `packageId`,
+    `pieces`, `channels`, `files`, `checks`, `errors`, `limitations` e
+    `zipSha256`. Não altera o ZIP. Nunca levanta exceção: falhas inesperadas
+    viram um resultado inválido com diagnóstico.
+    """
+    result = _empty_result()
+    try:
+        return _verify_package_zip(result, zip_path, expected_zip_sha256)
+    except Exception as exc:  # pragma: no cover - rede de segurança
+        _add_error(result, f'falha inesperada na verificação: {exc}', field='manifesto')
+        result['ok'] = False
+        result['summary'] = f'Pacote inválido: falha inesperada na verificação ({exc}).'
+        return result
 
 
 def format_text(result):

@@ -69,9 +69,11 @@ export function ReviewPackagePanel() {
       const nextWorkId = detail.workId || null;
       const workChanged = prevWorkId !== nextWorkId;
 
+      const nextPkgId = detail.packageDelivery?.lastValidDelivery?.packageId || null;
+      const pkgChanged = nextPkgId !== pkgIdRef.current;
       activeWorkIdRef.current = nextWorkId;
       setSnapshot(detail);
-      pkgIdRef.current = detail.packageDelivery?.lastValidDelivery?.packageId || null;
+      pkgIdRef.current = nextPkgId;
 
       if (workChanged) {
         requestSeqRef.current += 1;
@@ -86,6 +88,14 @@ export function ReviewPackagePanel() {
         prevReadyRef.current = { ...nextMap };
         setSelectedMap(nextMap);
         return;
+      }
+
+      // Novo pacote no mesmo trabalho (atualizacao externa) invalida a verificacao anterior.
+      if (pkgChanged) {
+        verifySeqRef.current += 1;
+        verifyInFlightRef.current = false;
+        setVerifying(false);
+        setVerifyResult(null);
       }
 
       const nextReady = buildInitialSelection(detail.review);

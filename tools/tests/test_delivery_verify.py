@@ -158,6 +158,98 @@ class DeliveryVerifyTest(unittest.TestCase):
             code_fail = delivery_verify.main([zip_path, '--json', '--expected-sha256', 'f' * 64])
         self.assertEqual(code_fail, 1)
 
+    def test_unknown_schema_version_fails(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['schemaVersion'] = 999
+        zip_path = self._write_zip('schema-999.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any(e.get('field') == 'schemaVersion' for e in result['errors']))
+        self.assertNotIn('íntegro', result['summary'])
+
+    def test_missing_schema_is_legacy(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        del manifest['schemaVersion']
+        zip_path = self._write_zip('schema-missing.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertTrue(result['ok'], result['errors'])
+        self.assertTrue(any('schemaVersion ausente' in item for item in result['limitations']))
+
+    def test_pieces_not_list(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['pieces'] = 7
+        zip_path = self._write_zip('pieces-7.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any(e.get('field') == 'pieces' for e in result['errors']))
+
+    def test_files_not_list(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['files'] = {'x': 1}
+        zip_path = self._write_zip('files-dict.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any(e.get('field') == 'files' for e in result['errors']))
+
+    def test_channels_not_list(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['channels'] = 'x'
+        zip_path = self._write_zip('channels-str.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any(e.get('field') == 'channels' for e in result['errors']))
+
+    def test_piece_files_not_list(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['pieces'][0]['files'] = 7
+        zip_path = self._write_zip('piece-files-7.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any((e.get('field') or '').startswith('pieces.files') for e in result['errors']))
+
+    def test_channel_files_not_list(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['channels'] = [{
+            'profileId': 'instagram-feed-carousel',
+            'files': 7,
+            'reviewedDecision': {'decision': 'approved_for_local_delivery'},
+        }]
+        zip_path = self._write_zip('channel-files-7.zip', files, manifest)
+        result = delivery_verify.verify_package_zip(zip_path)
+        self.assertFalse(result['ok'])
+        self.assertTrue(any((e.get('field') or '').startswith('channels.files') for e in result['errors']))
+
+    def test_cli_pieces_not_list_valid_json(self):
+        files = self._valid_files()
+        manifest = self._valid_manifest(files)
+        manifest['pieces'] = 7
+        zip_path = self._write_zip('cli-pieces-7.zip', files, manifest)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = delivery_verify.main([zip_path, '--json'])
+        self.assertNotEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertFalse(payload['ok'])
+
+    def test_cli_malformed_manifest_valid_json(self):
+        files = self._valid_files()
+        zip_path = self._write_zip('bad-manifest.zip', files, None)
+        with zipfile.ZipFile(zip_path, 'a') as zf:
+            zf.writestr('package-manifest.json', '{nao-json')
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = delivery_verify.main([zip_path, '--json'])
+        self.assertNotEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertFalse(payload['ok'])
+
 
 if __name__ == '__main__':
     unittest.main()

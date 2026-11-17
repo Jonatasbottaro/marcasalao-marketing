@@ -76,3 +76,15 @@ $ python tools/delivery_verify.py caminho/do.zip --json
 - Não modifica o ZIP e não exige o Studio em execução para a CLI.
 - O resumo (`pieces`, `channels`, `deliveryVersionId`, `reviewedDecision`) só é
   apresentado quando o manifesto registra esses campos.
+
+## Diagnóstico de manifesto malformado
+
+- `schemaVersion` ausente: o pacote é tratado como legado e a verificação
+  continua com **limitação explícita**.
+- `schemaVersion` desconhecido (por exemplo, `999`): o resultado é **inválido**
+  com diagnóstico em `errors[].field = "schemaVersion"`, sem declarar o pacote
+  íntegro.
+- Campos de coleção com tipo inválido (`pieces`, `files`, `channels` e suas
+  listas internas) produzem erro com o campo exato e resultado **inválido**; a
+  CLI `--json` continua devolvendo JSON válido e código de saída diferente de
+  zero.
