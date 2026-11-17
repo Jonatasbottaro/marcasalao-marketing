@@ -796,6 +796,102 @@ def cmd_inspect(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Publicação atômica do trabalho (restore)
+# ---------------------------------------------------------------------------
+
+def _rename_noreplace_linux(src: str, dst: str) -> bool:
+    """Tenta renomeacao atomica sem substituicao no Linux via renameat2(RENAME_NOREPLACE).
+
+    Lanca FileExistsError se o destino ja existir no momento da publicacao (inclusive diretorio vazio).
+    Retorna True se renomeou com sucesso.
+    Retorna False se renameat2 nao estiver disponivel no ambiente (permitindo fallback).
+    """
+    import ctypes
+    import ctypes.util
+    import errno
+
+    libc_name = ctypes.util.find_library('c') or 'libc.so.6'
+    try:
+        libc = ctypes.CDLL(libc_name, use_errno=True)
+    except OSError:
+        return False
+
+    if not hasattr(libc, 'renameat2'):
+        return False
+
+    libc.renameat2.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    libc.renameat2.restype = ctypes.c_int
+
+    AT_FDCWD = -100
+    RENAME_NOREPLACE = 1
+
+    res = libc.renameat2(
+        ctypes.c_int(AT_FDCWD),
+        os.fsencode(src),
+        ctypes.c_int(AT_FDCWD),
+        os.fsencode(dst),
+        ctypes.c_uint(RENAME_NOREPLACE),
+    )
+    if res == 0:
+        return True
+
+    err = ctypes.get_errno()
+    if err == errno.EEXIST:
+        raise FileExistsError(
+            f'O diretorio de destino ja existe no momento da publicacao: {dst!r}. '
+            f'Restauracao cancelada.'
+        )
+    if err in (errno.ENOSYS, errno.EINVAL):
+        return False
+    raise OSError(err, os.strerror(err), dst)
+
+
+def _publish_work_directory(staging_dir: str, dest_dir: str) -> None:
+    """Publica o diretorio de staging para dest_dir de forma atomica e nao-substitutiva.
+
+    Recusa a publicacao e levanta FileExistsError caso dest_dir ja exista no momento da
+    operacao (mesmo que seja um diretorio vazio), preservando o destino existente intacto.
+    - No Windows: os.rename() recusa atomicamente se o destino existir (FileExistsError).
+    - No Linux: renameat2() com RENAME_NOREPLACE recusa atomicamente mesmo diretorio vazio (EEXIST).
+    - Fallback: checagem via os.path.lexists() imediatamente antes de os.rename().
+    """
+    if os.path.lexists(dest_dir):
+        raise FileExistsError(
+            f'O diretorio de destino ja existe no momento da publicacao: {dest_dir!r}. '
+            f'Restauracao cancelada.'
+        )
+
+    if os.name == 'nt':
+        try:
+            os.rename(staging_dir, dest_dir)
+        except FileExistsError:
+            raise FileExistsError(
+                f'O diretorio de destino ja existe no momento da publicacao: {dest_dir!r}. '
+                f'Restauracao cancelada.'
+            )
+        return
+
+    try:
+        if _rename_noreplace_linux(staging_dir, dest_dir):
+            return
+    except FileExistsError:
+        raise
+
+    if os.path.lexists(dest_dir):
+        raise FileExistsError(
+            f'O diretorio de destino ja existe no momento da publicacao: {dest_dir!r}. '
+            f'Restauracao cancelada.'
+        )
+    os.rename(staging_dir, dest_dir)
+
+
+# ---------------------------------------------------------------------------
 # Subcomando: restore
 # ---------------------------------------------------------------------------
 
@@ -868,16 +964,9 @@ def cmd_restore(args: argparse.Namespace) -> int:
             if sha256_file(staged_abs) != entry['sha256']:
                 raise RuntimeError(f'Hash divergente no staging para: {rel_in_work!r}')
 
-        # 2. Checagem final imediata antes da promoção: previne criação durante staging (TOCTOU)
-        if os.path.lexists(dest_work_dir):
-            raise FileExistsError(
-                f'O diretorio de destino ja existe no momento da publicacao: {dest_work_dir!r}. '
-                f'Restauracao cancelada.'
-            )
-
-        # Publicar o diretório final em uma única operação atômica
+        # Publicar o diretorio final em operacao atomica que recusa destino existente (inclusive vazio)
         print(f'Publicando trabalho em operacao atomica: {dest_work_dir}')
-        os.replace(staging_work_dir, dest_work_dir)
+        _publish_work_directory(staging_work_dir, dest_work_dir)
         staging_work_dir = None  # Marcador de promoção bem-sucedida
 
     except Exception as exc:

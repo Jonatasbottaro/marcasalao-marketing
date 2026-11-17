@@ -125,9 +125,11 @@ python tools/studio_work_backup.py restore \
 
 > [!CAUTION]
 > A restauração **recusa expressamente** qualquer diretório de destino já existente,
-> mesmo que vazio. Não há sobrescrita cega. Essa garantia é verificada no início da
-> operação e **reconfirmada imediatamente antes da publicação** (`os.replace`), prevenindo
-> condições de corrida (TOCTOU) mesmo que o diretório seja criado durante o staging.
+> inclusive se for um diretório vazio. Não há sobrescrita cega. Essa garantia é verificada no
+> início da operação e **enforçada atomicamente no próprio ato de publicação**, prevenindo
+> condições de corrida (TOCTOU) mesmo que o diretório seja criado durante o staging:
+> - No **Windows**: `os.rename()` recusa a operação atomicamente no nível de sistema de arquivos se o destino existir (`FileExistsError`).
+> - No **Linux (Ubuntu)**: `renameat2(..., RENAME_NOREPLACE)` garante a recusa no kernel mesmo contra diretórios vazios (`EEXIST` -> `FileExistsError`), evitando a semântica POSIX padrão que substituiria diretórios vazios.
 
 ### Montagem segura (staging e publicação atômica)
 
@@ -135,7 +137,7 @@ python tools/studio_work_backup.py restore \
 2. O trabalho é montado em um diretório temporário exclusivo (`.backup-staging-<work-id>-...`) no **mesmo sistema de arquivos** do destino final.
 3. Todo o conteúdo do staging é validado contra o manifesto antes da promoção.
 4. O backup preserva o arquivo ZIP anterior: a promoção utiliza `os.replace` atômico sem remover o arquivo prévio previamente. Se ocorrer falha durante o empacotamento, o arquivo anterior permanece intacto.
-5. Na restauração, o diretório final é publicado em uma **única operação atômica** (`os.replace`) após revalidação de ausência do destino. Se ocorrer qualquer erro ou interrupção, o staging é descartado e nenhum trabalho parcial aparece no destino (comportamento garantido tanto no Windows quanto no Linux/Ubuntu).
+5. Na restauração, o diretório final é publicado em uma **operação atômica não-substitutiva** (`_publish_work_directory`) que recusa o destino se ele já existir (mesmo vazio). Se ocorrer qualquer erro, recusa ou interrupção, o diretório de destino pré-existente permanece intacto, o staging é descartado e nenhum trabalho parcial aparece no destino (comportamento garantido tanto no Windows quanto no Linux/Ubuntu).
 
 ---
 

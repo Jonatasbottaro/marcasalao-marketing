@@ -431,7 +431,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             shutil.rmtree(ws2, ignore_errors=True)
 
     def test_refuse_destination_created_during_staging(self) -> None:
-        """TOCTOU: se o diretorio de destino for criado durante o staging, restore cancela antes do os.replace."""
+        """TOCTOU: se o diretorio de destino (mesmo vazio) for criado durante o staging, restore cancela."""
         work_id = 'toctou-work'
         project_rel = 'platform/examples/projects/test.project.json'
         _make_fake_project(self.ws, project_rel)
@@ -450,7 +450,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             works_parent = os.path.dirname(dest_work_dir)
             self.assertFalse(os.path.exists(dest_work_dir))
 
-            # Simular criacao concorrente do diretorio de destino durante a gravacao no staging
+            # Simular criacao concorrente do diretorio de destino VAZIO durante a gravacao no staging
             created_flag = [False]
             orig_open = open
 
@@ -458,17 +458,14 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
                 if 'wb' in mode and '.backup-staging-' in str(path) and not created_flag[0]:
                     created_flag[0] = True
                     os.makedirs(dest_work_dir, exist_ok=True)
-                    with orig_open(os.path.join(dest_work_dir, 'concorrente.txt'), 'w', encoding='utf-8') as cf:
-                        cf.write('criado concorrentemente')
                 return orig_open(path, mode, *args, **kwargs)
 
             with patch('builtins.open', side_effect=open_and_create_dest), patch('studio_work_backup._find_root', return_value=ws2):
                 rc = swb.cmd_restore(_make_args('restore', archive=zip_path, workspace=ws2))
 
-            self.assertEqual(rc, 1, 'Restore deve abortar quando destino for criado durante staging')
-            self.assertTrue(os.path.exists(dest_work_dir), 'Diretorio concorrente deve ser preservado intacto')
-            with open(os.path.join(dest_work_dir, 'concorrente.txt'), 'r', encoding='utf-8') as cf:
-                self.assertEqual(cf.read(), 'criado concorrentemente')
+            self.assertEqual(rc, 1, 'Restore deve abortar quando destino vazio for criado durante staging')
+            self.assertTrue(os.path.isdir(dest_work_dir), 'Diretorio vazio concorrente deve existir')
+            self.assertEqual(len(os.listdir(dest_work_dir)), 0, 'Diretorio vazio de destino deve ser preservado vazio e intacto')
 
             staging_leftovers = [
                 d for d in os.listdir(works_parent)
@@ -477,6 +474,66 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
         finally:
             shutil.rmtree(ws2, ignore_errors=True)
+
+    def test_publish_work_directory_refuses_empty_destination(self) -> None:
+        """Operacao de publicacao recusa destino vazio ja existente, preservando-o intacto."""
+        staging_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='stg-')
+        dest_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='dst-empty-')
+        try:
+            with open(os.path.join(staging_dir, 'sample.txt'), 'w', encoding='utf-8') as f:
+                f.write('conteudo de staging')
+            self.assertEqual(len(os.listdir(dest_dir)), 0)
+
+            with self.assertRaises(FileExistsError):
+                swb._publish_work_directory(staging_dir, dest_dir)
+
+            self.assertTrue(os.path.isdir(dest_dir), 'Destino deve ser preservado')
+            self.assertEqual(len(os.listdir(dest_dir)), 0, 'Destino vazio deve continuar vazio')
+            self.assertTrue(os.path.isdir(staging_dir), 'Staging deve ser preservado intacto pela funcao de publicacao')
+            with open(os.path.join(staging_dir, 'sample.txt'), 'r', encoding='utf-8') as f:
+                self.assertEqual(f.read(), 'conteudo de staging')
+        finally:
+            shutil.rmtree(staging_dir, ignore_errors=True)
+            shutil.rmtree(dest_dir, ignore_errors=True)
+
+    def test_publish_work_directory_success(self) -> None:
+        """Operacao de publicacao promove atomicamente o staging quando destino nao existe."""
+        staging_dir = tempfile.mkdtemp(dir=self.base_tmp, prefix='stg-ok-')
+        dest_dir = os.path.join(self.base_tmp, 'dst-new')
+        try:
+            with open(os.path.join(staging_dir, 'sample.txt'), 'w', encoding='utf-8') as f:
+                f.write('conteudo promovido')
+
+            self.assertFalse(os.path.exists(dest_dir))
+            swb._publish_work_directory(staging_dir, dest_dir)
+
+            self.assertTrue(os.path.isdir(dest_dir))
+            with open(os.path.join(dest_dir, 'sample.txt'), 'r', encoding='utf-8') as f:
+                self.assertEqual(f.read(), 'conteudo promovido')
+            self.assertFalse(os.path.exists(staging_dir), 'Staging original nao deve mais existir apos rename')
+        finally:
+            shutil.rmtree(dest_dir, ignore_errors=True)
+
+    def test_rename_noreplace_linux_semantics(self) -> None:
+        """Valida que _rename_noreplace_linux lida corretamente com sucesso, EEXIST e fallback."""
+        from unittest.mock import MagicMock
+        import errno
+
+        mock_libc = MagicMock()
+        mock_libc.renameat2.return_value = 0
+
+        with patch('ctypes.CDLL', return_value=mock_libc), patch('ctypes.util.find_library', return_value='libc.so.6'):
+            res = swb._rename_noreplace_linux('src', 'dst')
+            self.assertTrue(res)
+
+        mock_libc.renameat2.return_value = -1
+        with patch('ctypes.CDLL', return_value=mock_libc), patch('ctypes.util.find_library', return_value='libc.so.6'), patch('ctypes.get_errno', return_value=errno.EEXIST):
+            with self.assertRaises(FileExistsError):
+                swb._rename_noreplace_linux('src', 'dst')
+
+        with patch('ctypes.CDLL', return_value=mock_libc), patch('ctypes.util.find_library', return_value='libc.so.6'), patch('ctypes.get_errno', return_value=errno.ENOSYS):
+            res = swb._rename_noreplace_linux('src', 'dst')
+            self.assertFalse(res)
 
 
 class TestRestoreFailureInjection(_WorkspaceTest):
