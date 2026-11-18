@@ -38,6 +38,7 @@ from urllib.parse import urlparse, parse_qs, quote
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import build_video
+import campaign_proof
 import make_agenda_media
 import make_proof_assets
 import make_request_media
@@ -257,7 +258,98 @@ def check_readiness(root):
         if ready
         else 'Ambiente incompleto: faltam ' + ', '.join(missing_labels) + '.'
     )
-    return {'ready': ready, 'summary': summary, 'items': items}
+    fe_manifest = 'tools/studio/frontend/dist/.vite/manifest.json'
+    fe_ok = os.path.isfile(os.path.join(root, fe_manifest.replace('/', os.sep)))
+    return {
+        'ready': ready,
+        'summary': summary,
+        'items': items,
+        'frontendBuild': {
+            'ok': fe_ok,
+            'manifestPath': fe_manifest,
+        },
+        'recommendedCommands': {
+            'check': 'python tools/video_studio.py --check --json',
+            'prepare': 'python tools/video_studio.py --prepare --check',
+            'start': 'python tools/video_studio.py --prepare --port 8765',
+        },
+    }
+
+
+def _run_npm_build_if_needed(sub_dir, required_files, root, env):
+    missing = [p for p in required_files if not os.path.isfile(render_local.fs_path(p))]
+    if not missing:
+        return {'ok': True, 'action': 'already_built', 'missing': []}
+    npm_bin = shutil.which('npm')
+    if not npm_bin:
+        return {'ok': False, 'action': 'missing_npm', 'error': 'Comando "npm" nao encontrado no PATH.', 'missing': missing}
+    has_modules = os.path.isdir(render_local.fs_path(os.path.join(sub_dir, 'node_modules')))
+    cmds = ([['run', 'build']] if has_modules else [['ci', '--offline'], ['run', 'build']])
+    for args in cmds:
+        proc = subprocess.run(
+            [npm_bin, *args],
+            cwd=sub_dir,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=300,
+        )
+        if proc.stdout:
+            print(proc.stdout, file=sys.stderr)
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr)
+        if proc.returncode != 0:
+            err_hint = 'falha ao executar npm (em estacoes offline, garanta node_modules local)' if not has_modules else 'npm run build falhou'
+            return {'ok': False, 'action': 'build_failed', 'error': err_hint, 'command': f'npm {" ".join(args)}'}
+    still_missing = [p for p in required_files if not os.path.isfile(render_local.fs_path(p))]
+    return {'ok': not still_missing, 'action': 'built', 'missing': still_missing}
+
+
+def prepare_environment(root, build_frontend=True):
+    """Prepara builds locais e midias sinteticas dos exemplos mantendo temporarios sob .workspace/."""
+    prep_tmp = os.path.join(root, '.workspace', 'tmp', 'studio-prepare')
+    os.makedirs(render_local.fs_path(prep_tmp), exist_ok=True)
+    env = os.environ.copy()
+    env['TEMP'] = prep_tmp
+    env['TMP'] = prep_tmp
+    env['npm_config_cache'] = os.path.join(prep_tmp, 'npm-cache')
+    os.makedirs(render_local.fs_path(env['npm_config_cache']), exist_ok=True)
+
+    platform_files = [os.path.join(root, 'platform', 'dist', 'src', m) for m in REQUIRED_PLATFORM_MODULES]
+    plat_res = _run_npm_build_if_needed(os.path.join(root, 'platform'), platform_files, root, env)
+
+    fe_files = [os.path.join(root, 'tools', 'studio', 'frontend', 'dist', '.vite', 'manifest.json')]
+    fe_res = (
+        _run_npm_build_if_needed(os.path.join(root, 'tools', 'studio', 'frontend'), fe_files, root, env)
+        if build_frontend else {'ok': True, 'action': 'skipped'}
+    )
+
+    tools_ok, tools_err = campaign_proof._ensure_video_tools_for_root(root)
+
+    examples_dir = os.path.join(root, 'tools', 'produce', 'examples')
+    examples_res = []
+    if os.path.isdir(examples_dir):
+        for fname in sorted(os.listdir(examples_dir)):
+            if not fname.endswith('.video-request.json'):
+                continue
+            rel_req = f'tools/produce/examples/{fname}'
+            try:
+                prep = campaign_proof.cmd_prepare(rel_req, root=root)
+                examples_res.append({'request': rel_req, 'ok': bool(prep.get('ok')), 'errors': prep.get('errors', [])})
+            except Exception as exc:
+                examples_res.append({'request': rel_req, 'ok': False, 'errors': [{'code': 'PREPARE_FAILED', 'subject': str(exc)}]})
+
+    ok = bool(plat_res.get('ok') and fe_res.get('ok') and all(e['ok'] for e in examples_res))
+    return {
+        'ok': ok,
+        'platformBuild': plat_res,
+        'frontendBuild': fe_res,
+        'renderToolsReady': tools_ok,
+        'renderToolsMessage': tools_err,
+        'examplesPrepared': examples_res,
+    }
 
 
 def _default_output_profiles_from_listing(listing):
@@ -679,7 +771,30 @@ class Studio:
         if os.path.exists(work_abs) and not body.get('overwrite'):
             raise ValueError(f'ja existe um trabalho com o id "{work_id}"; escolha outro id ou reabra o existente')
 
+        video_req_path = (body.get('videoRequestPath') or '').strip()
+        example_match = None
+        if video_req_path:
+            ex_abs = self.confine(video_req_path)
+            if not os.path.isfile(render_local.fs_path(ex_abs)):
+                raise ValueError(f'VideoRequest nao encontrado: {video_req_path}')
+            example_match = {'path': self.rel(ex_abs), 'request': self._load_json(self.rel(ex_abs))}
+        else:
+            tmpl_raw = (body.get('template') or '').strip()
+            if tmpl_raw and tmpl_raw not in BRAND_EXAMPLES and tmpl_raw != 'blank':
+                target_id = tmpl_raw[len('example:'):] if tmpl_raw.startswith('example:') else tmpl_raw
+                for ex in self.list_examples():
+                    if ex.get('kind') != 'video':
+                        continue
+                    ex_id = (ex.get('request') or {}).get('id')
+                    if target_id in (ex_id, ex.get('name'), ex.get('path')):
+                        example_match = ex
+                        break
+                if example_match is None and tmpl_raw.startswith('example:'):
+                    raise ValueError(f'exemplo de video nao encontrado: {target_id}')
+
         project_rel = (body.get('project') or '').strip()
+        if not project_rel and example_match is not None:
+            project_rel = str((example_match.get('request') or {}).get('project') or '').strip()
         if not project_rel:
             raise ValueError('selecione um projeto para criar o trabalho')
         project_abs = self.confine(project_rel)
@@ -701,7 +816,87 @@ class Studio:
         for p_key in ('mediaDir', 'videoDeliveryDir', 'carouselDeliveryDir', 'motionDeliveryDir'):
             os.makedirs(self.confine_workspace(paths[p_key]), exist_ok=True)
 
-        if template in BRAND_EXAMPLES:
+        if example_match is not None:
+            ex_video = json.loads(json.dumps(example_match['request']))
+            if not video_profiles:
+                raise ValueError('projeto selecionado nao permite destinos de video locais compativeis')
+            ex_profiles = ex_video.get('profiles') or []
+            filtered_profiles = [p for p in ex_profiles if p in video_profiles]
+            if ex_profiles and not filtered_profiles:
+                raise ValueError('nenhum perfil do exemplo e compativel com o projeto selecionado')
+
+            used_names = set()
+            copied_media = []
+            dur_by_media = {}
+            for sc in ex_video.get('scenes', []):
+                dur_by_media[sc.get('mediaId')] = max(dur_by_media.get(sc.get('mediaId'), 0), int(sc.get('durationMs', 0)))
+
+            for idx, item in enumerate(ex_video.get('media', []), start=1):
+                base_name = os.path.basename(str(item.get('path') or f"{item['id']}.png"))
+                dest_name = base_name if base_name not in used_names else f'{idx:02d}-{base_name}'
+                used_names.add(dest_name)
+                dest_rel = f'{media_dir_rel}/{dest_name}'
+                dest_abs = self.confine_workspace(dest_rel)
+                src_copied = False
+                src_rel = str(item.get('path') or '').strip()
+                if src_rel:
+                    try:
+                        src_abs = self.confine(src_rel)
+                        if os.path.isfile(render_local.fs_path(src_abs)) and not campaign_proof._is_synthetic_proof_file(src_abs):
+                            shutil.copy2(render_local.fs_path(src_abs), render_local.fs_path(dest_abs))
+                            src_copied = True
+                    except ValueError:
+                        src_copied = False
+                if not src_copied:
+                    mtype = item.get('type', 'image')
+                    if mtype == 'image':
+                        campaign_proof.write_scene_png(dest_abs, f'{work_id}-video', item['id'], idx)
+                    elif mtype == 'video':
+                        dur_s = max(2.0, dur_by_media.get(item['id'], 2000) / 1000.0 + 0.5)
+                        make_proof_assets.write_scene_mp4(render_local.fs_path(dest_abs), f'{work_id}-video', item['id'], idx, duration_s=dur_s)
+                    else:
+                        raise ValueError(f'tipo de midia nao suportado no exemplo: {mtype}')
+                copied_media.append({
+                    'id': item['id'],
+                    'path': dest_rel,
+                    'type': item.get('type', 'image'),
+                    'origin': item.get('origin', 'synthetic-demo'),
+                    'license': item.get('license', 'owned-synthetic'),
+                })
+
+            video_req = {
+                'schemaVersion': 1,
+                'id': f'{work_id}-video',
+                'project': project_rel,
+                'title': ex_video.get('title', name),
+                'locale': ex_video.get('locale', project_doc.get('locale', 'pt-BR')),
+                'profiles': filtered_profiles or video_profiles,
+                'visualStyle': ex_video.get('visualStyle', {
+                    'schemaVersion': 1,
+                    'id': f'{work_id}-estilo',
+                    'title': {
+                        'textColor': '#FFFFFF', 'outlineColor': '#000000',
+                        'fontSize': 44, 'marginTop': 170, 'marginHorizontal': 70,
+                    },
+                }),
+                'media': copied_media,
+                'scenes': json.loads(json.dumps(ex_video.get('scenes', []))),
+            }
+            carousel_req = {
+                'schemaVersion': 1,
+                'id': f'{work_id}-carrossel',
+                'project': project_rel,
+                'profile': carousel_profiles[0] if carousel_profiles else 'instagram-feed-image-square',
+                'title': f'{video_req["title"]} — Carrossel',
+                'media': [],
+                'cards': [{'id': 'capa', 'title': video_req['title'], 'body': name}],
+            }
+            motion_plan = {
+                'schemaVersion': 1,
+                'requestId': video_req['id'],
+                'effects': [],
+            }
+        elif template in BRAND_EXAMPLES:
             seed = BRAND_EXAMPLES[template]
             ex_video = self._load_json(seed['video'])
             ex_carousel = self._load_json(seed['carousel'])
@@ -2532,6 +2727,7 @@ def make_server(root, port, auto_start_queue=True):
     studio = Studio(root, port, auto_start_queue=auto_start_queue)
     handler = type('BoundStudioHandler', (StudioHandler,), {'studio': studio})
     httpd = ThreadingHTTPServer(('127.0.0.1', port), handler)
+    studio.port = httpd.server_port
     return httpd, studio
 
 
@@ -2549,16 +2745,27 @@ def main(argv=None):
     parser.add_argument('--port', type=int, default=8765, help='Porta local (127.0.0.1)')
     parser.add_argument('--root', default=None, help='Raiz do projeto (padrao: git rev-parse --show-toplevel)')
     parser.add_argument('--check', action='store_true', help='Verifica pre-requisitos locais e sai sem abrir servidor')
-    parser.add_argument('--json', action='store_true', help='Emite o resultado de --check em JSON')
+    parser.add_argument('--prepare', action='store_true', help='Prepara builds e midias sinteticas dos exemplos antes de iniciar')
+    parser.add_argument('--json', action='store_true', help='Emite o resultado de --check/--prepare em JSON')
     args = parser.parse_args(argv)
     root = discover_root(args.root)
+    prep = None
+    if args.prepare:
+        prep = prepare_environment(root)
     readiness = check_readiness(root)
-    if args.check:
+    if args.check or (args.prepare and args.json):
+        payload = {**readiness, 'prepare': prep} if prep is not None else readiness
         if args.json:
-            print(json.dumps(readiness, ensure_ascii=False, indent=2))
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
             print_readiness_text(readiness)
-        return 0 if readiness['ready'] else 1
+            if prep is not None:
+                print(f"Preparacao do ambiente: {'OK' if prep['ok'] else 'FALHOU'}")
+        ok = readiness['ready'] and (True if prep is None else prep['ok'])
+        return 0 if ok else 1
+    if prep is not None and not prep['ok']:
+        print(json.dumps(prep, ensure_ascii=False, indent=2), file=sys.stderr)
+        return 1
 
     print_readiness_text(readiness)
     httpd, studio = make_server(root, args.port)

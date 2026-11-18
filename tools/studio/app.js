@@ -668,12 +668,29 @@ async function loadExamples() {
   const vids = data.examples.filter((e) => e.kind === 'video');
   for (const ex of vids) sel.append(el('option', { value: ex.path, text: ex.name }));
   sel._examples = vids;
+
+  const tmplSel = homeEl('#work-template');
+  if (tmplSel && !isAstryxHomeActive()) {
+    Array.from(tmplSel.querySelectorAll('option[data-dynamic-example="1"]')).forEach((opt) => opt.remove());
+    for (const ex of vids) {
+      const exId = ex.request?.id || ex.name;
+      tmplSel.append(el('option', {
+        value: `example:${exId}`,
+        'data-dynamic-example': '1',
+        text: `Pedido exemplo: ${exId} — ${ex.request?.title || ex.name}`,
+      }));
+    }
+  }
 }
 
 function loadExample() {
   const sel = $('#example-select');
   const ex = (sel._examples || []).find((e) => e.path === sel.value);
   if (!ex) { toast('Selecione um exemplo.'); return; }
+  if (currentWork) {
+    currentWork = null;
+    renderActiveWorkBar();
+  }
   draft = JSON.parse(JSON.stringify(ex.request));
   $('#draft-path').value = '.workspace/tmp/video-studio/drafts/' + draft.id + '.json';
   $('#output-dir').value = '.workspace/archives/video-studio/' + draft.id;
@@ -698,6 +715,10 @@ async function openDraft() {
   const path = $('#draft-path').value.trim();
   if (!path) { toast('Informe o caminho do rascunho.'); return; }
   const data = await api('/api/draft/load?path=' + encodeURIComponent(path));
+  if (currentWork) {
+    currentWork = null;
+    renderActiveWorkBar();
+  }
   draft = data.request;
   $('#project-select').value = draft.project || '';
   loadDraftStateReset();
@@ -2079,6 +2100,10 @@ function loadCExample() {
   const sel = $('#c-example-select');
   const ex = (sel._examples || []).find((e) => e.path === sel.value);
   if (!ex) { toast('Selecione um exemplo.'); return; }
+  if (currentWork) {
+    currentWork = null;
+    renderActiveWorkBar();
+  }
   cdraft = JSON.parse(JSON.stringify(ex.request));
   $('#c-draft-path').value = '.workspace/tmp/video-studio/drafts/' + cdraft.id + '.json';
   $('#c-output-dir').value = '.workspace/archives/video-studio/' + cdraft.id;
@@ -2101,6 +2126,10 @@ async function openCDraft() {
   const path = $('#c-draft-path').value.trim();
   if (!path) { toast('Informe o caminho.'); return; }
   const d = await api('/api/draft/load?path=' + encodeURIComponent(path));
+  if (currentWork) {
+    currentWork = null;
+    renderActiveWorkBar();
+  }
   cdraft = d.request;
   $('#c-project-select').value = cdraft.project || '';
   renderCAll();
