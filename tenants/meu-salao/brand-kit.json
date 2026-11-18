@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "meu-salao",
+  "brandName": "Meu Salão",
+  "displayTitle": "MEU SALAO",
+  "monogram": "MS",
+  "domain": "meusalao.com.br",
+  "url": "https://meusalao.com.br",
+  "tagline": "GESTAO DE AGENDA E ATENDIMENTOS",
+  "palette": {
+    "primary": "#10B981",
+    "secondary": "#3B82F6",
+    "accent": "#F59E0B",
+    "background": "#0F172A",
+    "surface": "#1E293B",
+    "textPrimary": "#F8FAFC",
+    "textMuted": "#94A3B8",
+    "rgb": {
+      "backgroundTop": [15, 23, 42],
+      "backgroundBottom": [24, 34, 58],
+      "headerBg": [11, 17, 32],
+      "cardBg": [30, 41, 59],
+      "cardHighlight": [42, 57, 82],
+      "primaryAccent": [16, 185, 129],
+      "secondaryAccent": [59, 130, 246],
+      "statusConfirmed": [16, 185, 129],
+      "statusWaiting": [245, 158, 11],
+      "statusDone": [148, 163, 184],
+      "textPrimary": [248, 250, 252],
+      "textMuted": [148, 163, 184]
+    }
+  },
+  "typography": {
+    "fontFamily": "Arial",
+    "titleWeight": "bold",
+    "bodyWeight": "regular"
+  },
+  "headerOverlay": {
+    "enabled": true,
+    "label": "MEU SALAO",
+    "badgeText": "AGENDA DO SALAO",
+    "bgColor": "#0B1120",
+    "textColor": "#F8FAFC",
+    "height": 170
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "defaultPreset": "saas-demo",
+  "utmDefaults": {
+    "utm_source": "instagram",
+    "utm_medium": "reels",
+    "utm_campaign_prefix": "ms"
+  }
+}

@@ -1,6 +1,6 @@
 1
 00:00:00,000 --> 00:00:05,000
-Conheça o Meu Salão, a plataforma que conecta o profissional ao cliente e simplifica o agendamento.
+Conheça o Marca Salão, a plataforma que conecta o profissional ao cliente e simplifica o agendamento.
 
 2
 00:00:05,000 --> 00:00:12,000
@@ -20,4 +20,4 @@ Compartilhe o link no WhatsApp junto com uma mensagem curta e objetiva. O client
 
 6
 00:00:45,000 --> 00:00:57,000
-Com o Meu Salão o agendamento fica simples, rápido e automatizado 24 horas por dia. Mais organização para o salão e mais facilidade para o cliente.
+Com o Marca Salão o agendamento fica simples e rápido, disponível online. Mais organização para o salão e mais facilidade para o cliente.

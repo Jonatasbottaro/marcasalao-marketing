@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "brandName": "Multitrack Hub",
+  "displayTitle": "MULTITRACK HUB",
+  "monogram": "MH",
+  "domain": "multitrackhub.com.br",
+  "url": "https://multitrackhub.com.br",
+  "tagline": "CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+  "palette": {
+    "primary": "#06B6D4",
+    "secondary": "#8B5CF6",
+    "accent": "#22C55E",
+    "background": "#090D16",
+    "surface": "#161F30",
+    "textPrimary": "#F1F5F9",
+    "textMuted": "#94A3B8",
+    "rgb": {
+      "backgroundTop": [9, 13, 22],
+      "backgroundBottom": [15, 23, 42],
+      "headerBg": [6, 9, 17],
+      "cardBg": [22, 31, 48],
+      "cardHighlight": [30, 42, 66],
+      "primaryAccent": [6, 182, 212],
+      "secondaryAccent": [139, 92, 246],
+      "statusConfirmed": [34, 197, 94],
+      "statusWaiting": [234, 179, 8],
+      "statusDone": [148, 163, 184],
+      "textPrimary": [241, 245, 249],
+      "textMuted": [148, 163, 184]
+    }
+  },
+  "typography": {
+    "fontFamily": "Arial",
+    "titleWeight": "bold",
+    "bodyWeight": "regular"
+  },
+  "headerOverlay": {
+    "enabled": true,
+    "label": "MULTITRACK HUB",
+    "badgeText": "MULTITRACKS & RATEIOS",
+    "bgColor": "#060911",
+    "textColor": "#F1F5F9",
+    "height": 170
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "defaultPreset": "shorts-completo",
+  "utmDefaults": {
+    "utm_source": "youtube",
+    "utm_medium": "shorts",
+    "utm_campaign_prefix": "mth"
+  }
+}

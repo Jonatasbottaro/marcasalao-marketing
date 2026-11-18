@@ -6,7 +6,7 @@ Cada cartão corresponde a uma captura do painel de demonstração (https://marc
 
 ### 01_dashboard.png
 **Legenda**
-Acesse o Dashboard do Meu Salão
+Acesse o Dashboard do Marca Salão
 Veja em tempo real: agendamentos hoje, faturamento mensal, profissionais ativos e avaliação média
 Ações rápidas: Novo Agendamento, Adicionar Serviço, Gerenciar Equipe
 

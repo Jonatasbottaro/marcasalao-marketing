@@ -11,11 +11,17 @@ on:
     paths:
       - 'tools/**'
       - 'platform/**'
+      - 'schemas/**'
+      - 'tenants/**'
+      - '02-reels-shorts/deliveries/**'
       - '.github/workflows/local-render-validation.yml'
   pull_request:
     paths:
       - 'tools/**'
       - 'platform/**'
+      - 'schemas/**'
+      - 'tenants/**'
+      - '02-reels-shorts/deliveries/**'
       - '.github/workflows/local-render-validation.yml'
   workflow_dispatch:
 
@@ -78,6 +84,12 @@ jobs:
           npm ci
           npm run build
           test -f dist/src/validate-local-render-input.js
+
+      - name: Validar contratos multi-tenant e suites da fabrica (Etapa 2)
+        run: |
+          python tools/tenant_validator.py --all --json
+          python tools/factory_cli.py list --json
+          python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_preset_runner.py tools/tests/test_factory_cli.py -v
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
         env:

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-shorts-completo-multitrack-001",
+  "campaignId": "SHORTS-COMPLETO-MULTITRACK-001",
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-shorts-completo-multitrack-001.mp4",
+    "packageSrtName": "camp-shorts-completo-multitrack-001.srt",
+    "packageNarrationName": "camp-shorts-completo-multitrack-001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "shorts-hook",
+      "start": 0.0,
+      "duration": 7.0,
+      "route": "/",
+      "badge": "MULTITRACKS & RATEIOS",
+      "headline": "CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "subline": "MULTITRACKHUB.COM.BR",
+      "caption": "Catalogo, stems e rateios organizados no Multitrack Hub.",
+      "narrationText": "Conheça o catálogo de projetos, stems e rateios do Multitrack Hub."
+    },
+    {
+      "id": "cena-02-catalogo",
+      "kind": "shorts-catalogo",
+      "start": 7.0,
+      "duration": 8.0,
+      "route": "/",
+      "badge": "CATALOGO DE PROJETOS",
+      "headline": "TRES PROJETOS PRONTOS PARA BAIXAR",
+      "caption": "Três projetos com stems organizados por instrumento.",
+      "narrationText": "Três projetos no catálogo, cada um com BPM, tom e stems prontos para baixar."
+    },
+    {
+      "id": "cena-03-metricas",
+      "kind": "shorts-metricas",
+      "start": 15.0,
+      "duration": 6.0,
+      "route": "/",
+      "badge": "METRICAS",
+      "headline": "MULTITRACK HUB EM NUMEROS",
+      "caption": "Multitrack Hub em números: projetos, stems e rateios.",
+      "narrationText": "Veja os números do Multitrack Hub: projetos, stems e rateios disponíveis."
+    },
+    {
+      "id": "cena-04-rateios",
+      "kind": "shorts-rateios",
+      "start": 21.0,
+      "duration": 6.0,
+      "route": "/rateios",
+      "badge": "RATEIOS DISPONIVEIS",
+      "headline": "PARTICIPE DOS RATEIOS",
+      "caption": "Participe dos rateios de faixas com cota a partir de R$ 24,90.",
+      "narrationText": "Participe dos rateios de faixas com cota a partir de R$ 24,90 no Multitrack Hub."
+    },
+    {
+      "id": "cena-05-cta",
+      "kind": "shorts-cta",
+      "start": 27.0,
+      "duration": 3.0,
+      "route": "/",
+      "badge": "MULTITRACK HUB",
+      "headline": "CONHECA O MULTITRACK HUB",
+      "subline": "MULTITRACKHUB.COM.BR",
+      "caption": "Conheça o Multitrack Hub — multitrackhub.com.br",
+      "narrationText": "Conheça o Multitrack Hub, multitrackhub.com.br."
+    }
+  ]
+}

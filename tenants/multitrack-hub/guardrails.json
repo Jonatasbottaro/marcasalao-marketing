@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "forbiddenClaims": [
+    "whatsapp comercial",
+    "telefone comercial",
+    "faturamento garantido",
+    "lucro garantido",
+    "sem direitos autorais garantido",
+    "gratuito ilimitado",
+    "100% livre de licenciamento",
+    "download automatico ilimitado"
+  ],
+  "forbiddenUiElements": [
+    "whatsapp",
+    "telefone comercial",
+    "checkout simulado"
+  ],
+  "routeRules": {
+    "/": {
+      "surface": "public-catalog",
+      "allowedResponsibilities": [
+        "busca-catalogo-multitracks",
+        "visualizacao-stems-bpm-tom",
+        "direcionamento-site-oficial"
+      ],
+      "forbiddenResponsibilities": [
+        "configuracao-whatsapp-comercial",
+        "alteracao-marca-salao"
+      ]
+    },
+    "/rateios": {
+      "surface": "group-splits",
+      "allowedResponsibilities": [
+        "listagem-rateios-disponiveis",
+        "status-vagas-rateio",
+        "detalhes-faixas-inclusas"
+      ],
+      "forbiddenResponsibilities": [
+        "cobranca-automatica-externa",
+        "garantia-entrega-instantanea-sem-revisao"
+      ]
+    }
+  },
+  "audioPolicy": {
+    "allowAudioTrack": true,
+    "requireExternalNarration": false,
+    "requireSrt": true
+  }
+}

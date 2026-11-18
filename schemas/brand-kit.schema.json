@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marcasalao.com.br/schemas/brand-kit.schema.json",
+  "title": "BrandKit",
+  "description": "Contrato formal de identidade visual, tipografia, overlays de marca, estilo de legendas e defaults de rastreio multi-tenant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "tenantId",
+    "brandName",
+    "displayTitle",
+    "monogram",
+    "domain",
+    "url",
+    "tagline",
+    "palette",
+    "typography",
+    "headerOverlay",
+    "subtitleStyle",
+    "defaultPreset",
+    "utmDefaults"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Versão do contrato do brand-kit."
+    },
+    "tenantId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 2,
+      "description": "Slug identificador em kebab-case único por projeto (ex.: marca-salao)."
+    },
+    "brandName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nome público completo da marca (ex.: Marca Salão)."
+    },
+    "displayTitle": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Título normalizado para exibição nos cabeçalhos do renderizador bitmap (ex.: MARCA SALAO)."
+    },
+    "monogram": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4,
+      "description": "Sigla curta para o emblema/ícone da marca (ex.: MS, MH)."
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[a-z0-9.-]+\\.[a-z]{2,}$",
+      "description": "Domínio oficial exibido nos cards finais (ex.: marcasalao.com.br)."
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://.+",
+      "description": "URL canônica de destino da marca."
+    },
+    "tagline": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Subtítulo institucional exibido no cabeçalho das cenas."
+    },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "secondary",
+        "accent",
+        "background",
+        "surface",
+        "textPrimary",
+        "textMuted"
+      ],
+      "properties": {
+        "primary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "secondary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "background": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "textPrimary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "textMuted": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "rgb": {
+          "type": "object",
+          "description": "Mapa de tuplas RGB [0..255] compatível 1:1 com o motor Python/PNG do renderizador.",
+          "additionalProperties": false,
+          "required": [
+            "backgroundTop",
+            "backgroundBottom",
+            "headerBg",
+            "cardBg",
+            "cardHighlight",
+            "primaryAccent",
+            "secondaryAccent",
+            "statusConfirmed",
+            "statusWaiting",
+            "statusDone",
+            "textPrimary",
+            "textMuted"
+          ],
+          "properties": {
+            "backgroundTop": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "backgroundBottom": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "headerBg": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "cardBg": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "cardHighlight": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "primaryAccent": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "secondaryAccent": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "statusConfirmed": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "statusWaiting": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "statusDone": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "textPrimary": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+            "textMuted": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": 0, "maximum": 255 } }
+          }
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fontFamily", "titleWeight", "bodyWeight"],
+      "properties": {
+        "fontFamily": { "type": "string", "minLength": 1 },
+        "titleWeight": { "type": "string", "minLength": 1 },
+        "bodyWeight": { "type": "string", "minLength": 1 }
+      }
+    },
+    "headerOverlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "label", "badgeText", "bgColor", "textColor"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "label": { "type": "string", "minLength": 1 },
+        "badgeText": { "type": "string", "minLength": 1 },
+        "bgColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "textColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "height": { "type": "integer", "minimum": 40, "maximum": 400 },
+        "replaceLegacyLabel": { "type": "string" }
+      }
+    },
+    "subtitleStyle": {
+      "type": "string",
+      "minLength": 10,
+      "description": "String ASS force_style para o filtro subtitles do FFmpeg/libass."
+    },
+    "defaultPreset": {
+      "type": "string",
+      "enum": ["saas-demo", "shorts-completo"],
+      "description": "Preset padrão de compilação/renderização de vídeo para o tenant."
+    },
+    "utmDefaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["utm_source", "utm_medium", "utm_campaign_prefix"],
+      "properties": {
+        "utm_source": { "type": "string", "minLength": 1 },
+        "utm_medium": { "type": "string", "minLength": 1 },
+        "utm_campaign_prefix": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

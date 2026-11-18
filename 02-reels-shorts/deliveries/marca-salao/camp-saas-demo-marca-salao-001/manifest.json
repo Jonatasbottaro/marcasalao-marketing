@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "marca-salao",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "marca-salao",
+    "brandName": "Marca Salão",
+    "monogram": "MS",
+    "domain": "marcasalao.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true
+  },
+  "config": "tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json",
+  "fixture": {
+    "path": "tenants/marca-salao/fixtures/fixture-editorial-marca-salao.json",
+    "sha256": "1cb32a7b34d0d7dc8619d21f1a9ddafe14c8614e541665af9dc207b81f432efa"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": false,
+    "audioStream": 0,
+    "source": "none"
+  },
+  "command": "python tools/preset_runner.py --tenant marca-salao --config tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json --output-dir 02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001",
+  "tools": {
+    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+      "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
+      "bytes": 445686,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
+      "sourcePath": null,
+      "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+      "bytes": 496,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt",
+      "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d",
+      "bytes": 906,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
+      "bytes": 643164,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

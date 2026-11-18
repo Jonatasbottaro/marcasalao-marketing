@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-editorial-marca-salao-v1",
+  "descricao": "Fixture editorial dedicada para capturas de tela do Marca Salão. Dados integralmente fictícios. NÃO usar em testes técnicos automatizados (E2E, CI). NÃO usar em produção.",
+  "data": "2026-11-18",
+  "origem": "codex/fase1-conformidade-editorial",
+  "guardrails": [
+    "Sem promessas de automação via WhatsApp/SMS/e-mail",
+    "Sem fluxo de pagamento simulado (escopo NS-002)",
+    "Separação de rotas: /gestor/agenda = visualização/status manual; /booking/[salonId] = cálculo de horários livres",
+    "Padrão de vídeo: 1080x1920, 30fps, sem áudio, com suporte a legendas queimadas e .srt"
+  ],
+  "estabelecimento": {
+    "nome": "Marca Salão",
+    "nomeInterno": "marca-salao-modelo",
+    "endereco": "Rua das Flores, 142 — São Paulo, SP",
+    "telefone": "(11) 91234-5678",
+    "site": "https://marcasalao.com.br",
+    "horarioFuncionamento": "Terça a Sábado, 09h às 19h"
+  },
+  "profissionais": [
+    {
+      "id": "prof-001",
+      "nome": "Camila Rocha",
+      "especialidade": "Coloração e Corte Feminino",
+      "ativo": true
+    },
+    {
+      "id": "prof-002",
+      "nome": "Rafael Mendes",
+      "especialidade": "Barba e Corte Masculino",
+      "ativo": true
+    },
+    {
+      "id": "prof-003",
+      "nome": "Juliana Costa",
+      "especialidade": "Manicure e Pedicure",
+      "ativo": true
+    },
+    {
+      "id": "prof-004",
+      "nome": "Lucas Alves",
+      "especialidade": "Tratamentos Capilares",
+      "ativo": true
+    }
+  ],
+  "servicos": [
+    {
+      "id": "serv-001",
+      "nome": "Corte Feminino",
+      "duracaoMin": 60,
+      "precoBRL": 85.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-002",
+      "nome": "Escova Modelada",
+      "duracaoMin": 45,
+      "precoBRL": 65.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-003",
+      "nome": "Hidratação Profunda",
+      "duracaoMin": 50,
+      "precoBRL": 110.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-004",
+      "nome": "Manicure e Pedicure",
+      "duracaoMin": 90,
+      "precoBRL": 70.00,
+      "categoria": "unhas"
+    },
+    {
+      "id": "serv-005",
+      "nome": "Barba e Corte Masculino",
+      "duracaoMin": 45,
+      "precoBRL": 75.00,
+      "categoria": "masculino"
+    }
+  ],
+  "agenda": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Terça-feira",
+    "visaoRota": "/gestor/agenda",
+    "nota": "Visualização e alteração manual de status apenas. Horários livres pertencem à rota /booking/[salonId].",
+    "atendimentos": [
+      {
+        "id": "atend-001",
+        "horario": "09:00",
+        "duracaoMin": 60,
+        "cliente": "Ana Beatriz Souza",
+        "profissional": "prof-001",
+        "servico": "serv-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-002",
+        "horario": "09:30",
+        "duracaoMin": 45,
+        "cliente": "Pedro Henrique Lima",
+        "profissional": "prof-002",
+        "servico": "serv-005",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-003",
+        "horario": "10:30",
+        "duracaoMin": 90,
+        "cliente": "Fernanda Oliveira",
+        "profissional": "prof-003",
+        "servico": "serv-004",
+        "status": "Aguardando"
+      },
+      {
+        "id": "atend-004",
+        "horario": "11:00",
+        "duracaoMin": 50,
+        "cliente": "Renata Carvalho",
+        "profissional": "prof-004",
+        "servico": "serv-003",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-005",
+        "horario": "14:00",
+        "duracaoMin": 45,
+        "cliente": "Isabela Martins",
+        "profissional": "prof-001",
+        "servico": "serv-002",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-006",
+        "horario": "14:30",
+        "duracaoMin": 45,
+        "cliente": "Carlos Eduardo Pereira",
+        "profissional": "prof-002",
+        "servico": "serv-005",
+        "status": "Aguardando"
+      },
+      {
+        "id": "atend-007",
+        "horario": "15:30",
+        "duracaoMin": 60,
+        "cliente": "Mariana Ferreira",
+        "profissional": "prof-001",
+        "servico": "serv-001",
+        "status": "Concluído"
+      },
+      {
+        "id": "atend-008",
+        "horario": "16:00",
+        "duracaoMin": 90,
+        "cliente": "Luciana Rodrigues",
+        "profissional": "prof-003",
+        "servico": "serv-004",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-009",
+        "horario": "17:00",
+        "duracaoMin": 50,
+        "cliente": "Tatiane Nascimento",
+        "profissional": "prof-004",
+        "servico": "serv-003",
+        "status": "Aguardando"
+      }
+    ],
+    "janelasSemAtendimento": [
+      { "inicio": "12:00", "fim": "14:00", "nota": "intervalo — sem atendimentos agendados" },
+      { "inicio": "13:00", "fim": "14:00", "profissional": "prof-002", "nota": "janela livre do Rafael" }
+    ]
+  },
+  "booking": {
+    "nota": "Dados de horários disponíveis para o cliente pertencem exclusivamente à rota /booking/[salonId]. Não representar disponibilidade na rota /gestor/agenda.",
+    "rota": "/booking/marca-salao-modelo",
+    "servicosDisponiveis": ["serv-001", "serv-002", "serv-003", "serv-004", "serv-005"],
+    "exemploFluxo": [
+      "1. Cliente acessa /booking/marca-salao-modelo",
+      "2. Escolhe o serviço (ex.: Corte Feminino — 60 min — R$ 85,00)",
+      "3. Escolhe o profissional (ex.: Camila Rocha)",
+      "4. Visualiza horários disponíveis no calendário",
+      "5. Seleciona horário disponível",
+      "6. Confirma o agendamento — exibe mensagem 'Agendamento realizado'",
+      "NOTA: Não há tela de pagamento neste fluxo (escopo NS-002)"
+    ]
+  }
+}

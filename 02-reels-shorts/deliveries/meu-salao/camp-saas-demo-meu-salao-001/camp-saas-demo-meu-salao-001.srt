@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:04,000
+Como um horário escolhido pela cliente chega à agenda do salão?
+
+2
+00:00:04,000 --> 00:00:10,000
+A cliente escolhe o serviço e o profissional.
+
+3
+00:00:10,000 --> 00:00:17,000
+Seleciona o horário disponível e confirma.
+
+4
+00:00:17,000 --> 00:00:20,000
+Agendamento realizado.
+
+5
+00:00:20,000 --> 00:00:26,000
+O mesmo atendimento aparece na agenda do salão.
+
+6
+00:00:26,000 --> 00:00:30,000
+Conheça o agendamento online no Meu Salão — meusalao.com.br
