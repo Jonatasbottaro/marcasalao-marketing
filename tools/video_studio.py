@@ -45,6 +45,7 @@ import produce_video
 import render_local
 import studio_queue
 import delivery_package
+import delivery_verify
 import image_adapters
 import llm_adapter
 import studio_media
@@ -1760,6 +1761,40 @@ class Studio:
     def verified_package_download(self, work_id):
         return delivery_package.verified_package_zip_path(self, work_id)
 
+    def verify_package_delivery(self, work_id):
+        """Verifica o pacote ZIP salvo do trabalho ativo (somente leitura)."""
+        info = delivery_package.read_package_delivery(self, work_id)
+        last_valid = info.get('lastValidDelivery')
+        if not last_valid or not last_valid.get('zipPath'):
+            return {
+                'ok': False,
+                'available': False,
+                'workId': work_id,
+                'packageId': None,
+                'summary': info.get('zipError') or 'Nenhum pacote ZIP de entrega gerado para este trabalho.',
+                'errors': [{'message': info.get('zipError') or 'Nenhum pacote ZIP de entrega gerado para este trabalho.'}],
+                'checks': [],
+                'limitations': [],
+                'files': [],
+                'pieces': [],
+                'channels': [],
+                'zipSha256': {
+                    'actual': None,
+                    'expected': (last_valid or {}).get('zipSha256'),
+                    'compared': False,
+                    'match': None,
+                },
+            }
+        zip_abs = self.confine(last_valid['zipPath'])
+        result = delivery_verify.verify_package_zip(
+            zip_abs,
+            expected_zip_sha256=last_valid.get('zipSha256'),
+        )
+        result['available'] = bool(info.get('available'))
+        result['indexZipSha256'] = last_valid.get('zipSha256')
+        result['zipPath'] = last_valid.get('zipPath')
+        return result
+
     # ---- planejamento por etapas e adaptador local de modelo ----
     def get_planning_overview(self, work_id):
         return studio_planning.build_planning_overview(self, work_id)
@@ -2223,6 +2258,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 )})
             elif path == '/api/works/package':
                 self.send_json(200, {'ok': True, **studio.read_package_delivery(query.get('id', [''])[0])})
+            elif path == '/api/works/package/verify':
+                self.send_json(200, {'ok': True, 'verification': studio.verify_package_delivery(query.get('id', [''])[0])})
             elif path == '/api/works/package/download':
                 try:
                     target, download_name = studio.verified_package_download(query.get('id', [''])[0])

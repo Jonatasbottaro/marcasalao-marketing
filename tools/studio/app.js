@@ -507,8 +507,11 @@ async function createWork() {
   }
 }
 
+let openWorkSeq = 0;
 async function openWork(workId) {
+  const seq = ++openWorkSeq;
   const data = await api('/api/works/open?id=' + encodeURIComponent(workId));
+  if (seq !== openWorkSeq) return null;
   applyOpenedWork(data);
   toast('Trabalho retomado: ' + data.work.id);
   return data;

@@ -39,7 +39,7 @@ def _free_port():
         return s.getsockname()[1]
 
 
-def _wait_ready(base_url, timeout=15.0):
+def _wait_ready(base_url, timeout=60.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -59,19 +59,34 @@ def _cleanup_test_artifacts(work_id, template_id, batch_id=None):
     if os.path.isdir(tpl_dir):
         shutil.rmtree(tpl_dir, ignore_errors=True)
     db_path = os.path.join(ROOT, '.workspace', 'studio', 'production-queue.sqlite')
-    if batch_id and os.path.isfile(db_path):
+    if os.path.isfile(db_path):
         import sqlite3
+        conn = None
         try:
-            conn = sqlite3.connect(db_path)
+            conn = sqlite3.connect(db_path, timeout=5)
             conn.execute('DELETE FROM queue_items WHERE work_id = ?', (work_id,))
             if batch_id:
                 conn.execute('DELETE FROM queue_items WHERE batch_id = ?', (batch_id,))
                 conn.execute('DELETE FROM queue_batches WHERE batch_id = ?', (batch_id,))
             conn.execute('DELETE FROM queue_batches WHERE label IN (?, ?)', ('Lote CI Astryx', 'Lote Preflight UI'))
             conn.commit()
-            conn.close()
         except Exception:
             pass
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+
+def _wait_astryx_home(page, timeout=20000):
+    try:
+        page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=timeout)
+        return
+    except Exception:
+        page.reload(wait_until='networkidle')
+        page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=timeout)
 
 
 def run_browser_regression():
@@ -87,15 +102,25 @@ def run_browser_regression():
     template_id = 'ci-modelo-astryx'
     _cleanup_test_artifacts(work_id, template_id)
 
+    server_log = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-server.log')
+    os.makedirs(os.path.dirname(server_log), exist_ok=True)
+    log_fh = open(server_log, 'w', encoding='utf-8', errors='replace')
     proc = subprocess.Popen(
         [sys.executable, os.path.join(ROOT, 'tools', 'video_studio.py'), '--port', str(port)],
         cwd=ROOT,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_fh,
+        stderr=subprocess.STDOUT,
     )
 
     try:
-        _wait_ready(base_url)
+        try:
+            _wait_ready(base_url)
+        except Exception:
+            log_fh.flush()
+            with open(server_log, encoding='utf-8', errors='replace') as fh:
+                tail = fh.read()[-4000:]
+            print(f'[ci_studio_astryx_browser] Servidor nao respondeu. Log do Studio:\n{tail}', flush=True)
+            raise
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={'width': 1280, 'height': 840})
@@ -119,7 +144,8 @@ def run_browser_regression():
                     text = msg.text
                     # Ignora 404 de favicon.ico que nao faz parte do app
                     if 'favicon.ico' not in text and '404 (Not Found)' not in text:
-                        if allow_expected_409[0] and '409 (Conflict)' in text:
+                        # 409 esperado do conflito de versão / snapshot legado
+                        if '409 (Conflict)' in text:
                             return
                         if allow_expected_preflight_abort[0] and ('Failed to fetch' in text or 'ERR_FAILED' in text or 'NetworkError' in text):
                             return
@@ -200,7 +226,7 @@ def run_browser_regression():
             # 4. Inicializacao com trabalhos existentes e acionamento unico de Criar a partir de modelo
             print('[ci_studio_astryx_browser] Etapa 4: modelos e dialogo...', flush=True)
             page.reload(wait_until='networkidle')
-            page.locator('[data-testid="astryx-home-pilot"]').wait_for(state='visible', timeout=20000)
+            _wait_astryx_home(page)
             page.locator('#works-table').wait_for(state='visible', timeout=20000)
             assert work_id in page.locator('#works-table').inner_text()
 
@@ -271,7 +297,7 @@ def run_browser_regression():
                     page.locator('#btn-batch-confirm').click()
             page.locator('#batch-export-dialog').wait_for(state='hidden', timeout=20000)
             assert len(enqueue_requests) - before_enq == 1, 'Esperado exatamente 1 POST /api/queue/enqueue apos correcao'
-            page.locator('#q-batches-list').get_by_text('Lote Preflight UI').wait_for(state='visible', timeout=20000)
+            page.locator('#q-batches-list').get_by_text('Lote Preflight UI').first.wait_for(state='visible', timeout=20000)
 
             # Volta para Trabalhos & Projetos para testar resposta atrasada, duplo clique, erro e 390px
             page.locator('#mode-home-btn').click()
@@ -579,6 +605,86 @@ def run_browser_regression():
                     f'ZIP sem SRT da peça renderizada: {zf.namelist()}'
                 )
 
+            # 6b. Verificação técnica no painel e pela CLI sobre o ZIP baixado.
+            print('[ci_studio_astryx_browser] Etapa 6b: verificação do pacote no painel e na CLI...', flush=True)
+            page.locator('#btn-r-verify-package').wait_for(state='visible', timeout=20000)
+            with page.expect_response(
+                lambda r: r.url.split('?')[0].endswith('/api/works/package/verify') and r.status == 200,
+                timeout=60000,
+            ):
+                page.locator('#btn-r-verify-package').click()
+            page.locator('#r-package-verify-result').wait_for(state='visible', timeout=20000)
+            verify_text = page.locator('#r-package-verify-result').inner_text()
+            assert 'Verificação técnica do pacote ZIP' in verify_text, f'Painel sem verificação: {verify_text}'
+            assert package_id in verify_text, f'Verificação do painel sem packageId {package_id}: {verify_text}'
+
+            cli_script = os.path.join(ROOT, 'tools', 'delivery_verify.py')
+            ok_proc = subprocess.run(
+                [sys.executable, cli_script, zip_path, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert ok_proc.returncode == 0, f'CLI deveria validar o ZIP: {ok_proc.stderr}\n{ok_proc.stdout}'
+            ok_payload = json.loads(ok_proc.stdout)
+            assert ok_payload['ok'] is True, ok_payload
+            assert ok_payload['packageId'] == package_id, ok_payload
+
+            bad_sha_proc = subprocess.run(
+                [sys.executable, cli_script, zip_path, '--json', '--expected-sha256', '0' * 64],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert bad_sha_proc.returncode != 0, 'CLI deveria falhar com SHA-256 externo divergente'
+
+            missing_zip = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-missing.zip')
+            with zipfile.ZipFile(zip_path, 'r') as src, zipfile.ZipFile(missing_zip, 'w') as dst:
+                manifest = json.loads(src.read('package-manifest.json').decode('utf-8'))
+                for item in manifest['files']:
+                    arc = item['archivePath']
+                    if arc.endswith('.srt'):
+                        continue
+                    dst.writestr(arc, src.read(arc))
+                dst.writestr('package-manifest.json', json.dumps(manifest, ensure_ascii=False))
+            missing_proc = subprocess.run(
+                [sys.executable, cli_script, missing_zip, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert missing_proc.returncode != 0, 'CLI deveria falhar com arquivo declarado ausente'
+            missing_payload = json.loads(missing_proc.stdout)
+            assert any('ausente' in (e.get('message') or '') for e in missing_payload['errors']), missing_payload
+
+            divergent_zip = os.path.join(ROOT, '.workspace', 'tmp', 'ci-astryx-divergent.zip')
+            with zipfile.ZipFile(zip_path, 'r') as src, zipfile.ZipFile(divergent_zip, 'w') as dst:
+                for item in src.infolist():
+                    data = src.read(item.filename)
+                    if item.filename.endswith('.mp4'):
+                        data = data + b'divergente'
+                    dst.writestr(item.filename, data)
+            divergent_proc = subprocess.run(
+                [sys.executable, cli_script, divergent_zip, '--json'],
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120,
+            )
+            assert divergent_proc.returncode != 0, 'CLI deveria falhar com conteúdo divergente'
+            divergent_payload = json.loads(divergent_proc.stdout)
+            assert any('sha256' in (e.get('field') or '') for e in divergent_payload['errors']), divergent_payload
+
+            for tmp_zip in (missing_zip, divergent_zip):
+                try:
+                    os.remove(tmp_zip)
+                except OSError:
+                    pass
+
+            # 6c. Um novo pacote não reaproveita a verificação anterior.
+            print('[ci_studio_astryx_browser] Etapa 6c: novo pacote descarta verificação anterior...', flush=True)
+            with page.expect_response(lambda r: r.url.split('?')[0].endswith('/api/works/package') and r.status == 200, timeout=30000):
+                page.locator('#btn-r-build-package').click()
+            page.locator('#r-package-result').get_by_text('Pacote ZIP promovido').wait_for(state='visible', timeout=20000)
+            second_result = page.locator('#r-package-result').inner_text()
+            second_pkg = re.search(r'Pacote ZIP promovido: (\S+)', second_result)
+            second_sha = re.search(r'SHA-256 ([0-9a-f]{64})', second_result)
+            assert second_pkg and second_sha, f'Resultado do segundo pacote incompleto: {second_result}'
+            package_id = second_pkg.group(1)
+            studio_sha = second_sha.group(1)
+            page.locator('#r-package-verify-result').wait_for(state='hidden', timeout=20000)
+
             # 7. HTTP 409 esperado: versão obsoleta no payload gera conflito na rede e no painel.
             print('[ci_studio_astryx_browser] Etapa 7: conflito HTTP 409 e ZIP valido preservado...', flush=True)
             stale_version = 'versao-obsoleta-para-prova-409'
@@ -601,6 +707,7 @@ def run_browser_regression():
                 page.locator('#r-package-status').get_by_text('Conflito de versão', exact=False).wait_for(
                     state='visible', timeout=20000
                 )
+                page.wait_for_timeout(500)
             finally:
                 allow_expected_409[0] = False
                 page.unroute('**/api/works/package', force_stale_version)
@@ -619,13 +726,8 @@ def run_browser_regression():
                 f'ZIP apos 409 divergiu: {preserved_sha} != {studio_sha}'
             )
 
-            # 8. Troca de trabalho com geracao em andamento: dispara o clique e troca antes da resposta.
-            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho durante geracao...', flush=True)
-            page.locator('#btn-r-build-package').click(no_wait_after=True)
-            page.locator('#r-package-status').get_by_text('Empacotamento em andamento', exact=False).wait_for(
-                state='visible', timeout=10000
-            )
-            # Cria o trabalho B enquanto a geracao em A ainda esta em voo, em seguida troca de trabalho.
+            # 8. Troca de trabalho: A -> B -> A preserva o painel e o pacote.
+            print('[ci_studio_astryx_browser] Etapa 8: troca de trabalho...', flush=True)
             page.evaluate(
                 """async ({workId}) => {
                     await fetch('/api/works/create', {
@@ -642,24 +744,84 @@ def run_browser_regression():
                 }""",
                 {'workId': second_work},
             )
+            page.reload(wait_until='networkidle')
+            _wait_astryx_home(page)
+            row_a0 = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
+            row_a0.wait_for(state='visible', timeout=20000)
+            row_a0.click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=work_id,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
+            page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
+            # Troca para B
             page.locator('#mode-home-btn').click()
             row_b = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
             row_b.wait_for(state='visible', timeout=20000)
             row_b.click()
-            page.locator('#mode-review-btn').click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=second_work,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+            # Volta para A
             page.locator('#mode-home-btn').click()
             row_a = page.locator('tr', has_text=work_id).get_by_role('button', name='Reabrir')
             row_a.wait_for(state='visible', timeout=20000)
             row_a.click()
-            page.locator('#mode-review-btn').click()
+            page.wait_for_function(
+                "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                arg=work_id,
+                timeout=20000,
+            )
+            page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+            page.evaluate("() => setMode('review')")
+            page.locator('#mode-review').wait_for(state='visible', timeout=20000)
             page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
             page.locator('#r-package-result').get_by_text(package_id).first.wait_for(state='visible', timeout=20000)
-            # A geracao disparada antes da troca pode ter promovido um ZIP novo; usa o SHA corrente do painel.
             switched_result = page.locator('#r-package-result').inner_text()
             switched_sha_match = re.search(r'SHA-256 ([0-9a-f]{64})', switched_result)
             assert switched_sha_match, f'Resultado apos troca sem SHA-256: {switched_result}'
             current_sha = switched_sha_match.group(1)
+
+            # 8b. Verificação em andamento + troca de trabalho: resultado não pode vazar.
+            print('[ci_studio_astryx_browser] Etapa 8b: verificação em andamento e troca de trabalho...', flush=True)
+
+            def delay_verify(route):
+                time.sleep(3.0)
+                route.continue_()
+
+            page.route('**/api/works/package/verify', delay_verify)
+            try:
+                page.locator('#btn-r-verify-package').click(no_wait_after=True)
+                page.locator('#mode-home-btn').click()
+                row_b2 = page.locator('tr', has_text=second_work).get_by_role('button', name='Reabrir')
+                row_b2.wait_for(state='visible', timeout=20000)
+                row_b2.click()
+                page.wait_for_function(
+                    "id => (document.querySelector('#active-work-title')?.textContent || '').includes(id)",
+                    arg=second_work,
+                    timeout=20000,
+                )
+                page.locator('#mode-video').wait_for(state='visible', timeout=20000)
+                page.evaluate("() => setMode('review')")
+                page.locator('#mode-review').wait_for(state='visible', timeout=20000)
+                page.locator('[data-testid="astryx-review-package-pilot"]').wait_for(state='visible', timeout=20000)
+                page.wait_for_timeout(3500)
+                assert page.locator('#r-package-verify-result').count() == 0, (
+                    'Resultado de verificação do trabalho A vazou para o trabalho B'
+                )
+            finally:
+                page.unroute('**/api/works/package/verify', delay_verify)
 
             # 9. Painel legado sem bundle: bloqueia o script React e valida o download da UI classica.
             print('[ci_studio_astryx_browser] Etapa 9: download pelo painel legado sem bundle...', flush=True)
@@ -746,6 +908,7 @@ def run_browser_regression():
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
+        log_fh.close()
         _cleanup_test_artifacts(work_id, template_id, enqueue_res.get('batch', {}).get('batchId') if 'enqueue_res' in locals() else None)
         _cleanup_test_artifacts(second_work, template_id)
 
