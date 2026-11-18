@@ -9,7 +9,7 @@ import {
   Stack,
   Text,
 } from '@astryxdesign/core';
-import { apiPost, getStudioBridge } from '../api.js';
+import { apiGet, apiPost, getStudioBridge } from '../api.js';
 
 function reviewStatusVariant(status, readyForPackage) {
   if (readyForPackage || status === 'approved') return 'success';
@@ -51,11 +51,16 @@ export function ReviewPackagePanel() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [statusNotice, setStatusNotice] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
 
   const activeWorkIdRef = useRef(snapshot.workId || null);
   const requestSeqRef = useRef(0);
   const inFlightRef = useRef(false);
   const prevReadyRef = useRef({});
+  const pkgIdRef = useRef(snapshot.packageDelivery?.lastValidDelivery?.packageId || null);
+  const verifySeqRef = useRef(0);
+  const verifyInFlightRef = useRef(false);
 
   useEffect(() => {
     function handleSync(event) {
@@ -64,18 +69,33 @@ export function ReviewPackagePanel() {
       const nextWorkId = detail.workId || null;
       const workChanged = prevWorkId !== nextWorkId;
 
+      const nextPkgId = detail.packageDelivery?.lastValidDelivery?.packageId || null;
+      const pkgChanged = nextPkgId !== pkgIdRef.current;
       activeWorkIdRef.current = nextWorkId;
       setSnapshot(detail);
+      pkgIdRef.current = nextPkgId;
 
       if (workChanged) {
         requestSeqRef.current += 1;
+        verifySeqRef.current += 1;
         inFlightRef.current = false;
+        verifyInFlightRef.current = false;
         setSubmitting(false);
+        setVerifying(false);
         setStatusNotice(null);
+        setVerifyResult(null);
         const nextMap = buildInitialSelection(detail.review);
         prevReadyRef.current = { ...nextMap };
         setSelectedMap(nextMap);
         return;
+      }
+
+      // Novo pacote no mesmo trabalho (atualizacao externa) invalida a verificacao anterior.
+      if (pkgChanged) {
+        verifySeqRef.current += 1;
+        verifyInFlightRef.current = false;
+        setVerifying(false);
+        setVerifyResult(null);
       }
 
       const nextReady = buildInitialSelection(detail.review);
@@ -149,6 +169,7 @@ export function ReviewPackagePanel() {
       if (activeWorkIdRef.current !== reqWorkId || requestSeqRef.current !== reqSeq) {
         return;
       }
+      setVerifyResult(null);
       setStatusNotice({
         status: 'success',
         title: 'Pacote ZIP gerado',
@@ -172,6 +193,45 @@ export function ReviewPackagePanel() {
       if (activeWorkIdRef.current === reqWorkId && requestSeqRef.current === reqSeq) {
         inFlightRef.current = false;
         setSubmitting(false);
+      }
+    }
+  }
+
+  async function handleVerifyPackage() {
+    if (!workId || !pkg?.available || verifyInFlightRef.current) return;
+
+    const reqWorkId = workId;
+    const reqPackageId = pkg?.lastValidDelivery?.packageId || null;
+    const reqSeq = ++verifySeqRef.current;
+    verifyInFlightRef.current = true;
+    setVerifying(true);
+    setVerifyResult(null);
+
+    try {
+      const data = await apiGet(`/api/works/package/verify?id=${encodeURIComponent(reqWorkId)}`);
+      if (activeWorkIdRef.current !== reqWorkId || verifySeqRef.current !== reqSeq) {
+        return;
+      }
+      if (pkgIdRef.current !== reqPackageId) {
+        return;
+      }
+      setVerifyResult(data.verification || data);
+    } catch (err) {
+      if (activeWorkIdRef.current !== reqWorkId || verifySeqRef.current !== reqSeq) {
+        return;
+      }
+      if (pkgIdRef.current !== reqPackageId) {
+        return;
+      }
+      setVerifyResult({
+        ok: false,
+        summary: err?.message || 'Falha ao verificar pacote ZIP.',
+        errors: [{ message: err?.message || 'Falha ao verificar pacote ZIP.' }],
+      });
+    } finally {
+      if (activeWorkIdRef.current === reqWorkId && verifySeqRef.current === reqSeq) {
+        verifyInFlightRef.current = false;
+        setVerifying(false);
       }
     }
   }
@@ -314,6 +374,43 @@ export function ReviewPackagePanel() {
                   >
                     Baixar ZIP de entrega ({pkg.lastValidDelivery.packageId}.zip)
                   </a>
+                  <div id="r-package-verify">
+                    <div className="astryx-actions-row">
+                      <Button
+                        id="btn-r-verify-package"
+                        variant="secondary"
+                        label={verifying ? 'Verificando ZIP…' : 'Verificar pacote ZIP'}
+                        onClick={handleVerifyPackage}
+                        isDisabled={verifying || !pkg?.available}
+                      />
+                      {verifying ? <Spinner size="sm" /> : null}
+                    </div>
+                    {verifyResult ? (
+                      <div id="r-package-verify-result" className="astryx-verify-result">
+                        <Banner
+                          status={verifyResult.ok ? 'success' : 'error'}
+                          title={verifyResult.ok ? 'Verificação técnica do pacote ZIP' : 'Pacote ZIP não passou na verificação'}
+                          description={verifyResult.summary || (verifyResult.ok ? 'Pacote íntegro.' : 'Falha na verificação.')}
+                          collapsible={false}
+                        />
+                        {verifyResult.ok ? (
+                          <Text size="sm" color="secondary">
+                            {verifyResult.packageId} · {verifyResult.files?.length || 0} arquivo(s) · peças: {verifyResult.pieces?.length || 0} · canais: {verifyResult.channels?.length || 0}
+                          </Text>
+                        ) : verifyResult.errors?.[0] ? (
+                          <Text size="sm" color="secondary">
+                            Primeiro problema: {verifyResult.errors[0].message}
+                            {verifyResult.errors[0].file ? ` (${verifyResult.errors[0].file})` : ''}
+                          </Text>
+                        ) : null}
+                        {verifyResult.limitations?.length ? (
+                          <Text size="sm" color="secondary">
+                            Limitações: {verifyResult.limitations.join(' · ')}
+                          </Text>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                   <pre className="astryx-package-manifest">
                     {JSON.stringify(pkg.manifest?.files || [], null, 2)}
                   </pre>

@@ -93,6 +93,17 @@ class StudioAstryxFrontendTests(unittest.TestCase):
         st_bad, _, _ = self._get('/static/frontend/../../index.html')
         self.assertEqual(st_bad, 404)
 
+    def test_review_package_panel_invalidates_on_package_change(self):
+        path = os.path.join(
+            self.repo_root, 'tools', 'studio', 'frontend', 'src', 'components', 'ReviewPackagePanel.jsx'
+        )
+        with open(path, encoding='utf-8') as fh:
+            source = fh.read()
+        self.assertIn('const pkgChanged = nextPkgId !== pkgIdRef.current;', source)
+        self.assertIn('if (pkgChanged) {', source)
+        self.assertIn('setVerifyResult(null);', source)
+        self.assertIn('pkgIdRef.current !== reqPackageId', source)
+
 
 if __name__ == '__main__':
     unittest.main()

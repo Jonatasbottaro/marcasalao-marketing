@@ -618,3 +618,8 @@ python tools/ci_studio_mcp_proof.py --port 8810
 # Regressao do servidor MCP
 python -m unittest tools.tests.test_studio_mcp -v
 ```
+
+## Verificação do pacote ZIP de entrega
+
+A verificação técnica do pacote ZIP (painel **Revisão & Entrega** e CLI) está
+documentada em [studio-delivery-verification.md](studio-delivery-verification.md).
