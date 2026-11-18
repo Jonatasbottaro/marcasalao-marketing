@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:05,000
+Como a equipe acompanha os atendimentos do dia no Meu Salão?
+
+2
+00:00:05,000 --> 00:00:11,000
+O dia da equipe começa com todos os atendimentos em uma tela.
+
+3
+00:00:11,000 --> 00:00:17,000
+Cada profissional acompanha os próprios atendimentos na agenda.
+
+4
+00:00:17,000 --> 00:00:23,000
+A equipe atualiza o status de cada atendimento durante o dia.
+
+5
+00:00:23,000 --> 00:00:27,000
+Do primeiro ao último atendimento, a rotina fica registrada na agenda.
+
+6
+00:00:27,000 --> 00:00:30,000
+Conheça a agenda do Meu Salão — meusalao.com.br

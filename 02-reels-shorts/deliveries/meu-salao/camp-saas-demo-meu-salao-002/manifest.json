@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "meu-salao",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "meu-salao",
+    "brandName": "Meu Salão",
+    "monogram": "MS",
+    "domain": "meusalao.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true
+  },
+  "config": "tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-002.json",
+  "fixture": {
+    "path": "tenants/meu-salao/fixtures/fixture-editorial-meu-salao.json",
+    "sha256": "7ead01b8a85d47cbeb1f6f016b13fece2e32e1764affcf49a1e32b53fe611fbb"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": false,
+    "audioStream": 0,
+    "source": "none"
+  },
+  "command": "python tools/preset_runner.py --tenant meu-salao --config tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-002.json --output-dir 02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+      "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
+      "bytes": 513587,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
+      "sourcePath": null,
+      "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49",
+      "bytes": 573,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002_narracao.txt",
+      "sha256": "1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb",
+      "bytes": 896,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
+      "bytes": 645948,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-meu-salao-002",
+  "campaignId": "SAAS-DEMO-MEU-SALAO-002",
+  "tenantId": "meu-salao",
+  "preset": "saas-demo",
+  "baseCaptureRef": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-meu-salao-002.mp4",
+    "packageSrtName": "camp-saas-demo-meu-salao-002.srt",
+    "packageNarrationName": "camp-saas-demo-meu-salao-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 5.0,
+      "surface": "marca",
+      "badge": "AGENDA DO SALAO",
+      "headline": "COMO A EQUIPE ACOMPANHA OS ATENDIMENTOS DO DIA?",
+      "subline": "A ROTINA DA EQUIPE NA AGENDA DO MEU SALAO",
+      "caption": "Como a equipe acompanha os atendimentos do dia no Meu Salão?",
+      "narrationText": "Veja como a equipe acompanha os atendimentos do dia na agenda do Meu Salão."
+    },
+    {
+      "id": "cena-02-abertura-do-dia",
+      "kind": "manager-agenda",
+      "start": 5.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "VISAO DO DIA /GESTOR/AGENDA",
+      "headline": "O DIA COMECA NA AGENDA EM TELA",
+      "highlightId": "atend-ms-001",
+      "caption": "O dia da equipe começa com todos os atendimentos em uma tela.",
+      "narrationText": "Na rota /gestor/agenda, o dia da equipe começa com todos os atendimentos reunidos em uma tela."
+    },
+    {
+      "id": "cena-03-equipe",
+      "kind": "manager-agenda",
+      "start": 11.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "EQUIPE /GESTOR/AGENDA",
+      "headline": "ATENDIMENTOS POR PROFISSIONAL",
+      "highlightId": "atend-ms-002",
+      "caption": "Cada profissional acompanha os próprios atendimentos na agenda.",
+      "narrationText": "Cada profissional encontra os próprios atendimentos na agenda do salão."
+    },
+    {
+      "id": "cena-04-status-manual",
+      "kind": "manager-agenda",
+      "start": 17.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "STATUS MANUAL /GESTOR/AGENDA",
+      "headline": "A EQUIPE ATUALIZA O STATUS",
+      "highlightId": "atend-ms-003",
+      "caption": "A equipe atualiza o status de cada atendimento durante o dia.",
+      "narrationText": "Durante o dia, a equipe atualiza o status de cada atendimento manualmente."
+    },
+    {
+      "id": "cena-05-fim-do-dia",
+      "kind": "manager-agenda",
+      "start": 23.0,
+      "duration": 4.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "FIM DO DIA /GESTOR/AGENDA",
+      "headline": "ATE O ULTIMO ATENDIMENTO DO DIA",
+      "highlightId": "atend-ms-005",
+      "caption": "Do primeiro ao último atendimento, a rotina fica registrada na agenda.",
+      "narrationText": "Do primeiro ao último atendimento, a rotina do dia fica registrada na agenda."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 27.0,
+      "duration": 3.0,
+      "surface": "marca",
+      "route": "meusalao.com.br",
+      "badge": "MEU SALAO",
+      "headline": "CONHECA A AGENDA DO MEU SALAO",
+      "subline": "MEUSALAO.COM.BR",
+      "caption": "Conheça a agenda do Meu Salão — meusalao.com.br",
+      "narrationText": "Conheça a agenda do Meu Salão, meusalao.com.br."
+    }
+  ]
+}

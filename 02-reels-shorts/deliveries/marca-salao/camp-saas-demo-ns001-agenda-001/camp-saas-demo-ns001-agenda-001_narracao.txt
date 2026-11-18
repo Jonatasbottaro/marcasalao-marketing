@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-ns001-agenda-001
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:05,000] cena-01-hook
+Você consegue visualizar os agendamentos do seu salão com clareza? Acompanhe o dia na agenda do Marca Salão.
+
+[00:00:05,000 --> 00:00:11,000] cena-02-visao-do-dia
+Na rota /gestor/agenda, todos os atendimentos do dia ficam reunidos em uma única tela.
+
+[00:00:11,000 --> 00:00:17,000] cena-03-filtros
+Use os filtros por profissional e por status para localizar um atendimento na agenda.
+
+[00:00:17,000 --> 00:00:23,000] cena-04-status-manual
+Durante o dia, a equipe acompanha cada atendimento e atualiza o status manualmente.
+
+[00:00:23,000 --> 00:00:27,000] cena-05-busca-cliente
+Na hora da dúvida, localize o atendimento pelo nome do cliente na agenda do salão.
+
+[00:00:27,000 --> 00:00:30,000] cena-06-cta
+Conheça a agenda do Marca Salão, marcasalao.com.br.
