@@ -88,8 +88,63 @@ https://marcasalao.com.br/?utm_source=instagram&utm_medium=stories&utm_campaign=
 
 ---
 
-## 6. Histórico
+## 6. Geração automatizada de URLs (tools/publish_pack.py)
+
+A partir da versão 1.1, as URLs rastreadas são geradas automaticamente pelo
+script `tools/publish_pack.py`, que lê cada entrega renderizada em
+`02-reels-shorts/deliveries/<tenantId>/<slug>/` (manifest.json, .srt,
+_narracao.txt), o `brand-kit.json` (`domain`, `utmDefaults`) e o
+`guardrails.json` do respectivo tenant, e produz pacotes em
+`04-legendas/pacotes-publicacao/<tenantId>/<slug>/`:
+
+- `instagram-reels.md`: legenda otimizada com `utm_source=instagram`,
+  `utm_medium=reels`, CTA "Conheça o sistema — link na bio" e hashtags.
+- `youtube-shorts.md`: título SEO, descrição com capítulos derivados do .srt
+  e `utm_source=youtube`, `utm_medium=shorts`.
+- `facebook-reels.md`: copy adaptada com `utm_source=facebook`,
+  `utm_medium=reels` e "Acesse pelo link da descrição".
+- `checklist-publicacao.json`: metadados estruturados (hashes SHA-256 dos
+  arquivos de mídia, status de aprovação dos guardrails,
+  `"autoPublish": false`).
+
+### CLI
+
+```text
+# Todas as entregas existentes
+python tools/publish_pack.py --all
+
+# Uma entrega especifica
+python tools/publish_pack.py --tenant marca-salao --slug camp-saas-demo-marca-salao-001
+```
+
+Todas as cópias de legenda geradas são auditadas com
+`tenant_validator.validate_text_against_guardrails(...)` antes de gravar: se
+qualquer palavra proibida de `forbiddenClaims`/`forbiddenUiElements` aparecer,
+o script aborta e não grava o pacote parcial.
+
+### Tabela de URLs geradas (2026-11-18)
+
+| Tenant | Campanha (slug) | Canal | URL rastreada |
+|--------|-----------------|-------|---------------|
+| marca-salao | camp-saas-demo-marca-salao-001 | Instagram Reels | https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
+| marca-salao | camp-saas-demo-marca-salao-001 | YouTube Shorts | https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
+| marca-salao | camp-saas-demo-marca-salao-001 | Facebook Reels | https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
+| meu-salao | camp-saas-demo-meu-salao-001 | Instagram Reels | https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
+| meu-salao | camp-saas-demo-meu-salao-001 | YouTube Shorts | https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
+| meu-salao | camp-saas-demo-meu-salao-001 | Facebook Reels | https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | Instagram Reels | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | YouTube Shorts | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | Facebook Reels | https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
+
+> [!IMPORTANT]
+> Enquanto a ferramenta de analytics (seção 5) estiver como PENDENTE, nenhum
+> link UTM acima deve ser declarado como ativo em registros de campanha.
+
+---
+
+## 7. Histórico
 
 | Data       | Autor       | Alteração |
 |------------|-------------|-----------|
 | 2026-11-18 | Agente — codex/fase1-conformidade-editorial | Criação do padrão inicial |
+| 2026-11-18 | Agente 3 — codex/etapa3-agente3-publish-utm | Geração automatizada de URLs via tools/publish_pack.py e tabela de URLs por canal/tenant |

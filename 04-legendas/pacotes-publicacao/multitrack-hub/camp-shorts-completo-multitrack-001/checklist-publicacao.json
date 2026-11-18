@@ -1,0 +1,44 @@
+{
+  "slug": "camp-shorts-completo-multitrack-001",
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "allowAudioTrack": true,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok"
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+      "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+      "bytes": 352348,
+      "sha256_disk_ok": false
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
+      "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+      "bytes": 444,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt",
+      "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1",
+      "bytes": 743,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
+      "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
+      "bytes": 479092,
+      "sha256_disk_ok": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}
