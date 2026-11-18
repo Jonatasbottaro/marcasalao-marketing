@@ -999,10 +999,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
     else:
+        fmt = manifest.get("format", {})
+        audio_streams = (
+            manifest.get("artifacts", {}).get("video", {}).get("ffprobe", {}).get("audioStreams")
+        )
+        if audio_streams is None:
+            audio_streams = manifest.get("audio", {}).get("audioStream", 0)
         print(f"Preset '{manifest['preset']}' renderizado para o tenant '{manifest['tenantId']}' "
-              f"({manifest['artifacts']['video']['width']}x{manifest['artifacts']['video']['height']} "
-              f"@{manifest['artifacts']['video']['fps']}fps, "
-              f"{manifest['artifacts']['video']['audioStreams']} stream(s) de audio).")
+              f"({fmt.get('width')}x{fmt.get('height')} "
+              f"@{fmt.get('fps')}fps, "
+              f"{audio_streams} stream(s) de audio).")
     return 0
 
 

@@ -290,6 +290,45 @@ class PresetRunnerTest(unittest.TestCase):
             ctx = tenant_validator.load_and_validate_tenant(tid, root=REPO_ROOT, strict=True)
             self.assertTrue(ctx["ok"], f"{tid}: {ctx['errors']}")
 
+    # ------------------------------------------------------------------
+    # 5. Regressao do CLI: main() encerra com codigo 0 apos o pipeline
+    # ------------------------------------------------------------------
+    def test_08_cli_exits_zero_after_pipeline(self) -> None:
+        """Regressao do KeyError no resumo do CLI (preset_runner main).
+
+        Executa o CLI como subprocesso e exige: returncode 0, ausencia de
+        KeyError/Traceback em stderr e manifest.json integro e coerente.
+        """
+        out_dir = _clean_dir(os.path.join(TEST_TMP_ROOT, "cli-smoke"))
+        cmd = [
+            sys.executable,
+            os.path.join(TOOLS_DIR, "preset_runner.py"),
+            "--tenant", MTH_TENANT,
+            "--config", MTH_CONFIG,
+            "--output-dir", out_dir,
+            "--root", REPO_ROOT,
+        ]
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", cwd=REPO_ROOT, timeout=240,
+        )
+        self.assertEqual(
+            res.returncode, 0,
+            f"CLI rc={res.returncode}\nstderr:\n{res.stderr[-600:]}",
+        )
+        self.assertNotIn("KeyError", res.stderr)
+        self.assertNotIn("Traceback", res.stderr)
+
+        manifest_path = os.path.join(out_dir, "manifest.json")
+        self.assertTrue(os.path.isfile(manifest_path), "manifest.json nao gerado pelo CLI")
+        with open(manifest_path, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        self.assertEqual(manifest["tenantId"], MTH_TENANT)
+        self.assertEqual(manifest["format"]["width"], 1080)
+        self.assertEqual(manifest["format"]["height"], 1920)
+        self.assertEqual(manifest["format"]["fps"], 30)
+        self.assertEqual(manifest["artifacts"]["video"]["ffprobe"]["audioStreams"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

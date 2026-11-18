@@ -11,8 +11,8 @@
 | Item | Valor |
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
-| HEAD main (base / integração) | Base `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) integrada na `main` via `codex/merge-prep-etapa2` (`--no-ff`, sem push remoto) |
-| Branch de trabalho ativa | `main` (consolidada localmente via `codex/merge-prep-etapa2` a partir de `codex/fase1-conformidade-editorial` → `codex/etapa1-piloto-ns002` → `codex/etapa2-agente1-arquitetura-tenants` → `codex/etapa2-agente2-preset-runner` → `codex/etapa2-agente3-escala-ci`) |
+| HEAD main (base / integração) | `af1e15f` (consolidação da Etapa 3 na `main`: 4 tenants, 8 campanhas, pacotes sociais, `devlog_sync` e suíte de CI), linear após `ad95adc → d55b291 → a77efe5 → d70dd93`, sem push remoto |
+| Branch de trabalho ativa | `main` (Etapa 3 consolidada a partir dos 4 agentes paralelos: `ad95adc` agente1 → `d55b291` agente2 → `a77efe5` agente3 → `d70dd93` agente4 → `af1e15f` consolidação; sem push remoto) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
 | Fase atual | Etapa 3 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (4 agente(s): 1, 2, 3, 4) |
 | Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 e Etapa 3 (Agentes 1, 2, 3, 4) concluídas — ver seções 2 e 7 |
@@ -812,4 +812,37 @@ exit 1). Correção do print sugerida para o dono do arquivo: usar
   - `python tools/publish_pack.py --all --json` → pacotes e UTMs gerados/auditados para as 8 campanhas (`autoPublish: false`).
   - Suíte consolidada completa (**12 módulos**): **85/85 testes aprovados em `107.194s` (`OK`)** (`test_tenant_contracts`, `test_preset_runner`, `test_factory_cli`, `test_audio_tts`, `test_publish_pack`, `test_devlog_sync`, `test_ns002_pilot`, `test_srt_validate`, `test_build_video`, `test_r002_pilot`, `test_delivery_verify`, `test_campaign_proof`).
 - **Worktrees preservadas:** `.workspace/worktrees/etapa3-agente1`, `.workspace/worktrees/etapa3-agente2`, `.workspace/worktrees/etapa3-agente4`, `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2` mantidas sem alterações.
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+---
+
+### Sessão 2026-11-18 — Correção Pós-Consolidação da Etapa 3 (KeyError no CLI, Teste de Regressão e Limpeza de Worktrees)
+
+- **Executor:** Engenheiro de Software Sênior (manutenção corretiva na `main`).
+- **Branch:** `main` (HEAD `af1e15f`, consolidada da Etapa 3), sem push remoto.
+- **Escopo:** correções técnicas pendentes após a consolidação da Etapa 3, restritas a `tools/preset_runner.py`, `tools/tests/test_preset_runner.py` e `contexto_projeto.md`; worktrees históricas `prova-campanha-conclusao` e `studio-package-verify2` preservadas intactas.
+
+#### 1. Correção do `KeyError` no resumo do CLI (`tools/preset_runner.py`)
+
+- **Bug:** o resumo final do CLI (`main()`, linhas ~1002-1005) lia `manifest['artifacts']['video']['width'|'height'|'fps'|'audioStreams']`, chaves inexistentes (largura/altura/fps vivem em `manifest['format']`; a contagem de áudio vive em `manifest['artifacts']['video']['ffprobe']['audioStreams']`). O pipeline concluía e promovia/arquivava os artefatos, mas o CLI encerrava com `KeyError` e código `1`.
+- **Correção:** o resumo passa a ler `manifest['format']['width'|'height'|'fps']` e a contagem de áudio de `manifest['artifacts']['video']['ffprobe']['audioStreams']`, com fallback seguro via `.get(...)` para `manifest['audio']['audioStream']`. O CLI encerra com código `0` após concluir o pipeline.
+- **Verificação:** `python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json --output-dir <tmp>` → `Preset 'shorts-completo' renderizado ... (1080x1920 @30fps, 1 stream(s) de audio)`, `RC=0`, sem `KeyError`.
+
+#### 2. Teste de regressão do CLI (`tools/tests/test_preset_runner.py`)
+
+- **`test_08_cli_exits_zero_after_pipeline`:** executa o CLI como subprocesso (`sys.executable tools/preset_runner.py ... --output-dir <tmp>`) e valida `returncode == 0`, ausência de `KeyError`/`Traceback` em `stderr` e `manifest.json` íntegro (`format.width=1080`, `height=1920`, `fps=30`, `artifacts.video.ffprobe.audioStreams=1`). Passou isoladamente (`Ran 1 test ... OK`).
+
+#### 3. Limpeza das worktrees temporárias da Etapa 3
+
+- Removidas via `git worktree remove` + `git worktree prune` as worktrees já integradas: `.workspace/worktrees/etapa3-agente1`, `.workspace/worktrees/etapa3-agente2` e `.workspace/worktrees/etapa3-agente4` (a `etapa3-agente3` não estava registrada).
+- **Preservadas intactas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2`.
+- **Handoff:** `git worktree list` passou a listar apenas `main` + as duas worktrees históricas; `git ls-files "*.mp4"` e `git ls-files "*.wav"` permanecem vazios; nenhum `git clean` destrutivo foi executado (`.workspace/archives/` e `.workspace/tools/` preservados). Restou apenas o diretório **vazio** e **desregistrado** `.workspace/worktrees/etapa3-agente1` (gitignored), preso como CWD por um shell interativo do Kilo; pode ser apagado após fechar esse terminal.
+
+#### 4. Validação completa da fábrica e suíte de testes (na `main`)
+
+- `python tools/tenant_validator.py --all --json` → `ok: true` (4 tenants: `estudio-flow`, `marca-salao`, `meu-salao`, `multitrack-hub`; `errors: []`).
+- `python tools/factory_cli.py list --json` → `ok: true`, `totalTenants: 4`, `totalCampaigns: 8`.
+- `python tools/publish_pack.py --all --json` → 8 pacotes auditados, todos `autoPublish: false`, `guardrailsAudited: true`, `guardrailStatus` `srt/narration: ok`, `sha256_disk_ok: true` (0 violações).
+- Suíte funcional consolidada (**12 módulos**, incluindo o novo `test_08`): **86/86 testes aprovados em `111.456s` (`OK`, exit 0)** (`test_tenant_contracts`, `test_preset_runner`, `test_factory_cli`, `test_ns002_pilot`, `test_srt_validate`, `test_build_video`, `test_r002_pilot`, `test_delivery_verify`, `test_campaign_proof`, `test_audio_tts`, `test_publish_pack`, `test_devlog_sync`).
+- **Nota:** o `python -m unittest discover -s tools/tests` (usado no CI com `REQUIRE_RENDER=1`, após build da ponte TypeScript) inclui ainda as suítes de estúdio/e2e (`test_studio_*`, `test_recording_cuts`, `test_multi_format`, `test_video_studio`, `test_campaign_studio_e2e`, `test_studio_astryx_frontend`), mais pesadas (servidor HTTP + render por teste); a suíte funcional de 86 é o gate consolidado "Etapas 2 e 3" do workflow `local-render-validation.yml`.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
