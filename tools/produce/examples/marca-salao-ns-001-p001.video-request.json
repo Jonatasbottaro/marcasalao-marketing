@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-001-p001",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-001 — Organização e visibilidade da agenda — Reels",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "marca-salao-ns-001-p001-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 46,
+      "marginTop": 180,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "cena-01-hook",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-01-hook.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-02-situacao",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-02-situacao.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-03-visoes",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-03-visoes.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-04-filtros",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-04-filtros.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-05-detalhes",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-05-detalhes.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-06-acao",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-06-acao.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-07-cta",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-07-cta.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "durationMs": 4000,
+      "mediaId": "cena-01-hook",
+      "caption": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+      "narration": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+      "title": "Clareza da agenda",
+      "narrativeFunction": "hook",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-02-situacao",
+      "durationMs": 6000,
+      "mediaId": "cena-02-situacao",
+      "caption": "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia.",
+      "narration": "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento.",
+      "title": "Informação espalhada",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-03-visoes",
+      "durationMs": 6000,
+      "mediaId": "cena-03-visoes",
+      "caption": "O mesmo registro, visto por dia, semana ou mês.",
+      "narration": "Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês.",
+      "title": "Visões da agenda",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-04-filtros",
+      "durationMs": 6000,
+      "mediaId": "cena-04-filtros",
+      "caption": "Filtrar por profissional, por status, ou buscar pelo nome.",
+      "narration": "Dá para filtrar por profissional, por status, ou buscar o nome de um cliente.",
+      "title": "Filtros e busca",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-05-detalhes",
+      "durationMs": 4000,
+      "mediaId": "cena-05-detalhes",
+      "caption": "Abrir um atendimento e ver os dados dele.",
+      "narration": "Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status.",
+      "title": "Detalhes do atendimento",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-06-acao",
+      "durationMs": 2000,
+      "mediaId": "cena-06-acao",
+      "caption": "Atualizar o status do atendimento.",
+      "narration": "Quando a gestão confirma o atendimento, o status fica registrado na agenda.",
+      "title": "Confirmação de status",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none"
+    },
+    {
+      "id": "cena-07-cta",
+      "durationMs": 2000,
+      "mediaId": "cena-07-cta",
+      "caption": "Conheça a agenda do Marca Salão.",
+      "narration": "Conheça a agenda do Marca Salão.",
+      "title": "Conheça a agenda do Marca Salão.",
+      "narrativeFunction": "cta",
+      "motionIntent": "none"
+    }
+  ]
+}

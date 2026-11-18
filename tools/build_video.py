@@ -34,7 +34,7 @@ def get_ffprobe():
 
 def run_cmd(cmd_list):
     print("Executing:", " ".join(cmd_list))
-    res = subprocess.run(cmd_list, capture_output=True, text=True)
+    res = subprocess.run(cmd_list, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if res.returncode != 0:
         print("FFmpeg Error:\n", res.stderr)
         return False
@@ -114,7 +114,7 @@ def probe_media(path, timeout=None):
     try:
         res = subprocess.run(
             [ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
         )
     except subprocess.TimeoutExpired:
         raise DeliveryError(f"ffprobe excedeu o tempo limite ao inspecionar: {os.path.basename(str(path))}")

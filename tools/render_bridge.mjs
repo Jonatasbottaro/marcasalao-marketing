@@ -40,6 +40,13 @@ import {
 import { validateTextOverlayPlan } from '../platform/dist/src/validate-text-overlay-plan.js'
 import { validateVisualStyle } from '../platform/dist/src/validate-visual-style.js'
 
+function emitJsonAndExit(payload, exitCode) {
+    process.exitCode = exitCode
+    process.stdout.write(JSON.stringify(payload) + '\n', () => {
+        process.exit(exitCode)
+    })
+}
+
 function buildPlan(caseId, pkg, configCheck) {
     const output = pkg.output
     const beats = pkg.timeline.map((step) => step.beatId)
@@ -111,15 +118,14 @@ function handleCasePipeline(args) {
     const creation = createCreativeExecutionPackageFromCase(casePath, path.resolve(rootDir))
     if (creation.status !== 'generated' || !creation.package) {
         const failureCode = creation.failureCode || (creation.status === 'case-invalid' ? 'CASE_INVALID' : 'GENERATION_FAILED')
-        console.log(JSON.stringify({
+        return emitJsonAndExit({
             ok: false,
             status: creation.status,
             caseId: creation.caseId,
             failureCode,
             packageErrors: creation.packageErrors,
             summary: creation.summary,
-        }))
-        process.exit(3)
+        }, 3)
     }
 
     const pkg = creation.package
@@ -142,15 +148,14 @@ function handleCasePipeline(args) {
 
         const overlayValidation = validateTextOverlayPlan(pkg, creation.caseId, textOverlaysInput)
         if (!overlayValidation.ok) {
-            console.log(JSON.stringify({
+            return emitJsonAndExit({
                 ok: false,
                 caseId: creation.caseId,
                 packageId: pkg.packageId,
                 failureCode: overlayValidation.failureCode,
                 subject: overlayValidation.subject,
                 plan,
-            }))
-            process.exit(3)
+            }, 3)
         }
 
         textOverlayPlan = overlayValidation.plan
@@ -173,15 +178,14 @@ function handleCasePipeline(args) {
 
         const styleValidation = validateVisualStyle(visualStyleInput)
         if (!styleValidation.ok) {
-            console.log(JSON.stringify({
+            return emitJsonAndExit({
                 ok: false,
                 caseId: creation.caseId,
                 packageId: pkg.packageId,
                 failureCode: styleValidation.failureCode,
                 subject: styleValidation.subject,
                 plan,
-            }))
-            process.exit(3)
+            }, 3)
         }
 
         visualStyle = styleValidation.style
@@ -207,15 +211,14 @@ function handleCasePipeline(args) {
 
         const manifestValidation = validateAssetManifest(pkg, creation.caseId, assetManifestInput)
         if (!manifestValidation.ok) {
-            console.log(JSON.stringify({
+            return emitJsonAndExit({
                 ok: false,
                 caseId: creation.caseId,
                 packageId: pkg.packageId,
                 failureCode: manifestValidation.failureCode,
                 subject: manifestValidation.subject,
                 plan,
-            }))
-            process.exit(3)
+            }, 3)
         }
 
         assetManifest = manifestValidation.manifest
@@ -233,7 +236,7 @@ function handleCasePipeline(args) {
     }
 
     if (planOnly || !assetsPath) {
-        console.log(JSON.stringify({
+        return emitJsonAndExit({
             ok: true,
             status: 'generated',
             caseId: creation.caseId,
@@ -250,8 +253,7 @@ function handleCasePipeline(args) {
             resolvedAssetBindings,
             association: manifestAssociation,
             plan,
-        }))
-        process.exit(0)
+        }, 0)
     }
 
     let associationInput
@@ -264,18 +266,17 @@ function handleCasePipeline(args) {
 
     const validation = validateLocalRenderInput(pkg, associationInput)
     if (!validation.ok) {
-        console.log(JSON.stringify({
+        return emitJsonAndExit({
             ok: false,
             caseId: creation.caseId,
             packageId: pkg.packageId,
             failureCode: validation.failureCode,
             subject: validation.subject,
             plan,
-        }))
-        process.exit(3)
+        }, 3)
     }
 
-    console.log(JSON.stringify({
+    return emitJsonAndExit({
         ok: true,
         status: 'generated',
         caseId: creation.caseId,
@@ -292,8 +293,7 @@ function handleCasePipeline(args) {
         resolvedAssetBindings: [],
         association: validation.association,
         plan,
-    }))
-    process.exit(0)
+    }, 0)
 }
 
 function handleLegacy(packagePath, associationPath) {
@@ -308,8 +308,7 @@ function handleLegacy(packagePath, associationPath) {
     }
 
     const result = validateLocalRenderInput(packageInput, associationInput)
-    console.log(JSON.stringify(result))
-    process.exit(result.ok ? 0 : 3)
+    return emitJsonAndExit(result, result.ok ? 0 : 3)
 }
 
 function handleVideoRequest(args) {
@@ -350,8 +349,7 @@ function handleVideoRequest(args) {
     }
 
     if (typeof requestInput !== 'object' || requestInput === null || typeof requestInput.project !== 'string') {
-        console.log(JSON.stringify({ ok: false, failureCode: 'VIDEO_REQUEST_INVALID', subject: 'project' }))
-        process.exit(3)
+        return emitJsonAndExit({ ok: false, failureCode: 'VIDEO_REQUEST_INVALID', subject: 'project' }, 3)
     }
 
     const projectPath = path.resolve(rootDir, requestInput.project)
@@ -400,8 +398,7 @@ function handleVideoRequest(args) {
             }
         }
     }
-    console.log(JSON.stringify(result))
-    process.exit(result.ok ? 0 : 3)
+    return emitJsonAndExit(result, result.ok ? 0 : 3)
 }
 
 function handleCarouselRequest(args) {
@@ -425,8 +422,7 @@ function handleCarouselRequest(args) {
     try { requestInput = JSON.parse(readFileSync(requestPath, 'utf8')) }
     catch { console.error('erro: pedido de carrossel ilegivel ou JSON invalido'); process.exit(2) }
     if (typeof requestInput !== 'object' || requestInput === null || typeof requestInput.project !== 'string') {
-        console.log(JSON.stringify({ ok: false, failureCode: 'CAROUSEL_REQUEST_INVALID', subject: 'project' }))
-        process.exit(3)
+        return emitJsonAndExit({ ok: false, failureCode: 'CAROUSEL_REQUEST_INVALID', subject: 'project' }, 3)
     }
     let projectInput
     try { projectInput = JSON.parse(readFileSync(path.resolve(rootDir, requestInput.project), 'utf8')) }
@@ -434,33 +430,29 @@ function handleCarouselRequest(args) {
 
     const validation = validateCarouselRequest(requestInput)
     if (!validation.ok) {
-        console.log(JSON.stringify({ ok: false, failureCode: validation.failureCode, subject: validation.subject }))
-        process.exit(3)
+        return emitJsonAndExit({ ok: false, failureCode: validation.failureCode, subject: validation.subject }, 3)
     }
     const request = validation.request
     const profileId = profileOverride || request.profile || 'instagram-feed-image-square'
     const resolution = resolveOutputPlan(projectInput, profileId)
     if (resolution.plan === null) {
-        console.log(JSON.stringify({
+        return emitJsonAndExit({
             ok: false, requestId: request.id, profileId,
             failureCode: resolution.report.errors[0]?.code ?? 'OUTPUT_PLAN_INVALID',
             errors: resolution.report.errors,
-        }))
-        process.exit(3)
+        }, 3)
     }
     if (resolution.plan.mediaKind !== 'image') {
-        console.log(JSON.stringify({ ok: false, requestId: request.id, profileId, failureCode: 'CAROUSEL_PROFILE_NOT_IMAGE' }))
-        process.exit(3)
+        return emitJsonAndExit({ ok: false, requestId: request.id, profileId, failureCode: 'CAROUSEL_PROFILE_NOT_IMAGE' }, 3)
     }
     const carouselProfile = findOutputProfile(profileId)
     const carouselCap = carouselProfile ? localExportCapabilities(carouselProfile).carousel : null
     if (!carouselCap || !carouselCap.supported) {
-        console.log(JSON.stringify({
+        return emitJsonAndExit({
             ok: false, requestId: request.id, profileId,
             failureCode: 'CAROUSEL_LOCAL_UNSUPPORTED_GEOMETRY',
             errors: [{ code: 'CAROUSEL_LOCAL_UNSUPPORTED_GEOMETRY', path: profileId, message: 'Geometria sem render local de carrossel nesta rodada (suportados: 1:1 1080x1080 e 4:5 1080x1350).' }],
-        }))
-        process.exit(3)
+        }, 3)
     }
     const mediaById = new Map(request.media.map((m) => [m.id, m]))
     const cards = request.cards.map((card, index) => ({
@@ -471,15 +463,14 @@ function handleCarouselRequest(args) {
         mediaId: card.mediaId ?? null,
         mediaPath: card.mediaId ? mediaById.get(card.mediaId).path : null,
     }))
-    console.log(JSON.stringify({
+    return emitJsonAndExit({
         ok: true,
         requestId: request.id,
         profileId,
         geometry: resolution.plan.image,
         cards,
         warnings: resolution.report.warnings,
-    }))
-    process.exit(0)
+    }, 0)
 }
 
 function handlePlanningSuggestion(args) {
@@ -509,8 +500,7 @@ function handlePlanningSuggestion(args) {
     }
 
     const result = validatePlanningSuggestion(suggestionInput, projectInput)
-    console.log(JSON.stringify(result))
-    process.exit(result.ok ? 0 : 3)
+    return emitJsonAndExit(result, result.ok ? 0 : 3)
 }
 
 function handleVisualContract(args, flag, validator, resultKey, label) {
@@ -531,16 +521,14 @@ function handleVisualContract(args, flag, validator, resultKey, label) {
 
     const result = validator(docInput)
     if (result.ok) {
-        console.log(JSON.stringify({ ok: true, [resultKey]: result[resultKey] }))
-        process.exit(0)
+        return emitJsonAndExit({ ok: true, [resultKey]: result[resultKey] }, 0)
     }
-    console.log(JSON.stringify({
+    return emitJsonAndExit({
         ok: false,
         failureCode: result.failureCode,
         subject: result.subject,
         message: `${label} fora do contrato v1 (${result.failureCode}).`,
-    }))
-    process.exit(3)
+    }, 3)
 }
 
 const rawArgs = process.argv.slice(2)

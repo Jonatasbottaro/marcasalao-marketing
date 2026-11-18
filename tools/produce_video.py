@@ -76,6 +76,7 @@ def run_bridge_video_request(root, input_path, profile=None, motion_plan_path=No
         cmd.extend(['--motion-plan', motion_plan_path])
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
+                             encoding='utf-8', errors='replace',
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError('ponte de compilacao excedeu o tempo limite')
@@ -556,6 +557,12 @@ def acquire_export_lock(output_dir, timeout=300):
 
 
 def main(argv=None):
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, 'reconfigure'):
+            try:
+                _stream.reconfigure(encoding='utf-8', errors='replace')
+            except Exception:
+                pass
     parser = argparse.ArgumentParser(description='Producao de video por entrada unica (VideoRequest v1)')
     parser.add_argument('--input', required=True, help='Pedido de video (*.video-request.json)')
     parser.add_argument('--plan-only', action='store_true', help='Apenas compila e exibe a previa, sem render nem gravacao')

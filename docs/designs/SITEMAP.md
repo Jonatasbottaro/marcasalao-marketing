@@ -6,6 +6,7 @@
 
 - [`README.md`](README.md): finalidade do diretório e separação entre documentos aprovados e artefatos temporários.
 - [`GUIA-EGM.md`](GUIA-EGM.md): proveniência, arquitetura instalada, roteamento multi-harness e verificação offline do EGM.
+- [`RODADA-NOTURNA-FLUXO-CAMPANHA-STUDIO.md`](RODADA-NOTURNA-FLUXO-CAMPANHA-STUDIO.md): especificação arquitetural aprovada para o fluxo integrado de provas de campanha (`campaign_proof.py`), abertura genérica no Video Studio, pacote ZIP e backup/restauração.
 
 ## Referências arquiteturais e de planejamento existentes
 

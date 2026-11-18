@@ -187,6 +187,27 @@ def _make_args(command: str, **kwargs):
     return ns
 
 
+def _copy_repo_subdirs(worktree: str, target_ws: str) -> None:
+    """Copia tools/ e platform/ para workspace isolado suportando caminhos longos no Windows."""
+    for sub in ('tools', 'platform'):
+        src = render_local.fs_path(os.path.join(worktree, sub), force=True)
+        dst = render_local.fs_path(os.path.join(target_ws, sub), force=True)
+        ignore_fn = (
+            shutil.ignore_patterns('node_modules', '__pycache__')
+            if sub == 'tools'
+            else shutil.ignore_patterns('__pycache__')
+        )
+        shutil.copytree(
+            src,
+            dst,
+            ignore=ignore_fn,
+            copy_function=lambda s, d: shutil.copy2(
+                render_local.fs_path(s, force=True),
+                render_local.fs_path(d, force=True),
+            ),
+        )
+
+
 # ---------------------------------------------------------------------------
 # Classe base para isolamento de workspace
 # ---------------------------------------------------------------------------
@@ -200,7 +221,7 @@ class _WorkspaceTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self._patcher.stop()
-        shutil.rmtree(self.ws, ignore_errors=True)
+        shutil.rmtree(render_local.fs_path(self.ws, force=True), ignore_errors=True)
 
     def _zip_path(self, name: str = 'backup.zip') -> str:
         p = os.path.join(self.ws, '.workspace', 'tmp', name)
@@ -245,7 +266,7 @@ class TestBackupRoundTrip(_WorkspaceTest):
                     f'Hash deve coincidir: {rel}',
                 )
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 class TestReviewStateExcluded(_WorkspaceTest):
@@ -282,7 +303,7 @@ class TestReviewStateExcluded(_WorkspaceTest):
             restored_review = os.path.join(ws2, '.workspace', 'studio', 'works', work_id, 'review-state.json')
             self.assertFalse(os.path.exists(restored_review), 'review-state.json nao deve ser restaurado')
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 class TestSharedMediaAndProjectDependencies(_WorkspaceTest):
@@ -354,7 +375,7 @@ class TestSharedMediaAndProjectDependencies(_WorkspaceTest):
             self.assertEqual(rc_rest, 0)
 
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 class TestRestrictedPackageEntries(_WorkspaceTest):
@@ -429,7 +450,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             self.assertEqual(rc, 1, 'Restore deve recusar diretorio existente')
             self.assertEqual(len(os.listdir(occupied_dir)), 0)
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
     def test_refuse_destination_created_during_staging(self) -> None:
         """TOCTOU: se o diretorio de destino (mesmo vazio) for criado durante o staging, restore cancela."""
@@ -474,7 +495,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             ]
             self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
     def test_publish_work_directory_refuses_empty_destination(self) -> None:
         """Operacao de publicacao recusa destino vazio ja existente, preservando-o intacto."""
@@ -652,7 +673,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             ]
             self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
     def test_restore_cli_refuses_clean_destination_when_renameat2_unavailable(self) -> None:
         """CLI: mesmo com destino livre, restore aborta se renameat2 for indisponivel, sem chamar rename e limpando staging."""
@@ -693,7 +714,7 @@ class TestRestoreDestinationAlreadyExists(_WorkspaceTest):
             ]
             self.assertEqual(len(staging_leftovers), 0, 'Staging deve ter sido limpo no finally')
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 class TestRestoreFailureInjection(_WorkspaceTest):
@@ -750,7 +771,7 @@ class TestRestoreFailureInjection(_WorkspaceTest):
             self.assertEqual(pre_doc['id'], 'trabalho-preexistente')
 
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 class TestRestoreTamperedZipFile(_WorkspaceTest):
@@ -786,7 +807,7 @@ class TestRestoreTamperedZipFile(_WorkspaceTest):
             dest_work_dir = os.path.join(ws2, '.workspace', 'studio', 'works', work_id)
             self.assertFalse(os.path.exists(dest_work_dir))
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
             if os.path.exists(tampered_path):
                 os.remove(tampered_path)
 
@@ -1135,10 +1156,7 @@ class TestTwoWorkspaceAcceptanceAndPreflight(_WorkspaceTest):
         render_local.ensure_video_tools(main_root)
 
         # Preparar ferramentas em ws1
-        for sub in ('tools', 'platform'):
-            src = os.path.join(worktree, sub)
-            dst = os.path.join(self.ws, sub)
-            shutil.copytree(src, dst)
+        _copy_repo_subdirs(worktree, self.ws)
 
         studio1 = video_studio.Studio(self.ws, port=0, auto_start_queue=False)
         work_id = 'aceite-prod-ready'
@@ -1241,8 +1259,7 @@ class TestTwoWorkspaceAcceptanceAndPreflight(_WorkspaceTest):
         # 4. Configurar segundo workspace (ws2)
         ws2 = tempfile.mkdtemp(dir=self.base_tmp, prefix='ws2-accept-')
         try:
-            for sub in ('tools', 'platform'):
-                shutil.copytree(os.path.join(worktree, sub), os.path.join(ws2, sub))
+            _copy_repo_subdirs(worktree, ws2)
 
             # Copiar ProjectManifest para ws2 (dependencia declarada)
             proj_abs1 = os.path.join(self.ws, project_rel.replace('/', os.sep))
@@ -1303,7 +1320,7 @@ class TestTwoWorkspaceAcceptanceAndPreflight(_WorkspaceTest):
                 studio2.close()
 
         finally:
-            shutil.rmtree(ws2, ignore_errors=True)
+            shutil.rmtree(render_local.fs_path(ws2, force=True), ignore_errors=True)
 
 
 if __name__ == '__main__':

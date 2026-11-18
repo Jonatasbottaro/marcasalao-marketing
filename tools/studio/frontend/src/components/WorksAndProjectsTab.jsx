@@ -70,6 +70,7 @@ export function WorksAndProjectsTab() {
   const [projectsError, setProjectsError] = useState('');
 
   const [profiles, setProfiles] = useState([]);
+  const [videoExamples, setVideoExamples] = useState([]);
   const [selectedWorks, setSelectedWorks] = useState(() => new Set());
 
   // Demonstracao guiada e prontidao
@@ -143,11 +144,21 @@ export function WorksAndProjectsTab() {
     }
   }, []);
 
+  const loadExamples = useCallback(async () => {
+    try {
+      const data = await apiGet('/api/examples');
+      setVideoExamples((data.examples || []).filter((ex) => ex.kind === 'video'));
+    } catch {
+      // listagem de exemplos opcional
+    }
+  }, []);
+
   useEffect(() => {
     loadWorks();
     loadProjects();
     loadProfiles();
-  }, [loadWorks, loadProjects, loadProfiles]);
+    loadExamples();
+  }, [loadWorks, loadProjects, loadProfiles, loadExamples]);
 
   useEffect(() => {
     window.__studioAstryxRefresh = () => {
@@ -588,6 +599,14 @@ export function WorksAndProjectsTab() {
                   <option value="marca-salao">Modelo fictício Marca Salão (3 módulos prontos)</option>
                   <option value="multitrack-hub">Modelo fictício Multitrack Hub (3 módulos prontos)</option>
                   <option value="blank">Trabalho em branco com estrutura e mídia inicial</option>
+                  {videoExamples.map((ex) => {
+                    const exId = ex.request?.id || ex.name;
+                    return (
+                      <option key={ex.path} value={`example:${exId}`}>
+                        Pedido exemplo: {exId} — {ex.request?.title || ex.name}
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
             </div>

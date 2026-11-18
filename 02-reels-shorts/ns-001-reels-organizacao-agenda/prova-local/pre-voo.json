@@ -1,0 +1,640 @@
+{
+  "status": "preview",
+  "requestId": "marca-salao-ns-001-p001",
+  "media": [
+    {
+      "id": "cena-01-hook",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-01-hook.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-02-situacao",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-02-situacao.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-03-visoes",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-03-visoes.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-04-filtros",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-04-filtros.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-05-detalhes",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-05-detalhes.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-06-acao",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-06-acao.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    },
+    {
+      "id": "cena-07-cta",
+      "path": ".workspace/tmp/ns-001-p001/assets/cena-07-cta.png",
+      "type": "image",
+      "origin": "synthetic-demo",
+      "license": "owned-synthetic"
+    }
+  ],
+  "profiles": [
+    {
+      "profileId": "instagram-reels-video",
+      "caseId": "marca-salao-ns-001-p001-instagram-reels-video",
+      "status": "compiled",
+      "failureCode": null,
+      "errors": [],
+      "geometry": {
+        "width": 1080,
+        "height": 1920,
+        "aspectRatio": "9:16"
+      },
+      "fps": 30,
+      "durationMs": 30000,
+      "durationSeconds": 30,
+      "beats": [
+        {
+          "beatId": "cena-01-hook",
+          "order": 1,
+          "startMs": 0,
+          "endMs": 4000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-01-hook",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-01-hook.png",
+          "caption": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "narration": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "title": "Clareza da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-02-situacao",
+          "order": 2,
+          "startMs": 4000,
+          "endMs": 10000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-02-situacao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-02-situacao.png",
+          "caption": "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia.",
+          "narration": "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento.",
+          "title": "Informação espalhada",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-03-visoes",
+          "order": 3,
+          "startMs": 10000,
+          "endMs": 16000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-03-visoes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-03-visoes.png",
+          "caption": "O mesmo registro, visto por dia, semana ou mês.",
+          "narration": "Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês.",
+          "title": "Visões da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-04-filtros",
+          "order": 4,
+          "startMs": 16000,
+          "endMs": 22000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-04-filtros",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-04-filtros.png",
+          "caption": "Filtrar por profissional, por status, ou buscar pelo nome.",
+          "narration": "Dá para filtrar por profissional, por status, ou buscar o nome de um cliente.",
+          "title": "Filtros e busca",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-05-detalhes",
+          "order": 5,
+          "startMs": 22000,
+          "endMs": 26000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-05-detalhes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-05-detalhes.png",
+          "caption": "Abrir um atendimento e ver os dados dele.",
+          "narration": "Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status.",
+          "title": "Detalhes do atendimento",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-06-acao",
+          "order": 6,
+          "startMs": 26000,
+          "endMs": 28000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-06-acao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-06-acao.png",
+          "caption": "Atualizar o status do atendimento.",
+          "narration": "Quando a gestão confirma o atendimento, o status fica registrado na agenda.",
+          "title": "Confirmação de status",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-07-cta",
+          "order": 7,
+          "startMs": 28000,
+          "endMs": 30000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-07-cta",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-07-cta.png",
+          "caption": "Conheça a agenda do Marca Salão.",
+          "narration": "Conheça a agenda do Marca Salão.",
+          "title": "Conheça a agenda do Marca Salão.",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        }
+      ],
+      "supported": true,
+      "warnings": [
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-IG-09\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "COMPOSITION_RENDERER_UNDECIDED",
+          "path": "renderer.adapter",
+          "message": "renderer.adapter is \"undecided\": no renderer is adopted by this composition yet."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-IG-09\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-IG-09\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        }
+      ],
+      "motion": null
+    },
+    {
+      "profileId": "facebook-reels-video",
+      "caseId": "marca-salao-ns-001-p001-facebook-reels-video",
+      "status": "compiled",
+      "failureCode": null,
+      "errors": [],
+      "geometry": {
+        "width": 1080,
+        "height": 1920,
+        "aspectRatio": "9:16"
+      },
+      "fps": 30,
+      "durationMs": 30000,
+      "durationSeconds": 30,
+      "beats": [
+        {
+          "beatId": "cena-01-hook",
+          "order": 1,
+          "startMs": 0,
+          "endMs": 4000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-01-hook",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-01-hook.png",
+          "caption": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "narration": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "title": "Clareza da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-02-situacao",
+          "order": 2,
+          "startMs": 4000,
+          "endMs": 10000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-02-situacao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-02-situacao.png",
+          "caption": "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia.",
+          "narration": "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento.",
+          "title": "Informação espalhada",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-03-visoes",
+          "order": 3,
+          "startMs": 10000,
+          "endMs": 16000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-03-visoes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-03-visoes.png",
+          "caption": "O mesmo registro, visto por dia, semana ou mês.",
+          "narration": "Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês.",
+          "title": "Visões da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-04-filtros",
+          "order": 4,
+          "startMs": 16000,
+          "endMs": 22000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-04-filtros",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-04-filtros.png",
+          "caption": "Filtrar por profissional, por status, ou buscar pelo nome.",
+          "narration": "Dá para filtrar por profissional, por status, ou buscar o nome de um cliente.",
+          "title": "Filtros e busca",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-05-detalhes",
+          "order": 5,
+          "startMs": 22000,
+          "endMs": 26000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-05-detalhes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-05-detalhes.png",
+          "caption": "Abrir um atendimento e ver os dados dele.",
+          "narration": "Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status.",
+          "title": "Detalhes do atendimento",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-06-acao",
+          "order": 6,
+          "startMs": 26000,
+          "endMs": 28000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-06-acao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-06-acao.png",
+          "caption": "Atualizar o status do atendimento.",
+          "narration": "Quando a gestão confirma o atendimento, o status fica registrado na agenda.",
+          "title": "Confirmação de status",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-07-cta",
+          "order": 7,
+          "startMs": 28000,
+          "endMs": 30000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-07-cta",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-07-cta.png",
+          "caption": "Conheça a agenda do Marca Salão.",
+          "narration": "Conheça a agenda do Marca Salão.",
+          "title": "Conheça a agenda do Marca Salão.",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        }
+      ],
+      "supported": true,
+      "warnings": [
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-06\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-07\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-08\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-09\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "COMPOSITION_RENDERER_UNDECIDED",
+          "path": "renderer.adapter",
+          "message": "renderer.adapter is \"undecided\": no renderer is adopted by this composition yet."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-06\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-07\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-08\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-09\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-FB-06\" (@api-publishing) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        }
+      ],
+      "motion": null
+    },
+    {
+      "profileId": "youtube-shorts",
+      "caseId": "marca-salao-ns-001-p001-youtube-shorts",
+      "status": "compiled",
+      "failureCode": null,
+      "errors": [],
+      "geometry": {
+        "width": 1080,
+        "height": 1920,
+        "aspectRatio": "9:16"
+      },
+      "fps": 30,
+      "durationMs": 30000,
+      "durationSeconds": 30,
+      "beats": [
+        {
+          "beatId": "cena-01-hook",
+          "order": 1,
+          "startMs": 0,
+          "endMs": 4000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-01-hook",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-01-hook.png",
+          "caption": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "narration": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+          "title": "Clareza da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-02-situacao",
+          "order": 2,
+          "startMs": 4000,
+          "endMs": 10000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-02-situacao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-02-situacao.png",
+          "caption": "Quando as informações ficam espalhadas, cada lugar mostra um pedaço do dia.",
+          "narration": "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha, reunir as informações pode tomar tempo no meio do atendimento.",
+          "title": "Informação espalhada",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-03-visoes",
+          "order": 3,
+          "startMs": 10000,
+          "endMs": 16000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-03-visoes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-03-visoes.png",
+          "caption": "O mesmo registro, visto por dia, semana ou mês.",
+          "narration": "Na agenda do painel, o registro é o mesmo: dá para olhar o dia, a semana ou o mês.",
+          "title": "Visões da agenda",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-04-filtros",
+          "order": 4,
+          "startMs": 16000,
+          "endMs": 22000,
+          "durationMs": 6000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-04-filtros",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-04-filtros.png",
+          "caption": "Filtrar por profissional, por status, ou buscar pelo nome.",
+          "narration": "Dá para filtrar por profissional, por status, ou buscar o nome de um cliente.",
+          "title": "Filtros e busca",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-05-detalhes",
+          "order": 5,
+          "startMs": 22000,
+          "endMs": 26000,
+          "durationMs": 4000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-05-detalhes",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-05-detalhes.png",
+          "caption": "Abrir um atendimento e ver os dados dele.",
+          "narration": "Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço, o preço e o status.",
+          "title": "Detalhes do atendimento",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-06-acao",
+          "order": 6,
+          "startMs": 26000,
+          "endMs": 28000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-06-acao",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-06-acao.png",
+          "caption": "Atualizar o status do atendimento.",
+          "narration": "Quando a gestão confirma o atendimento, o status fica registrado na agenda.",
+          "title": "Confirmação de status",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        },
+        {
+          "beatId": "cena-07-cta",
+          "order": 7,
+          "startMs": 28000,
+          "endMs": 30000,
+          "durationMs": 2000,
+          "sourceStartMs": null,
+          "sourceEndMs": null,
+          "mediaId": "cena-07-cta",
+          "mediaPath": ".workspace/tmp/ns-001-p001/assets/cena-07-cta.png",
+          "caption": "Conheça a agenda do Marca Salão.",
+          "narration": "Conheça a agenda do Marca Salão.",
+          "title": "Conheça a agenda do Marca Salão.",
+          "framing": {
+            "mode": "fit",
+            "centerX": 0.5,
+            "centerY": 0.5,
+            "zoomPercent": 100
+          }
+        }
+      ],
+      "supported": true,
+      "warnings": [
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-YT-01\" (@in-app, @studio-upload) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-YT-02\" (@in-app, @studio-upload) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "COMPOSITION_RENDERER_UNDECIDED",
+          "path": "renderer.adapter",
+          "message": "renderer.adapter is \"undecided\": no renderer is adopted by this composition yet."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-YT-01\" (@in-app, @studio-upload) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-YT-02\" (@in-app, @studio-upload) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        },
+        {
+          "code": "OUTPUT_PLAN_CONTEXT_NOT_DECLARED",
+          "path": "ruleContext",
+          "message": "Rule \"R-YT-01\" (@in-app, @studio-upload) cannot be assessed because the document declares no context; structural validity does not confirm an official requirement."
+        }
+      ],
+      "motion": null
+    }
+  ]
+}

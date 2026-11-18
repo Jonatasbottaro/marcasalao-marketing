@@ -623,3 +623,24 @@ python -m unittest tools.tests.test_studio_mcp -v
 
 A verificação técnica do pacote ZIP (painel **Revisão & Entrega** e CLI) está
 documentada em [studio-delivery-verification.md](studio-delivery-verification.md).
+
+## Prova reproduzível de campanha e preparação do ambiente
+
+Use `tools/video_studio.py --prepare` para preparar builds locais e mídias
+sintéticas de exemplo mantendo caches e temporários dentro de `.workspace/`,
+e `tools/campaign_proof.py run` para encadear `prepare -> verify -> render -> review`:
+
+```bash
+# Diagnostico e preparacao local (platform, frontend e exemplos)
+python tools/video_studio.py --prepare --check --json
+
+# Prova completa de uma campanha (preserva midias reais sem marcador sintetico)
+python tools/campaign_proof.py run \
+  tools/produce/examples/marca-salao-ns-001-p001.video-request.json \
+  --all-profiles \
+  --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001 \
+  --json
+```
+
+Na UI do Studio (**Trabalhos & Projetos**), qualquer `*.video-request.json` de
+`tools/produce/examples/` aparece dinamicamente em **Modelo inicial** (`example:<id>`).

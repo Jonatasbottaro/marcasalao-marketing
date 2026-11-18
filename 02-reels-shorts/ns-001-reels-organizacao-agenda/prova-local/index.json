@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "requestId": "marca-salao-ns-001-p001",
+  "profileCount": 3,
+  "completedCount": 3,
+  "overallStatus": "completed",
+  "profiles": [
+    {
+      "profileId": "facebook-reels-video",
+      "caseId": "marca-salao-ns-001-p001-facebook-reels-video",
+      "status": "completed",
+      "lastAttempt": {
+        "profileId": "facebook-reels-video",
+        "caseId": "marca-salao-ns-001-p001-facebook-reels-video",
+        "packageId": "execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e",
+        "status": "completed",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-facebook-reels-video-fa3c7484de8c"
+      },
+      "lastValidDelivery": {
+        "profileId": "facebook-reels-video",
+        "caseId": "marca-salao-ns-001-p001-facebook-reels-video",
+        "packageId": "execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-facebook-reels-video-fa3c7484de8c",
+        "status": "completed"
+      },
+      "packageId": "execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e",
+      "outputDir": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video",
+      "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+      "artifacts": {
+        "package": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e.execution-package.json",
+        "video": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-primary-output.mp4",
+        "srt": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-captions.srt",
+        "narration": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-narration-script.txt",
+        "report": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-execution-report.json",
+        "manifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/delivery-manifest.json",
+        "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-text-overlay-plan.json",
+        "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-visual-style.json",
+        "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/facebook-reels-video/execution-v1-65cf185e1eb2ee14915f4d01533d95defdba96ed900aa9be37fa714ab95f725e-asset-manifest.json"
+      },
+      "inspection": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0
+      }
+    },
+    {
+      "profileId": "instagram-reels-video",
+      "caseId": "marca-salao-ns-001-p001-instagram-reels-video",
+      "status": "completed",
+      "lastAttempt": {
+        "profileId": "instagram-reels-video",
+        "caseId": "marca-salao-ns-001-p001-instagram-reels-video",
+        "packageId": "execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f",
+        "status": "completed",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-instagram-reels-video-e8c431d6a673"
+      },
+      "lastValidDelivery": {
+        "profileId": "instagram-reels-video",
+        "caseId": "marca-salao-ns-001-p001-instagram-reels-video",
+        "packageId": "execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-instagram-reels-video-e8c431d6a673",
+        "status": "completed"
+      },
+      "packageId": "execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f",
+      "outputDir": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video",
+      "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+      "artifacts": {
+        "package": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f.execution-package.json",
+        "video": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-primary-output.mp4",
+        "srt": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-captions.srt",
+        "narration": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-narration-script.txt",
+        "report": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-execution-report.json",
+        "manifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/delivery-manifest.json",
+        "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-text-overlay-plan.json",
+        "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-visual-style.json",
+        "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/instagram-reels-video/execution-v1-621e38f4f2f2b37a17e83980192ca7d4433743ad134e443aa3a8b13e0d8cc31f-asset-manifest.json"
+      },
+      "inspection": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0
+      }
+    },
+    {
+      "profileId": "youtube-shorts",
+      "caseId": "marca-salao-ns-001-p001-youtube-shorts",
+      "status": "completed",
+      "lastAttempt": {
+        "profileId": "youtube-shorts",
+        "caseId": "marca-salao-ns-001-p001-youtube-shorts",
+        "packageId": "execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats",
+        "status": "completed",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-youtube-shorts-378e7acd93bf"
+      },
+      "lastValidDelivery": {
+        "profileId": "youtube-shorts",
+        "caseId": "marca-salao-ns-001-p001-youtube-shorts",
+        "packageId": "execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats",
+        "outputDir": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts",
+        "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+        "artifacts": {
+          "package": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats.execution-package.json",
+          "video": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-primary-output.mp4",
+          "srt": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-captions.srt",
+          "narration": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-narration-script.txt",
+          "report": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-execution-report.json",
+          "manifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+          "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-text-overlay-plan.json",
+          "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-visual-style.json",
+          "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-asset-manifest.json"
+        },
+        "inspection": {
+          "videoStreams": 1,
+          "audioStreams": 0,
+          "codec": "h264",
+          "width": 1080,
+          "height": 1920,
+          "fps": 30.0,
+          "pixFmt": "yuv420p",
+          "duration": 30.0
+        },
+        "attemptId": "proof-youtube-shorts-378e7acd93bf",
+        "status": "completed"
+      },
+      "packageId": "execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats",
+      "outputDir": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts",
+      "deliveryManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+      "artifacts": {
+        "package": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats.execution-package.json",
+        "video": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-primary-output.mp4",
+        "srt": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-captions.srt",
+        "narration": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-narration-script.txt",
+        "report": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-execution-report.json",
+        "manifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/delivery-manifest.json",
+        "textOverlayPlan": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-text-overlay-plan.json",
+        "visualStyle": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-visual-style.json",
+        "assetManifest": ".workspace/tmp/prova-export/ns-001-p001/youtube-shorts/execution-marca-salao-marca-salao-ns-001-p001-youtube-shorts-youtube-shorts-marca-salao-ns-001-p001-youtube-shorts-beats-asset-manifest.json"
+      },
+      "inspection": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0
+      }
+    }
+  ]
+}

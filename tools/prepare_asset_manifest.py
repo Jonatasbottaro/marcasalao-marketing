@@ -84,6 +84,7 @@ def run_bridge_prepare(root_real: str, case_abs: str, assets_abs: str | None = N
 
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
+                             encoding='utf-8', errors='replace',
                              timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError('ponte de validacao excedeu o tempo limite')

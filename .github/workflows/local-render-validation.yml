@@ -27,6 +27,8 @@ jobs:
   render-real:
     name: ${{ matrix.os }} · render real
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
     strategy:
       # Um ambiente quebrado nao deve esconder o veredito do outro.
       fail-fast: false
@@ -650,3 +652,18 @@ jobs:
       - name: Prova de entrada MCP de Planejamento (Studio HTTP, cliente MCP de teste sobre stdio)
         run: |
           python tools/ci_studio_mcp_proof.py --port 8810
+
+      - name: Prova de campanha NS-001 e NS-002 (campaign_proof run no perfil primario)
+        run: |
+          mkdir -p .workspace/tmp
+          python tools/campaign_proof.py run tools/produce/examples/marca-salao-ns-001-p001.video-request.json --profile instagram-reels-video --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001 --json > .workspace/tmp/ns001-ci.json
+          python tools/campaign_proof.py run tools/produce/examples/marca-salao-ns-002-p001.video-request.json --profile instagram-reels-video --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-002-p001 --json > .workspace/tmp/ns002-ci.json
+
+      - name: Publicar artefatos da prova de campanha NS-001 / NS-002
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prova-campanha-ns001-ns002-${{ matrix.os }}
+          path: .workspace/archives/prova-campanha-ns001-ns002/
+          if-no-files-found: ignore
+          retention-days: 7
