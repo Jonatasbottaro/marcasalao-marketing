@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "mode": "all",
+  "deliveriesRoot": "02-reels-shorts/deliveries",
+  "totalTenants": 3,
+  "totalCampaigns": 3,
+  "tenants": [
+    "marca-salao",
+    "meu-salao",
+    "multitrack-hub"
+  ],
+  "deliveries": [
+    {
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "monogram": "MS",
+      "campaignSlug": "camp-saas-demo-marca-salao-001",
+      "campaignId": "SAAS-DEMO-MARCA-SALAO-001",
+      "preset": "saas-demo",
+      "configPath": "tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json",
+      "deliveryDir": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001",
+      "manifestPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/manifest.json",
+      "allowAudioTrack": false,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+          "archivePath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+          "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
+          "bytes": 445686
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
+          "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+          "bytes": 496
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt",
+          "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d",
+          "bytes": 906
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+          "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
+          "bytes": 643164
+        }
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "monogram": "MS",
+      "campaignSlug": "camp-saas-demo-meu-salao-001",
+      "campaignId": "SAAS-DEMO-MEU-SALAO-001",
+      "preset": "saas-demo",
+      "configPath": "tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-001.json",
+      "deliveryDir": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001",
+      "manifestPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/manifest.json",
+      "allowAudioTrack": false,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
+          "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
+          "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
+          "bytes": 418019
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt",
+          "sha256": "8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc",
+          "bytes": 492
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001_narracao.txt",
+          "sha256": "304d4a93157f8ef09fc094417f21d657a2c0b0567a8c701b41bc2fa8265d60a7",
+          "bytes": 898
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
+          "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87",
+          "bytes": 620208
+        }
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "monogram": "MH",
+      "campaignSlug": "camp-shorts-completo-multitrack-001",
+      "campaignId": "SHORTS-COMPLETO-MULTITRACK-001",
+      "preset": "shorts-completo",
+      "configPath": "tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json",
+      "deliveryDir": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001",
+      "manifestPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/manifest.json",
+      "allowAudioTrack": true,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+          "archivePath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+          "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+          "bytes": 352348
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
+          "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+          "bytes": 444
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt",
+          "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1",
+          "bytes": 743
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
+          "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
+          "bytes": 479092
+        }
+      }
+    }
+  ]
+}

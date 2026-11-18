@@ -12,10 +12,10 @@
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
 | HEAD main | `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) |
-| Branch de trabalho ativa | `codex/etapa2-agente2-preset-runner` (criada a partir de `codex/etapa2-agente1-arquitetura-tenants`) |
+| Branch de trabalho ativa | `codex/etapa2-agente3-escala-ci` (criada a partir de `codex/etapa2-agente2-preset-runner`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 2 — Agente 2: Motor Genérico Multi-Tenant `tools/preset_runner.py` (Concluída) |
-| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 (Agente 1) e Etapa 2 (Agente 2) concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 2 — Agente 3: Prova de Escala Multi-Tenant, Orquestração em Lote e CI (Concluída — Plataforma Multi-Tenant 100% operacional) |
+| Status das 5 tarefas | Fase 1, Etapa 1 e Etapa 2 (Agentes 1, 2 e 3) concluídas — ver seções 2 e 7 |
 
 ---
 
@@ -424,4 +424,46 @@ FORMAT: nb_streams=2, duration=30.000000
 3. **Guardrails obrigatórios no Agente 3:** antes de qualquer render, validar o tenant via `tenant_validator.load_and_validate_tenant(..., strict=True)` e auditar textos com `tenant_validator.validate_text_against_guardrails(..., check_ui_elements=True)`; nunca passar `--audio` para tenants com `allowAudioTrack: false`.
 4. **Saída:** `<slug>.mp4`, `<slug>.srt`, `<slug>_narracao.txt`, `preview-storyboard.png` e `manifest.json` no `output-dir`; cópia do MP4 em `.workspace/archives/<slug>/`.
 5. **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2` não foram tocadas.
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+### Sessão 2026-11-18 — Etapa 2 (Agente 3): Prova de Escala Multi-Tenant, Orquestrador em Lote e CI
+
+- **Branch de trabalho:** `codex/etapa2-agente3-escala-ci` (criada a partir de `codex/etapa2-agente2-preset-runner`).
+- **Status:** Etapa 2 concluída — Plataforma Multi-Tenant de Vídeo Programático 100% operacional com prova de escala real entre `marca-salao`, `meu-salao` (white-label) e `multitrack-hub`.
+
+#### Entregáveis criados e atualizados
+
+1. **Prova white-label (`tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-001.json`):** campanha de 6 cenas (`30.0s`) no preset `saas-demo`, reutilizando a arquitetura do `marca-salao` com 100% da identidade visual (`MEU SALAO`, paleta esmeralda/azul) e dados próprios da fixture `fixture-editorial-meu-salao.json` (`Patrícia Gomes`, `serv-ms-001`, `prof-ms-001`, `atend-ms-001`, separação `/booking/meu-salao-modelo` vs `/gestor/agenda`).
+2. **Orquestrador em lote (`tools/factory_cli.py`):**
+   - `python tools/factory_cli.py list [--tenant <tenantId>] [--json]` — lista tenants válidos, metadados do `brand-kit.json`, política de áudio e campanhas descobertas em `tenants/<tenantId>/campaigns/*.json`.
+   - `python tools/factory_cli.py render --tenant <tenantId> [--campaign <slug>] [--json]` e `render --all [--json]` — valida contratos com `tenant_validator`, aciona `tools/preset_runner.run_preset_pipeline(...)` (redirecionando logs internos do FFmpeg para `stderr` para preservar saída `--json` limpa), grava pacotes padronizados em `02-reels-shorts/deliveries/<tenantId>/<slug>/` (com cópias `.mp4` em `.workspace/archives/<slug>/`) e consolida o relatório `02-reels-shorts/deliveries/factory-report.json`.
+3. **Suíte de testes da fábrica (`tools/tests/test_factory_cli.py`):** 4 testes cobrindo `list`, `render` filtrado por tenant/campanha com validação real por `ffprobe`, integridade dos artefatos versionados + `factory-report.json` e códigos de saída de erro.
+4. **Guia de onboarding (`docs/guia-novo-nicho.md`):** passo a passo em 5 etapas (<10 min) para cadastrar e renderizar um novo tenant sem alterar código Python ou FFmpeg.
+5. **Integração no CI (`.github/workflows/local-render-validation.yml`):** adicionados os caminhos `schemas/**`, `tenants/**` e `02-reels-shorts/deliveries/**` aos triggers `pull_request`/`push` e o passo `Validar contratos multi-tenant e suites da fabrica (Etapa 2)` executando `python tools/tenant_validator.py --all --json`, `python tools/factory_cli.py list --json` e `unittest` de `test_tenant_contracts.py`, `test_preset_runner.py` e `test_factory_cli.py`.
+
+#### Auditoria comparativa das 3 entregas reais (`render --all --json` + `ffprobe`)
+
+| Tenant | Campanha (`slug`) | Preset | `allowAudioTrack` | Formato / Streams (`ffprobe`) | MP4 local preservado (`.workspace/archives/`) — Bytes & SHA-256 | Artefatos versionados (`02-reels-shorts/deliveries/<tenant>/<slug>/`) — SHA-256 |
+|---|---|---|---|---|---|---|
+| `marca-salao` | `camp-saas-demo-marca-salao-001` | `saas-demo` | `false` (`-an`) | `1080x1920`, `30/1` fps, `h264`, `yuv420p`, `30.000000s`, `nb_streams: 1` (**0 áudio**) | `.workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4` (`445686` bytes, `fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791`) | SRT `2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5` (`496` B); Narração `5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d` (`906` B); Storyboard `b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537` (`643164` B) |
+| `meu-salao` | `camp-saas-demo-meu-salao-001` | `saas-demo` | `false` (`-an`) | `1080x1920`, `30/1` fps, `h264`, `yuv420p`, `30.000000s`, `nb_streams: 1` (**0 áudio**) | `.workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4` (`418019` bytes, `634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3`) | SRT `8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc` (`492` B); Narração `304d4a93157f8ef09fc094417f21d657a2c0b0567a8c701b41bc2fa8265d60a7` (`898` B); Storyboard `dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87` (`620208` B) |
+| `multitrack-hub` | `camp-shorts-completo-multitrack-001` | `shorts-completo` | `true` (`aac`) | `1080x1920`, `30/1` fps, `h264`, `yuv420p`, `30.000000s`, `nb_streams: 2` (**1 áudio `aac` `44100 Hz` `stereo`**) | `.workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4` (`352348` bytes, `39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197`) | SRT `eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582` (`444` B); Narração `71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1` (`743` B); Storyboard `82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf` (`479092` B) |
+
+- **Inspeção visual realizada:** storyboards `preview-storyboard.png` das 3 campanhas confirmam identidades visuais distintas (`MARCA SALAO` amarelo/azul, `MEU SALAO` esmeralda/azul, `MULTITRACK HUB` ciano/roxo), legendas queimadas legíveis e separação de superfícies preservada.
+
+#### Validações e testes executados após o último ajuste de código (`tools/factory_cli.py`)
+
+- `python tools/tenant_validator.py --all --json` → `ok: true` nos 3 tenants (`marca-salao`, `meu-salao`, `multitrack-hub`).
+- `python tools/factory_cli.py list --json` → `ok: true`, `totalTenants: 3`, `totalCampaigns: 3`.
+- Suíte de fábrica (`test_factory_cli.py`): **4/4 aprovados em 13,260 s (`OK`)**.
+- Suíte consolidada completa (9 módulos — 61 testes anteriores + 4 novos de `test_factory_cli.py`): **65/65 aprovados em 88,581 s (`OK`)**:
+  - `test_tenant_contracts.py` (7) + `test_preset_runner.py` (7) + `test_factory_cli.py` (4) + `test_ns002_pilot.py` (5) + `test_srt_validate.py` (10) + `test_build_video.py` (6) + `test_r002_pilot.py` (5) + `test_delivery_verify.py` (16) + `test_campaign_proof.py` (5).
+- Retrocompatibilidade intacta: `tools/ns002_pilot.py`, `tools/r002/agenda-ficticia.pilot.json`, `docs/fixtures/fixture-editorial-marca-salao.json`, `02-reels-shorts/ns002-piloto-01/` e worktrees `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2` preservados sem alteração.
+
+#### Checklist final — Revisão humana, merge e publicação manual
+
+1. **Revisão visual:** inspecionar os storyboards em `02-reels-shorts/deliveries/<tenant>/<slug>/preview-storyboard.png` e assistir localmente os MP4 preservados em `.workspace/archives/<slug>/<slug>.mp4`.
+2. **Locução humana externa (tenants `-an`):** para `marca-salao` e `meu-salao`, utilizar os arquivos `*_narracao.txt` e `*.srt` para gravação externa caso deseje adicionar voz fora da fábrica.
+3. **Revisão de PR e merge para `main`:** abrir/revisar PR consolidando a cadeia `codex/fase1-conformidade-editorial` → `codex/etapa1-piloto-ns002` → `codex/etapa2-agente1-arquitetura-tenants` → `codex/etapa2-agente2-preset-runner` → `codex/etapa2-agente3-escala-ci` na `main` somente após revisão e aprovação do titular.
+4. **Publicação manual:** este fluxo gera entregas prontas e metadados UTM, sem agendar ou publicar automaticamente no Postiz; eventual publicação/rascunho nas redes depende de autorização explícita posterior.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
