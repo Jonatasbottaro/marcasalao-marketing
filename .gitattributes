@@ -4,3 +4,9 @@
 04-legendas/*_narracao.txt text eol=lf
 tools/r002/*.json text eol=lf
 02-reels-shorts/r002-agenda-ficticia/manifest.json text eol=lf
+02-reels-shorts/**/*.srt text eol=lf
+02-reels-shorts/**/*_narracao.txt text eol=lf
+02-reels-shorts/**/*.json text eol=lf
+docs/fixtures/*.json text eol=lf
+schemas/*.json text eol=lf
+tenants/**/*.json text eol=lf

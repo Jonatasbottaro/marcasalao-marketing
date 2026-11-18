@@ -11,11 +11,11 @@
 | Item | Valor |
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
-| HEAD main | `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) |
-| Branch de trabalho ativa | `codex/etapa2-agente3-escala-ci` (criada a partir de `codex/etapa2-agente2-preset-runner`) |
+| HEAD main (base / integração) | Base `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) integrada na `main` via `codex/merge-prep-etapa2` (`--no-ff`, sem push remoto) |
+| Branch de trabalho ativa | `main` (consolidada localmente via `codex/merge-prep-etapa2` a partir de `codex/fase1-conformidade-editorial` → `codex/etapa1-piloto-ns002` → `codex/etapa2-agente1-arquitetura-tenants` → `codex/etapa2-agente2-preset-runner` → `codex/etapa2-agente3-escala-ci`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 2 — Agente 3: Prova de Escala Multi-Tenant, Orquestração em Lote e CI (Concluída — Plataforma Multi-Tenant 100% operacional) |
-| Status das 5 tarefas | Fase 1, Etapa 1 e Etapa 2 (Agentes 1, 2 e 3) concluídas — ver seções 2 e 7 |
+| Fase atual | Release / Merge Local Concluído na `main` — Plataforma Multi-Tenant de Vídeo Programático (Fase 1 + Etapas 1 e 2) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 (Agentes 1, 2 e 3) e Merge Local na `main` concluídos — ver seções 2 e 7 |
 
 ---
 
@@ -466,4 +466,57 @@ FORMAT: nb_streams=2, duration=30.000000
 2. **Locução humana externa (tenants `-an`):** para `marca-salao` e `meu-salao`, utilizar os arquivos `*_narracao.txt` e `*.srt` para gravação externa caso deseje adicionar voz fora da fábrica.
 3. **Revisão de PR e merge para `main`:** abrir/revisar PR consolidando a cadeia `codex/fase1-conformidade-editorial` → `codex/etapa1-piloto-ns002` → `codex/etapa2-agente1-arquitetura-tenants` → `codex/etapa2-agente2-preset-runner` → `codex/etapa2-agente3-escala-ci` na `main` somente após revisão e aprovação do titular.
 4. **Publicação manual:** este fluxo gera entregas prontas e metadados UTM, sem agendar ou publicar automaticamente no Postiz; eventual publicação/rascunho nas redes depende de autorização explícita posterior.
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+### Sessão 2026-11-18 — Consolidação e Merge Seguro na `main` (Fase 1 + Etapas 1 e 2)
+
+- **Branch de preparação:** `codex/merge-prep-etapa2` (criada a partir de `main` em `584f8429442c5236db0dbfea5d0bbeca64ec180a`, com `--no-ff` de `codex/etapa2-agente3-escala-ci` / `fb586c7`).
+- **Status:** Merge validado com zero conflitos, blindagem de EOL (`LF`) aplicada em `.gitattributes` e consolidação local concluída na `main` (sem `git push`, aguardando revisão final do titular).
+
+#### Blindagem de quebra de linha (`LF`) detectada no dry-run
+
+- Na primeira execução pós-merge em `codex/merge-prep-etapa2`, `core.autocrlf = true` no Windows converteu `.srt` e arquivos de pacote fora da cobertura original de `.gitattributes` para CRLF no checkout (`6e71c8ba...`), divergindo dos hashes SHA-256 gravados em LF (`2a1e42bc...`).
+- **Correção aplicada em `.gitattributes`:** adicionadas regras `text eol=lf` para `02-reels-shorts/**/*.srt`, `02-reels-shorts/**/*_narracao.txt`, `02-reels-shorts/**/*.json`, `docs/fixtures/*.json`, `schemas/*.json` e `tenants/**/*.json`, seguidas de restauração do checkout em LF.
+- Com `.gitattributes` atualizado, todos os hashes SHA-256 dos blobs no Git e dos arquivos no disco passaram a coincidir em qualquer estação Windows/Linux.
+
+#### Resumo do diff consolidado (vs. base `584f842`)
+
+- **Diff do conjunto funcional (`584f842..69f12b9`):** `60 files changed, 6558 insertions(+), 23 deletions(-)` (mais `.gitattributes` e esta atualização de `contexto_projeto.md` na consolidação final → `61 files changed`).
+- **Nenhum `.mp4` rastreado no Git:** `git ls-files "*.mp4"` retornou vazio.
+
+#### Validações pós-merge executadas em `codex/merge-prep-etapa2`
+
+- `python tools/tenant_validator.py --all --json` → `ok: true` para `marca-salao`, `meu-salao` e `multitrack-hub`.
+- `python tools/factory_cli.py list --json` → `ok: true`, `totalTenants: 3`, `totalCampaigns: 3`.
+- `python tools/verify_egm_install.py` → `EGM verification OK: 8 skills, 10 agents, 5 standards, manifests and workspace wiring verified.`
+- Suíte consolidada completa (9 módulos): **65/65 testes aprovados em `84.417s` (`OK`)** (`test_tenant_contracts`, `test_preset_runner`, `test_factory_cli`, `test_ns002_pilot`, `test_srt_validate`, `test_build_video`, `test_r002_pilot`, `test_delivery_verify`, `test_campaign_proof`).
+
+#### Integridade de worktrees paralelas e arquivos locais
+
+- **Worktrees preservadas sem alterações:**
+  - `.workspace/worktrees/prova-campanha-conclusao` (`c4fda91b7dfa6e98e38ea286a2fedddfb55dc61a`, `wip/prova-campanha-conclusao-worktree`)
+  - `.workspace/worktrees/studio-package-verify2` (`4f10431713580747c6f69bd7ed3c4be21e07b4bf`, `codex/studio-delivery-package-verification`)
+- **Arquivos `.mp4` preservados em `.workspace/archives/`:**
+  - `.workspace/archives/ns002-piloto-01/ns002-piloto-01.mp4` (`443550` bytes)
+  - `.workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4` (`445686` bytes)
+  - `.workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4` (`418019` bytes)
+  - `.workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4` (`352348` bytes)
+
+#### Resumo pronto para Pull Request / Release Notes
+
+```markdown
+## Release Notes — Content Factory Multi-Tenant (Fase 1 + Etapas 1 e 2)
+
+### O que muda nesta entrega
+- **Conformidade Editorial (Fase 1):** auditoria de marca (`Marca Salão` vs `Meu Salão`), fixture editorial isolada em `docs/fixtures/fixture-editorial-marca-salao.json`, remoção de menções a automações não validadas e guia de rastreamento UTM (`docs/rastreio-utm.md`).
+- **Piloto NS-002 (Etapa 1):** pipeline parametrizado `tools/ns002_pilot.py` + entregas e roteiros em `04-legendas/` e `02-reels-shorts/ns002-piloto-01/` (1080×1920, 30 fps, `-an`).
+- **Plataforma Multi-Tenant (Etapa 2):**
+  - Contratos formais (`schemas/brand-kit.schema.json`, `schemas/guardrails.schema.json`), `tools/tenant_validator.py` e 3 tenants configurados (`marca-salao`, `meu-salao`, `multitrack-hub`).
+  - Motor genérico `tools/preset_runner.py` (`saas-demo` com `-an` e `shorts-completo` com faixa AAC) e orquestrador em lote `tools/factory_cli.py`.
+  - Provas de entrega em `02-reels-shorts/deliveries/`, guia `docs/guia-novo-nicho.md`, validação no workflow `.github/workflows/local-render-validation.yml` e blindagem `eol=lf` em `.gitattributes`.
+
+### Verificação pós-merge
+- `tenant_validator.py --all --json` (`ok: true`), `factory_cli.py list --json` (`3` tenants / `3` campanhas), `verify_egm_install.py` (`OK`) e `65/65` testes aprovados.
+```
+
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
