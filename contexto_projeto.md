@@ -12,10 +12,10 @@
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
 | HEAD main | `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) |
-| Branch de trabalho ativa | `codex/etapa2-agente1-arquitetura-tenants` (criada a partir de `codex/etapa1-piloto-ns002` `da7d565`) |
+| Branch de trabalho ativa | `codex/etapa2-agente2-preset-runner` (criada a partir de `codex/etapa2-agente1-arquitetura-tenants`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 2 — Agente 1: Arquitetura Multi-Tenant e Contratos de Marca (Concluída) |
-| Status das 5 tarefas | Fase 1, Etapa 1 e Etapa 2 (Agente 1) concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 2 — Agente 2: Motor Genérico Multi-Tenant `tools/preset_runner.py` (Concluída) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 (Agente 1) e Etapa 2 (Agente 2) concluídas — ver seções 2 e 7 |
 
 ---
 
@@ -343,4 +343,85 @@ Resultado observado:
    - Respeitar `ctx["guardrails"]["audioPolicy"]`: forçar `-an` e recusar trilha sonora sempre que `allowAudioTrack == False` (`marca-salao` e `meu-salao`), preservando `tools/ns002_pilot.py` e todos os testes existentes sem quebrar retrocompatibilidade.
    - Implementar roteamento por `preset` (`"saas-demo"` reutilizando o layout multi-superfície de `ns002_pilot.py` com parâmetros de `ctx["brandKit"]` + `ctx["fixture"]`, e `"shorts-completo"` para o fluxo de `multitrack-hub`).
 - **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2`.
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+---
+
+### 2026-11-18 — codex/etapa2-agente2-preset-runner (Etapa 2 — Agente 2: Motor Genérico Multi-Tenant)
+
+- **Executor:** Engenheiro de Software Sênior / Arquiteto de Motores de Vídeo Programático
+- **Branch:** `codex/etapa2-agente2-preset-runner` a partir de `codex/etapa2-agente1-arquitetura-tenants`
+- **Raiz:** `D:/MEGA/Marketing/marcasalao-marketing`
+- **Resumo:** Implementação do motor genérico multi-tenant `tools/preset_runner.py` com suporte a presets de vídeo e áudio, interface programática (`run_preset_pipeline(...)`) e CLI completa, respeitando guardrails por tenant, saída transacional padronizada e suíte de testes de renderização real com FFmpeg. Retrocompatibilidade total mantida: `tools/ns002_pilot.py`, `tools/r002/agenda-ficticia.pilot.json`, `02-reels-shorts/ns002-piloto-01/` e todos os 54 testes anteriores seguem funcionando sem quebras.
+
+#### Arquivos criados
+
+| Arquivo | Ação | Finalidade |
+| --- | --- | --- |
+| `tools/preset_runner.py` | Criado | Motor genérico multi-tenant: `run_preset_pipeline(...)` + CLI (`--tenant --config --output-dir [--audio]`), presets `saas-demo` e `shorts-completo`, validação de tenant via `tenant_validator.load_and_validate_tenant(...)`, auditoria de textos via `validate_text_against_guardrails(...)`, força `-an` quando `allowAudioTrack == false`, geração de áudio AAC (`anullsrc` ou arquivo externo via `--audio`) quando permitido, saída atômica (`<slug>.mp4`, `<slug>.srt`, `<slug>_narracao.txt`, `preview-storyboard.png` 2×2, `manifest.json` com SHA-256 + ffprobe) e cópia do MP4 em `.workspace/archives/<slug>/`. |
+| `tools/tests/test_preset_runner.py` | Criado | 7 testes de renderização real com FFmpeg: saas-demo (marca-salao) 0 áudio, shorts-completo (multitrack-hub) 1 áudio AAC, áudio externo mixado, bloqueio de guardrails (frase proibida e `--audio` recusado), integridade de hashes SHA-256 do manifesto e storyboard, retrocompatibilidade dos tenants. |
+| `tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json` | Criado | Config de campanha `saas-demo` para marca-salao (6 cenas, 30s, fluxo público `/booking/marca-salao-modelo` separado do `/gestor/agenda`). |
+| `tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json` | Criado | Config de campanha `shorts-completo` para multitrack-hub (5 cenas, 30s, catálogo de projetos, métricas, rateios, áudio habilitado). |
+| `contexto_projeto.md` | Modificado | Seção 1 (estado atual) e nova entrada na Seção 7 (este registro). |
+
+#### Exemplos de comando CLI
+
+```text
+# saas-demo (marca-salao): vídeo sem áudio (-an), SRT + narração externa .txt
+python tools/preset_runner.py --tenant marca-salao \
+  --config tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json \
+  --output-dir .workspace/tmp/entrega/marca-salao-saas-demo
+
+# shorts-completo (multitrack-hub): áudio limpo gerado automaticamente (anullsrc -> AAC 128k)
+python tools/preset_runner.py --tenant multitrack-hub \
+  --config tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json \
+  --output-dir .workspace/tmp/entrega/multitrack-hub-shorts
+
+# shorts-completo com trilha externa fornecida via --audio
+python tools/preset_runner.py --tenant multitrack-hub \
+  --config tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json \
+  --output-dir .workspace/tmp/entrega/multitrack-hub-audio \
+  --audio .workspace/tmp/trilha-externa.wav
+
+# Uso programático (ponto de entrada para o Agente 3):
+#   from tools import preset_runner
+#   manifest = preset_runner.run_preset_pipeline(
+#       "marca-salao", "tenants/marca-salao/campaigns/...json",
+#       ".workspace/tmp/entrega/...", audio_path=None, root=REPO_ROOT)
+```
+
+#### Resultado literal do ffprobe (comprova a diferença de streams de áudio)
+
+Comando:
+```text
+ffprobe -v error -show_streams -show_format -of json <video.mp4>
+```
+
+`marca-salao` / `saas-demo` (`allowAudioTrack: false`, forçado `-an`):
+```json
+{"index": 0, "codec_type": "video", "codec_name": "h264", "width": 1080, "height": 1920, "avg_frame_rate": "30/1", "pix_fmt": "yuv420p"}
+FORMAT: nb_streams=1, duration=30.000000
+```
+→ **1 stream de vídeo (h264, 1080×1920, 30 fps) e 0 streams de áudio.**
+
+`multitrack-hub` / `shorts-completo` (`allowAudioTrack: true`, áudio automático):
+```json
+{"index": 0, "codec_type": "video", "codec_name": "h264", "width": 1080, "height": 1920, "avg_frame_rate": "30/1", "pix_fmt": "yuv420p"}
+{"index": 1, "codec_type": "audio", "codec_name": "aac"}
+FORMAT: nb_streams=2, duration=30.000000
+```
+→ **1 stream de vídeo (h264, 1080×1920, 30 fps) + 1 stream de áudio (AAC).**
+
+#### Testes executados
+
+- Suíte consolidada completa (54 testes existentes + 7 novos de `test_preset_runner.py`): **61/61 aprovados em 72,5 s (`OK`)**.
+- `test_tenant_contracts.py` (7) + `test_srt_validate.py` (10) + `test_build_video.py` (6) + `test_r002_pilot.py` (5) + `test_ns002_pilot.py` (5) + `test_delivery_verify.py` (16) + `test_campaign_proof.py` (5) + `test_preset_runner.py` (7).
+
+#### Pontos de entrada e instruções para o Agente 3
+
+1. **Geração das campanhas de escala (`meu-salao` e `multitrack-hub`):** chamar `tools/preset_runner.run_preset_pipeline(tenant_id, config_path, output_dir, audio_path=None, root=REPO_ROOT)` para cada config de campanha dos tenants, respeitando `defaultPreset` de cada `brand-kit.json` (`meu-salao` → `saas-demo` com `-an`; `multitrack-hub` → `shorts-completo` com áudio). A criação em lote e a integração nos workflows do GitHub Actions ficam a cargo do Agente 3.
+2. **Interface programática:** `run_preset_pipeline(...)` devolve o `manifest.json` como dicionário; o CLI expõe `--tenant`, `--config`, `--output-dir` e `--audio` (opcional).
+3. **Guardrails obrigatórios no Agente 3:** antes de qualquer render, validar o tenant via `tenant_validator.load_and_validate_tenant(..., strict=True)` e auditar textos com `tenant_validator.validate_text_against_guardrails(..., check_ui_elements=True)`; nunca passar `--audio` para tenants com `allowAudioTrack: false`.
+4. **Saída:** `<slug>.mp4`, `<slug>.srt`, `<slug>_narracao.txt`, `preview-storyboard.png` e `manifest.json` no `output-dir`; cópia do MP4 em `.workspace/archives/<slug>/`.
+5. **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2` não foram tocadas.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
