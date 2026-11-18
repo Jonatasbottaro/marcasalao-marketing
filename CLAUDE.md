@@ -24,3 +24,12 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 - Entregar vídeo legendado + SRT + texto de narração separado, sem gerar áudio.
 
 Consulte `WORKFLOW.md` para o fluxo completo.
+
+## Elephant-Goldfish Model (EGM)
+
+EGM artifact directory: .workspace/tmp/egm
+
+- Pacote canônico do EGM neste repositório: `.agents/plugins/egm/` (skills em `.agents/plugins/egm/skills/egm-*/SKILL.md`, personas em `.agents/plugins/egm/agents/*.md`, padrões em `.agents/plugins/egm/resources/document_standards/*.md` e guias em `.agents/plugins/egm/docs/*.md`).
+- Especificações aprovadas ficam em `docs/designs/`; rascunhos, briefs intermediários e relatórios de revisão Goldfish ficam em `.workspace/tmp/egm/`.
+- Revisões Goldfish exigem subagentes em contexto limpo (sem histórico da conversa principal); nunca simular Goldfish no mesmo contexto.
+- Guia multi-harness e verificação: `docs/designs/GUIA-EGM.md` e `python tools/verify_egm_install.py`.
