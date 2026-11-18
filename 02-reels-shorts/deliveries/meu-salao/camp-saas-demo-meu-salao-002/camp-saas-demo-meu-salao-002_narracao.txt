@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-meu-salao-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:05,000] cena-01-hook
+Veja como a equipe acompanha os atendimentos do dia na agenda do Meu Salão.
+
+[00:00:05,000 --> 00:00:11,000] cena-02-abertura-do-dia
+Na rota /gestor/agenda, o dia da equipe começa com todos os atendimentos reunidos em uma tela.
+
+[00:00:11,000 --> 00:00:17,000] cena-03-equipe
+Cada profissional encontra os próprios atendimentos na agenda do salão.
+
+[00:00:17,000 --> 00:00:23,000] cena-04-status-manual
+Durante o dia, a equipe atualiza o status de cada atendimento manualmente.
+
+[00:00:23,000 --> 00:00:27,000] cena-05-fim-do-dia
+Do primeiro ao último atendimento, a rotina do dia fica registrada na agenda.
+
+[00:00:27,000 --> 00:00:30,000] cena-06-cta
+Conheça a agenda do Meu Salão, meusalao.com.br.

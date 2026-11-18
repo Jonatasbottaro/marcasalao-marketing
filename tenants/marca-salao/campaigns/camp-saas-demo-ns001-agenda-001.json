@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-ns001-agenda-001",
+  "campaignId": "SAAS-DEMO-NS001-AGENDA-001",
+  "tenantId": "marca-salao",
+  "preset": "saas-demo",
+  "baseCaptureRef": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-ns001-agenda-001.mp4",
+    "packageSrtName": "camp-saas-demo-ns001-agenda-001.srt",
+    "packageNarrationName": "camp-saas-demo-ns001-agenda-001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 5.0,
+      "surface": "marca",
+      "badge": "AGENDA DO SALAO",
+      "headline": "VOCE CONSEGUE VISUALIZAR OS AGENDAMENTOS DO SEU SALAO COM CLAREZA?",
+      "subline": "ACOMPANHE O DIA NA AGENDA DO MARCA SALAO",
+      "caption": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+      "narrationText": "Você consegue visualizar os agendamentos do seu salão com clareza? Acompanhe o dia na agenda do Marca Salão."
+    },
+    {
+      "id": "cena-02-visao-do-dia",
+      "kind": "manager-agenda",
+      "start": 5.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "VISAO DO DIA /GESTOR/AGENDA",
+      "headline": "O DIA DO SALAO EM UMA UNICA TELA",
+      "highlightId": "atend-001",
+      "caption": "Todos os atendimentos do dia reunidos na agenda do salão.",
+      "narrationText": "Na rota /gestor/agenda, todos os atendimentos do dia ficam reunidos em uma única tela."
+    },
+    {
+      "id": "cena-03-filtros",
+      "kind": "manager-agenda",
+      "start": 11.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "FILTROS /GESTOR/AGENDA",
+      "headline": "FILTRE POR PROFISSIONAL E STATUS",
+      "highlightId": "atend-003",
+      "caption": "Filtre por profissional ou por status para localizar um atendimento.",
+      "narrationText": "Use os filtros por profissional e por status para localizar um atendimento na agenda."
+    },
+    {
+      "id": "cena-04-status-manual",
+      "kind": "manager-agenda",
+      "start": 17.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "STATUS MANUAL /GESTOR/AGENDA",
+      "headline": "A EQUIPE ACOMPANHA O STATUS",
+      "highlightId": "atend-006",
+      "caption": "A equipe acompanha cada atendimento e atualiza o status manualmente.",
+      "narrationText": "Durante o dia, a equipe acompanha cada atendimento e atualiza o status manualmente."
+    },
+    {
+      "id": "cena-05-busca-cliente",
+      "kind": "manager-agenda",
+      "start": 23.0,
+      "duration": 4.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "DETALHES /GESTOR/AGENDA",
+      "headline": "LOCALIZE PELO NOME DO CLIENTE",
+      "highlightId": "atend-005",
+      "caption": "Na hora da dúvida, localize o atendimento pelo nome do cliente.",
+      "narrationText": "Na hora da dúvida, localize o atendimento pelo nome do cliente na agenda do salão."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 27.0,
+      "duration": 3.0,
+      "surface": "marca",
+      "route": "marcasalao.com.br",
+      "badge": "MARCA SALAO",
+      "headline": "CONHECA A AGENDA DO MARCA SALAO",
+      "subline": "MARCASALAO.COM.BR",
+      "caption": "Conheça a agenda do Marca Salão — marcasalao.com.br",
+      "narrationText": "Conheça a agenda do Marca Salão, marcasalao.com.br."
+    }
+  ]
+}
