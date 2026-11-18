@@ -1,0 +1,17 @@
+Roteiro de narracao - camp-shorts-stems-workflow-003
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:06,000] cena-01-hook
+Cada projeto do Multitrack Hub traz stems Click, Guide e banda separados por instrumento.
+
+[00:00:06,000 --> 00:00:15,000] cena-02-catalogo
+Stems Click, Guide, Drums, Bass e harmonicos prontos para baixar em cada projeto.
+
+[00:00:15,000 --> 00:00:21,000] cena-03-metricas
+Do Click e Guide a banda completa: stems sincronizados por projeto.
+
+[00:00:21,000 --> 00:00:27,000] cena-04-catalogo
+Organize Click, Guide e banda na ordem certa de edicao e mixagem.
+
+[00:00:27,000 --> 00:00:30,000] cena-05-cta
+Conheca os stems disponiveis no site oficial, multitrackhub.com.br.

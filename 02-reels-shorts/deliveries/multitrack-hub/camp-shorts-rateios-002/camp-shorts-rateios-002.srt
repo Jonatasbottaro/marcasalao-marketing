@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:07,000
+Rateios organizados por faixas, cotas e vagas no Multitrack Hub.
+
+2
+00:00:07,000 --> 00:00:15,000
+Cada rateio mostra faixas inclusas, cota por faixa e vagas restantes.
+
+3
+00:00:15,000 --> 00:00:21,000
+Status de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.
+
+4
+00:00:21,000 --> 00:00:27,000
+Pacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.
+
+5
+00:00:27,000 --> 00:00:30,000
+Abra a secao Rateios no site oficial: multitrackhub.com.br/rateios.
