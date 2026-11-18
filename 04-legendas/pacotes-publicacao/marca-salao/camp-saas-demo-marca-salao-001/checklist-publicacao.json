@@ -15,7 +15,7 @@
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
       "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
       "bytes": 445686,
-      "sha256_disk_ok": false
+      "sha256_disk_ok": true
     },
     {
       "kind": "srt",

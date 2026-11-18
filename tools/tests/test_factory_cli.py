@@ -41,10 +41,12 @@ class FactoryCliTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertEqual(payload["totalTenants"], 3)
-        self.assertGreaterEqual(payload["totalCampaigns"], 3)
+        self.assertEqual(payload["totalTenants"], 4)
+        self.assertGreaterEqual(payload["totalCampaigns"], 8)
 
         by_id = {entry["tenantId"]: entry for entry in payload["tenants"]}
+        self.assertEqual(by_id["estudio-flow"]["defaultPreset"], "saas-demo")
+        self.assertFalse(by_id["estudio-flow"]["allowAudioTrack"])
         self.assertEqual(by_id["marca-salao"]["defaultPreset"], "saas-demo")
         self.assertFalse(by_id["marca-salao"]["allowAudioTrack"])
         self.assertEqual(by_id["meu-salao"]["defaultPreset"], "saas-demo")
@@ -53,9 +55,14 @@ class FactoryCliTest(unittest.TestCase):
         self.assertTrue(by_id["multitrack-hub"]["allowAudioTrack"])
 
         for tid, expected_slug in (
+            ("estudio-flow", "camp-saas-demo-estudio-flow-001"),
             ("marca-salao", "camp-saas-demo-marca-salao-001"),
+            ("marca-salao", "camp-saas-demo-ns001-agenda-001"),
             ("meu-salao", "camp-saas-demo-meu-salao-001"),
+            ("meu-salao", "camp-saas-demo-meu-salao-002"),
             ("multitrack-hub", "camp-shorts-completo-multitrack-001"),
+            ("multitrack-hub", "camp-shorts-rateios-002"),
+            ("multitrack-hub", "camp-shorts-stems-workflow-003"),
         ):
             slugs = [c["slug"] for c in by_id[tid]["campaigns"]]
             self.assertIn(expected_slug, slugs)
@@ -108,28 +115,34 @@ class FactoryCliTest(unittest.TestCase):
             report = json.load(handle)
 
         self.assertTrue(report["ok"])
-        self.assertEqual(report["totalTenants"], 3)
-        self.assertEqual(report["totalCampaigns"], 3)
+        self.assertEqual(report["totalTenants"], 4)
+        self.assertEqual(report["totalCampaigns"], 8)
+        self.assertEqual(len(report["deliveries"]), 8)
 
-        by_tenant = {d["tenantId"]: d for d in report["deliveries"]}
-        self.assertEqual(set(by_tenant.keys()), {"marca-salao", "meu-salao", "multitrack-hub"})
+        self.assertEqual(
+            set(report["tenants"]),
+            {"estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"},
+        )
 
-        # Confere politica de audio por tenant nas medicoes do relatorio
-        self.assertEqual(by_tenant["marca-salao"]["ffprobe"]["audioStreams"], 0)
-        self.assertEqual(by_tenant["meu-salao"]["ffprobe"]["audioStreams"], 0)
-        self.assertEqual(by_tenant["multitrack-hub"]["ffprobe"]["audioStreams"], 1)
-        self.assertEqual(by_tenant["multitrack-hub"]["ffprobe"]["audioCodec"], "aac")
+        # Confere politica de audio por tenant e integridade dos artefatos versionados
+        for d in report["deliveries"]:
+            tid = d["tenantId"]
+            slug = d["campaignSlug"]
+            label = f"{tid}/{slug}"
+            if tid in ("estudio-flow", "marca-salao", "meu-salao"):
+                self.assertEqual(d["ffprobe"]["audioStreams"], 0, label)
+            else:
+                self.assertEqual(d["ffprobe"]["audioStreams"], 1, label)
+                self.assertEqual(d["ffprobe"]["audioCodec"], "aac", label)
 
-        # Confere todos os artefatos versionados no Git (SRT, TXT, storyboard, manifest)
-        for tid, d in by_tenant.items():
             manifest_abs = self._path(d["manifestPath"])
-            self.assertTrue(os.path.isfile(manifest_abs), f"{tid}: manifest ausente")
+            self.assertTrue(os.path.isfile(manifest_abs), f"{label}: manifest ausente")
             for kind in ("srt", "narration", "storyboard"):
                 art = d["artifacts"][kind]
                 art_abs = self._path(art["path"])
-                self.assertTrue(os.path.isfile(art_abs), f"{tid}: {kind} ausente em {art_abs}")
-                self.assertEqual(render_local.sha256_file(art_abs), art["sha256"], f"{tid}: sha256 {kind}")
-                self.assertEqual(os.path.getsize(art_abs), art["bytes"], f"{tid}: bytes {kind}")
+                self.assertTrue(os.path.isfile(art_abs), f"{label}: {kind} ausente em {art_abs}")
+                self.assertEqual(render_local.sha256_file(art_abs), art["sha256"], f"{label}: sha256 {kind}")
+                self.assertEqual(os.path.getsize(art_abs), art["bytes"], f"{label}: bytes {kind}")
 
     def test_04_invalid_tenant_or_campaign_returns_error(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()):

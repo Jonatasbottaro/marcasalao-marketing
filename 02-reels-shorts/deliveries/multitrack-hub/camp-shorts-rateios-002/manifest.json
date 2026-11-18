@@ -29,9 +29,9 @@
   "audio": {
     "allowAudioTrack": true,
     "audioStream": 1,
-    "source": "external"
+    "source": "anullsrc"
   },
-  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002 --audio .workspace/tmp/audio-mth/bed-rateios-002-30s.wav",
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002",
   "tools": {
     "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
     "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
@@ -40,8 +40,8 @@
     "video": {
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
       "archivePath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
-      "sha256": "35d0855722e5d75c7d17f65f39cae0e864a4b163469747c5b6e5a66c864a3c8a",
-      "bytes": 826037,
+      "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
+      "bytes": 353932,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,

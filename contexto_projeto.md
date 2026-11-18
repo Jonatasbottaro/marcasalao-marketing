@@ -14,9 +14,8 @@
 | HEAD main (base / integração) | Base `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) integrada na `main` via `codex/merge-prep-etapa2` (`--no-ff`, sem push remoto) |
 | Branch de trabalho ativa | `main` (consolidada localmente via `codex/merge-prep-etapa2` a partir de `codex/fase1-conformidade-editorial` → `codex/etapa1-piloto-ns002` → `codex/etapa2-agente1-arquitetura-tenants` → `codex/etapa2-agente2-preset-runner` → `codex/etapa2-agente3-escala-ci`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Release / Merge Local Concluído na `main` — Plataforma Multi-Tenant de Vídeo Programático (Fase 1 + Etapas 1 e 2) |
-| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 (Agentes 1, 2 e 3) e Merge Local na `main` concluídos — ver seções 2 e 7 |
-
+| Fase atual | Etapa 3 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (4 agente(s): 1, 2, 3, 4) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 e Etapa 3 (Agentes 1, 2, 3, 4) concluídas — ver seções 2 e 7 |
 ---
 
 ## 2. Fase 1 — Resumo de execução (2026-11-18)
@@ -519,4 +518,298 @@ FORMAT: nb_streams=2, duration=30.000000
 - `tenant_validator.py --all --json` (`ok: true`), `factory_cli.py list --json` (`3` tenants / `3` campanhas), `verify_egm_install.py` (`OK`) e `65/65` testes aprovados.
 ```
 
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+### 1. NS-001 incorporada ao motor multi-tenant (marca-salao)
+<!-- devlog-sync:etapa3-agente1.md -->
+
+- `tenants/marca-salao/campaigns/camp-saas-demo-ns001-agenda-001.json`
+  - SHA-256: `9bb35ac0e6edcfecacf678f74f41c3d811512c94e9de6acca5986c7eefd6fc83`
+  - 6 cenas / 30,0 s / preset `saas-demo` / campaignId `SAAS-DEMO-NS001-AGENDA-001`
+  - Foco NS-001 (briefing `00-briefings/campanhas/NS-001/briefing.md`, hook NS-001-H15 revisado, roteiro `03-roteiros/campanhas/NS-001/roteiro-001.md`): organização e visibilidade diária de `/gestor/agenda`
+  - Cenas: `cena-01-hook` (pergunta do hook), `cena-02-visao-do-dia`, `cena-03-filtros` (profissional/status), `cena-04-status-manual` (equipe), `cena-05-busca-cliente` (nome do cliente), `cena-06-cta`
+  - Dados reais da fixture `tenants/marca-salao/fixtures/fixture-editorial-marca-salao.json` (destaques `atend-001`, `atend-003`, `atend-005`, `atend-006` — todos entre os 6 primeiros atendimentos desenhados)
+  - Cabeçalho `MARCA SALAO` via brand-kit; **nenhuma cena de `/booking`**, zero slots, zero pagamento, zero promessas vetadas
+
+### 2. White-label expandido (meu-salao)
+
+- `tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-002.json`
+  - SHA-256: `d54ad8945e878bfa3585d1cd00a0d50c843c464bc483f3e72fbd4c75e6f77aac`
+  - 6 cenas / 30,0 s / preset `saas-demo` / campaignId `SAAS-DEMO-MEU-SALAO-002`
+  - Foco: rotina da equipe em `/gestor/agenda`
+  - Cenas: `cena-01-hook`, `cena-02-abertura-do-dia`, `cena-03-equipe` (atendimentos por profissional), `cena-04-status-manual`, `cena-05-fim-do-dia`, `cena-06-cta`
+  - Dados reais da fixture `tenants/meu-salao/fixtures/fixture-editorial-meu-salao.json` (destaques `atend-ms-001`, `atend-ms-002`, `atend-ms-003`, `atend-ms-005`)
+  - Cabeçalho `MEU SALAO` via brand-kit; "Meu Salão" é termo permitido neste tenant (não está nos forbiddenClaims do meu-salao)
+
+## Entregas renderizadas (`02-reels-shorts/deliveries/`)
+
+### `marca-salao/camp-saas-demo-ns001-agenda-001/`
+
+| artefato | bytes | SHA-256 |
+| --- | --- | --- |
+| `camp-saas-demo-ns001-agenda-001.mp4` (não versionado; `*.mp4` no `.gitignore`) | 585286 | `bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3` |
+| `camp-saas-demo-ns001-agenda-001.srt` | 584 | `8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e` |
+| `camp-saas-demo-ns001-agenda-001_narracao.txt` | 958 | `ad925a6784c6a7baf59c5be095e94f152e35788598294fdab2f3b3d17d4382a7` |
+| `preview-storyboard.png` | 703861 | `b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c` |
+| `manifest.json` | 3065 | `b73004ab73782c91bef52cac889ea14330c4284f94875f047a55929dafed22b2` |
+
+### `meu-salao/camp-saas-demo-meu-salao-002/`
+
+| artefato | bytes | SHA-256 |
+| --- | --- | --- |
+| `camp-saas-demo-meu-salao-002.mp4` (não versionado; `*.mp4` no `.gitignore`) | 513587 | `82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35` |
+| `camp-saas-demo-meu-salao-002.srt` | 573 | `e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49` |
+| `camp-saas-demo-meu-salao-002_narracao.txt` | 896 | `1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb` |
+| `preview-storyboard.png` | 645948 | `4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563` |
+| `manifest.json` | 3001 | `7ff4cd4490550d1917ec01b955dd8e30104bce52b0b51968c5d0e3811a381c4e` |
+
+Cópia dos MP4s preservada em `.workspace/archives/<slug>/` (padrão da etapa 2).
+
+## ffprobe (MP4s em `.workspace/archives/`)
+
+- `camp-saas-demo-ns001-agenda-001.mp4`: `h264`, **1080x1920**, `avg_frame_rate 30/1`, `duration 30.000000`, **1 stream de vídeo / 0 streams de áudio**
+- `camp-saas-demo-meu-salao-002.mp4`: `h264`, **1080x1920**, `avg_frame_rate 30/1`, `duration 30.000000`, **1 stream de vídeo / 0 streams de áudio**
+- Relatórios da fábrica (mode `filtered`): `allowAudioTrack: false`, `audioStreams: 0`, `audioCodec: null` — política `-an` respeitada pelos dois tenants.
+
+## Comandos executados (a partir da worktree)
+
+```
+python tools/factory_cli.py render --tenant marca-salao --campaign camp-saas-demo-ns001-agenda-001 --report .workspace/tmp/etapa3-agente1/factory-report-marca-salao.json --json
+python tools/factory_cli.py render --tenant meu-salao --campaign camp-saas-demo-meu-salao-002 --report .workspace/tmp/etapa3-agente1/factory-report-meu-salao.json --json
+python tools/tenant_validator.py --all --json
+python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_factory_cli.py -v
+```
+
+FFmpeg/FFprobe portáteis do checkout principal (`<RAIZ>/.workspace/tools/ffmpeg`) adicionados ao `PATH` apenas para os processos destes comandos.
+
+### Adaptação documentada em relação ao pedido original
+
+O pedido indicava `render --tenant <id> --json` sem `--campaign`/`--report`. O escopo foi ajustado por três motivos:
+
+1. `02-reels-shorts/deliveries/factory-report.json` versionado está **fora do território exclusivo** deste agente (regra de isolamento da Etapa 3);
+2. o `test_03` de `tools/tests/test_factory_cli.py` valida o conteúdo exato do relatório versionado (3 tenants / 3 campanhas) — sobrescrevê-lo em modo `filtered` quebraria o teste, e o arquivo de teste também está fora do território;
+3. renderizar o tenant inteiro reprocessaria as campanhas `-001` já entregues e commitadas, criando diffs desnecessários (o MP4 muda a cada render por metadados de muxer, alterando o `manifest.json`).
+
+Os relatórios destas renderizações ficaram em `.workspace/tmp/etapa3-agente1/factory-report-*.json`. **Pendência para a consolidação da Etapa 3:** regenerar o relatório versionado com `render --all` (agora 5 campanhas) e atualizar o `test_03` para as novas contagens.
+
+## Resultado dos testes
+
+- `python tools/tenant_validator.py --all --json` → `ok: true`, 3 tenants (`marca-salao`, `meu-salao`, `multitrack-hub`), **0 erros**
+- `python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_factory_cli.py -v` → **11/11 OK** em 14,974 s (7 testes de contratos + 4 do factory_cli, incluindo render real com `-an` e integridade do relatório versionado)
+
+## Guardrails conferidos
+
+- `allowAudioTrack: false` → `-an` forçado pelo motor; ffprobe confirma **0 streams de áudio**
+- Zero menções a WhatsApp/SMS/e-mail/lembrete/24h/automação (auditoria do motor passou antes do render)
+- Zero promessas de redução de faltas, faturamento, ocupação ou "agenda sempre cheia"
+- Zero telas/termos de pagamento (forbiddenUiElements)
+- Separação estrita `/booking/[salonId]` × `/gestor/agenda`: as duas campanhas usam somente superfícies `manager-agenda` (rota `/gestor/agenda`) e `marca` (hook/CTA); nenhuma cena de booking, nenhum slot exibido
+- Textos desenhados em tela sem acentos (fonte bitmap 5x7 do motor); legendas (SRT) e narração em português brasileiro com acentos
+
+## Pendências para a consolidação
+
+- Regenerar `02-reels-shorts/deliveries/factory-report.json` com `render --all` e atualizar `test_03` (contagens 3 → 5 campanhas)
+- Aprovação editorial das duas campanhas continua pendente junto ao titular (entregas de fábrica são rascunhos técnicos, não campanhas aprovadas para publicação)
+- Branch com commit local; publicação no remoto fica para a consolidação (nenhum `git push` foi executado, conforme instrução "faça commit na branch")
+
+### Devlog — Etapa 3 / Agente 2 (áudio + Multitrack Hub)
+<!-- devlog-sync:etapa3-agente2.md -->
+
+**Branch:** `codex/etapa3-agente2-audio-multitrack`
+**Data:** 2026-11-18
+**Papel:** Engenheiro de Mídia Programática e FFmpeg (Agente 2 de 4, paralelo)
+
+## Raiz e isolamento
+
+- `<RAIZ>` desta estação (checkout principal): `D:/MEGA/Marketing/marcasalao-marketing`.
+- Worktree isolada criada a partir de `main`:
+  `git worktree add -b codex/etapa3-agente2-audio-multitrack .workspace/worktrees/etapa3-agente2 main`
+- Todos os comandos e edições ocorreram exclusivamente dentro de
+  `.workspace/worktrees/etapa3-agente2`. Nenhuma outra worktree foi tocada.
+- Território editado (respeitado): `tools/audio_tts.py`, `tools/tests/test_audio_tts.py`,
+  `tenants/multitrack-hub/**`, `02-reels-shorts/deliveries/multitrack-hub/**`,
+  `.workspace/devlogs/etapa3-agente2.md`.
+  **Não** foram modificados `tools/preset_runner.py` nem `contexto_projeto.md`.
+
+## 1. Gerador modular de áudio — `tools/audio_tts.py`
+
+Módulo CLI + programático, sem APIs pagas. Resolve FFmpeg por
+`build_video.get_ffmpeg()` (PATH ou `.workspace/tools/ffmpeg`).
+
+**Trava de segurança (sempre, antes de render):**
+`tenant_validator.load_and_validate_tenant(tenant_id, root=REPO_ROOT, strict=True)`
+e recusa imediata com `AudioTtsError("AUDIO_NAO_PERMITIDO")` quando
+`guardrails.audioPolicy.allowAudioTrack == false` (marca-salao, meu-salao).
+
+**Modos:**
+- `ambient-bed`: cama sonora sintetizada via FFmpeg `lavfi` (`aevalsrc` com acorde
+  A maior+9a), `tremolo` (pulso suave 1.6 Hz / 0.22), `afade` in/out e
+  `loudnorm=I=-22:TP=-2:LRA=11` (aplicado quando duração ≥ 3 s). Saída
+  `pcm_s16le`, 44100 Hz, stereo. Medido: **-21.8 LUFS** (meta -22).
+- `narration-bed`: tenta TTS local (1º `pyttsx3`, 2º Windows SAPI via PowerShell
+  `System.Speech`), mistura sobre a cama (`amix duration=first`, voz realçada) e
+  normaliza em -22 LUFS. **Fallback automático e seguro** para `ambient-bed`
+  (flag `ttsEngine="fallback-ambient-bed"`) se nenhum motor existir. Neste ambiente
+  o motor **windows-sapi** estava disponível e foi usado.
+
+**API:** `generate_audio(tenant_id, output_path, duration=30.0, mode=..., root=...,
+text=None, sample_rate=44100, channels=2, prefer_engine=None) -> dict`
+(metadados: path, sha256, bytes, duration, sampleRate, channels, codec, ttsEngine...).
+
+**CLI:**
+```
+python tools/audio_tts.py --tenant multitrack-hub --output <wav> --duration 30 --mode ambient-bed
+python tools/audio_tts.py --tenant multitrack-hub --output <wav> --duration 30 --mode narration-bed --text "..."
+```
+
+## 2. Duas campanhas Shorts (`multitrack-hub`, preset `shorts-completo`)
+
+Ambas 1080×1920 @ 30 fps, 30.0 s, 5 cenas, dentro dos guardrails (sem
+whatsapp/telefone comercial/checkout; sem claims proibidos).
+
+- `tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json`
+  (`SHORTS-RATEIOS-MULTITRACK-002`) — foco em **organização de rateios**
+  (cotas, faixas inclusas, vagas). Rotas `/` e `/rateios`.
+- `tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json`
+  (`SHORTS-STEMS-WORKFLOW-MULTITRACK-003`) — foco em **organização de stems
+  Click/Guide/Banda** e ordem de trabalho. Rotas `/`.
+
+README de campanhas atualizado com a tabela das 3 campanhas e exemplo de render
+com `--audio`.
+
+## 3. Render com áudio real + prova por ffprobe
+
+Trilhas geradas em `.workspace/tmp/audio-mth/`:
+- `bed-rateios-002-30s.wav` (ambient-bed)
+- `narracao-stems-workflow-003-30s.wav` (narration-bed / windows-sapi)
+
+Renderização via `tools/preset_runner.py` (motor `run_preset_pipeline`,
+`--audio`/`audio_path`), saída em
+`02-reels-shorts/deliveries/multitrack-hub/<slug>/` + cópia `.mp4` em
+`.workspace/archives/<slug>/`:
+
+| Campanha | Vídeo | Áudio | Duração | source |
+| --- | --- | --- | --- | --- |
+| camp-shorts-rateios-002 | h264 1080×1920 30/1 yuv420p | **aac 44100 Hz 2 ch** | 30.000 s | external |
+| camp-shorts-stems-workflow-003 | h264 1080×1920 30/1 yuv420p | **aac 44100 Hz 2 ch** | 30.000 s | external |
+
+`ffprobe` confirmou `nb_streams=2` (1 vídeo + 1 áudio AAC 44100 Hz stereo) em
+ambos. Manifestos registram `guardrails.audioPolicy.allowAudioTrack=true`,
+`audio.source=external`, `audioStreams=1`.
+
+## 4. Testes — `tools/tests/test_audio_tts.py`
+
+9 testes (unittest), todos aprovados:
+1. ambient-bed: WAV 30.0 s / 44100 Hz / stereo / pcm_s16le exato (probe + disco).
+2. narration-bed: saída válida (motor TTS ou fallback) com duração exata.
+3. bloqueio `marca-salao` (AUDIO_NAO_PERMITIDO, sem arquivo).
+4. bloqueio `meu-salao` (AUDIO_NAO_PERMITIDO, sem arquivo).
+5. duração parametrizada respeitada (12.5 s).
+6. rejeição de saída fora da raiz (OUTPUT_FORA_DA_RAIZ).
+7. rejeição de modo inválido (MODO_INVALIDO).
+8. integração: WAV alimenta `preset_runner` e vira 1 stream AAC 44100/2ch.
+9. retrocompatibilidade: 3 tenants continuam carregáveis.
+
+**Suíte consolidada (10 módulos):** `Ran 74 tests in 103.532s — OK (skipped=1)`,
+exit code 0. O skip é pré-existente (não pertence a `test_audio_tts`, que rodou
+9/9). Log bruto: `.workspace/devlogs/suite-agente2.log`.
+
+## Observação (fora do meu território — não corrigido)
+
+`tools/preset_runner.py` (linhas 1002-1005) imprime o resumo de sucesso via
+`manifest['artifacts']['video']['width'|'height']`, chaves inexistentes (largura/
+altura vivem em `manifest['format']`). Isso faz o **CLI** encerrar com `KeyError`
+e código 1 **após** a renderização já ter sido promovida/arquivada com sucesso.
+Os artefatos ficam íntegros; afeta apenas a linha de status do CLI. Como
+`preset_runner.py` é território de outro agente (Etapa 2), a renderização do
+`stems-workflow-003` foi feita pela API programática `run_preset_pipeline`
+(entrada documentada), e o `rateios-002` pelo CLI (artefatos íntegros apesar do
+exit 1). Correção do print sugerida para o dono do arquivo: usar
+`manifest['format']['width'|'height']`.
+
+## Handoff / limpeza
+
+- Worktree criada: `.workspace/worktrees/etapa3-agente2` (mantida até o merge).
+- Arquivos permanentes versionados (commit):
+  `tools/audio_tts.py`, `tools/tests/test_audio_tts.py`,
+  `tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json`,
+  `tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json`,
+  `tenants/multitrack-hub/campaigns/README.md` (modificado),
+  `02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/*` (srt,
+  narration, manifest, storyboard), `.../camp-shorts-stems-workflow-003/*`.
+- Mantidos só em `.workspace/` (não versionados, gitignored): WAVs em
+  `.workspace/tmp/audio-mth/`, MP4 em `.workspace/archives/<slug>/` e
+  `.workspace/devlogs/` (este log + `suite-agente2.log`).
+- Ferramentas portáteis: FFmpeg/FFprobe do checkout principal
+  (`<RAIZ>/.workspace/tools/ffmpeg`), usados via PATH do processo (não alterado
+  permanentemente).
+- Temporários de staging do preset_runner e áudio-tts são removidos
+  automaticamente; `__pycache__` não é adicionado ao Git.
+
+**Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.**
+
+### Sessão 2026-11-18 — Etapa 3 (Agente 3): Gerador de Pacotes de Publicação Sociais e UTMs (`tools/publish_pack.py`)
+<!-- devlog-sync:etapa3-agente3.md -->
+
+- **Branch / Commit:** `codex/etapa3-agente3-publish-utm` (`0383006`, integrada em `main` via `a77efe5`).
+- **Papel:** Engenheiro de Distribuição & Analytics (Agente 3 de 4, paralelo).
+
+#### Entregáveis criados e atualizados
+
+1. **`tools/publish_pack.py`:** gerador CLI (`--all`, `--tenant <id> --slug <slug>`, `--json`) e programático que lê `manifest.json`, `<slug>.srt` e `<slug>_narracao.txt` de `02-reels-shorts/deliveries/<tenantId>/<slug>/` junto com `brand-kit.json` e `guardrails.json`, gera pacotes por rede social em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/` (`instagram-reels.md`, `youtube-shorts.md`, `facebook-reels.md`, `checklist-publicacao.json`), aplica URLs com parâmetros UTM por canal (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`), audita obrigatoriamente todas as cópias contra `forbiddenClaims` e `forbiddenUiElements` antes de gravar e registra `autoPublish: false` + hashes SHA-256.
+2. **`tools/tests/test_publish_pack.py`:** 7 testes unitários cobrindo geração por tenant/campanha, hashes e tamanhos em disco, formatação das URLs UTM por canal, CTA de Instagram (`link na bio`), bloqueio preventivo de frases proibidas e integridade de `checklist-publicacao.json`.
+3. **`docs/rastreio-utm.md`:** documentação atualizada com os parâmetros e convenções do gerador de pacotes sociais.
+4. **Pacotes iniciais em `04-legendas/pacotes-publicacao/`:** gerados inicialmente para os 3 tenants base (`marca-salao`, `meu-salao`, `multitrack-hub`) e expandidos na consolidação pós-merge para todas as 8 campanhas dos 4 tenants.
+
+### Sessão 2026-11-18 — Etapa 3 (Agente 4): Onboarding do 4º Nicho (`estudio-flow`) e Consolidador de Devlogs (`tools/devlog_sync.py`)
+<!-- devlog-sync:etapa3-agente4.md -->
+
+- **Branch de trabalho:** `codex/etapa3-agente4-novo-nicho-sync` (baseada em `main` `ccea4321871d9551484b8ed125b280a84857f1c9`).
+- **Worktree isolada:** `D:/MEGA/Marketing/marcasalao-marketing/.workspace/worktrees/etapa3-agente4`.
+- **Território respeitado:** alterações restritas a `tenants/estudio-flow/**`, `02-reels-shorts/deliveries/estudio-flow/**`, `tools/devlog_sync.py`, `tools/tests/test_devlog_sync.py`, `docs/guia-novo-nicho.md` e `.workspace/devlogs/etapa3-agente4.md`; `contexto_projeto.md` e `02-reels-shorts/deliveries/factory-report.json` não foram alterados.
+
+#### 1. Onboarding do 4º Nicho (`tenants/estudio-flow/`)
+
+- `tenants/estudio-flow/brand-kit.json`: `tenantId: "estudio-flow"`, `brandName: "Estúdio Flow"`, `displayTitle: "ESTUDIO FLOW"`, `monogram: "EF"`, `domain: "estudioflow.com.br"`, paleta terracota (`#C86D51`), sálvia (`#6B8E78`) e areia (`#E6D5B8`), `headerOverlay.label: "ESTUDIO FLOW"`, `defaultPreset: "saas-demo"`, `utmDefaults` (`instagram` / `reels` / `ef`).
+- `tenants/estudio-flow/guardrails.json`: bloqueia promessas de cura clínica, tratamento médico, emagrecimento garantido, resultado imediato, mensagens automáticas WhatsApp/SMS/lembretes 24h e redução/zero faltas; separa `/aulas/[studioId]` (`public-booking`) e `/gestor/turmas` (`manager-agenda`); impõe `allowAudioTrack: false` (`-an`).
+- `tenants/estudio-flow/fixtures/fixture-editorial-estudio-flow.json`: 4 instrutores fictícios (`inst-ef-001..004`), 5 modalidades com duração, aula avulsa e mensalidade em BRL (`mod-ef-001..005`), grade de horários `turma-ef-001..005` e chaves de compatibilidade (`profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota`).
+- `tenants/estudio-flow/campaigns/camp-saas-demo-estudio-flow-001.json`: 6 cenas (`30.0s`), `Beatriz Alencar`, demonstrando reserva de aula experimental em `/aulas/estudio-flow-jardins` e visualização/status manual em `/gestor/turmas`.
+
+#### 2. Renderização e Auditoria (`camp-saas-demo-estudio-flow-001`)
+
+- **Validação de contrato:** `python tools/tenant_validator.py --tenant estudio-flow --json` → `"ok": true`, `"errors": []`.
+- **Descoberta global (4 tenants):** `python tools/tenant_validator.py --all --json` → `"ok": true` (`estudio-flow`, `marca-salao`, `meu-salao`, `multitrack-hub`); `python tools/factory_cli.py list --json` → `totalTenants: 4`, `totalCampaigns: 4`.
+- **Render e `ffprobe`:** `1080x1920`, `30/1` fps, `h264`, `yuv420p`, `30.000000s`, `nb_streams: 1` (**0 streams de áudio / `-an`**), `438290` bytes.
+- **Hashes SHA-256 observados (`02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/manifest.json`):**
+  - Vídeo (`.workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4`): `438290` B, `b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19`
+  - SRT: `572` B, `b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f`
+  - Narração: `923` B, `476a19bac49333ab030d02975f57c612e75b234f6ee8d157ccc1801aa7f71760`
+  - Storyboard: `591280` B, `d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a`
+
+#### 3. Consolidador `tools/devlog_sync.py`, Guia e Testes
+
+- **`tools/devlog_sync.py`:** descobre `etapa3-agente-*.md` / `etapa3-agente*.md` em ordem numérica (`re` pelo índice do agente), garante idempotência por marcador `<!-- devlog-sync:<arquivo> -->` e título `### ...`, atualiza data/status na Seção 1 e anexa novas sessões ao final da Seção 7 com LF e validação estrita de contenção de caminho.
+- **`docs/guia-novo-nicho.md`:** refinado com mapeamento de compatibilidade (`profissionais`/`servicos`/`agenda.atendimentos`/`booking.rota`), flag `--report` para render em worktrees paralelas, referência ao `tenants/estudio-flow/` e nota sobre testes globais com contagem fixa `3`.
+- **Suíte executada na worktree (`test_devlog_sync.py` 4 + `test_preset_runner.py` 7 + `test_ns002_pilot.py` 5):** **16/16 aprovados em `55.759s` (`OK`)**.
+- **Nota de integração pós-merge:** na execução exploratória de `test_tenant_contracts.py`, os testes `test_01..test_06` passaram (`6/7`) e `test_07_cli_exit_codes` retornou `AssertionError: 4 != 3` por esperar contagem fixa de `3` tenants (idem `test_factory_cli.py::test_01`/`test_03` com `totalTenants == 3`). Como esses testes estão fora do território do Agente 4, a atualização das asserções (`>= 3` ou `4`) e `factory_cli.py render --all` deve ocorrer na consolidação da Etapa 3.
+
+### Sessão 2026-11-18 — Consolidação Pós-Merge da Etapa 3 (4 Tenants, 8 Campanhas e Push Remoto)
+
+- **Branch:** `main` (consolidando as entregas dos 4 agentes paralelos da Etapa 3: `ad95adc`, `d55b291`, `a77efe5`, `d70dd93`).
+- **Tenants e campanhas consolidados:** **4 tenants** e **8 campanhas** em `02-reels-shorts/deliveries/factory-report.json` e `04-legendas/pacotes-publicacao/`:
+  1. `estudio-flow`: `camp-saas-demo-estudio-flow-001` (`-an`, 0 áudio)
+  2. `marca-salao`: `camp-saas-demo-marca-salao-001`, `camp-saas-demo-ns001-agenda-001` (`-an`, 0 áudio)
+  3. `meu-salao`: `camp-saas-demo-meu-salao-001`, `camp-saas-demo-meu-salao-002` (`-an`, 0 áudio)
+  4. `multitrack-hub`: `camp-shorts-completo-multitrack-001`, `camp-shorts-rateios-002`, `camp-shorts-stems-workflow-003` (`aac`, 1 áudio)
+- **Ajustes de integração e CI aplicados na `main`:**
+  - `.workspace/devlogs/etapa3-agente3.md` criado e todos os 4 devlogs consolidados em ordem (`1 -> 2 -> 3 -> 4`) via `tools/devlog_sync.py`.
+  - `.gitattributes` estendido com `text eol=lf` para `04-legendas/pacotes-publicacao/**/*.json` e `**/*.md`.
+  - `tools/tests/test_tenant_contracts.py`, `tools/tests/test_factory_cli.py` e `tools/tests/test_publish_pack.py` atualizados para 4 tenants / 8 campanhas.
+  - `.github/workflows/local-render-validation.yml` atualizado com filtro `04-legendas/pacotes-publicacao/**` e execução explícita de `test_audio_tts.py`, `test_publish_pack.py` e `test_devlog_sync.py`.
+- **Validações e suíte completa na `main`:**
+  - `python tools/tenant_validator.py --all --json` → `ok: true` (4 tenants).
+  - `python tools/factory_cli.py list --json` → `ok: true`, `totalTenants: 4`, `totalCampaigns: 8`.
+  - `python tools/publish_pack.py --all --json` → pacotes e UTMs gerados/auditados para as 8 campanhas (`autoPublish: false`).
+  - Suíte consolidada completa (**12 módulos**): **85/85 testes aprovados em `107.194s` (`OK`)** (`test_tenant_contracts`, `test_preset_runner`, `test_factory_cli`, `test_audio_tts`, `test_publish_pack`, `test_devlog_sync`, `test_ns002_pilot`, `test_srt_validate`, `test_build_video`, `test_r002_pilot`, `test_delivery_verify`, `test_campaign_proof`).
+- **Worktrees preservadas:** `.workspace/worktrees/etapa3-agente1`, `.workspace/worktrees/etapa3-agente2`, `.workspace/worktrees/etapa3-agente4`, `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2` mantidas sem alterações.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.

@@ -1,0 +1,44 @@
+{
+  "slug": "camp-shorts-stems-workflow-003",
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "allowAudioTrack": true,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok"
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+      "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+      "bytes": 446684,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
+      "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89",
+      "bytes": 488,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003_narracao.txt",
+      "sha256": "00a866f508f85b114b42a848bb1b9384255dc8d1a0e5665318efd363be0cb79b",
+      "bytes": 759,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png",
+      "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
+      "bytes": 537892,
+      "sha256_disk_ok": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}

@@ -14,6 +14,7 @@ on:
       - 'schemas/**'
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
+      - '04-legendas/pacotes-publicacao/**'
       - '.github/workflows/local-render-validation.yml'
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - 'schemas/**'
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
+      - '04-legendas/pacotes-publicacao/**'
       - '.github/workflows/local-render-validation.yml'
   workflow_dispatch:
 
@@ -85,11 +87,11 @@ jobs:
           npm run build
           test -f dist/src/validate-local-render-input.js
 
-      - name: Validar contratos multi-tenant e suites da fabrica (Etapa 2)
+      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2 e 3)
         run: |
           python tools/tenant_validator.py --all --json
           python tools/factory_cli.py list --json
-          python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_preset_runner.py tools/tests/test_factory_cli.py -v
+          python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_preset_runner.py tools/tests/test_factory_cli.py tools/tests/test_audio_tts.py tools/tests/test_publish_pack.py tools/tests/test_devlog_sync.py -v
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
         env:

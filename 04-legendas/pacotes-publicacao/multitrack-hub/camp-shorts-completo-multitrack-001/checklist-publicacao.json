@@ -15,7 +15,7 @@
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
       "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
       "bytes": 352348,
-      "sha256_disk_ok": false
+      "sha256_disk_ok": true
     },
     {
       "kind": "srt",

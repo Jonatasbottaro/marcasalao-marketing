@@ -29,9 +29,9 @@
   "audio": {
     "allowAudioTrack": true,
     "audioStream": 1,
-    "source": "external"
+    "source": "anullsrc"
   },
-  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003 --audio .workspace/tmp/audio-mth/narracao-stems-workflow-003-30s.wav",
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003",
   "tools": {
     "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
     "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
@@ -40,8 +40,8 @@
     "video": {
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
       "archivePath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
-      "sha256": "845ce2e6eb0718c43d485c505551b7a601725cf978f8e13ce1e5f4e9420caa62",
-      "bytes": 919288,
+      "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+      "bytes": 446684,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,

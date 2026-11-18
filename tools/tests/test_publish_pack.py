@@ -59,10 +59,13 @@ class PublishPackTest(unittest.TestCase):
     # 1. Geração de arquivos para os 3 tenants
     # ------------------------------------------------------------------
     def test_01_generates_files_for_all_tenants(self) -> None:
-        self.assertEqual(len(self.results), 3)
+        self.assertEqual(len(self.results), 8)
         for res in self.results:
-            with self.subTest(tenant=res["tenantId"]):
-                self.assertIn(res["tenantId"], ("marca-salao", "meu-salao", "multitrack-hub"))
+            with self.subTest(tenant=res["tenantId"], slug=res["slug"]):
+                self.assertIn(
+                    res["tenantId"],
+                    ("estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"),
+                )
                 pack_dir = self._pack_dir(res["tenantId"], res["slug"])
                 self.assertTrue(os.path.isdir(pack_dir), pack_dir)
                 for filename in ("instagram-reels.md", "youtube-shorts.md", "facebook-reels.md", "checklist-publicacao.json"):
@@ -88,6 +91,7 @@ class PublishPackTest(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_03_utm_parameters_per_channel(self) -> None:
         expected = {
+            "estudio-flow": {"domain": "estudioflow.com.br", "content": "estudio-flow"},
             "marca-salao": {"domain": "marcasalao.com.br", "content": "marca-salao"},
             "meu-salao": {"domain": "meusalao.com.br", "content": "meu-salao"},
             "multitrack-hub": {"domain": "multitrackhub.com.br", "content": "multitrack-hub"},

@@ -28,8 +28,14 @@ class TenantContractsTest(unittest.TestCase):
 
     def test_01_all_three_tenants_pass_contract_validation(self) -> None:
         discovered = tenant_validator.list_tenants(REPO_ROOT)
-        for expected in ("marca-salao", "meu-salao", "multitrack-hub"):
+        for expected in ("estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"):
             self.assertIn(expected, discovered)
+
+        ef = tenant_validator.load_and_validate_tenant("estudio-flow", root=REPO_ROOT, strict=True)
+        self.assertTrue(ef["ok"])
+        self.assertEqual(ef["brandKit"]["monogram"], "EF")
+        self.assertEqual(ef["brandKit"]["defaultPreset"], "saas-demo")
+        self.assertFalse(ef["guardrails"]["audioPolicy"]["allowAudioTrack"])
 
         ms = tenant_validator.load_and_validate_tenant("marca-salao", root=REPO_ROOT, strict=True)
         self.assertTrue(ms["ok"])
@@ -172,7 +178,7 @@ class TenantContractsTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertEqual(len(payload["tenants"]), 3)
+        self.assertEqual(len(payload["tenants"]), 4)
 
         with contextlib.redirect_stdout(io.StringIO()) as err_buf:
             rc_missing = tenant_validator.main(["--tenant", "inexistente", "--root", REPO_ROOT, "--json"])

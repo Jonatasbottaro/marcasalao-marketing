@@ -1,0 +1,44 @@
+{
+  "slug": "camp-saas-demo-estudio-flow-001",
+  "tenantId": "estudio-flow",
+  "preset": "saas-demo",
+  "allowAudioTrack": false,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok"
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
+      "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
+      "bytes": 438290,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt",
+      "sha256": "b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f",
+      "bytes": 572,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001_narracao.txt",
+      "sha256": "476a19bac49333ab030d02975f57c612e75b234f6ee8d157ccc1801aa7f71760",
+      "bytes": 923,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
+      "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a",
+      "bytes": 591280,
+      "sha256_disk_ok": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}
