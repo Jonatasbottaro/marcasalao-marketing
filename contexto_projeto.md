@@ -23,27 +23,24 @@
 
 ### Tarefa 1 — Auditoria de identidade visual ("Meu Salão" vs "Marca Salão")
 
-**Resultado: Nenhuma substituição automática realizada. Problema é de responsabilidade do produto externo.**
+**Resultado: Substituições seguras realizadas em materiais editoriais e de legendas; divergências de interface externa documentadas.**
 
-**Arquivos com ocorrências de "Meu Salão" (busca em toda a árvore rastreada, excluindo `.workspace/`, `.git/`, `node_modules/`):**
+**1. Substituições seguras realizadas (camada editorial/legendas):**
+- `04-legendas/instagram_captions.md`: "Acesse o Dashboard do Meu Salão" → "Acesse o Dashboard do Marca Salão"
+- `04-legendas/legendas_cards.md`: "**Acesse o Dashboard do Meu Salão**" → "**Acesse o Dashboard do Marca Salão**"
+- `04-legendas/roteiro_0802_cadastro_profissional.md`: "No Meu Salão..." e "Meu Salão: Mais visibilidade..." → padronizado para "Marca Salão"
+- `04-legendas/roteiro_demo_link_agendamento.md`: "Conheça o Meu Salão..." e ícone do app → padronizado para "Marca Salão"
+- `04-legendas/roteiro_demo_link_agendamento.srt`: Cues 1 e 6 padronizados para "Marca Salão"
 
-| Arquivo | Linha | Tipo de ocorrência | Ação |
-|---------|-------|-------------------|------|
-| `00-briefings/campanhas/NS-001/briefing.md` | 292 | Descrição de diferença pendente na interface | ✅ Manter — é documentação de divergência conhecida |
-| `00-briefings/campanhas/NS-001/briefing.md` | 145, 231, 257, 269, 279 | Alertas editoriais sobre o nome na interface | ✅ Manter — são alertas necessários |
-| `00-briefings/campanhas/NS-001/VALIDACAO-EXECUCAO-2026-11-05.md` | 8, 83, 97 | Namespace E2E técnico ("Meu Salão E2E") e divergência documentada | ✅ Manter — dado técnico de teste, não tocar |
-| `02-hooks/campanhas/NS-001/hooks.md` | 20 | Alerta editorial de diferença | ✅ Manter |
-| `00-briefings/campanhas/NS-002/APROVEITAMENTO-NS-002.md` | 42 | Tabela de pendências editoriais | ✅ Manter |
-| `03-roteiros/campanhas/NS-002/stories-001.md` | — | Texto: "diferença para Meu Salão na interface permanece sinalizada" | ✅ Manter |
-| `03-roteiros/campanhas/NS-002/roteiro-001.md` | — | Texto: "Interface capturada mostra Meu Salão; textos usam Marca Salão" | ✅ Manter |
-| `02-reels-shorts/r002-agenda-ficticia/README.md` | 11 | "06_meu_salao.png - Meu Salão" (nome de arquivo de captura) | ✅ Manter — é nome de arquivo de captura histórica, não texto editorial |
-| `contexto_repo.txt` / `contexto_projeto.txt` | múltiplas | "Facebook Meu salão" (nome oficial da Página Facebook da marca) | ✅ Manter — é o nome oficial da Página |
+**2. Ocorrências preservadas intencionalmente:**
+- `00-briefings/campanhas/NS-001/briefing.md` e `VALIDACAO-EXECUCAO-2026-11-05.md`: registros de divergência conhecida e dados técnicos de teste (`Meu Salão E2E`) — mantidos como registro histórico e técnico.
+- `01-insta-stories/06_meu_salao.png` e referências em README: nome físico do arquivo de captura existente em disco.
+- "Facebook Meu salão": nome oficial da Página no Facebook (ativo nas redes).
+- Interface de produto: o sistema externo (`Jonatasbottaro/Salao02`) renderiza "Meu Salão" na sidebar e título. **Não está neste repositório para ser alterado aqui.**
 
 **Conclusão da auditoria:**
-- "Meu Salão" na interface do Salao02 é o nome de produto exibido pelo sistema externo (`Jonatasbottaro/Salao02`). **Não está neste repositório para ser alterado aqui.**
-- "Facebook Meu salão" é o nome oficial da Página do Facebook — não é uma inconsistência de marca.
-- Todos os arquivos editoriais (briefings, roteiros, hooks) já documentam a divergência corretamente como pendência a resolver **antes das capturas finais**, não antes da aprovação do roteiro.
-- **Ponto de atenção para o titular:** confirmar, antes das capturas finais, qual nome será exibido na interface do produto (Salao02) ou se as capturas serão feitas com overlay de texto cobrindo o nome exibido.
+- A camada de legendas e narrações agora está 100% padronizada em **Marca Salão**.
+- **Ponto de atenção para o titular:** confirmar, antes das capturas finais, se a interface do produto (Salao02) receberá atualização de marca ou se as capturas finais serão tratadas com overlay de tela.
 
 ---
 
@@ -113,11 +110,16 @@
 **Pendência registrada nos roteiros (válida, não é desvio de guardrail):**
 - Resolver divergência "Marca Salão" vs "Meu Salão" na interface **antes das capturas finais**. Isso é uma pendência de execução, não de conformidade editorial.
 
+#### Saneamento de materiais legados (04-legendas/)
+Além dos roteiros oficiais NS-001 e NS-002, foram auditados e saneados materiais legados de teste em `04-legendas/`:
+- `04-legendas/roteiro_demo_link_agendamento.md` e `.srt`: removida menção a "automatizado 24 horas por dia", substituída por agendamento online simples e rápido; padronizado para "Marca Salão".
+- `04-legendas/roteiro_enviar_link.md` e `.srt`: removida promessa de "agenda atualiza no automático 24 horas por dia" e "Automatize seu salão", substituída por "o atendimento aparece direto na agenda do salão".
+
 ---
 
 ### Tarefa 5 — `contexto_projeto.md`
 
-**Este arquivo.** Criado em `contexto_projeto.md` na raiz do projeto.
+**Este arquivo.** Criado em `contexto_projeto.md` na raiz do projeto como devlog permanente e acumulativo.
 
 ---
 
@@ -136,7 +138,14 @@
 |---------|------|--------|
 | `docs/rastreio-utm.md` | Criado | `codex/fase1-conformidade-editorial` |
 | `docs/fixtures/fixture-editorial-marca-salao.json` | Criado | `codex/fase1-conformidade-editorial` |
-| `contexto_projeto.md` | Criado | `codex/fase1-conformidade-editorial` |
+| `contexto_projeto.md` | Criado / Atualizado | `codex/fase1-conformidade-editorial` |
+| `04-legendas/instagram_captions.md` | Modificado (padronização de marca) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/legendas_cards.md` | Modificado (padronização de marca) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/roteiro_0802_cadastro_profissional.md` | Modificado (padronização de marca) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/roteiro_demo_link_agendamento.md` | Modificado (marca + guardrails) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/roteiro_demo_link_agendamento.srt` | Modificado (marca + guardrails) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/roteiro_enviar_link.md` | Modificado (guardrails) | `codex/fase1-conformidade-editorial` |
+| `04-legendas/roteiro_enviar_link.srt` | Modificado (guardrails) | `codex/fase1-conformidade-editorial` |
 
 ---
 

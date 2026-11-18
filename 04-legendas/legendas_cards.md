@@ -1,7 +1,7 @@
 # Legendas para cards Instagram/Reels
 
 ## 01_dashboard
-**Acesse o Dashboard do Meu Salão**
+**Acesse o Dashboard do Marca Salão**
 Veja em tempo real: agendamentos hoje, faturamento mensal, profissionais ativos e avaliação média
 Ações rápidas: Novo Agendamento, Adicionar Serviço, Gerenciar Equipe
 

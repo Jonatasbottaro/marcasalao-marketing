@@ -25,8 +25,8 @@
 
 **Cena 4 (00:18 - 00:27) [Mensagem no WhatsApp & CTA]**  
 *Texto para narrar:*  
-"Ela escolhe o horário e a sua agenda atualiza no automático 24 horas por dia! Automatize seu salão hoje: clique no link da bio!"  
-*Legenda:* AGENDA ATUALIZADA 24H • TESTE NO LINK DA BIO!
+"Ela escolhe o horário e o atendimento aparece direto na agenda do salão. Conheça o Marca Salão: acesse pelo link da bio!"  
+*Legenda:* ATENDIMENTO DIRETO NA AGENDA • ACESSE NO LINK DA BIO!
 
 ---
 
