@@ -1,0 +1,17 @@
+Roteiro de narracao - camp-shorts-completo-multitrack-001
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:07,000] cena-01-hook
+Conheça o catálogo de projetos, stems e rateios do Multitrack Hub.
+
+[00:00:07,000 --> 00:00:15,000] cena-02-catalogo
+Três projetos no catálogo, cada um com BPM, tom e stems prontos para baixar.
+
+[00:00:15,000 --> 00:00:21,000] cena-03-metricas
+Veja os números do Multitrack Hub: projetos, stems e rateios disponíveis.
+
+[00:00:21,000 --> 00:00:27,000] cena-04-rateios
+Participe dos rateios de faixas com cota a partir de R$ 24,90 no Multitrack Hub.
+
+[00:00:27,000 --> 00:00:30,000] cena-05-cta
+Conheça o Multitrack Hub, multitrackhub.com.br.

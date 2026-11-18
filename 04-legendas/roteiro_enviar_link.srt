@@ -20,8 +20,8 @@ Envie para a cliente em um único clique
 
 6
 00:00:18,000 --> 00:00:22,500
-A cliente agenda e sua agenda atualiza no automático!
+A cliente agenda e o atendimento aparece na sua agenda!
 
 7
 00:00:22,500 --> 00:00:27,000
-Automatize seu salão • Clique no link da bio!
+Conheça o Marca Salão • Link na bio!

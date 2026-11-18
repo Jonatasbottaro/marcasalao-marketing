@@ -1,0 +1,23 @@
+Narração — NS-002 Agendamento online no Marca Salão (Roteiro 001 — texto separado, sem geração de áudio)
+Vídeo: ns002-piloto-01.mp4 (30 s, 1080x1920, 30 fps, sem faixa de áudio)
+Legendas visíveis no vídeo: 04-legendas/ns002_roteiro_001.srt
+
+Cena 1 — abertura-hook (00:00–00:04)
+Como um horário escolhido pela cliente chega à agenda do salão?
+
+Cena 2 — cliente-escolhe (00:04–00:10) [Superfície pública: /booking/marca-salao-modelo]
+A cliente informa os dados, escolhe o serviço e o profissional.
+
+Cena 3 — cliente-confirma (00:10–00:17) [Superfície pública: /booking/marca-salao-modelo]
+Na sequência, escolhe um horário disponível e confirma o agendamento.
+
+Cena 4 — ponte-confirmacao (00:17–00:20) [Superfície pública: /booking/marca-salao-modelo]
+E o mesmo registro segue para a agenda do salão.
+
+Cena 5 — salao-ve-agenda (00:20–00:26) [Superfície do gestor: /gestor/agenda]
+O mesmo atendimento aparece na agenda do salão.
+
+Cena 6 — cta-final (00:26–00:30)
+Conheça o agendamento online no Marca Salão. marcasalao.com.br
+
+Observação editorial: este texto existe exclusivamente para locução humana em ferramenta externa, fora do editor de vídeo. O vídeo entregue é exportado sem faixa de áudio (-an). Nenhuma promessa de envio automático de mensagens, lembretes, pagamento ou resultados financeiros é incluída.

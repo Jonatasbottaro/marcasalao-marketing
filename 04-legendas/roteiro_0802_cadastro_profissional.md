@@ -17,7 +17,7 @@
 #### Cena 2: Dados Básicos da Conta (05.88s - 12.24s)
 - **Ação na Tela:** Tela "Complete seu cadastro - Cadastro como Profissional" preenchendo Nome Completo, E-mail, WhatsApp e Senha.
 - **Texto da Narração:**  
-  *"No Meu Salão, o profissional cria sua conta de forma simples, informando seus dados de acesso e contato."*
+  *"No Marca Salão, o profissional cria sua conta de forma simples, informando seus dados de acesso e contato."*
 
 #### Cena 3: Especialidades e Bio (12.24s - 18.96s)
 - **Ação na Tela:** Seleção da categoria/especialidade profissional (ex: Manicure/Pedicure) e preenchimento da Bio / Apresentação.
@@ -47,7 +47,7 @@
 #### Cena 8: Liberação de Agenda e Fechamento (42.72s - 56.72s)
 - **Ação na Tela:** Mensagem "Aguardando Aprovação / Vinculado" e encerramento.
 - **Texto da Narração:**  
-  *"Assim que o vínculo for aprovado, o profissional terá acesso à sua agenda e aos recursos necessários para organizar seus atendimentos. Meu Salão: Mais visibilidade para o profissional, mais organização para o salão e mais facilidade para o cliente."*
+  *"Assim que o vínculo for aprovado, o profissional terá acesso à sua agenda e aos recursos necessários para organizar seus atendimentos. Marca Salão: Mais visibilidade para o profissional, mais organização para o salão e mais facilidade para o cliente."*
 
 ---
 

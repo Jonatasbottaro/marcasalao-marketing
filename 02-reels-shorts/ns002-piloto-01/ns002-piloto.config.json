@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "id": "ns002-piloto-01",
+  "campaignId": "NS-002",
+  "preset": "saas-demo",
+  "audioPolicy": {
+    "enabled": false,
+    "ffmpegFlag": "-an",
+    "externalNarration": true
+  },
+  "brand": {
+    "tenantId": "marca-salao",
+    "brandName": "Marca Salão",
+    "displayTitle": "MARCA SALAO",
+    "domain": "marcasalao.com.br",
+    "url": "https://marcasalao.com.br",
+    "tagline": "AGENDAMENTO ONLINE E AGENDA DO SALAO",
+    "headerOverlay": {
+      "enabled": true,
+      "height": 170,
+      "replaceLegacyLabel": "Meu Salão"
+    },
+    "palette": {
+      "backgroundTop": [18, 22, 32],
+      "backgroundBottom": [28, 36, 52],
+      "headerBg": [14, 18, 28],
+      "cardBg": [34, 44, 64],
+      "cardHighlight": [48, 64, 92],
+      "primaryAccent": [245, 193, 7],
+      "secondaryAccent": [79, 140, 255],
+      "statusConfirmed": [40, 180, 99],
+      "statusWaiting": [245, 176, 65],
+      "statusDone": [130, 145, 170],
+      "textPrimary": [245, 247, 250],
+      "textMuted": [180, 192, 210]
+    }
+  },
+  "fixtureRef": "docs/fixtures/fixture-editorial-marca-salao.json",
+  "baseCaptureRef": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "bookingCase": {
+    "cliente": "Ana Beatriz Souza",
+    "servicoId": "serv-001",
+    "profissionalId": "prof-001",
+    "data": "2026-11-18",
+    "horario": "09:00",
+    "statusAgenda": "Confirmado",
+    "paymentDisplayed": false
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "srt": "04-legendas/ns002_roteiro_001.srt",
+    "narration": "04-legendas/ns002_roteiro_001_narracao.txt",
+    "outputDir": "02-reels-shorts/ns002-piloto-01",
+    "videoName": "ns002-piloto-01.mp4",
+    "packageSrtName": "ns002_roteiro_001.srt",
+    "packageNarrationName": "ns002_roteiro_001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard-ns002.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "end": 4.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "marca-salao",
+      "badge": "AGENDAMENTO ONLINE",
+      "headline": "COMO UM HORARIO ESCOLHIDO PELA CLIENTE CHEGA A AGENDA DO SALAO?",
+      "subline": "CONHECA O FLUXO CONECTADO DO MARCA SALAO",
+      "caption": "Como um horário escolhido pela cliente chega à agenda do salão?"
+    },
+    {
+      "id": "cena-02-escolha",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "end": 10.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "FLUXO PUBLICO /BOOKING",
+      "headline": "ESCOLHA DO SERVICO E PROFISSIONAL",
+      "caption": "A cliente escolhe o serviço e o profissional."
+    },
+    {
+      "id": "cena-03-confirma",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "end": 17.0,
+      "duration": 7.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "HORARIOS LIVRES /BOOKING",
+      "headline": "SELECIONA O HORARIO DISPONIVEL",
+      "availableSlots": ["09:00", "11:00", "14:00", "16:30"],
+      "selectedSlot": "09:00",
+      "ctaLabel": "CONFIRMAR AGENDAMENTO",
+      "caption": "Seleciona o horário disponível e confirma."
+    },
+    {
+      "id": "cena-04-ponte",
+      "kind": "booking-success",
+      "start": 17.0,
+      "end": 20.0,
+      "duration": 3.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "CONFIRMACAO",
+      "headline": "AGENDAMENTO REALIZADO",
+      "subline": "REGISTRO VISIVEL NA AGENDA DO SALAO",
+      "caption": "Agendamento realizado."
+    },
+    {
+      "id": "cena-05-salao-ve",
+      "kind": "manager-agenda",
+      "start": 20.0,
+      "end": 26.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "VISAO DO GESTOR /GESTOR/AGENDA",
+      "headline": "AGENDA DO DIA - STATUS MANUAL",
+      "highlightId": "atend-001",
+      "caption": "O mesmo atendimento aparece na agenda do salão."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "end": 30.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "marcasalao.com.br",
+      "badge": "MARCA SALAO",
+      "headline": "CONHECA O AGENDAMENTO ONLINE NO MARCA SALAO",
+      "subline": "MARCASALAO.COM.BR",
+      "caption": "Conheça o agendamento online no Marca Salão — marcasalao.com.br"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false
+  },
+  "config": "tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json",
+  "fixture": {
+    "path": "tenants/multitrack-hub/fixtures/fixture-editorial-multitrack-hub.json",
+    "sha256": "de117707fd9cda64d562c864eef062fff43a8c741cd4d125e5256c3148a65495"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": true,
+    "audioStream": 1,
+    "source": "anullsrc"
+  },
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001",
+  "tools": {
+    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+      "archivePath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+      "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+      "bytes": 352348,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
+      "sourcePath": null,
+      "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+      "bytes": 444,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt",
+      "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1",
+      "bytes": 743,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
+      "bytes": 479092,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

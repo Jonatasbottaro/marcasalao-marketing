@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-marca-salao-001
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Conheça o fluxo conectado do Marca Salão, do horário escolhido pela cliente à agenda do salão.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-escolha
+Na rota pública /booking, a cliente escolhe o serviço e o profissional.
+
+[00:00:10,000 --> 00:00:17,000] cena-03-confirma
+Os horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.
+
+[00:00:17,000 --> 00:00:20,000] cena-04-ponte
+O agendamento é realizado e fica visível na agenda do salão.
+
+[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve
+Na visão do gestor /gestor/agenda, o atendimento aparece com status manual.
+
+[00:00:26,000 --> 00:00:30,000] cena-06-cta
+Conheça o agendamento online no Marca Salão, marcasalao.com.br.

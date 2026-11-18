@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-marca-salao-001",
+  "campaignId": "SAAS-DEMO-MARCA-SALAO-001",
+  "tenantId": "marca-salao",
+  "preset": "saas-demo",
+  "baseCaptureRef": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "bookingCase": {
+    "cliente": "Ana Beatriz Souza",
+    "servicoId": "serv-001",
+    "profissionalId": "prof-001",
+    "data": "2026-11-18",
+    "horario": "09:00"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-marca-salao-001.mp4",
+    "packageSrtName": "camp-saas-demo-marca-salao-001.srt",
+    "packageNarrationName": "camp-saas-demo-marca-salao-001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "AGENDAMENTO ONLINE",
+      "headline": "COMO UM HORARIO ESCOLHIDO PELA CLIENTE CHEGA A AGENDA DO SALAO?",
+      "subline": "CONHECA O FLUXO CONECTADO DO MARCA SALAO",
+      "caption": "Como um horário escolhido pela cliente chega à agenda do salão?",
+      "narrationText": "Conheça o fluxo conectado do Marca Salão, do horário escolhido pela cliente à agenda do salão."
+    },
+    {
+      "id": "cena-02-escolha",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "FLUXO PUBLICO /BOOKING",
+      "headline": "ESCOLHA DO SERVICO E PROFISSIONAL",
+      "caption": "A cliente escolhe o serviço e o profissional.",
+      "narrationText": "Na rota pública /booking, a cliente escolhe o serviço e o profissional."
+    },
+    {
+      "id": "cena-03-confirma",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "duration": 7.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "HORARIOS LIVRES /BOOKING",
+      "headline": "SELECIONA O HORARIO DISPONIVEL",
+      "availableSlots": ["09:00", "11:00", "14:00", "16:30"],
+      "selectedSlot": "09:00",
+      "ctaLabel": "CONFIRMAR AGENDAMENTO",
+      "caption": "Seleciona o horário disponível e confirma.",
+      "narrationText": "Os horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento."
+    },
+    {
+      "id": "cena-04-ponte",
+      "kind": "booking-success",
+      "start": 17.0,
+      "duration": 3.0,
+      "surface": "public-booking",
+      "route": "/booking/marca-salao-modelo",
+      "badge": "CONFIRMACAO",
+      "headline": "AGENDAMENTO REALIZADO",
+      "subline": "REGISTRO VISIVEL NA AGENDA DO SALAO",
+      "caption": "Agendamento realizado.",
+      "narrationText": "O agendamento é realizado e fica visível na agenda do salão."
+    },
+    {
+      "id": "cena-05-salao-ve",
+      "kind": "manager-agenda",
+      "start": 20.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "VISAO DO GESTOR /GESTOR/AGENDA",
+      "headline": "AGENDA DO DIA - STATUS MANUAL",
+      "highlightId": "atend-001",
+      "caption": "O mesmo atendimento aparece na agenda do salão.",
+      "narrationText": "Na visão do gestor /gestor/agenda, o atendimento aparece com status manual."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "marcasalao.com.br",
+      "badge": "MARCA SALAO",
+      "headline": "CONHECA O AGENDAMENTO ONLINE NO MARCA SALAO",
+      "subline": "MARCASALAO.COM.BR",
+      "caption": "Conheça o agendamento online no Marca Salão — marcasalao.com.br",
+      "narrationText": "Conheça o agendamento online no Marca Salão, marcasalao.com.br."
+    }
+  ]
+}

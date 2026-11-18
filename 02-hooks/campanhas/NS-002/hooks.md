@@ -37,18 +37,20 @@ Contexto comum a todas as opções:
 - **Status:** rascunho — selecionado para o roteiro 001 por decisão do titular em 2026-11-16.
 - **Observações:** é a abertura aprovada para esta rodada. Não declara desempenho superior.
 
-## NS-002-H02 — opção alternativa
+## NS-002-H02 — opção alternativa (redução de carga cognitiva)
 
 - **ID:** NS-002-H02
-- **Categoria:** curiosidade
-- **Texto:** "Depois que a cliente confirma, onde esse atendimento aparece para o salão?"
-- **Público pretendido:** gestores que conferem a agenda depois de uma reserva feita pela cliente.
-- **Dor abordada:** dúvida sobre onde consultar o registro gerado fora do painel do gestor.
-- **Continuação sugerida:** mostrar a confirmação na tela pública e cortar direto para a agenda do gestor.
-- **Evidência que sustenta:** execução autenticada de 2026-11-05; o mesmo serviço apareceu em `/gestor/agenda` e o documento do agendamento ficou vinculado ao profissional.
-- **Risco de interpretação:** sugerir que a confirmação depende de pagamento ou de notificação automática. Ambos ficam fora da peça.
-- **Status:** rascunho — não selecionado para o roteiro 001.
-- **Observações:** alternativa mais direta, mantida para revisão futura. Nenhuma comparação de desempenho é feita.
+- **Categoria:** dor operacional / redução de carga cognitiva
+- **Texto:** "Quantas vezes você parou um atendimento hoje só para responder 'que horas tem livre?'"
+- **Formulação histórica complementar:** "Depois que a cliente confirma, onde esse atendimento aparece para o salão?" (preservada da v0.1 para continuidade).
+- **Documentação dedicada:** [`../../../00-briefings/campanhas/NS-002/NS-002-H02-variacao-carga-cognitiva.md`](../../../00-briefings/campanhas/NS-002/NS-002-H02-variacao-carga-cognitiva.md)
+- **Público pretendido:** gestores e profissionais que interrompem atendimentos para consultar horários manualmente e conferem a agenda depois de uma reserva pela cliente.
+- **Dor abordada:** carga cognitiva de checar e responder disponibilidade no meio de um atendimento, e dúvida sobre onde consultar o registro gerado no fluxo público.
+- **Continuação sugerida:** mostrar a cliente consultando horários livres em `/booking/[salonId]`, confirmando o agendamento e o registro aparecendo em `/gestor/agenda`.
+- **Evidência que sustenta:** execução autenticada de 2026-11-05; o cálculo público de horários livres ocorre em `/booking/[salonId]` e o mesmo serviço aparece em `/gestor/agenda` vinculado ao profissional.
+- **Risco de interpretação:** sugerir resposta automática por bot no WhatsApp, pagamento ou notificação automática. Todos ficam expressamente fora da peça.
+- **Status:** rascunho — variação opcional documentada; `NS-002-H01` permanece intacto como hook selecionado para o roteiro 001.
+- **Observações:** alternativa mantida para revisão futura sem alterar a seleção principal. Nenhuma comparação de desempenho é feita.
 
 ---
 

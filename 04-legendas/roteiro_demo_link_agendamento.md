@@ -13,9 +13,9 @@
 ### Mapeamento de cenas e narração
 
 #### Cena 1: Apresentação do app no celular (00:00 - 05.00s)
-- **O que aparece:** ícone do app MeuSalão (MS com tesouras) na home do Android, com fundo desfocado e dock de apps.
+- **O que aparece:** ícone do app Marca Salão (MS com tesouras) na home do Android, com fundo desfocado e dock de apps.
 - **Texto da narração:**
-  *"Conheça o Meu Salão, a plataforma que conecta o profissional ao cliente e simplifica o agendamento."*
+  *"Conheça o Marca Salão, a plataforma que conecta o profissional ao cliente e simplifica o agendamento."*
 
 #### Cena 2: Login do profissional (05.00 - 12.00s)
 - **O que aparece:** tela “Bem-vindo de volta / Entre na sua conta para continuar”. Email `profissional@gmail.com` já preenchido, campo de senha com teclado aberto.
@@ -40,7 +40,7 @@
 #### Cena 6: Fechamento institucional (45.00 - 57.00s)
 - **O que aparece:** retorno à tela do link/QR final, com ênfase no QR Code.
 - **Texto da narração:**
-  *"Com o Meu Salão o agendamento fica simples, rápido e automatizado 24 horas por dia. Mais organização para o salão e mais facilidade para o cliente."*
+  *"Com o Marca Salão o agendamento fica simples e rápido, disponível online. Mais organização para o salão e mais facilidade para o cliente."*
 
 ---
 

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-editorial-multitrack-hub-v1",
+  "tenantId": "multitrack-hub",
+  "descricao": "Fixture editorial dedicada para demonstrações do Multitrack Hub (catálogo, stems e rateios). Dados fictícios de catálogo técnico.",
+  "data": "2026-11-18",
+  "guardrails": [
+    "Não configurar ou exibir WhatsApp/telefone comercial",
+    "Site oficial: https://multitrackhub.com.br e rateios em https://multitrackhub.com.br/rateios",
+    "Legendas obrigatórias (.srt) em todas as peças Shorts/Reels"
+  ],
+  "plataforma": {
+    "nome": "Multitrack Hub",
+    "site": "https://multitrackhub.com.br",
+    "urlRateios": "https://multitrackhub.com.br/rateios",
+    "instagram": "@multitrackhub"
+  },
+  "projetos": [
+    {
+      "id": "mth-proj-001",
+      "titulo": "Horizonte Vivo (Ao Vivo)",
+      "artistaReferencia": "Banda Aurora",
+      "bpm": 124,
+      "tom": "G Maior",
+      "compasso": "4/4",
+      "duracao": "04:42",
+      "stems": ["Click", "Guide", "Drums", "Bass", "Acoustic", "Electric Gtr", "Keys", "Pads", "Vocals"],
+      "formato": "WAV 48kHz / 24-bit",
+      "status": "Sincronizado"
+    },
+    {
+      "id": "mth-proj-002",
+      "titulo": "Sinais da Manhã",
+      "artistaReferencia": "Projeto Estação",
+      "bpm": 76,
+      "tom": "D Maior",
+      "compasso": "4/4",
+      "duracao": "05:18",
+      "stems": ["Click", "Guide", "Drums", "Bass", "Piano", "Synth Pads", "Strings", "Back Vocals"],
+      "formato": "WAV 48kHz / 24-bit",
+      "status": "Sincronizado"
+    },
+    {
+      "id": "mth-proj-003",
+      "titulo": "Estrada Clara (Acústico)",
+      "artistaReferencia": "Coletivo Norte",
+      "bpm": 98,
+      "tom": "A Menor",
+      "compasso": "6/8",
+      "duracao": "03:54",
+      "stems": ["Click", "Guide", "Percussion", "Bass", "Violão Base", "Violão Solo", "Hammond"],
+      "formato": "WAV 44.1kHz / 24-bit",
+      "status": "Disponível"
+    }
+  ],
+  "rateios": [
+    {
+      "id": "rat-001",
+      "titulo": "Pacote Louvor Contemporâneo Vol. 1",
+      "faixasInclusas": 8,
+      "cotaBRL": 29.90,
+      "vagasRestantes": 3,
+      "status": "Aberto",
+      "rota": "/rateios"
+    },
+    {
+      "id": "rat-002",
+      "titulo": "Sessão Acústica & Pads Essenciais",
+      "faixasInclusas": 6,
+      "cotaBRL": 24.90,
+      "vagasRestantes": 0,
+      "status": "Completo",
+      "rota": "/rateios"
+    }
+  ]
+}
