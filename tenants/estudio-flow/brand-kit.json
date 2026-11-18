@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "estudio-flow",
+  "brandName": "Estúdio Flow",
+  "displayTitle": "ESTUDIO FLOW",
+  "monogram": "EF",
+  "domain": "estudioflow.com.br",
+  "url": "https://estudioflow.com.br",
+  "tagline": "PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
+  "palette": {
+    "primary": "#C86D51",
+    "secondary": "#6B8E78",
+    "accent": "#E6D5B8",
+    "background": "#1C1917",
+    "surface": "#292524",
+    "textPrimary": "#FAF7F2",
+    "textMuted": "#B8B0A4",
+    "rgb": {
+      "backgroundTop": [28, 25, 23],
+      "backgroundBottom": [41, 37, 36],
+      "headerBg": [20, 18, 16],
+      "cardBg": [41, 37, 36],
+      "cardHighlight": [58, 52, 49],
+      "primaryAccent": [200, 109, 81],
+      "secondaryAccent": [107, 142, 120],
+      "statusConfirmed": [107, 142, 120],
+      "statusWaiting": [230, 213, 184],
+      "statusDone": [184, 176, 164],
+      "textPrimary": [250, 247, 242],
+      "textMuted": [184, 176, 164]
+    }
+  },
+  "typography": {
+    "fontFamily": "Arial",
+    "titleWeight": "bold",
+    "bodyWeight": "regular"
+  },
+  "headerOverlay": {
+    "enabled": true,
+    "label": "ESTUDIO FLOW",
+    "badgeText": "PILATES & BEM-ESTAR",
+    "bgColor": "#141210",
+    "textColor": "#FAF7F2",
+    "height": 170
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "defaultPreset": "saas-demo",
+  "utmDefaults": {
+    "utm_source": "instagram",
+    "utm_medium": "reels",
+    "utm_campaign_prefix": "ef"
+  }
+}

@@ -113,8 +113,9 @@ Contrato validado por [`schemas/guardrails.schema.json`](../schemas/guardrails.s
 1. **Fixture** (`tenants/estudio-fitness/fixtures/fixture-editorial-estudio-fitness.json`):
    - Deve declarar `"tenantId": "estudio-fitness"` e dados fictícios plausíveis.
    - **Proibido conter placeholders de teste técnico** (`lorem ipsum`, `user1`, `test_user`, `e2e-...`, `12.000,00`).
+   - **Compatibilidade com o preset `saas-demo`:** mesmo que seu nicho adote nomes próprios no JSON (por exemplo `instrutores`, `modalidades`, `gradeHorarios` em estúdios de Pilates como `tenants/estudio-flow/`), mantenha também as chaves estruturais lidas pelo motor bitmap (`profissionais`, `servicos`, `agenda.atendimentos` e `booking.rota`).
 2. **Campanha** (`tenants/estudio-fitness/campaigns/camp-shorts-estudio-fitness-001.json`):
-   - Copie o template mais próximo (`tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json` para `shorts-completo`, ou `tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json` para `saas-demo`).
+   - Copie o template mais próximo (`tenants/multitrack-hub/campaigns/camp-shorts-completo-multitrack-001.json` para `shorts-completo`, ou `tenants/marca-salao/campaigns/camp-saas-demo-marca-salao-001.json` / `tenants/estudio-flow/campaigns/camp-saas-demo-estudio-flow-001.json` para `saas-demo`).
    - Ajuste `"id"`, `"campaignId"`, `"tenantId"`, os tempos (`scenes[].duration` somando `format.duration`) e os textos de `"caption"` / `"narrationText"`.
 
 ---
@@ -131,8 +132,16 @@ python tools/factory_cli.py list --tenant estudio-fitness
 # 3. Renderizar apenas o novo tenant (gera MP4, SRT, TXT, storyboard 2x2 e manifest.json)
 python tools/factory_cli.py render --tenant estudio-fitness --json
 
+# Em worktrees/branches paralelas, evite sobrescrever o factory-report.json compartilhado:
+python tools/factory_cli.py render --tenant estudio-fitness --report .workspace/tmp/estudio-fitness-report.json --json
+
 # 4. (Opcional) Validar todos os contratos e rodar os testes automatizados
+python tools/tenant_validator.py --all --json
 python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_factory_cli.py -v
 ```
 
-Os artefatos são gravados transacionalmente em `02-reels-shorts/deliveries/estudio-fitness/<slug>/`, a cópia de vídeo fica arquivada em `.workspace/archives/<slug>/` (ignorada no Git por `*.mp4` em `.gitignore`) e o índice consolidado é atualizado em `02-reels-shorts/deliveries/factory-report.json`.
+Os artefatos são gravados transacionalmente em `02-reels-shorts/deliveries/estudio-fitness/<slug>/`, a cópia de vídeo fica arquivada em `.workspace/archives/<slug>/` (ignorada no Git por `*.mp4` em `.gitignore`) e o índice consolidado é atualizado em `02-reels-shorts/deliveries/factory-report.json` (ou no caminho passado em `--report`).
+
+> **Nota sobre testes globais com novo tenant:** `tools/tests/test_tenant_contracts.py` (`test_07_cli_exit_codes`) e `tools/tests/test_factory_cli.py` (`test_01`/`test_03`) originalmente fixavam a contagem `3` para os tenants iniciais. Ao integrar o 4º+ nicho na `main`, atualize essas asserções ou torne-as dinâmicas (`>= 3`) e re-execute `python tools/factory_cli.py render --all --json`.
+
+> **Nota sobre `.gitattributes` no Windows:** `.gitattributes` garante `eol=lf` para `tenants/**/*.json` e `02-reels-shorts/**` (`.srt`, `*_narracao.txt`, `*.json`), preservando os hashes SHA-256 idênticos entre worktrees e CI Linux.
