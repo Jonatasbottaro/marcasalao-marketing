@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "marca-salao",
+  "forbiddenClaims": [
+    "whatsapp",
+    "sms",
+    "lembrete",
+    "24 horas",
+    "24h",
+    "automático",
+    "automatico",
+    "automática",
+    "automatica",
+    "automatizado",
+    "automatizar",
+    "confirmação automática",
+    "confirmacao automatica",
+    "envio automático",
+    "envio automatico",
+    "redução de faltas",
+    "reducao de faltas",
+    "zero faltas",
+    "no-show",
+    "aumento de faturamento",
+    "faturamento garantido",
+    "agenda sempre cheia",
+    "meu salão",
+    "meu salao"
+  ],
+  "forbiddenUiElements": [
+    "pagamento",
+    "cobrança",
+    "cobranca",
+    "a pagar",
+    "checkout",
+    "cartão de crédito",
+    "cartao de credito"
+  ],
+  "routeRules": {
+    "/booking/[salonId]": {
+      "surface": "public-booking",
+      "allowedResponsibilities": [
+        "identificacao-cliente-ficticia",
+        "escolha-servico",
+        "escolha-profissional",
+        "calculo-horarios-livres",
+        "confirmacao-agendamento"
+      ],
+      "forbiddenResponsibilities": [
+        "tela-pagamento",
+        "cobranca-simulada",
+        "envio-automatico-mensagem"
+      ]
+    },
+    "/gestor/agenda": {
+      "surface": "manager-agenda",
+      "allowedResponsibilities": [
+        "visualizacao-agendamentos",
+        "filtro-profissional-status",
+        "alteracao-manual-status"
+      ],
+      "forbiddenResponsibilities": [
+        "calculo-horarios-livres",
+        "exibicao-slots-disponiveis",
+        "tela-pagamento",
+        "namespace-e2e"
+      ]
+    }
+  },
+  "audioPolicy": {
+    "allowAudioTrack": false,
+    "requireExternalNarration": true,
+    "requireSrt": true,
+    "ffmpegFlag": "-an"
+  }
+}

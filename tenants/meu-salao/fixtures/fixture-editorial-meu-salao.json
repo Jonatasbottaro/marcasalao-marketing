@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-editorial-meu-salao-v1",
+  "tenantId": "meu-salao",
+  "descricao": "Fixture editorial white-label dedicada para demonstrações do Meu Salão. Dados integralmente fictícios. NÃO usar em testes técnicos E2E ou produção.",
+  "data": "2026-11-18",
+  "guardrails": [
+    "Sem promessas de envio automático via WhatsApp/SMS/e-mail ou lembretes 24h",
+    "Sem fluxo de pagamento ou checkout simulado",
+    "Separação estrita entre /booking/[salonId] (horários livres) e /gestor/agenda (visualização e status manual)"
+  ],
+  "estabelecimento": {
+    "nome": "Meu Salão",
+    "nomeInterno": "meu-salao-modelo",
+    "endereco": "Av. Paulista, 890 — Bela Vista, São Paulo, SP",
+    "telefone": "(11) 98765-4321",
+    "site": "https://meusalao.com.br",
+    "horarioFuncionamento": "Terça a Sábado, 09h às 20h"
+  },
+  "profissionais": [
+    {
+      "id": "prof-ms-001",
+      "nome": "Bianca Martins",
+      "especialidade": "Corte e Mechas",
+      "ativo": true
+    },
+    {
+      "id": "prof-ms-002",
+      "nome": "Thiago Ribeiro",
+      "especialidade": "Barba e Corte Masculino",
+      "ativo": true
+    },
+    {
+      "id": "prof-ms-003",
+      "nome": "Larissa Teixeira",
+      "especialidade": "Manicure e Spa dos Pés",
+      "ativo": true
+    },
+    {
+      "id": "prof-ms-004",
+      "nome": "Bruno Cardoso",
+      "especialidade": "Finalização e Escova",
+      "ativo": true
+    }
+  ],
+  "servicos": [
+    {
+      "id": "serv-ms-001",
+      "nome": "Corte e Finalização",
+      "duracaoMin": 60,
+      "precoBRL": 90.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-ms-002",
+      "nome": "Escova Progressiva",
+      "duracaoMin": 120,
+      "precoBRL": 180.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-ms-003",
+      "nome": "Hidratação Nutritiva",
+      "duracaoMin": 45,
+      "precoBRL": 95.00,
+      "categoria": "cabelo"
+    },
+    {
+      "id": "serv-ms-004",
+      "nome": "Manicure Tradicional",
+      "duracaoMin": 50,
+      "precoBRL": 45.00,
+      "categoria": "unhas"
+    },
+    {
+      "id": "serv-ms-005",
+      "nome": "Barba Completa",
+      "duracaoMin": 40,
+      "precoBRL": 55.00,
+      "categoria": "masculino"
+    }
+  ],
+  "agenda": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Terça-feira",
+    "visaoRota": "/gestor/agenda",
+    "nota": "Visualização e alteração manual de status apenas. Horários livres pertencem à rota /booking/[salonId].",
+    "atendimentos": [
+      {
+        "id": "atend-ms-001",
+        "horario": "09:00",
+        "duracaoMin": 60,
+        "cliente": "Patrícia Gomes",
+        "profissional": "prof-ms-001",
+        "servico": "serv-ms-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-ms-002",
+        "horario": "10:00",
+        "duracaoMin": 40,
+        "cliente": "Marcelo Freitas",
+        "profissional": "prof-ms-002",
+        "servico": "serv-ms-005",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-ms-003",
+        "horario": "11:00",
+        "duracaoMin": 50,
+        "cliente": "Daniela Barbosa",
+        "profissional": "prof-ms-003",
+        "servico": "serv-ms-004",
+        "status": "Aguardando"
+      },
+      {
+        "id": "atend-ms-004",
+        "horario": "14:00",
+        "duracaoMin": 45,
+        "cliente": "Vanessa Moreira",
+        "profissional": "prof-ms-004",
+        "servico": "serv-ms-003",
+        "status": "Confirmado"
+      },
+      {
+        "id": "atend-ms-005",
+        "horario": "15:30",
+        "duracaoMin": 60,
+        "cliente": "Cristina Duarte",
+        "profissional": "prof-ms-001",
+        "servico": "serv-ms-001",
+        "status": "Concluído"
+      }
+    ]
+  },
+  "booking": {
+    "rota": "/booking/meu-salao-modelo",
+    "servicosDisponiveis": ["serv-ms-001", "serv-ms-002", "serv-ms-003", "serv-ms-004", "serv-ms-005"],
+    "horariosLivresExemplo": ["09:00", "11:30", "14:30", "16:30"]
+  }
+}

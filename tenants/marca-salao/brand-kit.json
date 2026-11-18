@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "marca-salao",
+  "brandName": "Marca Salão",
+  "displayTitle": "MARCA SALAO",
+  "monogram": "MS",
+  "domain": "marcasalao.com.br",
+  "url": "https://marcasalao.com.br",
+  "tagline": "AGENDAMENTO ONLINE E AGENDA DO SALAO",
+  "palette": {
+    "primary": "#F5C107",
+    "secondary": "#4F8CFF",
+    "accent": "#28B463",
+    "background": "#121620",
+    "surface": "#222C40",
+    "textPrimary": "#F5F7FA",
+    "textMuted": "#B4C0D2",
+    "rgb": {
+      "backgroundTop": [18, 22, 32],
+      "backgroundBottom": [28, 36, 52],
+      "headerBg": [14, 18, 28],
+      "cardBg": [34, 44, 64],
+      "cardHighlight": [48, 64, 92],
+      "primaryAccent": [245, 193, 7],
+      "secondaryAccent": [79, 140, 255],
+      "statusConfirmed": [40, 180, 99],
+      "statusWaiting": [245, 176, 65],
+      "statusDone": [130, 145, 170],
+      "textPrimary": [245, 247, 250],
+      "textMuted": [180, 192, 210]
+    }
+  },
+  "typography": {
+    "fontFamily": "Arial",
+    "titleWeight": "bold",
+    "bodyWeight": "bold"
+  },
+  "headerOverlay": {
+    "enabled": true,
+    "label": "MARCA SALAO",
+    "badgeText": "AGENDAMENTO ONLINE",
+    "bgColor": "#0E121C",
+    "textColor": "#F5F7FA",
+    "height": 170,
+    "replaceLegacyLabel": "Meu Salão"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "defaultPreset": "saas-demo",
+  "utmDefaults": {
+    "utm_source": "instagram",
+    "utm_medium": "reels",
+    "utm_campaign_prefix": "ns"
+  }
+}

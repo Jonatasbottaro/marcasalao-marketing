@@ -12,10 +12,10 @@
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
 | HEAD main | `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) |
-| Branch de trabalho ativa | `codex/etapa1-piloto-ns002` (criada a partir de `codex/fase1-conformidade-editorial` `43fcac8`) |
+| Branch de trabalho ativa | `codex/etapa2-agente1-arquitetura-tenants` (criada a partir de `codex/etapa1-piloto-ns002` `da7d565`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 1 — Piloto Real Ponta a Ponta da Campanha NS-002 (Concluída) |
-| Status das 5 tarefas | Fase 1 e Etapa 1 concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 2 — Agente 1: Arquitetura Multi-Tenant e Contratos de Marca (Concluída) |
+| Status das 5 tarefas | Fase 1, Etapa 1 e Etapa 2 (Agente 1) concluídas — ver seções 2 e 7 |
 
 ---
 
@@ -282,5 +282,65 @@ Resultado observado:
   1. Extrair o objeto `brand` + `subtitleStyle` de `02-reels-shorts/ns002-piloto-01/ns002-piloto.config.json` para `tenants/<tenantId>/brand-kit.json` (iniciando por `tenants/marca-salao/brand-kit.json` e `tenants/multitrack-hub/brand-kit.json`), acompanhado de um `brand-kit.schema.json`.
   2. Organizar fixtures editoriais e campanhas por tenant (`tenants/<tenantId>/fixtures/`), passando `brandKitRef` e `fixtureRef` no config da campanha.
   3. Evoluir `tools/ns002_pilot.py` para um runner genérico multi-tenant por `preset` (ex.: `tools/preset_runner.py` com suporte inicial a `preset: "saas-demo"`), resolvendo dinamicamente paleta, monograma, domínio, `headerOverlay` e estilo de legenda sem duplicar código de renderização ou validação de guardrails.
+- **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2`.
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+---
+
+### 2026-11-18 — codex/etapa2-agente1-arquitetura-tenants (Etapa 2 — Agente 1: Arquitetura Multi-Tenant e Contratos de Marca)
+
+- **Executor:** Arquiteto de Software Sênior (Antigravity — Agente 1)
+- **Branch:** `codex/etapa2-agente1-arquitetura-tenants` a partir de `codex/etapa1-piloto-ns002` (`da7d565`)
+- **Raiz:** `D:/MEGA/Marketing/marcasalao-marketing`
+- **Resumo:** Implementação dos contratos formais JSON Schema em `schemas/`, estrutura multi-tenant `tenants/` para três projetos (`marca-salao`, `meu-salao`, `multitrack-hub`), fixtures editoriais isoladas por tenant, validador em biblioteca padrão Python (`tools/tenant_validator.py`) e suíte de regressão de contratos (`tools/tests/test_tenant_contracts.py`), mantendo `tools/ns002_pilot.py`, `tools/r002/agenda-ficticia.pilot.json`, `docs/fixtures/fixture-editorial-marca-salao.json` e `02-reels-shorts/ns002-piloto-01/` intactos.
+
+#### Arquivos criados e modificados
+
+| Arquivo | Ação | Finalidade |
+| --- | --- | --- |
+| `schemas/brand-kit.schema.json` | Criado | Contrato JSON Schema de identidade visual, paleta hex+rgb, tipografia, `headerOverlay`, `subtitleStyle`, `defaultPreset` e `utmDefaults` |
+| `schemas/guardrails.schema.json` | Criado | Contrato JSON Schema de `forbiddenClaims`, `forbiddenUiElements`, `routeRules` e `audioPolicy` por tenant |
+| `tenants/marca-salao/brand-kit.json` | Criado | Brand kit oficial do Marca Salão extraído 1:1 de `02-reels-shorts/ns002-piloto-01/ns002-piloto.config.json` (`defaultPreset: "saas-demo"`) |
+| `tenants/marca-salao/guardrails.json` | Criado | Regras estritas da Fase 1/Etapa 1 (sem WhatsApp/SMS/lembretes/faltas/faturamento/pagamento/Meu Salão, rotas separadas, `allowAudioTrack: false`) |
+| `tenants/marca-salao/fixtures/fixture-editorial-marca-salao.json` | Criado | Cópia sincronizada (SHA-256 `1cb32a7b34d0d7dc8619d21f1a9ddafe14c8614e541665af9dc207b81f432efa`) da fixture editorial original |
+| `tenants/marca-salao/campaigns/README.md` | Criado | Índice de campanhas do tenant `marca-salao` |
+| `tenants/meu-salao/brand-kit.json` | Criado | Brand kit white-label do Meu Salão (`monogram: "MS"`, `headerOverlay.label: "MEU SALAO"`, `defaultPreset: "saas-demo"`) |
+| `tenants/meu-salao/guardrails.json` | Criado | Regras de veracidade e separação `/booking/[salonId]` vs `/gestor/agenda` (`allowAudioTrack: false`, permitindo marca própria `"Meu Salão"`) |
+| `tenants/meu-salao/fixtures/fixture-editorial-meu-salao.json` | Criado | Fixture fictícia plausível para Meu Salão (4 profissionais, 5 serviços BRL, agenda sem checkout/E2E) |
+| `tenants/meu-salao/campaigns/README.md` | Criado | Índice de campanhas white-label `meu-salao` |
+| `tenants/multitrack-hub/brand-kit.json` | Criado | Brand kit dark/tech do Multitrack Hub (`monogram: "MH"`, `headerOverlay.label: "MULTITRACK HUB"`, `defaultPreset: "shorts-completo"`) |
+| `tenants/multitrack-hub/guardrails.json` | Criado | Regras multi-nicho Shorts (`allowAudioTrack: true`, `requireExternalNarration: false`, `requireSrt: true`, sem WhatsApp/telefone comercial, rotas `/` e `/rateios`) |
+| `tenants/multitrack-hub/fixtures/fixture-editorial-multitrack-hub.json` | Criado | Fixture fictícia de catálogo multitrack (3 projetos, BPM, tonalidade, stems `Click/Guide/...`, 2 rateios) |
+| `tenants/multitrack-hub/campaigns/README.md` | Criado | Índice de campanhas `multitrack-hub` |
+| `tools/tenant_validator.py` | Criado | Validador stdlib de schemas, fixtures e guardrails por tenant + CLI (`--all` / `--tenant`) |
+| `tools/tests/test_tenant_contracts.py` | Criado | 7 testes de contrato (positivos, negativos, consistência com piloto NS-002 e CLI) |
+| `contexto_projeto.md` | Atualizado | Registro da Etapa 2 — Agente 1 |
+
+#### Resumo estrutural dos 3 `brand-kit.json`
+
+| `tenantId` | `brandName` | `monogram` | `defaultPreset` | `palette` (hex principal) | `allowAudioTrack` | `utmDefaults` (`source/medium/prefix`) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `marca-salao` | Marca Salão | `MS` | `saas-demo` | `#F5C107` / `#4F8CFF` / `#28B463` / `#121620` | `false` (`-an`) | `instagram` / `reels` / `ns` |
+| `meu-salao` | Meu Salão | `MS` | `saas-demo` | `#10B981` / `#3B82F6` / `#F59E0B` / `#0F172A` | `false` (`-an`) | `instagram` / `reels` / `ms` |
+| `multitrack-hub` | Multitrack Hub | `MH` | `shorts-completo` | `#06B6D4` / `#8B5CF6` / `#22C55E` / `#090D16` | `true` | `youtube` / `shorts` / `mth` |
+
+#### Validações e Testes Executados
+
+- **CLI `tenant_validator`:** `python tools/tenant_validator.py --all --json` — **OK (`0` erros)** para `marca-salao`, `meu-salao` e `multitrack-hub`.
+- **Suíte consolidada (Etapa 1 + Etapa 2 Agente 1 + CI núcleo Python):**
+  - `test_tenant_contracts.py` (7) + `test_ns002_pilot.py` (5) + `test_srt_validate.py` (10) + `test_build_video.py` (6) + `test_r002_pilot.py` (5) + `test_delivery_verify.py` (16) + `test_campaign_proof.py` (5): **54/54 testes aprovados em `44.901s` (`OK`)**.
+
+#### Pontos de Entrada e Instruções Técnicas para o Agente 2 (`tools/preset_runner.py`)
+
+1. **Importação direta do validador e carregador de tenant (`tools/tenant_validator.py`):**
+   - `ctx = tenant_validator.load_and_validate_tenant(tenant_id, root=REPO_ROOT, strict=True)` devolve um dicionário validado com:
+     - `ctx["brandKit"]` (inclui `palette.rgb` compatível 1:1 com os helpers de desenho PNG de `tools/ns002_pilot.py`, `displayTitle`, `monogram`, `tagline`, `domain`, `headerOverlay`, `subtitleStyle`, `defaultPreset`, `utmDefaults`).
+     - `ctx["guardrails"]` (inclui `audioPolicy.allowAudioTrack`, `requireSrt`, `requireExternalNarration`, `forbiddenClaims`, `forbiddenUiElements`, `routeRules`).
+     - `ctx["fixture"]` e `ctx["fixturePath"]`.
+   - `tenant_validator.validate_text_against_guardrails(text, ctx["guardrails"], check_ui_elements=True)` deve ser aplicado sobre captions, SRT e roteiro de narração antes do render FFmpeg.
+   - `tenant_validator.load_schema("brand-kit.schema.json", root)` e `validate_brand_kit(...)` / `validate_guardrails_contract(...)` permanecem disponíveis caso um preset receba overrides locais.
+2. **Contrato esperado em `tools/preset_runner.py`:**
+   - Respeitar `ctx["guardrails"]["audioPolicy"]`: forçar `-an` e recusar trilha sonora sempre que `allowAudioTrack == False` (`marca-salao` e `meu-salao`), preservando `tools/ns002_pilot.py` e todos os testes existentes sem quebrar retrocompatibilidade.
+   - Implementar roteamento por `preset` (`"saas-demo"` reutilizando o layout multi-superfície de `ns002_pilot.py` com parâmetros de `ctx["brandKit"]` + `ctx["fixture"]`, e `"shorts-completo"` para o fluxo de `multitrack-hub`).
 - **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2`.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
