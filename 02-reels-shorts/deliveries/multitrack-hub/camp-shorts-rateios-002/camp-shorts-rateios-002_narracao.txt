@@ -1,0 +1,17 @@
+Roteiro de narracao - camp-shorts-rateios-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:07,000] cena-01-hook
+Veja os rateios de multitracks organizados por faixas, cotas e vagas no Multitrack Hub.
+
+[00:00:07,000 --> 00:00:15,000] cena-02-rateios
+Cada rateio mostra as faixas inclusas, a cota por faixa e as vagas restantes.
+
+[00:00:15,000 --> 00:00:21,000] cena-03-metricas
+Acompanhe o status de cada rateio, com vagas restantes e cota a partir de vinte e quatro reais e noventa centavos.
+
+[00:00:21,000 --> 00:00:27,000] cena-04-rateios
+Dois rateios no catalogo: Pacote Louvor Contemporaneo e Sessao Acustica, com faixas e cotas claras.
+
+[00:00:27,000 --> 00:00:30,000] cena-05-cta
+Abra a secao Rateios no site oficial, multitrackhub.com.br/rateios.

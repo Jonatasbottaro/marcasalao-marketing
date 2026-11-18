@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false
+  },
+  "config": "tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json",
+  "fixture": {
+    "path": "tenants/multitrack-hub/fixtures/fixture-editorial-multitrack-hub.json",
+    "sha256": "de117707fd9cda64d562c864eef062fff43a8c741cd4d125e5256c3148a65495"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": true,
+    "audioStream": 1,
+    "source": "external"
+  },
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003 --audio .workspace/tmp/audio-mth/narracao-stems-workflow-003-30s.wav",
+  "tools": {
+    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+      "archivePath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+      "sha256": "845ce2e6eb0718c43d485c505551b7a601725cf978f8e13ce1e5f4e9420caa62",
+      "bytes": 919288,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
+      "sourcePath": null,
+      "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89",
+      "bytes": 488,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003_narracao.txt",
+      "sha256": "00a866f508f85b114b42a848bb1b9384255dc8d1a0e5665318efd363be0cb79b",
+      "bytes": 759,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
+      "bytes": 537892,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

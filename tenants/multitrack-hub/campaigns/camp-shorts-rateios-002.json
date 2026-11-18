@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-shorts-rateios-002",
+  "campaignId": "SHORTS-RATEIOS-MULTITRACK-002",
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-shorts-rateios-002.mp4",
+    "packageSrtName": "camp-shorts-rateios-002.srt",
+    "packageNarrationName": "camp-shorts-rateios-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "shorts-hook",
+      "start": 0.0,
+      "duration": 7.0,
+      "route": "/",
+      "badge": "RATEIOS DE MULTITRACKS",
+      "headline": "RATEIOS ORGANIZADOS POR FAIXAS",
+      "subline": "MULTITRACKHUB.COM.BR/RATEIOS",
+      "caption": "Rateios organizados por faixas, cotas e vagas no Multitrack Hub.",
+      "narrationText": "Veja os rateios de multitracks organizados por faixas, cotas e vagas no Multitrack Hub."
+    },
+    {
+      "id": "cena-02-rateios",
+      "kind": "shorts-rateios",
+      "start": 7.0,
+      "duration": 8.0,
+      "route": "/rateios",
+      "badge": "RATEIOS ABERTOS",
+      "headline": "PARTICIPE DOS RATEIOS",
+      "caption": "Cada rateio mostra faixas inclusas, cota por faixa e vagas restantes.",
+      "narrationText": "Cada rateio mostra as faixas inclusas, a cota por faixa e as vagas restantes."
+    },
+    {
+      "id": "cena-03-metricas",
+      "kind": "shorts-metricas",
+      "start": 15.0,
+      "duration": 6.0,
+      "route": "/rateios",
+      "badge": "STATUS DOS RATEIOS",
+      "headline": "VAGAS E COTAS EM ORDEM",
+      "caption": "Status de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.",
+      "narrationText": "Acompanhe o status de cada rateio, com vagas restantes e cota a partir de vinte e quatro reais e noventa centavos."
+    },
+    {
+      "id": "cena-04-rateios",
+      "kind": "shorts-rateios",
+      "start": 21.0,
+      "duration": 6.0,
+      "route": "/rateios",
+      "badge": "FAIXAS INCLUSAS",
+      "headline": "DOIS RATEIOS NO CATALOGO",
+      "caption": "Pacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.",
+      "narrationText": "Dois rateios no catalogo: Pacote Louvor Contemporaneo e Sessao Acustica, com faixas e cotas claras."
+    },
+    {
+      "id": "cena-05-cta",
+      "kind": "shorts-cta",
+      "start": 27.0,
+      "duration": 3.0,
+      "route": "/",
+      "badge": "MULTITRACK HUB",
+      "headline": "ABRA A SECAO RATEIOS",
+      "subline": "MULTITRACKHUB.COM.BR/RATEIOS",
+      "caption": "Abra a secao Rateios no site oficial: multitrackhub.com.br/rateios.",
+      "narrationText": "Abra a secao Rateios no site oficial, multitrackhub.com.br/rateios."
+    }
+  ]
+}

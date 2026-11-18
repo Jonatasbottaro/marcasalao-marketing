@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false
+  },
+  "config": "tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json",
+  "fixture": {
+    "path": "tenants/multitrack-hub/fixtures/fixture-editorial-multitrack-hub.json",
+    "sha256": "de117707fd9cda64d562c864eef062fff43a8c741cd4d125e5256c3148a65495"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": true,
+    "audioStream": 1,
+    "source": "external"
+  },
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002 --audio .workspace/tmp/audio-mth/bed-rateios-002-30s.wav",
+  "tools": {
+    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
+      "archivePath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
+      "sha256": "35d0855722e5d75c7d17f65f39cae0e864a4b163469747c5b6e5a66c864a3c8a",
+      "bytes": 826037,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt",
+      "sourcePath": null,
+      "sha256": "f98de0175ca5a8637936f490670164c37763caa523e09fb9ad5c0533a0b0f5e1",
+      "bytes": 516,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002_narracao.txt",
+      "sha256": "570a33fda5d10ff6cb839d2fa7b5717b2e6ae56d4d988c239100f9d7bd60c952",
+      "bytes": 825,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02",
+      "bytes": 479669,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}
