@@ -1,3 +1,3 @@
 id_peca,campanha,canal,formato,variante,posicao_cta,data_hora_publicacao,link_publico,status_destino,url_destino,url_parametrizada,utm_source,utm_medium,utm_campaign,utm_content
-NS-001-P001,ns-001,instagram,reels,v1,legenda,2026-11-20T10:00:00-03:00,https://www.instagram.com/reel/ficticio-001/,confirmado,https://marcaselao.com.br,https://marcaselao.com.br?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1,instagram,reels,ns-001,ns-001-p001-reels-v1
+NS-001-P001,ns-001,instagram,reels,v1,legenda,2026-11-20T10:00:00-03:00,https://www.instagram.com/reel/ficticio-001/,confirmado,https://marcasalao.com.br,https://marcasalao.com.br?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1,instagram,reels,ns-001,ns-001-p001-reels-v1
 NS-002-P001,ns-002,instagram,stories,v1,bio,2026-11-20T11:00:00-03:00,https://www.instagram.com/stories/ficticio-002/,pendente_de_decisao,,,,,,

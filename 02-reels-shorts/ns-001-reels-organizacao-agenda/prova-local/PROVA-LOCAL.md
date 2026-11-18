@@ -2,9 +2,9 @@
 
 ## Resumo
 
-A peça piloto da NS-001 (NS-001-P001, "Organização e visibilidade da agenda — Reels") foi montada como `VideoRequest v1` com **7 cenas somando 30 segundos** e submetida ao **pré-voo real** (`--plan-only --json`) do Video Studio, que foi aprovado com sucesso.
+A peça piloto da NS-001 (NS-001-P001, "Organização e visibilidade da agenda — Reels") foi montada como `VideoRequest v1` com **7 cenas somando 30 segundos** e submetida ao **pré-voo e render real** (`tools/campaign_proof.py run --all-profiles`) nos perfis `instagram-reels-video`, `facebook-reels-video` e `youtube-shorts`.
 
-O **render real** ficou **bloqueado por causa externa**: `ffmpeg` e `ffprobe` não estão instalados nesta estação e não há conexão com internet para obtê-los (a instalação temporária está autorizada apenas dentro de `<RAIZ>/.workspace/`). Nenhuma mídia final (MP4/SRT/TXT) foi produzida; trata-se de uma **prova técnica**, não de mídia final.
+Todos os três perfis concluíram em **1080×1920 @ 30 fps (H.264/yuv420p), duração exata 30.0 s e 0 faixas de áudio (`-an`)**, com arquivos `.srt` e roteiro `.txt` de narração validados. Todos os ativos visuais usam substitutos sintéticos marcados como `PROVA FICTICIA` (`origin: synthetic-demo`); trata-se de uma **prova técnica**, com aprovação editorial pendente para gravação ou publicação.
 
 ## Pedido montado (versionado)
 
@@ -33,7 +33,7 @@ Total: 30 000 ms (30 s).
 
 ## Resultado do pré-voo real (aprovado)
 
-Arquivo: `prova-local/pre-voo.json` (resumo em `prova-local/pre-voo-resumo.md`)
+Arquivo: `prova-local/pre-voo.json` (gerado por `python tools/produce_video.py --input tools/produce/examples/marca-salao-ns-001-p001.video-request.json --plan-only --json`).
 
 | Campo | Valor |
 |-------|-------|
@@ -50,33 +50,27 @@ Arquivo: `prova-local/pre-voo.json` (resumo em `prova-local/pre-voo-resumo.md`)
 | renderer.adapter | undecided (aviso não-bloqueante) |
 | Regras de publicação | OUTPUT_PLAN_CONTEXT_NOT_DECLARED (avisos não-bloqueantes) |
 
-Os três perfis estão estruturalmente válidos para render. O perfil principal (instagram-reels-video) tem 7 beats, duração 30s, sem erros.
+Os três perfis estão estruturalmente válidos para render. O perfil principal (`instagram-reels-video`) tem 7 beats, duração 30s, sem erros.
 
-## Resultado do render real (bloqueado)
+## Resultado do render real (concluído — prova técnica)
 
-Arquivo: `prova-local/render-instagram.json`
+Arquivo: `prova-local/index.json` (`overallStatus: completed`, `completedCount: 3`, gerando entregas em `<RAIZ>/.workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/`).
 
-| Campo | Valor |
-|-------|-------|
-| status | partial |
-| overallStatus | partial |
-| completedCount | 0 |
-| lastValidDelivery | null |
-| Erro do perfil instagram-reels-video | `ffmpeg/ffprobe nao encontrados; exponha no PATH ou em .workspace/tools/ffmpeg` |
+| Perfil | Status | Geometria / FPS | Duração | Áudio |
+|--------|--------|-----------------|---------|-------|
+| instagram-reels-video | completed | 1080×1920 @ 30 fps (h264/yuv420p) | 30.0 s | 0 faixas (`-an`) |
+| facebook-reels-video | completed | 1080×1920 @ 30 fps (h264/yuv420p) | 30.0 s | 0 faixas (`-an`) |
+| youtube-shorts | completed | 1080×1920 @ 30 fps (h264/yuv420p) | 30.0 s | 0 faixas (`-an`) |
 
-## Causa específica do bloqueio (render)
+## Comando reproduzível da prova completa
 
-O Video Studio (`tools/produce_video.py`) exige `ffmpeg` e `ffprobe` para a etapa de render (staging → render FFmpeg `-an` → inspeção FFprobe → validação SRT/narração → promoção transacional). Nenhuma das duas ferramentas está disponível:
-- Não estão no PATH do sistema.
-- Não existem em `.workspace/tools/ffmpeg/`.
-- Não há conexão com internet nesta estação para baixar um ffmpeg portátil (fonte usada pelo projeto: BtbN ffmpeg-release-builds).
+```bash
+python tools/campaign_proof.py run tools/produce/examples/marca-salao-ns-001-p001.video-request.json --all-profiles --output-dir .workspace/archives/prova-campanha-ns001-ns002/ns-001-p001 --json
+```
 
-## O que é necessário para concluir o render (pendente — depende do ambiente)
-
-1. Expor `ffmpeg` e `ffprobe` no PATH do processo, ou colocá-los em `.workspace/tools/ffmpeg/` (conforme `tools/render/README.md`, seção "Requisitos").
-2. Reexecutar: `python tools/produce_video.py --input tools/produce/examples/marca-salao-ns-001-p001.video-request.json --profile instagram-reels-video --output-dir <entrega> --json`
-3. Após o render, inspecionar com `ffprobe`: dimensões 1080×1920, 0 faixas de áudio, codec H.264, yuv420p, duração ~30s.
-4. Verificar as 7 cenas, o SRT e a legibilidade dos textos em enquadramento de celular (390 × 844).
+Para inspeção humana final antes da publicação:
+1. Substituir os 7 PNGs sintéticos em `.workspace/tmp/ns-001-p001/assets/` por capturas reais aprovadas (ou passar mídia do operador antes do `prepare`, que preserva arquivos sem marcador sintético).
+2. Validar visualmente as 7 cenas, `.srt`, `.txt` de narração e o HTML portável de revisão no celular (`390×844`) e desktop.
 
 ## Mídia usada no teste (fictícios — precisam de substituição)
 
@@ -90,9 +84,9 @@ Todos os 7 PNGs são **substitutos claramente marcados como fictícios** (`origi
 ## Onde ficam as evidências
 
 - `prova-local/PROVA-LOCAL.md` — este resumo
-- `prova-local/pre-voo.json` — resultado bruto do pré-voo
-- `prova-local/pre-voo-resumo.md` — resumo legível do pré-voo
-- `prova-local/render-instagram.json` — resultado do render parcial (bloqueado)
+- `prova-local/pre-voo.json` — resultado bruto do pré-voo (`marca-salao-ns-001-p001`)
+- `prova-local/index.json` — índice da entrega concluída para os 3 perfis (`completedCount: 3`)
+- `<RAIZ>/.workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/` — pacote portável com MP4s, `.srt`, `.txt`, miniaturas em `assets/` e `revisao-marca-salao-ns-001-p001.html`
 - `PILOTO-NS-001-REELS.md` — sequência por cena, inventário de mídias, rascunho de legenda/CTA, registro de publicação
 - `legenda-rascunho.md` — rascunho da legenda e posicionamento do CTA
 - `registro-publicacao.csv` — registro de publicação iniciado (campos de horário/link/métricas vazios)
@@ -100,8 +94,8 @@ Todos os 7 PNGs são **substitutos claramente marcados como fictícios** (`origi
 
 ## Regra de vídeo sem áudio
 
-Respeitada integralmente: nenhum áudio foi gerado ou preservado; o pipeline está configurado para exportar com `-an`; nenhum TTS, música ou efeito sonoro foi usado.
+Respeitada integralmente: nenhuma faixa de áudio foi gerada ou preservada (`audioStreams: 0`, `-an`); nenhum TTS, música ou efeito sonoro foi usado.
 
-## Estado do MP4
+## Estado do MP4 (prova técnica)
 
-**Não há MP4.** O render real está bloqueado pela ausência de `ffmpeg`/`ffprobe` (causa documentada acima). Este piloto entrega o pedido versionado, os assets fictícios, o pré-voo aprovado e a causa específica do bloqueio. A entrega concluída (MP4) fica para quando o ambiente tiver ffmpeg/ffprobe disponível.
+Entregas MP4/SRT/TXT concluídas em `<RAIZ>/.workspace/archives/prova-campanha-ns001-ns002/ns-001-p001/` com substitutos sintéticos claramente identificados (`PROVA FICTICIA`). Permanecem em estado editorial de **rascunho/prova técnica** até substituição por capturas reais aprovadas pelo titular.

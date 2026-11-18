@@ -37,7 +37,7 @@ Todas as capturas devem usar dados fictícios, sem telefone/e-mail/credenciais r
 | Capturas com fixture editorial | Produção | Nenhuma captura das 7 telas acima foi feita; capturas de 2026-11-05 são evidência técnica da ponta do gestor, não frames aprovados |
 | Link externo do perfil (bio) | Decisão do titular | Pendente: confirmar link cadastrado no Instagram antes de usar "link na bio" |
 | Autorização de sticker de link | Decisão do titular | Pendente: sticker somente com autorização separada de publicação |
-| Destino clicável confirmado | Decisão do titular | `https://marcaselao.com.br` como destino; confirmação por canal |
+| Destino clicável confirmado | Decisão do titular | `https://marcasalao.com.br` como destino; confirmação por canal |
 | Mecanismo de rastreamento | Decisão do titular | Pendente: não há utm/pixel definido; registrar como "não rastreado" |
 | Nome da marca na interface | Decisão do titular | Interface exibe "Meu Salão"; campanha usa "Marca Salão"; decisão pendente antes das capturas finais |
 | Render local (ffmpeg/ffprobe) | Técnico | ffmpeg/ffprobe não disponíveis nesta estação; necessário para produzir MP4 final |

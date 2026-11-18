@@ -39,7 +39,7 @@ Reaproveite a convenção abaixo para todas as peças das campanhas NS-001 e NS-
 Peça `NS-001-P001`, variante Reels, campanha NS-001:
 
 ```
-https://marcaselao.com.br?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1
+https://marcasalao.com.br?utm_source=instagram&utm_medium=reels&utm_campaign=ns-001&utm_content=ns-001-p001-reels-v1
 ```
 
 ### Como distinguir duas peças da mesma campanha sem renomear as tags
@@ -89,7 +89,7 @@ Preencha uma linha por peça publicada (ou planejada) no modelo `modelo-registro
 
 Peça com URL de destino própria e clicável confirmada.
 
-- Preencha `url_destino` com o destino oficial (ex.: `https://marcaselao.com.br`).
+- Preencha `url_destino` com o destino oficial (ex.: `https://marcasalao.com.br`).
 - Preencha `url_parametrizada` com os parâmetros UTM.
 - `status_destino = confirmado`.
 - Cliques são atribuídos à peça pelo parâmetro `utm_content` (identifica a peça de forma estável).

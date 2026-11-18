@@ -7,8 +7,8 @@
 
 ## Destino
 
-- `https://marcaselao.com.br` — endereço oficial documentado no repositório.
-- O painel de demonstração (`https://marcaselao.com.br/gestor`) exige credenciais: **não** usar como destino público.
+- `https://marcasalao.com.br` — endereço oficial documentado no repositório.
+- O painel de demonstração (`https://marcasalao.com.br/gestor`) exige credenciais: **não** usar como destino público.
 
 ## Posicionamento do CTA por canal
 

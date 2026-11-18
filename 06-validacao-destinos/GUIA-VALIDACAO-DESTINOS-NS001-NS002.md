@@ -21,7 +21,7 @@ Preencha uma linha por combinação de campanha + peça/formato + canal. Quando 
 | `canal` | `instagram`, `facebook`, `youtube`, `tiktok`, `whatsapp` |
 | `cta` | Texto do CTA usado na peça |
 | `posicionamento` | `legenda`, `bio`, `sticker`, `descricao`, `nenhum` |
-| `destino_candidato` | URL do destino candidato (ex.: `https://marcaselao.com.br`) |
+| `destino_candidato` | URL do destino candidato (ex.: `https://marcasalao.com.br`) |
 | `status_aprovacao` | `aprovado`, `pendente_de_decisao`, `rejeitado` |
 | `evidencia` | Fonte da evidência (briefing, roteiro, AGENTS.md, confirmação do titular) |
 
@@ -29,20 +29,20 @@ Preencha uma linha por combinação de campanha + peça/formato + canal. Quando 
 
 | campanha | peca_ou_formato | canal | cta | posicionamento | destino_candidato | status_aprovacao | evidencia |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ns-001 | NS-001-P001-reels | instagram | "Conheça a agenda do Marca Salão." | legenda | https://marcaselao.com.br | pendente_de_decisao | briefing NS-001 seção 12; roteiro 001 cena 7 |
-| ns-001 | NS-001-P001-stories | instagram | "Conheça a agenda do Marca Salão." | bio | https://marcaselao.com.br | pendente_de_decisao | briefing NS-001 seção 11 Canal 1 |
-| ns-001 | NS-001-P001-shorts | youtube | "Conheça a agenda do Marca Salão." | descricao | https://marcaselao.com.br | pendente_de_decisao | briefing NS-001 seção 11 Canal 2 |
+| ns-001 | NS-001-P001-reels | instagram | "Conheça a agenda do Marca Salão." | legenda | https://marcasalao.com.br | pendente_de_decisao | briefing NS-001 seção 12; roteiro 001 cena 7 |
+| ns-001 | NS-001-P001-stories | instagram | "Conheça a agenda do Marca Salão." | bio | https://marcasalao.com.br | pendente_de_decisao | briefing NS-001 seção 11 Canal 1 |
+| ns-001 | NS-001-P001-shorts | youtube | "Conheça a agenda do Marca Salão." | descricao | https://marcasalao.com.br | pendente_de_decisao | briefing NS-001 seção 11 Canal 2 |
 | ns-001 | NS-001-P001-status | whatsapp | "Conheça a agenda do Marca Salão." | nenhum | (sem destino clicável) | pendente_de_decisao | briefing NS-001 seção 11 Canal 3 |
-| ns-002 | NS-002-P001-reels | instagram | "Conheça o agendamento online no Marca Salão" | legenda | https://marcaselao.com.br | pendente_de_decisao | briefing NS-002 seção 12; roteiro 001 cena 6 |
-| ns-002 | NS-002-P001-reels | instagram | "Conheça o agendamento online no Marca Salão" | bio | https://marcaselao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 1 |
-| ns-002 | NS-002-P001-stories | instagram | "Conheça o agendamento online no Marca Salão. marcasalao.com.br" | sticker | https://marcaselao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 2 |
-| ns-002 | NS-002-P001-reels | facebook | "Conheça o agendamento online no Marca Salão" | descricao | https://marcaselao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 3 |
+| ns-002 | NS-002-P001-reels | instagram | "Conheça o agendamento online no Marca Salão" | legenda | https://marcasalao.com.br | pendente_de_decisao | briefing NS-002 seção 12; roteiro 001 cena 6 |
+| ns-002 | NS-002-P001-reels | instagram | "Conheça o agendamento online no Marca Salão" | bio | https://marcasalao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 1 |
+| ns-002 | NS-002-P001-stories | instagram | "Conheça o agendamento online no Marca Salão. marcasalao.com.br" | sticker | https://marcasalao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 2 |
+| ns-002 | NS-002-P001-reels | facebook | "Conheça o agendamento online no Marca Salão" | descricao | https://marcasalao.com.br | pendente_de_decisao | briefing NS-002 seção 11 Canal 3 |
 
 ### Regras da matriz
 
-- `destino_candidato` é `https://marcaselao.com.br` para todas as peças com destino clicável, conforme destino oficial documentado em `AGENTS.md` ("Chamadas para o site Marca Salão").
-- O painel de demonstração (`https://marcaselao.com.br/gestor`) exige credenciais: **não** usar como destino público de campanha.
-- Quando o CTA é "link na bio" ou sticker, o destino é o link cadastrado na bio/perfil, não necessariamente `marcaselao.com.br` diretamente — confirmar com o titular antes de publicar.
+- `destino_candidato` é `https://marcasalao.com.br` para todas as peças com destino clicável, conforme destino oficial documentado em `AGENTS.md` ("Chamadas para o site Marca Salão").
+- O painel de demonstração (`https://marcasalao.com.br/gestor`) exige credenciais: **não** usar como destino público de campanha.
+- Quando o CTA é "link na bio" ou sticker, o destino é o link cadastrado na bio/perfil, não necessariamente `marcasalao.com.br` diretamente — confirmar com o titular antes de publicar.
 - Todas as linhas acima estão `pendente_de_decisao` até o titular confirmar destino, CTA por canal e link externo cadastrado no perfil.
 
 ## 3. Teste de aceite do caminho completo
@@ -87,7 +87,7 @@ Preencha uma linha por destino testado no modelo `modelo-teste-aceite-destino.cs
 ### Evento de conversão sugerido
 
 Sugira um evento de conversão **apenas quando houver uma ação correspondente documentada** na campanha. Por exemplo:
-- Se a peça leva para `marcaselao.com.br` e há um formulário de "solicitar demonstração" documentado no site, o evento de conversão pode ser `formulario_demonstracao_enviado`.
+- Se a peça leva para `marcasalao.com.br` e há um formulário de "solicitar demonstração" documentado no site, o evento de conversão pode ser `formulario_demonstracao_enviado`.
 - Se não há ação correspondente documentada, não sugerir evento de conversão; registrar como pendência.
 
 ### Medições ainda não comprovadas
@@ -160,8 +160,8 @@ Preencha o modelo `ensaio-validacao-destinos.csv`.
 
 | Decisão | Detalhe | Por que é necessária |
 | --- | --- | --- |
-| Destino clicável confirmado por campanha | Confirmar se `https://marcaselao.com.br` é o destino para todas as peças ou se há destino diferente por canal | Sem destino confirmado, não há como validar nem parametrizar links |
-| Link externo cadastrado na bio/perfil do Instagram | Confirmar qual URL está cadastrada na bio do perfil @marcaselao | Necessário para peças com CTA "link na bio" (NS-001 Stories, NS-002 Reels/Stories) |
+| Destino clicável confirmado por campanha | Confirmar se `https://marcasalao.com.br` é o destino para todas as peças ou se há destino diferente por canal | Sem destino confirmado, não há como validar nem parametrizar links |
+| Link externo cadastrado na bio/perfil do Instagram | Confirmar qual URL está cadastrada na bio do perfil @marcasalao | Necessário para peças com CTA "link na bio" (NS-001 Stories, NS-002 Reels/Stories) |
 | Uso de sticker de link nos Stories (NS-002) | Autorizar ou não o sticker de link; confirmar se o link externo está cadastrado | Sticker requer autorização separada de publicação |
 | UTMs do perfil para bio compartilhada | Definir se UTMs são exigidos no link de bio ou se o clique na bio é aceitável sem rastreamento por UTM | **Pendente de verificação:** não há evidência real sobre preservação de UTMs em links de bio compartilhados; o ensaio de localhost não testa a bio real. |
 | Mecanismo de rastreamento (utm, pixel) | Definir qual mecanismo será usado para rastrear cliques e conversões | Sem rastreamento, não é possível medir eficácia das peças |

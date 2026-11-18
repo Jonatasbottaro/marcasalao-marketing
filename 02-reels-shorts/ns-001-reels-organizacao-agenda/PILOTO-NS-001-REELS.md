@@ -11,7 +11,7 @@
 | Formato | reels |
 | Variante | v1 |
 | Posicionamento do CTA | legenda + bio (pendente de confirmação do link externo do perfil) |
-| Destino candidato | https://marcaselao.com.br (pendente de confirmação do titular) |
+| Destino candidato | https://marcasalao.com.br (pendente de confirmação do titular) |
 | Formato de vídeo | vertical 9:16, 1080 × 1920, 30 fps, sem áudio |
 | Duração alvo | 30 s (proposta; pendente de leitura cronometrada e confirmação editorial) |
 | Hook | NS-001-H15 revisado: "Você consegue visualizar os agendamentos do seu salão com clareza?" |
@@ -86,8 +86,8 @@ Todas as cenas 3 a 7 dependem de capturas novas com fixture editorial. As captur
 > Conheça a agenda do Marca Salão.
 
 **Destino:**
-- `https://marcaselao.com.br` — endereço oficial documentado no repositório (AGENTS.md, "Chamadas para o site Marca Salão").
-- O painel de demonstração (`https://marcaselao.com.br/gestor`) exige credenciais: **não** usar como destino público da campanha.
+- `https://marcasalao.com.br` — endereço oficial documentado no repositório (AGENTS.md, "Chamadas para o site Marca Salão").
+- O painel de demonstração (`https://marcasalao.com.br/gestor`) exige credenciais: **não** usar como destino público da campanha.
 
 ### Posicionamento do CTA por canal (condicional)
 

@@ -287,6 +287,15 @@ Continua bloqueado até decisão explícita: publicação/agendamento, fluxo ofi
 - Correção de causa: `validate_and_stage_suggestion` reconfere o `contextFingerprint` sob o lock antes de gravar; conflito preserva estado; dois envios válidos concorrentes geram dois registros.
 - Provas: regressão MCP 16/16, prova de uso `tools/ci_studio_mcp_proof.py --port 8810` (passo novo no workflow), Chromium real (4 capturas). Aceite em **Codex CLI oficial 0.169.0** (login ChatGPT, `gpt-6.1-sol`): ferramentas descobertas, `consultar_planejamento` e `enviar_proposta` executadas, proposta `creative` persistida com rascunhos preservados (`sug-b5a65d9a90` na PR; `sug-4205f0002f` no merge de teste). Registro em [2026-11-15-entrada-mcp-planejamento-aceite.md](../historico/2026-11-15-entrada-mcp-planejamento-aceite.md). Integrada na main pelo merge `4976c23`, com PR #17 fechada como integrada e CI da `main` verde em Ubuntu + Windows (run `43906457080`).
 
+### Fluxo integrado de campanha, EGM, ZIP e backup no Video Studio — rodada noturna de 18/11/2026
+
+- **Especificação aprovada e bundle EGM:** pacote EGM instalado na base `b9cba013` e validado via `tools/verify_egm_install.py`; revisão Goldfish executada com especificação arquitetural versionada em [`docs/designs/RODADA-NOTURNA-FLUXO-CAMPANHA-STUDIO.md`](../designs/RODADA-NOTURNA-FLUXO-CAMPANHA-STUDIO.md) (indexada em [`docs/designs/SITEMAP.md`](../designs/SITEMAP.md)) e detalhamento de estado em [ESTADO-ATUAL.md](ESTADO-ATUAL.md).
+- **Fluxo ponta a ponta utilizável (`prepare` → Studio → `preflight` → fila → revisão → ZIP → `delivery_verify` → backup/restauração):**
+  - `tools/campaign_proof.py` encadeia preparação em `media[].path` (preservando mídias de operador), validação contra `platform`, render sem áudio com proteção de `lastValidDelivery` e HTML de revisão escapado/portátil.
+  - `tools/video_studio.py` e UI Astryx oferecem `--prepare`, `/api/examples` dinâmico, abertura genérica (`videoRequestPath` e `template="example:<id>"`), preflight + fila SQLite, geração/verificação de ZIP (`tools/delivery_verify.py` + `/api/works/package/verify`) e backup/restauração portável entre workspaces (`tools/studio_work_backup.py`), exercitados em `tools/tests/test_campaign_studio_e2e.py`.
+  - Provas locais `NS-001-P001` (7 cenas, 30 s) e `NS-002-P001` (6 cenas, 30 s) validadas em `instagram-reels-video`, `facebook-reels-video` e `youtube-shorts` (0 áudio, SRT, narração TXT), além de limpeza dos docs de mensuração (`05-mensuracao/`), destinos (`06-validacao-destinos/`) e `prova-local/`.
+- **Próximas decisões exclusivas do titular:** revisão editorial e autorização de gravação/aprovação de `NS-001` e `NS-002`; eventual publicação, agendamento ou criação de rascunhos em contas externas/Postiz; deploy e configurações de analytics em produção continuam fora do fluxo automático local.
+
 ## 5. Separar as decisões editoriais da execução técnica
 
 Para a NS-001, tratar as pendências apontadas nos documentos da própria campanha. Uma evidência técnica aprovada não aprova o briefing, o hook, o roteiro ou a publicação.
