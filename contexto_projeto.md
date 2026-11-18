@@ -12,10 +12,10 @@
 |------|-------|
 | Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
 | HEAD main | `584f8429442c5236db0dbfea5d0bbeca64ec180a` (Merge PR #28) |
-| Branch de trabalho ativa | `codex/fase1-conformidade-editorial` |
+| Branch de trabalho ativa | `codex/etapa1-piloto-ns002` (criada a partir de `codex/fase1-conformidade-editorial` `43fcac8`) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Fase 1 — Desbloqueio de Base e Conformidade Editorial |
-| Status das 5 tarefas | ver seção 2 |
+| Fase atual | Etapa 1 — Piloto Real Ponta a Ponta da Campanha NS-002 (Concluída) |
+| Status das 5 tarefas | Fase 1 e Etapa 1 concluídas — ver seções 2 e 7 |
 
 ---
 
@@ -184,4 +184,103 @@ Além dos roteiros oficiais NS-001 e NS-002, foram auditados e saneados materiai
   - Conformidade NS-002: CONFORME — 5/5 guardrails atendidos
   - `contexto_projeto.md`: este arquivo
 - **Worktrees preservadas:** `prova-campanha-conclusao`, `studio-package-verify2`
+- **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+---
+
+### 2026-11-18 — codex/etapa1-piloto-ns002 (Etapa 1 — Piloto Real Ponta a Ponta da Campanha NS-002)
+
+- **Executor:** Engenheiro de Software Sênior / Arquiteto de Automação de Vídeo (Antigravity)
+- **Branch:** `codex/etapa1-piloto-ns002` a partir de `codex/fase1-conformidade-editorial` (`43fcac8`)
+- **Raiz:** `D:/MEGA/Marketing/marcasalao-marketing`
+- **Resumo:** Piloto completo e parametrizado da campanha `NS-002` (`Agendamento online no Marca Salão`), com separação explícita de superfícies (`/booking/marca-salao-modelo` vs `/gestor/agenda`), cabeçalho de marca `MARCA SALAO` cobrindo referências legadas a "Meu Salão", ausência total de pagamento simulado e de promessas automáticas, exportação transacional FFmpeg `1080×1920 @ 30 fps` sem faixa de áudio (`-an`), storyboard visual `2×2` e testes automatizados.
+
+#### Arquivos criados e modificados
+
+| Arquivo | Ação | Finalidade |
+| --- | --- | --- |
+| `04-legendas/ns002_roteiro_001.srt` | Criado | Legendas sincronizadas (6 blocos, 30,0 s, UTF-8 LF, validado por `srt_validate.py`) |
+| `04-legendas/ns002_roteiro_001_narracao.txt` | Criado | Roteiro limpo por cena para locução humana externa (aderente aos guardrails) |
+| `00-briefings/campanhas/NS-002/NS-002-H02-variacao-carga-cognitiva.md` | Criado | Variação opcional de hook `NS-002-H02` focada em redução de carga cognitiva (`NS-002-H01` preservado intacto) |
+| `02-hooks/campanhas/NS-002/hooks.md` | Modificado | Incorporada formulação de redução de carga cognitiva em `NS-002-H02`; `NS-002-H01` intacto |
+| `02-reels-shorts/ns002-piloto-01/ns002-piloto.config.json` | Criado | Configuração desacoplada de marca/paleta/cenas (`preset: "saas-demo"`, `audioPolicy.enabled: false`), base direta para `brand-kit.json` na Etapa 2 |
+| `02-reels-shorts/ns002-piloto-01/ns002_roteiro_001.srt` | Criado | Cópia sincronizada no pacote de entrega |
+| `02-reels-shorts/ns002-piloto-01/ns002_roteiro_001_narracao.txt` | Criado | Cópia sincronizada no pacote de entrega |
+| `02-reels-shorts/ns002-piloto-01/preview-storyboard-ns002.png` | Criado | Storyboard visual 2×2 (1080×1920) com frames extraídos nos segundos `2.0`, `8.0`, `16.0` e `24.0` |
+| `02-reels-shorts/ns002-piloto-01/manifest.json` | Criado | Manifesto de integridade SHA-256, bytes, comando reproduzível e medição FFprobe |
+| `02-reels-shorts/ns002-piloto-01/README.md` | Criado | Documentação do pacote piloto e instruções de reprodução |
+| `02-reels-shorts/ns002-piloto-01/ns002-piloto-01.mp4` | Gerado localmente | MP4 vertical 1080×1920@30fps sem áudio (`-an`), legendas queimadas (cópia em `.workspace/archives/ns002-piloto-01/ns002-piloto-01.mp4`; ignorado no Git por `*.mp4` em `.gitignore`) |
+| `tools/ns002_pilot.py` | Criado | Construtor parametrizado (`config` + `fixture-editorial` + FFmpeg + storyboard + manifesto SHA-256 + promoção transacional) |
+| `tools/tests/test_ns002_pilot.py` | Criado | Regressões de SRT, sync de pacote, estrutura pronta para `brand-kit.json`, bloqueio de guardrails, integridade de manifesto e contenção de raiz |
+| `contexto_projeto.md` | Atualizado | Registro da Etapa 1 |
+
+#### Auditoria técnica literal (`ffprobe`)
+
+Comando executado:
+```text
+.workspace/tools/ffmpeg/ffprobe.exe -v error -show_streams -show_format -of json 02-reels-shorts/ns002-piloto-01/ns002-piloto-01.mp4
+```
+
+Resultado observado:
+```json
+{
+  "streams": [
+    {
+      "index": 0,
+      "codec_name": "h264",
+      "profile": "High",
+      "codec_type": "video",
+      "width": 1080,
+      "height": 1920,
+      "sample_aspect_ratio": "1:1",
+      "display_aspect_ratio": "9:16",
+      "pix_fmt": "yuv420p",
+      "r_frame_rate": "30/1",
+      "avg_frame_rate": "30/1",
+      "duration": "30.000000",
+      "bit_rate": "115174",
+      "nb_frames": "900"
+    }
+  ],
+  "format": {
+    "filename": "02-reels-shorts/ns002-piloto-01/ns002-piloto-01.mp4",
+    "nb_streams": 1,
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": "30.000000",
+    "size": "443550",
+    "bit_rate": "118280"
+  }
+}
+```
+- **Confirmado:** `1` stream de vídeo (`h264`, `yuv420p`, `1080x1920`, `30/1` fps, `30.000000 s`) e **0 streams de áudio**.
+
+#### Hashes SHA-256 do pacote `02-reels-shorts/ns002-piloto-01/`
+
+| Artefato | Tamanho (bytes) | SHA-256 |
+| --- | ---: | --- |
+| `02-reels-shorts/ns002-piloto-01/ns002-piloto-01.mp4` | 443 550 | `ec340c106c56592a8f026089ab1b0a8582ea8b464cc8f0dac6fc3ddc305cda4b` |
+| `02-reels-shorts/ns002-piloto-01/ns002_roteiro_001.srt` | 496 | `2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5` |
+| `02-reels-shorts/ns002-piloto-01/ns002_roteiro_001_narracao.txt` | 1 378 | `f3a322eade93a16e295efb7eaa1cd25c7408bc28b0056a57ca3d38a8bf5f44c6` |
+| `02-reels-shorts/ns002-piloto-01/preview-storyboard-ns002.png` | 641 956 | `d74a5f4cc27fb378af07a700eca81da7aeed8820bdd64f03a88bf06d1b32ebf9` |
+| `docs/fixtures/fixture-editorial-marca-salao.json` (insumo referenciado) | — | `1cb32a7b34d0d7dc8619d21f1a9ddafe14c8614e541665af9dc207b81f432efa` |
+
+#### Storyboard visual para revisão humana
+
+- Arquivo inspecionado: `02-reels-shorts/ns002-piloto-01/preview-storyboard-ns002.png` (grade 2×2 nos segundos `2.0`, `8.0`, `16.0` e `24.0`).
+- Verificação visual: cabeçalho `MARCA SALAO` explícito em todas as cenas (sem exposição de `Meu Salão`, `E2E` ou `A pagar`), dados da fixture (`Corte Feminino R$ 85,00`, `Camila Rocha`, `Rafael Mendes`, `Juliana Costa`, `Lucas Alves`, `Ana Beatriz Souza`), separação `/booking/marca-salao-modelo` vs `/gestor/agenda` e legendas queimadas legíveis na faixa segura inferior sem sobrepor os cartões.
+
+#### Testes executados após último ajuste
+
+- `test_srt_validate.py` + `test_build_video.py` + `test_r002_pilot.py` + `test_ns002_pilot.py`: **26/26 OK** (`21.007s`).
+- `test_delivery_verify.py`: **16/16 OK** (`0.260s`).
+- `test_campaign_proof.py`: **5/5 OK** (`14.726s`).
+
+#### Status das pendências humanas e recomendações técnicas para a Etapa 2 (`tenants/` + `brand-kit.json`)
+
+- **Pendências humanas mantidas:** aprovação editorial do titular sobre o storyboard/texto de narração `NS-002` antes de publicação, preenchimento do link de analytics em `docs/rastreio-utm.md`, confirmação do link da bio do `@marcasalao` e definição sobre eventual captura real adicional no Salao02 já atualizado para "Marca Salão". A questão visual `"Meu Salão"` no piloto técnico ficou mitigada pelo `headerOverlay` (`MARCA SALAO`).
+- **Recomendações técnicas para a Etapa 2 (Refatoração Multi-Tenant):**
+  1. Extrair o objeto `brand` + `subtitleStyle` de `02-reels-shorts/ns002-piloto-01/ns002-piloto.config.json` para `tenants/<tenantId>/brand-kit.json` (iniciando por `tenants/marca-salao/brand-kit.json` e `tenants/multitrack-hub/brand-kit.json`), acompanhado de um `brand-kit.schema.json`.
+  2. Organizar fixtures editoriais e campanhas por tenant (`tenants/<tenantId>/fixtures/`), passando `brandKitRef` e `fixtureRef` no config da campanha.
+  3. Evoluir `tools/ns002_pilot.py` para um runner genérico multi-tenant por `preset` (ex.: `tools/preset_runner.py` com suporte inicial a `preset: "saas-demo"`), resolvendo dinamicamente paleta, monograma, domínio, `headerOverlay` e estilo de legenda sem duplicar código de renderização ou validação de guardrails.
+- **Worktrees preservadas:** `.workspace/worktrees/prova-campanha-conclusao` e `.workspace/worktrees/studio-package-verify2`.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
