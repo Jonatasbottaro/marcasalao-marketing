@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "estudio-flow",
+  "forbiddenClaims": [
+    "cura clínica",
+    "cura clinica",
+    "cura garantida",
+    "tratamento médico",
+    "tratamento medico",
+    "emagrecimento garantido",
+    "perda de peso garantida",
+    "resultado imediato",
+    "whatsapp",
+    "sms",
+    "lembrete",
+    "24 horas",
+    "24h",
+    "automático",
+    "automatico",
+    "automática",
+    "automatica",
+    "automatizado",
+    "automatizar",
+    "confirmação automática",
+    "confirmacao automatica",
+    "envio automático",
+    "envio automatico",
+    "redução de faltas",
+    "reducao de faltas",
+    "zero faltas",
+    "no-show"
+  ],
+  "forbiddenUiElements": [
+    "pagamento",
+    "cobrança",
+    "cobranca",
+    "a pagar",
+    "checkout",
+    "cartão de crédito",
+    "cartao de credito"
+  ],
+  "routeRules": {
+    "/aulas/[studioId]": {
+      "surface": "public-booking",
+      "allowedResponsibilities": [
+        "identificacao-aluno-ficticia",
+        "escolha-modalidade",
+        "escolha-instrutor",
+        "calculo-horarios-livres",
+        "reserva-aula-experimental"
+      ],
+      "forbiddenResponsibilities": [
+        "tela-pagamento",
+        "cobranca-simulada",
+        "promessa-cura-clinica",
+        "envio-automatico-mensagem"
+      ]
+    },
+    "/gestor/turmas": {
+      "surface": "manager-agenda",
+      "allowedResponsibilities": [
+        "visualizacao-grade-turmas",
+        "filtro-instrutor-status",
+        "alteracao-manual-status"
+      ],
+      "forbiddenResponsibilities": [
+        "calculo-horarios-livres",
+        "exibicao-slots-disponiveis",
+        "tela-pagamento",
+        "namespace-e2e"
+      ]
+    }
+  },
+  "audioPolicy": {
+    "allowAudioTrack": false,
+    "requireExternalNarration": true,
+    "requireSrt": true,
+    "ffmpegFlag": "-an"
+  }
+}

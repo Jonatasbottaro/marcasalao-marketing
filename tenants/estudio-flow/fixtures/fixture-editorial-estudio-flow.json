@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-editorial-estudio-flow-v1",
+  "tenantId": "estudio-flow",
+  "descricao": "Fixture editorial dedicada ao 4o nicho (Estúdio Flow — Pilates & Bem-Estar). Dados integralmente fictícios. NÃO usar em testes técnicos E2E ou produção.",
+  "data": "2026-11-18",
+  "guardrails": [
+    "Proibido prometer cura clínica, tratamento médico ou emagrecimento garantido",
+    "Sem promessas de envio automático via WhatsApp/SMS ou lembretes 24h",
+    "Sem fluxo de pagamento ou checkout simulado",
+    "Separação estrita entre /aulas/[studioId] (reserva e horários livres) e /gestor/turmas (visualização e status manual)"
+  ],
+  "estabelecimento": {
+    "nome": "Estúdio Flow — Pilates & Bem-Estar",
+    "nomeInterno": "estudio-flow-jardins",
+    "endereco": "Rua Oscar Freire, 1420 — Jardins, São Paulo, SP",
+    "telefone": "(11) 97412-3890",
+    "site": "https://estudioflow.com.br",
+    "horarioFuncionamento": "Segunda a Sábado, 07h às 20h"
+  },
+  "instrutores": [
+    {
+      "id": "inst-ef-001",
+      "nome": "Helena Vasconcelos",
+      "especialidade": "Pilates Clássico em Aparelhos",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-002",
+      "nome": "Lucas Mendonça",
+      "especialidade": "Pilates Funcional e Mobilidade",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-003",
+      "nome": "Clara Nogueira",
+      "especialidade": "Mat Pilates e Postura",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-004",
+      "nome": "Gabriel Tavares",
+      "especialidade": "Alongamento Consciente",
+      "ativo": true
+    }
+  ],
+  "profissionais": [
+    {
+      "id": "inst-ef-001",
+      "nome": "Helena Vasconcelos",
+      "especialidade": "Pilates Clássico em Aparelhos",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-002",
+      "nome": "Lucas Mendonça",
+      "especialidade": "Pilates Funcional e Mobilidade",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-003",
+      "nome": "Clara Nogueira",
+      "especialidade": "Mat Pilates e Postura",
+      "ativo": true
+    },
+    {
+      "id": "inst-ef-004",
+      "nome": "Gabriel Tavares",
+      "especialidade": "Alongamento Consciente",
+      "ativo": true
+    }
+  ],
+  "modalidades": [
+    {
+      "id": "mod-ef-001",
+      "nome": "Aula Experimental de Pilates",
+      "duracaoMin": 50,
+      "precoBRL": 75.00,
+      "mensalidadeBRL": 390.00,
+      "categoria": "aparelhos"
+    },
+    {
+      "id": "mod-ef-002",
+      "nome": "Pilates em Aparelhos — Duo",
+      "duracaoMin": 55,
+      "precoBRL": 95.00,
+      "mensalidadeBRL": 440.00,
+      "categoria": "aparelhos"
+    },
+    {
+      "id": "mod-ef-003",
+      "nome": "Mat Pilates & Core",
+      "duracaoMin": 50,
+      "precoBRL": 70.00,
+      "mensalidadeBRL": 340.00,
+      "categoria": "solo"
+    },
+    {
+      "id": "mod-ef-004",
+      "nome": "Mobilidade Articular & Postura",
+      "duracaoMin": 45,
+      "precoBRL": 80.00,
+      "mensalidadeBRL": 360.00,
+      "categoria": "mobilidade"
+    },
+    {
+      "id": "mod-ef-005",
+      "nome": "Sessão Individual Personalizada",
+      "duracaoMin": 60,
+      "precoBRL": 130.00,
+      "mensalidadeBRL": 520.00,
+      "categoria": "individual"
+    }
+  ],
+  "servicos": [
+    {
+      "id": "mod-ef-001",
+      "nome": "Aula Experimental de Pilates",
+      "duracaoMin": 50,
+      "precoBRL": 75.00,
+      "mensalidadeBRL": 390.00,
+      "categoria": "aparelhos"
+    },
+    {
+      "id": "mod-ef-002",
+      "nome": "Pilates em Aparelhos — Duo",
+      "duracaoMin": 55,
+      "precoBRL": 95.00,
+      "mensalidadeBRL": 440.00,
+      "categoria": "aparelhos"
+    },
+    {
+      "id": "mod-ef-003",
+      "nome": "Mat Pilates & Core",
+      "duracaoMin": 50,
+      "precoBRL": 70.00,
+      "mensalidadeBRL": 340.00,
+      "categoria": "solo"
+    },
+    {
+      "id": "mod-ef-004",
+      "nome": "Mobilidade Articular & Postura",
+      "duracaoMin": 45,
+      "precoBRL": 80.00,
+      "mensalidadeBRL": 360.00,
+      "categoria": "mobilidade"
+    },
+    {
+      "id": "mod-ef-005",
+      "nome": "Sessão Individual Personalizada",
+      "duracaoMin": 60,
+      "precoBRL": 130.00,
+      "mensalidadeBRL": 520.00,
+      "categoria": "individual"
+    }
+  ],
+  "gradeHorarios": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Quarta-feira",
+    "visaoRota": "/gestor/turmas",
+    "nota": "Visualização da grade e alteração manual de status apenas. Horários livres pertencem à rota /aulas/[studioId].",
+    "turmas": [
+      {
+        "id": "turma-ef-001",
+        "horario": "08:00",
+        "duracaoMin": 50,
+        "aluno": "Beatriz Alencar",
+        "instrutor": "inst-ef-001",
+        "modalidade": "mod-ef-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-002",
+        "horario": "09:30",
+        "duracaoMin": 55,
+        "aluno": "Renato Cavalcanti",
+        "instrutor": "inst-ef-002",
+        "modalidade": "mod-ef-002",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-003",
+        "horario": "11:00",
+        "duracaoMin": 50,
+        "aluno": "Mariana Fonseca",
+        "instrutor": "inst-ef-003",
+        "modalidade": "mod-ef-003",
+        "status": "Aguardando"
+      },
+      {
+        "id": "turma-ef-004",
+        "horario": "15:00",
+        "duracaoMin": 45,
+        "aluno": "Andréia Silveira",
+        "instrutor": "inst-ef-004",
+        "modalidade": "mod-ef-004",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-005",
+        "horario": "18:00",
+        "duracaoMin": 60,
+        "aluno": "Fábio Rezende",
+        "instrutor": "inst-ef-001",
+        "modalidade": "mod-ef-005",
+        "status": "Concluído"
+      }
+    ]
+  },
+  "agenda": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Quarta-feira",
+    "visaoRota": "/gestor/turmas",
+    "nota": "Visualização da grade e alteração manual de status apenas. Horários livres pertencem à rota /aulas/[studioId].",
+    "atendimentos": [
+      {
+        "id": "turma-ef-001",
+        "horario": "08:00",
+        "duracaoMin": 50,
+        "cliente": "Beatriz Alencar",
+        "profissional": "inst-ef-001",
+        "servico": "mod-ef-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-002",
+        "horario": "09:30",
+        "duracaoMin": 55,
+        "cliente": "Renato Cavalcanti",
+        "profissional": "inst-ef-002",
+        "servico": "mod-ef-002",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-003",
+        "horario": "11:00",
+        "duracaoMin": 50,
+        "cliente": "Mariana Fonseca",
+        "profissional": "inst-ef-003",
+        "servico": "mod-ef-003",
+        "status": "Aguardando"
+      },
+      {
+        "id": "turma-ef-004",
+        "horario": "15:00",
+        "duracaoMin": 45,
+        "cliente": "Andréia Silveira",
+        "profissional": "inst-ef-004",
+        "servico": "mod-ef-004",
+        "status": "Confirmado"
+      },
+      {
+        "id": "turma-ef-005",
+        "horario": "18:00",
+        "duracaoMin": 60,
+        "cliente": "Fábio Rezende",
+        "profissional": "inst-ef-001",
+        "servico": "mod-ef-005",
+        "status": "Concluído"
+      }
+    ]
+  },
+  "booking": {
+    "rota": "/aulas/estudio-flow-jardins",
+    "servicosDisponiveis": ["mod-ef-001", "mod-ef-002", "mod-ef-003", "mod-ef-004", "mod-ef-005"],
+    "horariosLivresExemplo": ["08:00", "10:00", "15:00", "18:00"]
+  }
+}

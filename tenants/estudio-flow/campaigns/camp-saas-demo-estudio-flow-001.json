@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-estudio-flow-001",
+  "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001",
+  "tenantId": "estudio-flow",
+  "preset": "saas-demo",
+  "baseCaptureRef": "00-briefings/campanhas/NS-001/capturas/2026-11-05/01-agenda-visao-dia.png",
+  "bookingCase": {
+    "cliente": "Beatriz Alencar",
+    "servicoId": "mod-ef-001",
+    "profissionalId": "inst-ef-001",
+    "data": "2026-11-18",
+    "horario": "08:00"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-estudio-flow-001.mp4",
+    "packageSrtName": "camp-saas-demo-estudio-flow-001.srt",
+    "packageNarrationName": "camp-saas-demo-estudio-flow-001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "PILATES & BEM-ESTAR",
+      "headline": "COMO RESERVAR UMA AULA EXPERIMENTAL SEM TROCAR MENSAGENS?",
+      "subline": "CONHECA O FLUXO ORGANIZADO DO ESTUDIO FLOW",
+      "caption": "Como organizar reservas de aulas experimentais no seu estúdio de Pilates?",
+      "narrationText": "Conheça o fluxo organizado do Estúdio Flow, da reserva experimental à grade do estúdio."
+    },
+    {
+      "id": "cena-02-escolha",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/aulas/estudio-flow-jardins",
+      "badge": "FLUXO PUBLICO /AULAS",
+      "headline": "ESCOLHA DA MODALIDADE E INSTRUTORA",
+      "caption": "A aluna escolhe a modalidade e a instrutora disponível.",
+      "narrationText": "Na rota pública /aulas, a aluna escolhe a modalidade de Pilates e a instrutora."
+    },
+    {
+      "id": "cena-03-confirma",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "duration": 7.0,
+      "surface": "public-booking",
+      "route": "/aulas/estudio-flow-jardins",
+      "badge": "HORARIOS LIVRES /AULAS",
+      "headline": "SELECIONA O HORARIO DISPONIVEL",
+      "availableSlots": ["08:00", "10:00", "15:00", "18:00"],
+      "selectedSlot": "08:00",
+      "ctaLabel": "CONFIRMAR RESERVA",
+      "caption": "Seleciona o horário livre na turma e confirma a reserva.",
+      "narrationText": "Os horários livres são calculados em /aulas/[studioId] e a reserva é confirmada."
+    },
+    {
+      "id": "cena-04-ponte",
+      "kind": "booking-success",
+      "start": 17.0,
+      "duration": 3.0,
+      "surface": "public-booking",
+      "route": "/aulas/estudio-flow-jardins",
+      "badge": "RESERVA CONFIRMADA",
+      "headline": "AULA EXPERIMENTAL RESERVADA",
+      "subline": "VISIVEL NA GRADE DO ESTUDIO",
+      "caption": "Aula experimental reservada com horário definido.",
+      "narrationText": "A reserva fica registrada e visível imediatamente na grade do estúdio."
+    },
+    {
+      "id": "cena-05-salao-ve",
+      "kind": "manager-agenda",
+      "start": 20.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/turmas",
+      "badge": "VISAO DO GESTOR /GESTOR/TURMAS",
+      "headline": "GRADE DE TURMAS - STATUS MANUAL",
+      "highlightId": "turma-ef-001",
+      "caption": "O gestor acompanha a reserva em /gestor/turmas com status manual.",
+      "narrationText": "Na visão /gestor/turmas, a equipe visualiza a grade e atualiza o status manualmente."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "estudioflow.com.br",
+      "badge": "ESTUDIO FLOW",
+      "headline": "ORGANIZE SUA GRADE DE PILATES E BEM-ESTAR",
+      "subline": "ESTUDIOFLOW.COM.BR",
+      "caption": "Conheça a reserva de aulas no Estúdio Flow — estudioflow.com.br",
+      "narrationText": "Conheça a organização de turmas do Estúdio Flow em estudioflow.com.br."
+    }
+  ]
+}

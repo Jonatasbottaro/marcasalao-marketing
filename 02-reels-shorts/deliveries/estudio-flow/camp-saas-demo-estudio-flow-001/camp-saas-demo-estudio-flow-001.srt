@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:04,000
+Como organizar reservas de aulas experimentais no seu estúdio de Pilates?
+
+2
+00:00:04,000 --> 00:00:10,000
+A aluna escolhe a modalidade e a instrutora disponível.
+
+3
+00:00:10,000 --> 00:00:17,000
+Seleciona o horário livre na turma e confirma a reserva.
+
+4
+00:00:17,000 --> 00:00:20,000
+Aula experimental reservada com horário definido.
+
+5
+00:00:20,000 --> 00:00:26,000
+O gestor acompanha a reserva em /gestor/turmas com status manual.
+
+6
+00:00:26,000 --> 00:00:30,000
+Conheça a reserva de aulas no Estúdio Flow — estudioflow.com.br
