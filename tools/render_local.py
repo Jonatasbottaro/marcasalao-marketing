@@ -189,6 +189,7 @@ def ensure_video_tools(root):
 def tool_version(binary):
     try:
         res = subprocess.run([binary, '-version'], capture_output=True, text=True,
+                             encoding='utf-8', errors='replace',
                              timeout=VERSION_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         return 'desconhecida'
@@ -208,6 +209,7 @@ def run_bridge(root, package_path, assets_path):
     try:
         res = subprocess.run([node, bridge, package_path, assets_path],
                              capture_output=True, text=True,
+                             encoding='utf-8', errors='replace',
                              timeout=BRIDGE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError('ponte de validacao excedeu o tempo limite')
@@ -397,7 +399,8 @@ def probe_asset(root, path):
         res = subprocess.run(
             [build_video.get_ffprobe(), '-v', 'error', '-show_streams', '-show_format',
              '-of', 'json', str(path)],
-            capture_output=True, text=True, timeout=PROBE_TIMEOUT_SECONDS)
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            timeout=PROBE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError(
             f'inspecao previa excedeu o tempo limite: {rel(root, path)}')

@@ -27,6 +27,8 @@ jobs:
   render-real:
     name: ${{ matrix.os }} · render real
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
     strategy:
       # Um ambiente quebrado nao deve esconder o veredito do outro.
       fail-fast: false

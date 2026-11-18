@@ -58,7 +58,9 @@ def run_bridge_carousel(root, input_path, profile=None):
     if profile:
         cmd.extend(['--profile', profile])
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
+        res = subprocess.run(cmd, capture_output=True, text=True,
+                             encoding='utf-8', errors='replace',
+                             timeout=render_local.BRIDGE_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
         raise build_video.DeliveryError('ponte de carrossel excedeu o tempo limite')
     if res.returncode == 2:
