@@ -1,0 +1,44 @@
+{
+  "slug": "camp-saas-demo-marca-salao-001",
+  "tenantId": "marca-salao",
+  "preset": "saas-demo",
+  "allowAudioTrack": false,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok"
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+      "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
+      "bytes": 445686,
+      "sha256_disk_ok": false
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
+      "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+      "bytes": 496,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt",
+      "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d",
+      "bytes": 906,
+      "sha256_disk_ok": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+      "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
+      "bytes": 643164,
+      "sha256_disk_ok": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}
