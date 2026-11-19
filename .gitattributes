@@ -12,3 +12,8 @@ schemas/*.json text eol=lf
 tenants/**/*.json text eol=lf
 04-legendas/pacotes-publicacao/**/*.json text eol=lf
 04-legendas/pacotes-publicacao/**/*.md text eol=lf
+# Etapa 4: artefatos gerados (portal de revisao e calendario editorial) — bytes estaveis entre estacoes.
+05-review-portal/**/*.json text eol=lf
+05-review-portal/**/*.html text eol=lf
+05-review-portal/**/*.md text eol=lf
+04-legendas/calendario-editorial.* text eol=lf
