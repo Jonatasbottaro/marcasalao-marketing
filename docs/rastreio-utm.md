@@ -1,7 +1,7 @@
 # Padrão de Rastreio UTM — Marca Salão
 
-> **Versão:** 1.2  
-> **Data:** 2026-11-18  
+> **Versão:** 1.3  
+> **Data:** 2026-11-19  
 > **Responsável:** pendente de definição  
 > **Status:** rascunho para validação do titular
 
@@ -51,6 +51,36 @@ https://marcasalao.com.br/?utm_source=instagram&utm_medium=stories&utm_campaign=
 > [!IMPORTANT]
 > As URLs acima são modelos. Validar que o domínio `marcasalao.com.br` resolve corretamente
 > e que os parâmetros chegam à ferramenta de analytics antes de usar em produção.
+
+### Convenção multi-tenant (Etapa 4)
+
+A partir da Etapa 4, o mesmo padrão de parâmetros vale para os 4 tenants da
+content factory, cada um com seu próprio domínio de destino:
+
+| Tenant | Marca | Domínio oficial | Nicho |
+|--------|-------|------------------|-------|
+| `marca-salao` | Marca Salão | `marcasalao.com.br` | SaaS de gestão para salões |
+| `meu-salao` | Meu Salão | `meusalao.com.br` | SaaS de agenda para salões |
+| `estudio-flow` | Estúdio Flow | `estudioflow.com.br` | Aulas e turmas em estúdio (pilates/bem-estar) |
+| `multitrack-hub` | Multitrack Hub | `multitrackhub.com.br` | Catálogo de multitracks, stems e rateios |
+
+Regras multi-tenant:
+
+1. `utm_campaign` é sempre o slug completo da campanha
+   (ex.: `camp-saas-demo-marca-salao-001`), igual ao `slug` da entrega em
+   `02-reels-shorts/deliveries/<tenantId>/<slug>/`.
+2. `utm_content` identifica a variante/posicionamento, nunca a marca:
+   - **Onda 1 (lançamento 9:16):** `utm_content=<tenantId>` (ex.: `marca-salao`),
+     igual em todos os canais da campanha.
+   - **Onda 2 (reaproveitamento):** `utm_content=repurpose-1x1` para Instagram
+     Feed 1:1 e `utm_content=repurpose-16x9` para YouTube Vídeo 16:9.
+3. `utm_source`/`utm_medium` por canal: `instagram`/`reels`, `youtube`/`shorts`,
+   `facebook`/`reels` na Onda 1; `instagram`/`feed` e `youtube`/`video` na Onda 2.
+4. A URL de um tenant nunca aponta para o domínio de outro tenant; o domínio vem
+   do `brand-kit.json` de cada tenant e é auditado junto com o texto da legenda.
+5. Multitrack Hub com tema rateios continua direcionando para
+   `https://multitrackhub.com.br/rateios` quando o slot pedir a seção
+   específica; a URL rastreada padrão continua sendo a home com UTMs.
 
 ---
 
@@ -134,6 +164,54 @@ de tenant** (`marcasalao.com.br`, `meusalao.com.br`, `estudioflow.com.br`,
 > Enquanto estiver como PENDENTE, nenhum link UTM deve ser declarado como ativo
 > em registros de campanha.
 
+### 5.2 Guia de leitura dos UTMs (antes da primeira publicação)
+
+Como conferir, em cada ferramenta, que os parâmetros da matriz estão chegando
+corretamente — executar uma vez com uma URL de teste antes da primeira
+publicação real:
+
+**GA4**
+
+1. Relatórios → Aquisição de tráfego → "Origem/mídia": cada sessão rastreada
+   aparece como `utm_source / utm_medium` (ex.: `instagram / reels`,
+   `youtube / video`).
+2. Para ver `utm_campaign`: explorar a dimensão "Campanha de sessão" ou usar
+   Explorações → dimensão "Session campaign".
+3. Para ver `utm_content` (variante A/B de hook): Explorações → dimensão
+   "Session manual content" — é nela que se compara o desempenho entre
+   `repurpose-1x1` e `repurpose-16x9`, por exemplo.
+4. Teste: abrir uma URL da matriz em janela anônima, navegar uma página e
+   conferir em Relatórios → Tempo real.
+
+**Plausible**
+
+1. Painel do site → Top Sources mostra `utm_source` agregado; clicar em
+   "UTM" na barra de fontes abre a visão por `utm_source`, `utm_medium`,
+   `utm_campaign` e `utm_content`.
+2. Filtrar por `utm_campaign=camp-saas-demo-marca-salao-001` para isolar uma
+   campanha; comparar `utm_content` para medir variantes.
+3. Teste: mesmo fluxo de janela anônima; o evento aparece em tempo real no
+   painel com os UTMs da sessão.
+
+**Umami**
+
+1. Painel do website → Referrers mostra a origem; com UTM habilitado
+   (seção 5.1, Opção C), os eventos carregam `utm_source`, `utm_medium`,
+   `utm_campaign` e `utm_content` como propriedades.
+2. Usar a visão de eventos filtrando por propriedade `utm_campaign` para
+   acompanhar uma campanha específica.
+3. Teste: janela anônima + conferência em tempo real, igual às outras opções.
+
+**Conversão (comum às três ferramentas)**
+
+1. Definir o evento/objetivo de conversão antes da primeira publicação
+   (ex.: visita à página de agendamento, clique em CTA do site).
+2. Nomear a conversão por tenant, não por canal: a comparação entre canais
+   (Instagram vs. YouTube vs. Facebook) é feita por `utm_source/utm_medium`
+   dentro da mesma conversão.
+3. Só declarar uma conversão como medida após validar o evento de ponta a
+   ponta com uma URL UTM real da matriz.
+
 ---
 
 ## 6. Geração automatizada de URLs (tools/publish_pack.py)
@@ -203,55 +281,114 @@ o script aborta e não grava o pacote parcial.
 > Enquanto a ferramenta de analytics (seção 5) estiver como PENDENTE, nenhum
 > link UTM acima deve ser declarado como ativo em registros de campanha.
 
+### 6.1 Matriz de reaproveitamento — Onda 2 (Feed 1:1 e Vídeo 16:9)
+
+A Onda 2 do calendário editorial (seção 7) reaproveita cada uma das 8 campanhas
+em UM slot adicional, alternando Instagram Feed 1:1 e YouTube Vídeo 16:9. O
+`utm_content` muda para identificar o derivado (`repurpose-1x1` / `repurpose-16x9`)
+e o `utm_medium` acompanha o formato (`feed` / `video`):
+
+| Tenant | Campanha (slug) | Canal | Formato | URL rastreada |
+|--------|-----------------|-------|---------|---------------|
+| estudio-flow | camp-saas-demo-estudio-flow-001 | Instagram Feed | 1:1 | https://estudioflow.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=repurpose-1x1 |
+| marca-salao | camp-saas-demo-marca-salao-001 | YouTube Vídeo | 16:9 | https://marcasalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=repurpose-16x9 |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | Instagram Feed | 1:1 | https://marcasalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=repurpose-1x1 |
+| meu-salao | camp-saas-demo-meu-salao-001 | Instagram Feed | 1:1 | https://meusalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=repurpose-1x1 |
+| meu-salao | camp-saas-demo-meu-salao-002 | YouTube Vídeo | 16:9 | https://meusalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=repurpose-16x9 |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | YouTube Vídeo | 16:9 | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=repurpose-16x9 |
+| multitrack-hub | camp-shorts-rateios-002 | Instagram Feed | 1:1 | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-shorts-rateios-002&utm_content=repurpose-1x1 |
+| multitrack-hub | camp-shorts-stems-workflow-003 | YouTube Vídeo | 16:9 | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-stems-workflow-003&utm_content=repurpose-16x9 |
+
+Combinando a tabela da seção 6 (24 URLs de lançamento) com esta (8 URLs de
+reaproveitamento), a matriz completa soma **32 URLs rastreadas** — exatamente os
+32 slots do calendário editorial, exportadas linha a linha em
+`04-legendas/matriz-utm-consolidada.csv`.
+
+> [!IMPORTANT]
+> A mesma regra da seção 6 vale aqui: enquanto a ferramenta de analytics
+> (seção 5) estiver como PENDENTE, nenhum link UTM desta tabela deve ser
+> declarado como ativo em registros de campanha.
+
 ---
 
 ## 7. Calendário editorial automatizado (tools/campaign_calendar.py)
 
-A partir da versão 1.2, o cronograma editorial das campanhas publicáveis é gerado
-por `tools/campaign_calendar.py`, que lê os tenants em `tenants/*/` e os pacotes
-em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/checklist-publicacao.json` e
-distribui as campanhas em um cronograma intercalado:
+A partir da versão 1.3, o cronograma editorial das campanhas publicáveis é gerado
+por `tools/campaign_calendar.py`, que lê os tenants em `tenants/*/` (brand-kit +
+guardrails) e os pacotes em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/`
+(checklist-publicacao.json e legendas por canal) e distribui as 8 campanhas em
+4 semanas, em duas ondas:
 
-- **Nunca duas campanhas do mesmo tenant no mesmo dia** (regra dura, validada
-  por teste automatizado).
-- Até 2 campanhas por dia; cada campanha cobre os 3 canais (Instagram Reels,
-  YouTube Shorts, Facebook Reels) — 8 campanhas × 3 canais = 24 slots.
-- Cada slot recebe janela de horário sugerida, política de áudio do tenant
-  (`-an` para estudio-flow, marca-salao e meu-salao; faixa própria para
-  multitrack-hub) e a URL UTM da matriz da seção 6.
-- Todo texto gerado é auditado por tenant com
-  `tenant_validator.validate_text_against_guardrails(...)`; qualquer violação
-  aborta antes de gravar.
+**Onda 1 — lançamento (semanas 1-2, 24 slots 9:16)**
+
+- Cada campanha cobre os 3 canais (YouTube Shorts, Instagram Reels, Facebook
+  Reels) — 8 campanhas × 3 canais = 24 slots.
+- Janelas fixas por canal (BRT): YouTube 12:00-13:00, Instagram 18:30-19:30,
+  Facebook 20:00-21:00.
+- Regras duras, validadas por testes automatizados:
+  1. Nunca duas publicações do mesmo tenant no mesmo dia.
+  2. A mesma campanha nunca aparece em dois canais com menos de 48 horas de
+     intervalo (ordem interna youtube → instagram → facebook, com offsets
+     +0/+2/+4 dias entre canais).
+  3. Semanas de segunda a sábado; domingo nunca recebe publicação.
+- Cada slot recebe a política de áudio do tenant (`-an` para estudio-flow,
+  marca-salao e meu-salao; faixa própria para multitrack-hub) e a URL UTM da
+  matriz da seção 6.
+
+**Onda 2 — reaproveitamento (semanas 3-4, 8 slots 1:1/16:9)**
+
+- 1 slot adicional por campanha, alternando Instagram Feed 1:1 e YouTube
+  Vídeo 16:9, com `utm_content` `repurpose-1x1` / `repurpose-16x9`
+  (seção 6.1) e a mídia derivada correspondente (`<slug>-1x1.mp4` /
+  `<slug>-16x9.mp4`).
+- Zero colisão de tenant-dia também na Onda 2.
+
+**Hooks A/B e auditoria**
+
+- Cada slot carrega duas variantes de abertura: `hookVarianteA` (abertura
+  original da legenda do canal no pacote) e `hookVarianteB` (abertura
+  alternativa de clareza operacional, por nicho).
+- Todo texto gerado (hooks A/B, títulos, notas operacionais e URLs UTM) é
+  auditado por tenant com `tenant_validator.validate_text_against_guardrails(...)`;
+  qualquer violação aborta antes de gravar qualquer arquivo.
 - `statusEditorial: "aguardando_aprovacao_titular"` e `autoPublish: false` em
-  todos os slots: publicação 100% manual e condicionada à aprovação do titular.
+  todos os slots: publicação 100% manual e condicionada à aprovação expressa
+  do titular.
 
 ### CLI
 
 ```text
-# Cronograma a partir de uma data (ISO YYYY-MM-DD)
-python tools/campaign_calendar.py --start-date 2026-11-23
+# Cronograma de 4 semanas a partir de uma data (ISO YYYY-MM-DD)
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4
 
 # Saída JSON com hashes SHA-256 dos arquivos gerados
-python tools/campaign_calendar.py --start-date 2026-11-23 --json
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json
 ```
 
 ### Saídas
 
-- `04-legendas/calendario-editorial.json`: 24 slots estruturados (`slotId`,
-  `dataSugerida`, `janelaHorario`, `tenantId`, `brandName`, `slug`, `canal`,
-  `formato`, `audioPolicy`, `utmUrl`, `statusEditorial`, `autoPublish`).
-- `04-legendas/calendario-editorial.md`: cronograma visual para operação manual,
-  checklist pré-publicação (incluindo o lembrete de locução externa para os
-  tenants `-an`) e a matriz UTM consolidada.
+- `04-legendas/calendario-editorial.json`: 32 slots estruturados (`slotId`,
+  `onda`, `semana`, `dataSugerida`, `diaSemana`, `janelaHorarioBrt`,
+  `tenantId`, `brandName`, `slug`, `preset`, `audioPolicy`, `canal`,
+  `formatoVideo`, `hookVarianteA`, `hookVarianteB`, `utmParams`, `utmUrl`,
+  `checklistPrePublicacao`, `statusEditorial`, `autoPublish`) mais
+  metadados consolidados, regras aplicadas e métricas por tenant/canal.
+- `04-legendas/calendario-editorial.md`: resumo executivo por tenant e por
+  canal, cronograma visual das 4 semanas, checklist de operação manual
+  pré-publicação (incluindo o lembrete de locução externa para os tenants
+  `-an` e a confirmação de analytics ativa) e a tabela de URLs UTM por campanha.
+- `04-legendas/matriz-utm-consolidada.csv`: 32 linhas com 20 colunas
+  padronizadas (`slot_id` a `auto_publish`), UTF-8 com fim de linha LF, pronta
+  para Google Sheets/Excel/Looker Studio.
 
-### Cronograma vigente (gerado em 2026-11-18, início 2026-11-23)
+### Cronograma vigente (gerado em 2026-11-19, início 2026-11-23, 4 semanas)
 
-| Data | Campanhas do dia | Tenants |
-|------|------------------|---------|
-| 2026-11-23 | camp-shorts-completo-multitrack-001; camp-saas-demo-marca-salao-001 | multitrack-hub, marca-salao |
-| 2026-11-24 | camp-saas-demo-meu-salao-001; camp-shorts-rateios-002 | meu-salao, multitrack-hub |
-| 2026-11-25 | camp-saas-demo-estudio-flow-001; camp-saas-demo-ns001-agenda-001 | estudio-flow, marca-salao |
-| 2026-11-26 | camp-saas-demo-meu-salao-002; camp-shorts-stems-workflow-003 | meu-salao, multitrack-hub |
+| Semana | Período | Onda | Slots | Conteúdo |
+|--------|---------|------|-------|----------|
+| 1 | 2026-11-23 a 2026-11-28 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
+| 2 | 2026-11-30 a 2026-12-05 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
+| 3 | 2026-12-07 a 2026-12-12 | 2 | 6 | Reaproveitamentos 1:1 / 16:9 |
+| 4 | 2026-12-14 a 2026-12-15 | 2 | 2 | Reaproveitamentos 1:1 / 16:9 |
 
 > A fonte da verdade é `04-legendas/calendario-editorial.json`; regenerar com
 > outra data inicial substitui o cronograma vigente.
@@ -265,3 +402,4 @@ python tools/campaign_calendar.py --start-date 2026-11-23 --json
 | 2026-11-18 | Agente — codex/fase1-conformidade-editorial | Criação do padrão inicial |
 | 2026-11-18 | Agente 3 — codex/etapa3-agente3-publish-utm | Geração automatizada de URLs via tools/publish_pack.py e tabela de URLs por canal/tenant |
 | 2026-11-18 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário editorial automatizado (campaign_calendar.py), matriz UTM consolidada de 8 campanhas × 3 canais (24 URLs) e passo a passo de analytics (GA4/Plausible/Umami) |
+| 2026-11-19 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário v2 (4 semanas, 32 slots em 2 ondas, hooks A/B, matriz-utm-consolidada.csv), convenção multi-tenant da seção 2, matriz de reaproveitamento da seção 6.1 e guia de leitura dos UTMs (seção 5.2) |
