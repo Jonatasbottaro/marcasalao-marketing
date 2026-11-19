@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "meu-salao",
+  "slug": "camp-saas-demo-meu-salao-002",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "meu-salao",
+    "brandName": "Meu Salão",
+    "monogram": "MS",
+    "domain": "meusalao.com.br",
+    "palettePrimary": "#10B981"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true,
+    "appliedAudioPolicy": "-an"
+  },
+  "source": {
+    "path": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+    "sha256": "a2c9b047d498d974f36bafdc3d0f1d051abf0ff6c256200dd070d9fe58d40844",
+    "bytes": 513565,
+    "deliveryManifest": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/manifest.json",
+    "deliveryRecordedSha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 0,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": null,
+      "audioSampleRate": null,
+      "audioChannels": null
+    }
+  },
+  "derivatives": {
+    "cover": {
+      "path": ".workspace/archives/camp-saas-demo-meu-salao-002/derivatives/camp-saas-demo-meu-salao-002-cover.png",
+      "sha256": "4ff9b296ad3a4a771bad4a0455c44cc2198462a002d8f45150437da7a31c6350",
+      "bytes": 287992,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "versioned": false,
+      "kind": "cover-png",
+      "codec": "png",
+      "width": 1080,
+      "height": 1920,
+      "timestampSeconds": 2.0,
+      "border": {
+        "color": "#10B981",
+        "thickness": 8,
+        "inset": 12,
+        "alpha": 0.85
+      },
+      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
+    },
+    "square": {
+      "path": ".workspace/archives/camp-saas-demo-meu-salao-002/derivatives/camp-saas-demo-meu-salao-002-1x1.mp4",
+      "sha256": "59096667bd42a9394648b47e398c52862d077e4ce92fbe35f690c3ebe4116d89",
+      "bytes": 402868,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "versioned": false,
+      "kind": "1x1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#10B981",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 0,
+      "audioCodec": null,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "wide": {
+      "path": ".workspace/archives/camp-saas-demo-meu-salao-002/derivatives/camp-saas-demo-meu-salao-002-16x9.mp4",
+      "sha256": "742e222793e9aa2807ede4e9444f98e6ea758565b575564001b87594f1761aa2",
+      "bytes": 449583,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "versioned": false,
+      "kind": "16x9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#10B981",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 0,
+      "audioCodec": null,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    }
+  },
+  "command": "python tools/derivative_formats.py --tenant meu-salao --campaign camp-saas-demo-meu-salao-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}

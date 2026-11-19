@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "slug": "camp-shorts-stems-workflow-003",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br",
+    "palettePrimary": "#06B6D4"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false,
+    "appliedAudioPolicy": "aac-44100-stereo"
+  },
+  "source": {
+    "path": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+    "sha256": "50b0a0fcfa8f5e6a2e3f594e96b6886ee1ec49101b33116bf64f5d20f9d7e686",
+    "bytes": 918078,
+    "deliveryManifest": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/manifest.json",
+    "deliveryRecordedSha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 1,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": "aac",
+      "audioSampleRate": 44100,
+      "audioChannels": 2
+    }
+  },
+  "derivatives": {
+    "cover": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-cover.png",
+      "sha256": "3d9a6246c9a673e761130dc02289d6e86d090d67c7b75342fe255cdb05d6f76e",
+      "bytes": 233744,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "versioned": false,
+      "kind": "cover-png",
+      "codec": "png",
+      "width": 1080,
+      "height": 1920,
+      "timestampSeconds": 2.0,
+      "border": {
+        "color": "#06B6D4",
+        "thickness": 8,
+        "inset": 12,
+        "alpha": 0.85
+      },
+      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
+    },
+    "square": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-1x1.mp4",
+      "sha256": "712c1e8b40ad069714c5d2292b09387e070bc93b222a0b0e34bdc87dbfd38c88",
+      "bytes": 830517,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "versioned": false,
+      "kind": "1x1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#06B6D4",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "wide": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-16x9.mp4",
+      "sha256": "8b9156bf3cf7da24951e052646c5d7bde20b0ce99ac160c9a253e2d446469046",
+      "bytes": 859991,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "versioned": false,
+      "kind": "16x9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#06B6D4",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    }
+  },
+  "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-stems-workflow-003",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}
