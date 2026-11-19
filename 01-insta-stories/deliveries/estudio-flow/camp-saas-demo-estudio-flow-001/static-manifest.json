@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 18681,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/carousel/slide-01-capa.png",
+          "sha256": "a4147d082b12b1cce18e10dfa56e42e4b000986042698809bdfa00936a564742",
+          "width": 1080
+        },
+        {
+          "bytes": 17313,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/carousel/slide-02-problema.png",
+          "sha256": "2cbf15999c974a1f3a51d8330f6a0a0e5cd09843c256a5f1a8431139a245aaf5",
+          "width": 1080
+        },
+        {
+          "bytes": 16111,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/carousel/slide-03-pratica.png",
+          "sha256": "91889cd5ebd989ea02780d5cda0efd480bdad6637472d1e37bc7dcad4c6042f3",
+          "width": 1080
+        },
+        {
+          "bytes": 16567,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/carousel/slide-04-resumo-cta.png",
+          "sha256": "c2c27e3ac6363bef670bee2b5cba8eeceea5a86b4720effab52e23d73189faa5",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 24888,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/stories/story-01-hook.png",
+          "sha256": "547392fb8b39993227e19eaab5cb4c9911f964f4cd6c4bf779fe9b953706a9c8",
+          "width": 1080
+        },
+        {
+          "bytes": 25337,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/stories/story-02-fluxo.png",
+          "sha256": "22996ad891a137ab5696a2bc2d4905bf64435248d16cc3fb16173e2d6ab270cf",
+          "width": 1080
+        },
+        {
+          "bytes": 21445,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/stories/story-03-cta.png",
+          "sha256": "857914d22376dd59639551e088ada5e79aaf290e6a96634bce7af037f8c3d345",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-saas-demo-estudio-flow-001",
+  "tenantId": "estudio-flow"
+}

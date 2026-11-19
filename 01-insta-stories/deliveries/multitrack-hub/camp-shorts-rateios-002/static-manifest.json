@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 16236,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/carousel/slide-01-capa.png",
+          "sha256": "f40f99bb5e1c5dd274b965e732a4be52d162eed8c6b272ccf0af2a2d5a222bec",
+          "width": 1080
+        },
+        {
+          "bytes": 16582,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/carousel/slide-02-problema.png",
+          "sha256": "3819369ba3d2ef883bad95a0ac16b1aa20de182a67322252d7886d5963df448e",
+          "width": 1080
+        },
+        {
+          "bytes": 15065,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/carousel/slide-03-pratica.png",
+          "sha256": "e38c8d094b6864bf239fb4dacd95ba2146422c60cefa06fb5e5965749287279b",
+          "width": 1080
+        },
+        {
+          "bytes": 17208,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/carousel/slide-04-resumo-cta.png",
+          "sha256": "5918d53ab1c082fc51d787cd482be28ff7504f415463a954c0b10f112d6b6347",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 22579,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/stories/story-01-hook.png",
+          "sha256": "0f25a6d1b3d32a2f31c9cd43ba7dba0d99b2872681d10b92464f63368bee1c16",
+          "width": 1080
+        },
+        {
+          "bytes": 23280,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/stories/story-02-fluxo.png",
+          "sha256": "aa6084ae235ad28be7e3bf1602b4d5fe6c2c9aa154db7a9e92f6024c1ac425dc",
+          "width": 1080
+        },
+        {
+          "bytes": 21913,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-shorts-rateios-002/stories/story-03-cta.png",
+          "sha256": "23e6a875623d9743beb9ccd31283ef338c3320eecc621fbf3d319a4d919e4b4a",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-shorts-rateios-002",
+  "tenantId": "multitrack-hub"
+}
