@@ -5,81 +5,1098 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portal de Revisão — Content Factory Multi-Tenant</title>
 <style>
-:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--ok:#2ea043;--warn:#d29922;--info:#1f6feb}
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--ok:#2ea043;--warn:#d29922;--info:#1f6feb;--danger:#f85149}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
-header{padding:18px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:20}
+header{padding:16px 22px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:20}
 h1{margin:0 0 2px;font-size:19px}
-.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+.sub{margin:0 0 10px;color:var(--muted);font-size:13px}
+.metricas{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.metrica{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:104px}
+.metrica-valor{display:block;font-size:17px;font-weight:700}
+.metrica-rotulo{display:block;font-size:11px;color:var(--muted)}
 .filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .filtros label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
 select,button,input,textarea{background:#0b0f14;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit}
 button{cursor:pointer}
 button:hover{border-color:#58a6ff}
-#btn-exportar-aprovacoes{margin-left:auto;background:var(--info);border-color:var(--info);font-weight:600;color:#fff}
-main{padding:18px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px}
+button.desabilitado{opacity:.45;cursor:not-allowed}
+#busca{min-width:240px}
+.swatch{width:16px;height:16px;border-radius:4px;border:1px solid var(--border);display:inline-block;flex:none}
+#btn-exportar-aprovacoes{background:var(--info);border-color:var(--info);font-weight:600;color:#fff}
+#btn-importar-aprovacoes{background:var(--ok);border-color:var(--ok);font-weight:600;color:#fff}
+main{padding:18px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:16px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
 .card-head{padding:10px 14px;border-bottom:1px solid var(--border);border-left:4px solid var(--c-primary);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .monogram{width:30px;height:30px;border-radius:8px;background:var(--c-primary);color:#0b0f14;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
-.card-titulo{display:flex;flex-direction:column;margin-right:auto}
+.card-titulo{display:flex;flex-direction:column;margin-right:auto;min-width:180px}
 .card-titulo strong{font-size:14px}
 .card-titulo span{font-size:11px;color:var(--muted)}
 .chip{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted)}
-.chip.aprovada{background:rgba(46,160,67,.2);color:#3fb950;border-color:#2ea043}
-.chip.revisao{background:rgba(210,153,34,.15);color:#d29922;border-color:#9e6a03}
+.chip.audio-an{background:rgba(31,111,235,.12);color:#58a6ff;border-color:#1f6feb}
+.chip.audio-aac{background:rgba(46,160,67,.15);color:#3fb950;border-color:#2ea043}
+.chip.status.aguardando{background:rgba(210,153,34,.15);color:#d29922;border-color:#9e6a03}
+.chip.status.aprovado{background:rgba(46,160,67,.2);color:#3fb950;border-color:#2ea043}
+.chip.status.ajuste{background:rgba(248,81,73,.15);color:#f85149;border-color:#da3633}
 .card-media{padding:10px 14px 0;display:flex;flex-direction:column;gap:6px}
-.card-media img,.card-media video{width:100%;max-height:430px;object-fit:contain;background:#000;border-radius:8px}
+.viewer img,.viewer video{width:100%;max-height:430px;object-fit:contain;background:#000;border-radius:8px;display:block}
+.viewer img{cursor:zoom-in}
+.modo-botoes{display:flex;gap:6px;flex-wrap:wrap}
 .nota{font-size:11px;color:var(--muted)}
 .abas{display:flex;gap:4px;padding:10px 14px 0;flex-wrap:wrap}
 .aba{padding:5px 10px;font-size:12px;border-radius:6px 6px 0 0;color:var(--muted)}
 .aba.ativa{color:var(--text);background:#0b0f14}
-.aba-conteudo{margin:0 14px;border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:10px;background:#0b0f14}
-.aba-conteudo pre{margin:0 0 8px;white-space:pre-wrap;font-size:12px;max-height:220px;overflow:auto;font-family:Consolas,monospace}
+.aba-conteudo{margin:0 14px;border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:10px;background:#0b0f14;max-height:340px;overflow:auto}
+.aba-conteudo pre{margin:0 0 8px;white-space:pre-wrap;font-size:12px;font-family:Consolas,monospace}
+.srt-bloco{border-bottom:1px dashed var(--border);padding:4px 0}
+.srt-tempo{font-size:11px;color:#58a6ff;font-family:Consolas,monospace}
+.srt-texto{font-size:12px;white-space:pre-wrap}
 .linha-acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .linha-acoes a{color:#58a6ff;font-size:12px;text-decoration:none;word-break:break-all}
-.checklist{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
-.checklist label.item{display:flex;gap:8px;align-items:center;font-size:12px}
-.checklist .campos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.contador{font-size:11px;color:var(--muted)}
+.utm-box{border:1px solid var(--border);border-left:3px solid var(--ok);border-radius:6px;padding:6px 8px;margin:0 0 8px;font-size:12px;word-break:break-all}
+.guardrails-lista{margin:4px 0 10px;padding-left:18px;font-size:12px}
+.hash-linha{font-family:Consolas,monospace;font-size:11px;word-break:break-all;color:var(--muted);margin:2px 0}
+.aprovacao{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.aprovacao .linha{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.aprovacao label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.aprovacao textarea{width:100%}
 footer{padding:14px 22px;color:var(--muted);font-size:12px}
 #vazio{text-align:center;color:var(--muted);padding:30px}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:50}
+#lightbox[hidden]{display:none}
+#lightbox img{max-width:96vw;max-height:92vh;object-fit:contain;border-radius:8px}
+#lightbox button{position:fixed;top:14px;right:14px}
 </style>
 </head>
 <body>
 <header>
   <h1>Portal de Revisão — Content Factory Multi-Tenant</h1>
-  <p class="sub"><span id="sub-titulo"></span> · <span id="contagem"></span></p>
+  <p class="sub"><span id="sub-titulo"></span> · <span id="contagem"></span> · <span id="badge-servidor"></span></p>
+  <div id="painel-metricas" class="metricas">
+    <div class="metrica"><span class="metrica-valor" id="metrica-nichos">—</span><span class="metrica-rotulo">Nichos</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-campanhas">—</span><span class="metrica-rotulo">Campanhas</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-videos-an">—</span><span class="metrica-rotulo">Vídeos -an</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-videos-aac">—</span><span class="metrica-rotulo">Vídeos AAC</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-guardrails">—</span><span class="metrica-rotulo">Guardrails</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-aprovados">—</span><span class="metrica-rotulo">Aprovados</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-pendentes">—</span><span class="metrica-rotulo">Pendentes</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-ajustes">—</span><span class="metrica-rotulo">Ajustes</span></div>
+  </div>
   <div class="filtros">
     <label>Tenant <select id="filtro-tenant"><option value="">Todos</option></select></label>
+    <span id="swatch-tenant" class="swatch" title="Cor do tenant selecionado"></span>
     <label>Preset <select id="filtro-preset"><option value="">Todos</option><option value="saas-demo">saas-demo</option><option value="shorts-completo">shorts-completo</option></select></label>
     <label>Áudio <select id="filtro-audio"><option value="">Todos</option><option value="-an">-an (sem áudio)</option><option value="AAC">AAC (com áudio)</option></select></label>
-    <button id="btn-exportar-aprovacoes" type="button">Exportar JSON de Aprovações</button>
+    <label>Status <select id="filtro-status"><option value="">Todos</option><option value="aguardando">Aguardando Revisão</option><option value="aprovado">Aprovado para Publicação Manual</option><option value="ajuste">Solicitar Ajuste</option></select></label>
+    <input id="busca" type="search" placeholder="Buscar slug, título, legenda, roteiro ou rota">
+    <label>Revisor <input id="input-revisor" type="text" placeholder="Revisor"></label>
+    <button id="btn-exportar-aprovacoes" type="button">Exportar aprovacoes-titular.json</button>
+    <button id="btn-importar-aprovacoes" type="button">Importar JSON</button>
+    <input id="input-importar" type="file" accept=".json,application/json" hidden>
   </div>
 </header>
 <main id="grid"></main>
 <p id="vazio" hidden>Nenhuma campanha corresponde aos filtros.</p>
-<footer>Portal de Revisão gerado por <code>tools/review_dashboard.py</code> · Aprovações persistem no <code>localStorage</code> do navegador · A exportação gera <code>aprovacoes-titular.json</code> · Vídeos são servidos de <code>.workspace/archives/</code> (local por estação).</footer>
-<script id="portal-data" type="application/json">{"schemaVersion": 1, "generatedBy": "tools/review_dashboard.py", "deliveriesRoot": "02-reels-shorts/deliveries", "pacotesRoot": "04-legendas/pacotes-publicacao", "archivesRoot": ".workspace/archives", "totals": {"tenants": 4, "campaigns": 8}, "tenants": [{"tenantId": "estudio-flow", "brandName": "Estúdio Flow", "displayTitle": "ESTUDIO FLOW", "monogram": "EF", "domain": "estudioflow.com.br", "tagline": "PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS", "palette": {"primary": "#C86D51", "secondary": "#6B8E78", "accent": "#E6D5B8", "background": "#1C1917", "surface": "#292524", "textPrimary": "#FAF7F2", "textMuted": "#B8B0A4"}, "audioPolicy": {"allowAudioTrack": false, "ffmpegFlag": "-an", "requireSrt": true, "requireExternalNarration": true}}, {"tenantId": "marca-salao", "brandName": "Marca Salão", "displayTitle": "MARCA SALAO", "monogram": "MS", "domain": "marcasalao.com.br", "tagline": "AGENDAMENTO ONLINE E AGENDA DO SALAO", "palette": {"primary": "#F5C107", "secondary": "#4F8CFF", "accent": "#28B463", "background": "#121620", "surface": "#222C40", "textPrimary": "#F5F7FA", "textMuted": "#B4C0D2"}, "audioPolicy": {"allowAudioTrack": false, "ffmpegFlag": "-an", "requireSrt": true, "requireExternalNarration": true}}, {"tenantId": "meu-salao", "brandName": "Meu Salão", "displayTitle": "MEU SALAO", "monogram": "MS", "domain": "meusalao.com.br", "tagline": "GESTAO DE AGENDA E ATENDIMENTOS", "palette": {"primary": "#10B981", "secondary": "#3B82F6", "accent": "#F59E0B", "background": "#0F172A", "surface": "#1E293B", "textPrimary": "#F8FAFC", "textMuted": "#94A3B8"}, "audioPolicy": {"allowAudioTrack": false, "ffmpegFlag": "-an", "requireSrt": true, "requireExternalNarration": true}}, {"tenantId": "multitrack-hub", "brandName": "Multitrack Hub", "displayTitle": "MULTITRACK HUB", "monogram": "MH", "domain": "multitrackhub.com.br", "tagline": "CATALOGO, STEMS E RATEIOS ORGANIZADOS", "palette": {"primary": "#06B6D4", "secondary": "#8B5CF6", "accent": "#22C55E", "background": "#090D16", "surface": "#161F30", "textPrimary": "#F1F5F9", "textMuted": "#94A3B8"}, "audioPolicy": {"allowAudioTrack": true, "ffmpegFlag": "-an", "requireSrt": true, "requireExternalNarration": false}}], "campaigns": [{"tenantId": "estudio-flow", "slug": "camp-saas-demo-estudio-flow-001", "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001", "preset": "saas-demo", "politicaAudio": "-an", "audioStreams": 0, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 6, "video": {"archiveRelPath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4", "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19", "bytes": 438290, "audioStreams": 0, "audioCodec": null}, "srt": {"relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt", "sha256": "b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f", "bytes": 572, "text": "1\n00:00:00,000 --> 00:00:04,000\nComo organizar reservas de aulas experimentais no seu estúdio de Pilates?\n\n2\n00:00:04,000 --> 00:00:10,000\nA aluna escolhe a modalidade e a instrutora disponível.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário livre na turma e confirma a reserva.\n\n4\n00:00:17,000 --> 00:00:20,000\nAula experimental reservada com horário definido.\n\n5\n00:00:20,000 --> 00:00:26,000\nO gestor acompanha a reserva em /gestor/turmas com status manual.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a reserva de aulas no Estúdio Flow — estudioflow.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001_narracao.txt", "sha256": "476a19bac49333ab030d02975f57c612e75b234f6ee8d157ccc1801aa7f71760", "bytes": 923, "text": "Roteiro de narracao - camp-saas-demo-estudio-flow-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo organizado do Estúdio Flow, da reserva experimental à grade do estúdio.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /aulas, a aluna escolhe a modalidade de Pilates e a instrutora.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /aulas/[studioId] e a reserva é confirmada.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nA reserva fica registrada e visível imediatamente na grade do estúdio.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão /gestor/turmas, a equipe visualiza a grade e atualiza o status manualmente.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização de turmas do Estúdio Flow em estudioflow.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png", "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a", "bytes": 591280, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/instagram-reels.md", "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/youtube-shorts.md", "text": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como organizar reservas de aulas experimentais no seu estúdio de Pilates?\n- 00:00:04,000 — A aluna escolhe a modalidade e a instrutora disponível.\n- 00:00:10,000 — Seleciona o horário livre na turma e confirma a reserva.\n- 00:00:17,000 — Aula experimental reservada com horário definido.\n- 00:00:20,000 — O gestor acompanha a reserva em /gestor/turmas com status manual.\n\nhttps://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts", "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/facebook-reels.md", "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "marca-salao", "slug": "camp-saas-demo-marca-salao-001", "campaignId": "SAAS-DEMO-MARCA-SALAO-001", "preset": "saas-demo", "politicaAudio": "-an", "audioStreams": 0, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 6, "video": {"archiveRelPath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4", "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791", "bytes": 445686, "audioStreams": 0, "audioCodec": null}, "srt": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt", "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5", "bytes": 496, "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Marca Salão — marcasalao.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt", "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d", "bytes": 906, "text": "Roteiro de narracao - camp-saas-demo-marca-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Marca Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Marca Salão, marcasalao.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png", "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537", "bytes": 643164, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/instagram-reels.md", "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/youtube-shorts.md", "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts", "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/facebook-reels.md", "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "marca-salao", "slug": "camp-saas-demo-ns001-agenda-001", "campaignId": "SAAS-DEMO-NS001-AGENDA-001", "preset": "saas-demo", "politicaAudio": "-an", "audioStreams": 0, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 6, "video": {"archiveRelPath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4", "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3", "bytes": 585286, "audioStreams": 0, "audioCodec": null}, "srt": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt", "sha256": "8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e", "bytes": 584, "text": "1\n00:00:00,000 --> 00:00:05,000\nVocê consegue visualizar os agendamentos do seu salão com clareza?\n\n2\n00:00:05,000 --> 00:00:11,000\nTodos os atendimentos do dia reunidos na agenda do salão.\n\n3\n00:00:11,000 --> 00:00:17,000\nFiltre por profissional ou por status para localizar um atendimento.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe acompanha cada atendimento e atualiza o status manualmente.\n\n5\n00:00:23,000 --> 00:00:27,000\nNa hora da dúvida, localize o atendimento pelo nome do cliente.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Marca Salão — marcasalao.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001_narracao.txt", "sha256": "ad925a6784c6a7baf59c5be095e94f152e35788598294fdab2f3b3d17d4382a7", "bytes": 958, "text": "Roteiro de narracao - camp-saas-demo-ns001-agenda-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVocê consegue visualizar os agendamentos do seu salão com clareza? Acompanhe o dia na agenda do Marca Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-visao-do-dia\nNa rota /gestor/agenda, todos os atendimentos do dia ficam reunidos em uma única tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-filtros\nUse os filtros por profissional e por status para localizar um atendimento na agenda.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe acompanha cada atendimento e atualiza o status manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-busca-cliente\nNa hora da dúvida, localize o atendimento pelo nome do cliente na agenda do salão.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Marca Salão, marcasalao.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-storyboard.png", "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c", "bytes": 703861, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/instagram-reels.md", "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/youtube-shorts.md", "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Você consegue visualizar os agendamentos do seu salão com clareza?\n- 00:00:05,000 — Todos os atendimentos do dia reunidos na agenda do salão.\n- 00:00:11,000 — Filtre por profissional ou por status para localizar um atendimento.\n- 00:00:17,000 — A equipe acompanha cada atendimento e atualiza o status manualmente.\n- 00:00:23,000 — Na hora da dúvida, localize o atendimento pelo nome do cliente.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts", "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/facebook-reels.md", "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "meu-salao", "slug": "camp-saas-demo-meu-salao-001", "campaignId": "SAAS-DEMO-MEU-SALAO-001", "preset": "saas-demo", "politicaAudio": "-an", "audioStreams": 0, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 6, "video": {"archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4", "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3", "bytes": 418019, "audioStreams": 0, "audioCodec": null}, "srt": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt", "sha256": "8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc", "bytes": 492, "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Meu Salão — meusalao.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001_narracao.txt", "sha256": "304d4a93157f8ef09fc094417f21d657a2c0b0567a8c701b41bc2fa8265d60a7", "bytes": 898, "text": "Roteiro de narracao - camp-saas-demo-meu-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Meu Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Meu Salão, meusalao.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png", "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87", "bytes": 620208, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/instagram-reels.md", "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/youtube-shorts.md", "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts", "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/facebook-reels.md", "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "meu-salao", "slug": "camp-saas-demo-meu-salao-002", "campaignId": "SAAS-DEMO-MEU-SALAO-002", "preset": "saas-demo", "politicaAudio": "-an", "audioStreams": 0, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 6, "video": {"archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4", "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35", "bytes": 513587, "audioStreams": 0, "audioCodec": null}, "srt": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt", "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49", "bytes": 573, "text": "1\n00:00:00,000 --> 00:00:05,000\nComo a equipe acompanha os atendimentos do dia no Meu Salão?\n\n2\n00:00:05,000 --> 00:00:11,000\nO dia da equipe começa com todos os atendimentos em uma tela.\n\n3\n00:00:11,000 --> 00:00:17,000\nCada profissional acompanha os próprios atendimentos na agenda.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe atualiza o status de cada atendimento durante o dia.\n\n5\n00:00:23,000 --> 00:00:27,000\nDo primeiro ao último atendimento, a rotina fica registrada na agenda.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Meu Salão — meusalao.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002_narracao.txt", "sha256": "1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb", "bytes": 896, "text": "Roteiro de narracao - camp-saas-demo-meu-salao-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVeja como a equipe acompanha os atendimentos do dia na agenda do Meu Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-abertura-do-dia\nNa rota /gestor/agenda, o dia da equipe começa com todos os atendimentos reunidos em uma tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-equipe\nCada profissional encontra os próprios atendimentos na agenda do salão.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe atualiza o status de cada atendimento manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-fim-do-dia\nDo primeiro ao último atendimento, a rotina do dia fica registrada na agenda.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Meu Salão, meusalao.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png", "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563", "bytes": 645948, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/instagram-reels.md", "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/youtube-shorts.md", "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como a equipe acompanha os atendimentos do dia no Meu Salão?\n- 00:00:05,000 — O dia da equipe começa com todos os atendimentos em uma tela.\n- 00:00:11,000 — Cada profissional acompanha os próprios atendimentos na agenda.\n- 00:00:17,000 — A equipe atualiza o status de cada atendimento durante o dia.\n- 00:00:23,000 — Do primeiro ao último atendimento, a rotina fica registrada na agenda.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts", "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/facebook-reels.md", "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "multitrack-hub", "slug": "camp-shorts-completo-multitrack-001", "campaignId": "SHORTS-COMPLETO-MULTITRACK-001", "preset": "shorts-completo", "politicaAudio": "AAC", "audioStreams": 1, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 5, "video": {"archiveRelPath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4", "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197", "bytes": 352348, "audioStreams": 1, "audioCodec": "aac"}, "srt": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt", "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582", "bytes": 444, "text": "1\n00:00:00,000 --> 00:00:07,000\nCatalogo, stems e rateios organizados no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nTrês projetos com stems organizados por instrumento.\n\n3\n00:00:15,000 --> 00:00:21,000\nMultitrack Hub em números: projetos, stems e rateios.\n\n4\n00:00:21,000 --> 00:00:27,000\nParticipe dos rateios de faixas com cota a partir de R$ 24,90.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheça o Multitrack Hub — multitrackhub.com.br\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt", "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1", "bytes": 743, "text": "Roteiro de narracao - camp-shorts-completo-multitrack-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nConheça o catálogo de projetos, stems e rateios do Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-catalogo\nTrês projetos no catálogo, cada um com BPM, tom e stems prontos para baixar.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nVeja os números do Multitrack Hub: projetos, stems e rateios disponíveis.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nParticipe dos rateios de faixas com cota a partir de R$ 24,90 no Multitrack Hub.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheça o Multitrack Hub, multitrackhub.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png", "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf", "bytes": 479092, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/instagram-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/youtube-shorts.md", "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Catalogo, stems e rateios organizados no Multitrack Hub.\n- 00:00:07,000 — Três projetos com stems organizados por instrumento.\n- 00:00:15,000 — Multitrack Hub em números: projetos, stems e rateios.\n- 00:00:21,000 — Participe dos rateios de faixas com cota a partir de R$ 24,90.\n- 00:00:27,000 — Conheça o Multitrack Hub — multitrackhub.com.br\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios", "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/facebook-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "multitrack-hub", "slug": "camp-shorts-rateios-002", "campaignId": "SHORTS-RATEIOS-MULTITRACK-002", "preset": "shorts-completo", "politicaAudio": "AAC", "audioStreams": 1, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 5, "video": {"archiveRelPath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4", "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0", "bytes": 353932, "audioStreams": 1, "audioCodec": "aac"}, "srt": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt", "sha256": "f98de0175ca5a8637936f490670164c37763caa523e09fb9ad5c0533a0b0f5e1", "bytes": 516, "text": "1\n00:00:00,000 --> 00:00:07,000\nRateios organizados por faixas, cotas e vagas no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nCada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n\n3\n00:00:15,000 --> 00:00:21,000\nStatus de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n\n4\n00:00:21,000 --> 00:00:27,000\nPacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n\n5\n00:00:27,000 --> 00:00:30,000\nAbra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002_narracao.txt", "sha256": "570a33fda5d10ff6cb839d2fa7b5717b2e6ae56d4d988c239100f9d7bd60c952", "bytes": 825, "text": "Roteiro de narracao - camp-shorts-rateios-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nVeja os rateios de multitracks organizados por faixas, cotas e vagas no Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-rateios\nCada rateio mostra as faixas inclusas, a cota por faixa e as vagas restantes.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nAcompanhe o status de cada rateio, com vagas restantes e cota a partir de vinte e quatro reais e noventa centavos.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nDois rateios no catalogo: Pacote Louvor Contemporaneo e Sessao Acustica, com faixas e cotas claras.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nAbra a secao Rateios no site oficial, multitrackhub.com.br/rateios.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-storyboard.png", "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02", "bytes": 479669, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/instagram-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/youtube-shorts.md", "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Rateios organizados por faixas, cotas e vagas no Multitrack Hub.\n- 00:00:07,000 — Cada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n- 00:00:15,000 — Status de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n- 00:00:21,000 — Pacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n- 00:00:27,000 — Abra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios", "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/facebook-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}, {"tenantId": "multitrack-hub", "slug": "camp-shorts-stems-workflow-003", "campaignId": "SHORTS-STEMS-WORKFLOW-MULTITRACK-003", "preset": "shorts-completo", "politicaAudio": "AAC", "audioStreams": 1, "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0}, "scenes": 5, "video": {"archiveRelPath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4", "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9", "bytes": 446684, "audioStreams": 1, "audioCodec": "aac"}, "srt": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt", "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89", "bytes": 488, "text": "1\n00:00:00,000 --> 00:00:06,000\nCada projeto traz stems Click, Guide e banda separados por instrumento.\n\n2\n00:00:06,000 --> 00:00:15,000\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n\n3\n00:00:15,000 --> 00:00:21,000\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n4\n00:00:21,000 --> 00:00:27,000\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheca os stems disponiveis: multitrackhub.com.br.\n"}, "narracao": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003_narracao.txt", "sha256": "00a866f508f85b114b42a848bb1b9384255dc8d1a0e5665318efd363be0cb79b", "bytes": 759, "text": "Roteiro de narracao - camp-shorts-stems-workflow-003\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:06,000] cena-01-hook\nCada projeto do Multitrack Hub traz stems Click, Guide e banda separados por instrumento.\n\n[00:00:06,000 --> 00:00:15,000] cena-02-catalogo\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar em cada projeto.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-catalogo\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheca os stems disponiveis no site oficial, multitrackhub.com.br.\n"}, "storyboard": {"relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png", "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015", "bytes": 537892, "timestampsSeconds": [2.0, 8.0, 16.0, 24.0]}, "copies": {"instagram": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/instagram-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao", "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"}, "youtube": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/youtube-shorts.md", "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Cada projeto traz stems Click, Guide e banda separados por instrumento.\n- 00:00:06,000 — Stems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n- 00:00:15,000 — Do Click e Guide a banda completa: stems sincronizados por projeto.\n- 00:00:21,000 — Organize Click, Guide e banda na ordem certa de edicao e mixagem.\n- 00:00:27,000 — Conheca os stems disponiveis: multitrackhub.com.br.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios", "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"}, "facebook": {"relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/facebook-reels.md", "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels", "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"}}, "pacote": {"checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/checklist-publicacao.json", "guardrailsAudited": true, "guardrailStatus": {"srt": "ok", "narration": "ok"}, "autoPublish": false}}]}</script>
+<div id="lightbox" hidden>
+  <button id="lightbox-fechar" type="button">Fechar</button>
+  <img id="lightbox-img" alt="Prévia ampliada">
+</div>
+<footer>Portal de Revisão gerado por <code>tools/review_dashboard.py</code> · Decisões persistem no <code>localStorage</code> (reviewPortal.aprovacoes.v2) e sincronizam via <code>/api/approvals</code> quando servido · Vídeos são servidos de <code>.workspace/archives/</code> (local por estação).</footer>
+<script id="portal-data" type="application/json">{
+  "schemaVersion": 1,
+  "generatedBy": "tools/review_dashboard.py",
+  "deliveriesRoot": "02-reels-shorts/deliveries",
+  "pacotesRoot": "04-legendas/pacotes-publicacao",
+  "archivesRoot": ".workspace/archives",
+  "totals": {
+    "tenants": 4,
+    "campaigns": 8
+  },
+  "tenants": [
+    {
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "displayTitle": "ESTUDIO FLOW",
+      "monogram": "EF",
+      "domain": "estudioflow.com.br",
+      "tagline": "PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
+      "palette": {
+        "primary": "#C86D51",
+        "secondary": "#6B8E78",
+        "accent": "#E6D5B8",
+        "background": "#1C1917",
+        "surface": "#292524",
+        "textPrimary": "#FAF7F2",
+        "textMuted": "#B8B0A4"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      },
+      "routeRules": {
+        "/aulas/[studioId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-aluno-ficticia",
+            "escolha-modalidade",
+            "escolha-instrutor",
+            "calculo-horarios-livres",
+            "reserva-aula-experimental"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "promessa-cura-clinica",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/turmas": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-grade-turmas",
+            "filtro-instrutor-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "cura clínica",
+        "cura clinica",
+        "cura garantida",
+        "tratamento médico",
+        "tratamento medico",
+        "emagrecimento garantido",
+        "perda de peso garantida",
+        "resultado imediato",
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
+    },
+    {
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "displayTitle": "MARCA SALAO",
+      "monogram": "MS",
+      "domain": "marcasalao.com.br",
+      "tagline": "AGENDAMENTO ONLINE E AGENDA DO SALAO",
+      "palette": {
+        "primary": "#F5C107",
+        "secondary": "#4F8CFF",
+        "accent": "#28B463",
+        "background": "#121620",
+        "surface": "#222C40",
+        "textPrimary": "#F5F7FA",
+        "textMuted": "#B4C0D2"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      },
+      "routeRules": {
+        "/booking/[salonId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-cliente-ficticia",
+            "escolha-servico",
+            "escolha-profissional",
+            "calculo-horarios-livres",
+            "confirmacao-agendamento"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/agenda": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-agendamentos",
+            "filtro-profissional-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show",
+        "aumento de faturamento",
+        "faturamento garantido",
+        "agenda sempre cheia",
+        "meu salão",
+        "meu salao"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
+    },
+    {
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "displayTitle": "MEU SALAO",
+      "monogram": "MS",
+      "domain": "meusalao.com.br",
+      "tagline": "GESTAO DE AGENDA E ATENDIMENTOS",
+      "palette": {
+        "primary": "#10B981",
+        "secondary": "#3B82F6",
+        "accent": "#F59E0B",
+        "background": "#0F172A",
+        "surface": "#1E293B",
+        "textPrimary": "#F8FAFC",
+        "textMuted": "#94A3B8"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      },
+      "routeRules": {
+        "/booking/[salonId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-cliente-ficticia",
+            "escolha-servico",
+            "escolha-profissional",
+            "calculo-horarios-livres",
+            "confirmacao-agendamento"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/agenda": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-agendamentos",
+            "filtro-profissional-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show",
+        "aumento de faturamento",
+        "faturamento garantido",
+        "agenda sempre cheia"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "displayTitle": "MULTITRACK HUB",
+      "monogram": "MH",
+      "domain": "multitrackhub.com.br",
+      "tagline": "CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "palette": {
+        "primary": "#06B6D4",
+        "secondary": "#8B5CF6",
+        "accent": "#22C55E",
+        "background": "#090D16",
+        "surface": "#161F30",
+        "textPrimary": "#F1F5F9",
+        "textMuted": "#94A3B8"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": false
+      },
+      "routeRules": {
+        "/": {
+          "surface": "public-catalog",
+          "allowedResponsibilities": [
+            "busca-catalogo-multitracks",
+            "visualizacao-stems-bpm-tom",
+            "direcionamento-site-oficial"
+          ],
+          "forbiddenResponsibilities": [
+            "configuracao-whatsapp-comercial",
+            "alteracao-marca-salao"
+          ]
+        },
+        "/rateios": {
+          "surface": "group-splits",
+          "allowedResponsibilities": [
+            "listagem-rateios-disponiveis",
+            "status-vagas-rateio",
+            "detalhes-faixas-inclusas"
+          ],
+          "forbiddenResponsibilities": [
+            "cobranca-automatica-externa",
+            "garantia-entrega-instantanea-sem-revisao"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp comercial",
+        "telefone comercial",
+        "faturamento garantido",
+        "lucro garantido",
+        "sem direitos autorais garantido",
+        "gratuito ilimitado",
+        "100% livre de licenciamento",
+        "download automatico ilimitado"
+      ],
+      "forbiddenUiElements": [
+        "whatsapp",
+        "telefone comercial",
+        "checkout simulado"
+      ]
+    }
+  ],
+  "campaigns": [
+    {
+      "tenantId": "estudio-flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001",
+      "titulo": "Conheca o Estúdio Flow",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
+        "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
+        "bytes": 438290,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt",
+        "sha256": "b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f",
+        "bytes": 572,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo organizar reservas de aulas experimentais no seu estúdio de Pilates?\n\n2\n00:00:04,000 --> 00:00:10,000\nA aluna escolhe a modalidade e a instrutora disponível.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário livre na turma e confirma a reserva.\n\n4\n00:00:17,000 --> 00:00:20,000\nAula experimental reservada com horário definido.\n\n5\n00:00:20,000 --> 00:00:26,000\nO gestor acompanha a reserva em /gestor/turmas com status manual.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a reserva de aulas no Estúdio Flow — estudioflow.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001_narracao.txt",
+        "sha256": "476a19bac49333ab030d02975f57c612e75b234f6ee8d157ccc1801aa7f71760",
+        "bytes": 923,
+        "text": "Roteiro de narracao - camp-saas-demo-estudio-flow-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo organizado do Estúdio Flow, da reserva experimental à grade do estúdio.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /aulas, a aluna escolhe a modalidade de Pilates e a instrutora.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /aulas/[studioId] e a reserva é confirmada.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nA reserva fica registrada e visível imediatamente na grade do estúdio.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão /gestor/turmas, a equipe visualiza a grade e atualiza o status manualmente.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização de turmas do Estúdio Flow em estudioflow.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
+        "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a",
+        "bytes": 591280,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/instagram-reels.md",
+          "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/youtube-shorts.md",
+          "text": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como organizar reservas de aulas experimentais no seu estúdio de Pilates?\n- 00:00:04,000 — A aluna escolhe a modalidade e a instrutora disponível.\n- 00:00:10,000 — Seleciona o horário livre na turma e confirma a reserva.\n- 00:00:17,000 — Aula experimental reservada com horário definido.\n- 00:00:20,000 — O gestor acompanha a reserva em /gestor/turmas com status manual.\n\nhttps://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/facebook-reels.md",
+          "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "marca-salao",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "campaignId": "SAAS-DEMO-MARCA-SALAO-001",
+      "titulo": "Conheca o Marca Salão",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+        "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
+        "bytes": 445686,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
+        "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+        "bytes": 496,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Marca Salão — marcasalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt",
+        "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d",
+        "bytes": 906,
+        "text": "Roteiro de narracao - camp-saas-demo-marca-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Marca Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Marca Salão, marcasalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+        "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
+        "bytes": 643164,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/instagram-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/youtube-shorts.md",
+          "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/facebook-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "marca-salao",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "campaignId": "SAAS-DEMO-NS001-AGENDA-001",
+      "titulo": "Conheca o Marca Salão",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
+        "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
+        "bytes": 585286,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt",
+        "sha256": "8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e",
+        "bytes": 584,
+        "text": "1\n00:00:00,000 --> 00:00:05,000\nVocê consegue visualizar os agendamentos do seu salão com clareza?\n\n2\n00:00:05,000 --> 00:00:11,000\nTodos os atendimentos do dia reunidos na agenda do salão.\n\n3\n00:00:11,000 --> 00:00:17,000\nFiltre por profissional ou por status para localizar um atendimento.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe acompanha cada atendimento e atualiza o status manualmente.\n\n5\n00:00:23,000 --> 00:00:27,000\nNa hora da dúvida, localize o atendimento pelo nome do cliente.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Marca Salão — marcasalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001_narracao.txt",
+        "sha256": "ad925a6784c6a7baf59c5be095e94f152e35788598294fdab2f3b3d17d4382a7",
+        "bytes": 958,
+        "text": "Roteiro de narracao - camp-saas-demo-ns001-agenda-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVocê consegue visualizar os agendamentos do seu salão com clareza? Acompanhe o dia na agenda do Marca Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-visao-do-dia\nNa rota /gestor/agenda, todos os atendimentos do dia ficam reunidos em uma única tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-filtros\nUse os filtros por profissional e por status para localizar um atendimento na agenda.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe acompanha cada atendimento e atualiza o status manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-busca-cliente\nNa hora da dúvida, localize o atendimento pelo nome do cliente na agenda do salão.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Marca Salão, marcasalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-storyboard.png",
+        "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c",
+        "bytes": 703861,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/instagram-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/youtube-shorts.md",
+          "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Você consegue visualizar os agendamentos do seu salão com clareza?\n- 00:00:05,000 — Todos os atendimentos do dia reunidos na agenda do salão.\n- 00:00:11,000 — Filtre por profissional ou por status para localizar um atendimento.\n- 00:00:17,000 — A equipe acompanha cada atendimento e atualiza o status manualmente.\n- 00:00:23,000 — Na hora da dúvida, localize o atendimento pelo nome do cliente.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/facebook-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "campaignId": "SAAS-DEMO-MEU-SALAO-001",
+      "titulo": "Conheca o Meu Salão",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
+        "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
+        "bytes": 418019,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt",
+        "sha256": "8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc",
+        "bytes": 492,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Meu Salão — meusalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001_narracao.txt",
+        "sha256": "304d4a93157f8ef09fc094417f21d657a2c0b0567a8c701b41bc2fa8265d60a7",
+        "bytes": 898,
+        "text": "Roteiro de narracao - camp-saas-demo-meu-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Meu Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Meu Salão, meusalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
+        "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87",
+        "bytes": 620208,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/instagram-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/youtube-shorts.md",
+          "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/facebook-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "campaignId": "SAAS-DEMO-MEU-SALAO-002",
+      "titulo": "Conheca o Meu Salão",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+        "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
+        "bytes": 513587,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
+        "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49",
+        "bytes": 573,
+        "text": "1\n00:00:00,000 --> 00:00:05,000\nComo a equipe acompanha os atendimentos do dia no Meu Salão?\n\n2\n00:00:05,000 --> 00:00:11,000\nO dia da equipe começa com todos os atendimentos em uma tela.\n\n3\n00:00:11,000 --> 00:00:17,000\nCada profissional acompanha os próprios atendimentos na agenda.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe atualiza o status de cada atendimento durante o dia.\n\n5\n00:00:23,000 --> 00:00:27,000\nDo primeiro ao último atendimento, a rotina fica registrada na agenda.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Meu Salão — meusalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002_narracao.txt",
+        "sha256": "1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb",
+        "bytes": 896,
+        "text": "Roteiro de narracao - camp-saas-demo-meu-salao-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVeja como a equipe acompanha os atendimentos do dia na agenda do Meu Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-abertura-do-dia\nNa rota /gestor/agenda, o dia da equipe começa com todos os atendimentos reunidos em uma tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-equipe\nCada profissional encontra os próprios atendimentos na agenda do salão.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe atualiza o status de cada atendimento manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-fim-do-dia\nDo primeiro ao último atendimento, a rotina do dia fica registrada na agenda.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Meu Salão, meusalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
+        "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
+        "bytes": 645948,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/instagram-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/youtube-shorts.md",
+          "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como a equipe acompanha os atendimentos do dia no Meu Salão?\n- 00:00:05,000 — O dia da equipe começa com todos os atendimentos em uma tela.\n- 00:00:11,000 — Cada profissional acompanha os próprios atendimentos na agenda.\n- 00:00:17,000 — A equipe atualiza o status de cada atendimento durante o dia.\n- 00:00:23,000 — Do primeiro ao último atendimento, a rotina fica registrada na agenda.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/facebook-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "campaignId": "SHORTS-COMPLETO-MULTITRACK-001",
+      "titulo": "Conheca o Multitrack Hub",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+        "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+        "bytes": 352348,
+        "audioStreams": 1,
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
+        "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+        "bytes": 444,
+        "text": "1\n00:00:00,000 --> 00:00:07,000\nCatalogo, stems e rateios organizados no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nTrês projetos com stems organizados por instrumento.\n\n3\n00:00:15,000 --> 00:00:21,000\nMultitrack Hub em números: projetos, stems e rateios.\n\n4\n00:00:21,000 --> 00:00:27,000\nParticipe dos rateios de faixas com cota a partir de R$ 24,90.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheça o Multitrack Hub — multitrackhub.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt",
+        "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1",
+        "bytes": 743,
+        "text": "Roteiro de narracao - camp-shorts-completo-multitrack-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nConheça o catálogo de projetos, stems e rateios do Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-catalogo\nTrês projetos no catálogo, cada um com BPM, tom e stems prontos para baixar.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nVeja os números do Multitrack Hub: projetos, stems e rateios disponíveis.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nParticipe dos rateios de faixas com cota a partir de R$ 24,90 no Multitrack Hub.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheça o Multitrack Hub, multitrackhub.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
+        "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
+        "bytes": 479092,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Catalogo, stems e rateios organizados no Multitrack Hub.\n- 00:00:07,000 — Três projetos com stems organizados por instrumento.\n- 00:00:15,000 — Multitrack Hub em números: projetos, stems e rateios.\n- 00:00:21,000 — Participe dos rateios de faixas com cota a partir de R$ 24,90.\n- 00:00:27,000 — Conheça o Multitrack Hub — multitrackhub.com.br\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-rateios-002",
+      "campaignId": "SHORTS-RATEIOS-MULTITRACK-002",
+      "titulo": "Conheca o Multitrack Hub",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
+        "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
+        "bytes": 353932,
+        "audioStreams": 1,
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt",
+        "sha256": "f98de0175ca5a8637936f490670164c37763caa523e09fb9ad5c0533a0b0f5e1",
+        "bytes": 516,
+        "text": "1\n00:00:00,000 --> 00:00:07,000\nRateios organizados por faixas, cotas e vagas no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nCada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n\n3\n00:00:15,000 --> 00:00:21,000\nStatus de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n\n4\n00:00:21,000 --> 00:00:27,000\nPacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n\n5\n00:00:27,000 --> 00:00:30,000\nAbra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002_narracao.txt",
+        "sha256": "570a33fda5d10ff6cb839d2fa7b5717b2e6ae56d4d988c239100f9d7bd60c952",
+        "bytes": 825,
+        "text": "Roteiro de narracao - camp-shorts-rateios-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nVeja os rateios de multitracks organizados por faixas, cotas e vagas no Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-rateios\nCada rateio mostra as faixas inclusas, a cota por faixa e as vagas restantes.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nAcompanhe o status de cada rateio, com vagas restantes e cota a partir de vinte e quatro reais e noventa centavos.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nDois rateios no catalogo: Pacote Louvor Contemporaneo e Sessao Acustica, com faixas e cotas claras.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nAbra a secao Rateios no site oficial, multitrackhub.com.br/rateios.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-storyboard.png",
+        "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02",
+        "bytes": 479669,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Rateios organizados por faixas, cotas e vagas no Multitrack Hub.\n- 00:00:07,000 — Cada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n- 00:00:15,000 — Status de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n- 00:00:21,000 — Pacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n- 00:00:27,000 — Abra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-stems-workflow-003",
+      "campaignId": "SHORTS-STEMS-WORKFLOW-MULTITRACK-003",
+      "titulo": "Conheca o Multitrack Hub",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+        "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+        "bytes": 446684,
+        "audioStreams": 1,
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
+        "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89",
+        "bytes": 488,
+        "text": "1\n00:00:00,000 --> 00:00:06,000\nCada projeto traz stems Click, Guide e banda separados por instrumento.\n\n2\n00:00:06,000 --> 00:00:15,000\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n\n3\n00:00:15,000 --> 00:00:21,000\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n4\n00:00:21,000 --> 00:00:27,000\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheca os stems disponiveis: multitrackhub.com.br.\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003_narracao.txt",
+        "sha256": "00a866f508f85b114b42a848bb1b9384255dc8d1a0e5665318efd363be0cb79b",
+        "bytes": 759,
+        "text": "Roteiro de narracao - camp-shorts-stems-workflow-003\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:06,000] cena-01-hook\nCada projeto do Multitrack Hub traz stems Click, Guide e banda separados por instrumento.\n\n[00:00:06,000 --> 00:00:15,000] cena-02-catalogo\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar em cada projeto.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-catalogo\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheca os stems disponiveis no site oficial, multitrackhub.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png",
+        "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
+        "bytes": 537892,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Cada projeto traz stems Click, Guide e banda separados por instrumento.\n- 00:00:06,000 — Stems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n- 00:00:15,000 — Do Click e Guide a banda completa: stems sincronizados por projeto.\n- 00:00:21,000 — Organize Click, Guide e banda na ordem certa de edicao e mixagem.\n- 00:00:27,000 — Conheca os stems disponiveis: multitrackhub.com.br.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    }
+  ]
+}</script>
 <script>
 "use strict";
 const DATA = JSON.parse(document.getElementById("portal-data").textContent);
 const SERVIDO = location.protocol === "http:" || location.protocol === "https:";
-const LS_KEY = "reviewPortal.aprovacoes.v1";
-const ITENS = [
-  ["storyboard", "Storyboard 2×2 revisado"],
-  ["legendas", "Legendas SRT conferidas (sincronização e legibilidade)"],
-  ["narracao", "Roteiro de narração revisado"],
-  ["copies", "Copies Instagram/YouTube/Facebook revisadas"],
-  ["utm", "Links UTM conferidos"],
-  ["audio", "Política de áudio confirmada"],
-  ["guardrails", "Guardrails sem violações (checklist de publicação)"]
-];
+const LS_KEY = "reviewPortal.aprovacoes.v2";
+const DECISOES = {
+  aguardando: "Aguardando Revisão",
+  aprovado: "Aprovado para Publicação Manual",
+  ajuste: "Solicitar Ajuste"
+};
 const ABAS = [
   ["srt", "Legenda .srt"],
-  ["narracao", "Roteiro de Narração"],
-  ["instagram", "Copy Instagram"],
-  ["youtube", "Copy YouTube"],
-  ["facebook", "Copy Facebook"]
+  ["narracao", "Narração"],
+  ["instagram", "Instagram"],
+  ["youtube", "YouTube"],
+  ["facebook", "Facebook"],
+  ["guardrails", "Guardrails & Hashes"]
 ];
+
+function normalizar(texto) {
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
@@ -96,8 +1113,11 @@ function el(tag, attrs, children) {
 }
 
 function carregarEstado() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }
-  catch (e) { return {}; }
+  try {
+    const st = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    if (st && typeof st === "object") { return st; }
+  } catch (e) { /* estado corrompido: recomeca vazio */ }
+  return {};
 }
 function salvarEstado(estado) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(estado)); }
@@ -105,27 +1125,140 @@ function salvarEstado(estado) {
 }
 function chaveCampanha(c) { return c.tenantId + "/" + c.slug; }
 function estadoCampanha(c) {
-  const st = carregarEstado()[chaveCampanha(c)];
-  return st || { itens: {}, revisor: "", observacoes: "" };
+  const item = (carregarEstado().campanhas || {})[chaveCampanha(c)];
+  return {
+    decisao: item && DECISOES[item.decisao] ? item.decisao : "aguardando",
+    locucaoExternaConferida: !!(item && item.locucaoExternaConferida),
+    observacoes: item && item.observacoes ? item.observacoes : ""
+  };
 }
 function registrar(c, campo, valor) {
   const estado = carregarEstado();
-  const st = estado[chaveCampanha(c)] || { itens: {} };
-  if (campo === "itens") {
-    st.itens = valor;
-  } else {
-    st[campo] = valor;
-  }
-  estado[chaveCampanha(c)] = st;
+  estado.campanhas = estado.campanhas || {};
+  const chave = chaveCampanha(c);
+  const item = estado.campanhas[chave] || { decisao: "aguardando", locucaoExternaConferida: false, observacoes: "" };
+  item[campo] = valor;
+  estado.campanhas[chave] = item;
   salvarEstado(estado);
+  agendarSync();
+  atualizarPainel();
+}
+function registrarRevisor(nome) {
+  const estado = carregarEstado();
+  estado.revisor = nome;
+  salvarEstado(estado);
+  agendarSync();
+}
+
+function docAprovacoes() {
+  const estado = carregarEstado();
+  const campanhas = DATA.campaigns.map(function (c) {
+    const e = estadoCampanha(c);
+    return {
+      tenantId: c.tenantId,
+      slug: c.slug,
+      campaignId: c.campaignId,
+      preset: c.preset,
+      politicaAudio: c.politicaAudio,
+      decisao: e.decisao,
+      locucaoExternaConferida: e.locucaoExternaConferida,
+      observacoes: e.observacoes,
+      hashes: {
+        video: c.video.sha256,
+        srt: c.srt.sha256,
+        narracao: c.narracao.sha256,
+        storyboard: c.storyboard.sha256
+      }
+    };
+  });
+  const resumo = { totalCampanhas: campanhas.length, aprovadas: 0, ajustes: 0, pendentes: 0 };
+  campanhas.forEach(function (k) {
+    if (k.decisao === "aprovado") { resumo.aprovadas += 1; }
+    else if (k.decisao === "ajuste") { resumo.ajustes += 1; }
+    else { resumo.pendentes += 1; }
+  });
+  return {
+    schemaVersion: 2,
+    arquivo: "aprovacoes-titular.json",
+    origem: "05-review-portal",
+    exportadoEm: new Date().toISOString(),
+    revisor: typeof estado.revisor === "string" ? estado.revisor : "",
+    resumo: resumo,
+    campanhas: campanhas
+  };
+}
+
+let syncTimer = null;
+function agendarSync() {
+  if (!SERVIDO) { return; }
+  if (syncTimer) { clearTimeout(syncTimer); }
+  syncTimer = setTimeout(sincronizar, 800);
+}
+function sincronizar() {
+  if (!SERVIDO) { return; }
+  fetch("/api/approvals", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(docAprovacoes())
+  }).catch(function () { /* servidor fora do ar: localStorage segue como fonte */ });
+}
+
+function exportarAprovacoes() {
+  const blob = new Blob([JSON.stringify(docAprovacoes(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "aprovacoes-titular.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+function importarAprovacoes(arquivo) {
+  const leitor = new FileReader();
+  leitor.onload = function () {
+    let doc = null;
+    try { doc = JSON.parse(String(leitor.result)); }
+    catch (e) { window.alert("Arquivo nao e um JSON valido."); return; }
+    if (!doc || typeof doc !== "object" || !Array.isArray(doc.campanhas)) {
+      window.alert("Documento sem a lista de campanhas.");
+      return;
+    }
+    const estado = carregarEstado();
+    estado.campanhas = estado.campanhas || {};
+    if (typeof doc.revisor === "string") {
+      estado.revisor = doc.revisor;
+      document.getElementById("input-revisor").value = doc.revisor;
+    }
+    doc.campanhas.forEach(function (item) {
+      if (!item || typeof item !== "object") { return; }
+      const alvo = DATA.campaigns.filter(function (c) {
+        return c.tenantId === item.tenantId && c.slug === item.slug;
+      })[0];
+      if (!alvo) { return; }
+      estado.campanhas[chaveCampanha(alvo)] = {
+        decisao: DECISOES[item.decisao] ? item.decisao : "aguardando",
+        locucaoExternaConferida: !!item.locucaoExternaConferida,
+        observacoes: typeof item.observacoes === "string" ? item.observacoes : ""
+      };
+    });
+    salvarEstado(estado);
+    agendarSync();
+    render();
+  };
+  leitor.readAsText(arquivo);
 }
 
 function urlStoryboard(c) {
-  const rest = c.storyboard.relPath.slice(DATA.deliveriesRoot.length + 1);
-  return SERVIDO ? "/deliveries/" + rest : "../" + c.storyboard.relPath;
+  return SERVIDO ? "/media/storyboard/" + c.tenantId + "/" + c.slug : "../" + c.storyboard.relPath;
 }
-function urlVideo(c) {
-  return "/archives/" + c.video.archiveRelPath.slice(DATA.archivesRoot.length + 1);
+function urlCover(c) {
+  return SERVIDO ? "/media/cover/" + c.tenantId + "/" + c.slug : "../" + c.cover.relPath;
+}
+function urlFormats(c) {
+  return SERVIDO ? "/media/formats/" + c.tenantId + "/" + c.slug : "../" + c.formats.relPath;
+}
+function urlVideo(c, variante) {
+  return "/media/video/" + c.tenantId + "/" + c.slug + "/" + variante;
 }
 
 function copiar(texto, botao) {
@@ -147,20 +1280,64 @@ function copiar(texto, botao) {
     navigator.clipboard.writeText(texto).then(concluido).catch(alternativa);
   } else { alternativa(); }
 }
-function textoAudio(c) {
-  return c.politicaAudio === "AAC"
-    ? "AAC · " + c.audioStreams + " faixa(s)"
-    : "-an · " + c.audioStreams + " faixa(s)";
+function blocosSrt(texto) {
+  const blocos = [];
+  String(texto || "").replace(/\r\n/g, "\n").split(/\n\s*\n/).forEach(function (bruto) {
+    const linhas = bruto.split("\n").filter(function (l) { return l.trim() !== ""; });
+    if (linhas.length >= 2) {
+      blocos.push({ numero: linhas[0], tempo: linhas[1], texto: linhas.slice(2).join("\n") });
+    }
+  });
+  return blocos;
+}
+
+function painelGuardrails(c) {
+  const tenant = DATA.tenants.filter(function (t) { return t.tenantId === c.tenantId; })[0] || {};
+  const painel = el("div", { class: "aba-conteudo" });
+  painel.appendChild(el("strong", { text: "Rotas autorizadas" }));
+  const rotas = el("ul", { class: "guardrails-lista" });
+  Object.keys(tenant.routeRules || {}).forEach(function (rota) {
+    rotas.appendChild(el("li", { text: rota }));
+  });
+  painel.appendChild(rotas);
+  painel.appendChild(el("strong", { text: "Claims bloqueados" }));
+  const claims = el("ul", { class: "guardrails-lista" });
+  (tenant.forbiddenClaims || []).forEach(function (claim) {
+    claims.appendChild(el("li", { text: claim }));
+  });
+  painel.appendChild(claims);
+  painel.appendChild(el("p", {
+    class: "nota",
+    text: "autoPublish: " + (c.pacote && c.pacote.autoPublish ? "true" : "false")
+      + " · guardrailsAudited: " + (c.pacote && c.pacote.guardrailsAudited ? "true" : "false")
+  }));
+  painel.appendChild(el("strong", { text: "Hashes SHA-256" }));
+  [["video", c.video.sha256], ["srt", c.srt.sha256], ["narracao", c.narracao.sha256], ["storyboard", c.storyboard.sha256]].forEach(function (par) {
+    painel.appendChild(el("div", { class: "hash-linha", text: par[0] + ": " + par[1] }));
+  });
+  return painel;
 }
 
 function painelAba(c, aba) {
+  if (aba === "guardrails") { return painelGuardrails(c); }
   const painel = el("div", { class: "aba-conteudo" });
-  if (aba === "srt" || aba === "narracao") {
-    const texto = aba === "srt" ? c.srt.text : c.narracao.text;
-    const botao = el("button", { type: "button", text: "Copiar" });
-    botao.addEventListener("click", function () { copiar(texto, botao); });
-    painel.appendChild(el("pre", { text: texto }));
-    painel.appendChild(el("div", { class: "linha-acoes" }, [botao]));
+  if (aba === "srt") {
+    blocosSrt(c.srt.text).forEach(function (b) {
+      const bloco = el("div", { class: "srt-bloco" });
+      bloco.appendChild(el("div", { class: "srt-tempo", text: "#" + b.numero + " · " + b.tempo }));
+      bloco.appendChild(el("div", { class: "srt-texto", text: b.texto }));
+      painel.appendChild(bloco);
+    });
+    const botaoSrt = el("button", { type: "button", text: "Copiar Texto" });
+    botaoSrt.addEventListener("click", function () { copiar(c.srt.text, botaoSrt); });
+    painel.appendChild(el("div", { class: "linha-acoes" }, [botaoSrt]));
+    return painel;
+  }
+  if (aba === "narracao") {
+    const botaoNarr = el("button", { type: "button", text: "Copiar Texto" });
+    botaoNarr.addEventListener("click", function () { copiar(c.narracao.text, botaoNarr); });
+    painel.appendChild(el("pre", { text: c.narracao.text }));
+    painel.appendChild(el("div", { class: "linha-acoes" }, [botaoNarr]));
     return painel;
   }
   const copy = c.copies ? c.copies[aba] : null;
@@ -168,69 +1345,121 @@ function painelAba(c, aba) {
     painel.appendChild(el("p", { class: "nota", text: "Pacote de publicação não gerado para esta campanha." }));
     return painel;
   }
-  const botaoCopy = el("button", { type: "button", text: "Copiar" });
-  botaoCopy.addEventListener("click", function () { copiar(copy.text, botaoCopy); });
-  const acoes = el("div", { class: "linha-acoes" }, [botaoCopy]);
   if (copy.utmUrl) {
-    acoes.appendChild(el("a", { href: copy.utmUrl, target: "_blank", rel: "noopener", text: copy.utmUrl }));
-    const botaoUrl = el("button", { type: "button", text: "Copiar link UTM" });
-    botaoUrl.addEventListener("click", function () { copiar(copy.utmUrl, botaoUrl); });
-    acoes.appendChild(botaoUrl);
+    painel.appendChild(el("div", { class: "utm-box", text: "URL UTM: " + copy.utmUrl }));
   }
   painel.appendChild(el("pre", { text: copy.text }));
+  const botaoCopy = el("button", { type: "button", text: "Copiar Copy" });
+  botaoCopy.addEventListener("click", function () { copiar(copy.text, botaoCopy); });
+  const acoes = el("div", { class: "linha-acoes" }, [
+    el("span", { class: "contador", text: copy.text.length + " caracteres" }),
+    botaoCopy
+  ]);
+  if (copy.utmUrl) {
+    const botaoUrl = el("button", { type: "button", text: "Copiar URL UTM" });
+    botaoUrl.addEventListener("click", function () { copiar(copy.utmUrl, botaoUrl); });
+    acoes.appendChild(botaoUrl);
+    acoes.appendChild(el("a", { href: copy.utmUrl, target: "_blank", rel: "noopener", text: copy.utmUrl }));
+  }
   painel.appendChild(acoes);
   return painel;
+}
+
+function abrirLightbox(src) {
+  document.getElementById("lightbox-img").src = src;
+  document.getElementById("lightbox").hidden = false;
+}
+function fecharLightbox() {
+  document.getElementById("lightbox").hidden = true;
+  document.getElementById("lightbox-img").src = "";
 }
 
 function card(c) {
   const tenant = DATA.tenants.filter(function (t) { return t.tenantId === c.tenantId; })[0] || { palette: {} };
   const cardEl = el("article", { class: "card" });
-  cardEl.style.setProperty("--c-primary", tenant.palette.primary || "#1f6feb");
+  cardEl.style.setProperty("--c-primary", (tenant.palette && tenant.palette.primary) || "#1f6feb");
 
-  const chip = el("span", { class: "chip", text: "Não iniciada" });
+  const chipStatus = el("span", { class: "chip status aguardando" });
   function atualizarChip() {
-    const st = estadoCampanha(c);
-    const marcados = ITENS.filter(function (par) { return (st.itens || {})[par[0]]; }).length;
-    if (marcados === ITENS.length) {
-      chip.textContent = "Aprovada";
-      chip.className = "chip aprovada";
-    } else if (marcados > 0) {
-      chip.textContent = "Em revisão " + marcados + "/" + ITENS.length;
-      chip.className = "chip revisao";
-    } else {
-      chip.textContent = "Não iniciada";
-      chip.className = "chip";
-    }
+    const e = estadoCampanha(c);
+    chipStatus.textContent = DECISOES[e.decisao];
+    chipStatus.className = "chip status " + e.decisao;
   }
 
   const cabecalho = el("div", { class: "card-head" }, [
     el("div", { class: "monogram", text: tenant.monogram || "" }),
     el("div", { class: "card-titulo" }, [
-      el("strong", { text: tenant.brandName + " — " + c.campaignId }),
-      el("span", { text: c.slug + " · " + c.format.width + "×" + c.format.height + " @ " + c.format.fps + "fps · " + c.format.duration + "s · " + c.scenes + " cenas" })
+      el("strong", { text: c.titulo }),
+      el("span", { text: c.slug + " · " + (tenant.domain || "") })
     ]),
     el("span", { class: "chip", text: c.preset }),
-    el("span", { class: "chip", text: textoAudio(c) }),
-    chip
+    el("span", { class: "chip", text: c.format.width + "x" + c.format.height + " @ " + c.format.fps + "fps · " + c.format.duration + "s · " + c.scenes + " cenas" }),
+    el("span", {
+      class: "chip " + (c.politicaAudio === "AAC" ? "audio-aac" : "audio-an"),
+      text: c.politicaAudio === "AAC" ? "ÁUDIO AAC" : "SEM ÁUDIO (-an)"
+    }),
+    chipStatus
   ]);
   atualizarChip();
   cardEl.appendChild(cabecalho);
 
   const media = el("div", { class: "card-media" });
-  const img = el("img", { src: urlStoryboard(c), alt: "Storyboard 2×2 da campanha " + c.slug });
-  if (SERVIDO) {
-    const wrap = document.createElement("div");
-    wrap.innerHTML = '<video class="player" controls preload="metadata"></video>';
-    const video = wrap.firstChild;
+  const modos = el("div", { class: "modo-botoes" });
+  const viewer = el("div", { class: "viewer" });
+  function imgStoryboard() {
+    const img = el("img", { src: urlStoryboard(c), alt: "Storyboard 2x2 da campanha " + c.slug });
+    img.addEventListener("click", function () { abrirLightbox(img.src); });
+    return img;
+  }
+  function mostrarStoryboard() { viewer.replaceChildren(imgStoryboard()); }
+  function mostrarPlayer(variante) {
+    if (!SERVIDO) { return; }
+    const video = el("video", { controls: "", preload: "metadata" });
     video.poster = urlStoryboard(c);
     video.addEventListener("error", function () {
-      media.replaceChildren(img, el("p", { class: "nota", text: "MP4 não disponível nesta estação (.workspace/archives é local por estação)." }));
+      viewer.replaceChildren(
+        imgStoryboard(),
+        el("p", { class: "nota", text: "MP4 não disponível nesta estação (.workspace/archives é local por estação)." })
+      );
     });
-    video.src = urlVideo(c);
-    media.appendChild(video);
-  } else {
-    media.appendChild(img);
-    media.appendChild(el("p", { class: "nota", text: "Aberto via arquivo. Execute python tools/review_dashboard.py --serve para assistir ao vídeo." }));
+    video.src = urlVideo(c, variante);
+    viewer.replaceChildren(video);
+  }
+  const botaoStoryboard = el("button", { type: "button", text: "Storyboard 2x2" });
+  botaoStoryboard.addEventListener("click", mostrarStoryboard);
+  modos.appendChild(botaoStoryboard);
+  (c.video.variants || []).forEach(function (variante) {
+    const botao = el("button", { type: "button", text: "Player " + variante.replace("x", ":") });
+    if (!SERVIDO) {
+      botao.className = "desabilitado";
+      botao.title = "Disponível apenas com --serve";
+    }
+    botao.addEventListener("click", function () { mostrarPlayer(variante); });
+    modos.appendChild(botao);
+  });
+  if (c.cover) {
+    const botaoCover = el("button", { type: "button", text: "Capa (cover.png)" });
+    botaoCover.addEventListener("click", function () {
+      const img = el("img", { src: urlCover(c), alt: "Capa da campanha " + c.slug });
+      img.addEventListener("click", function () { abrirLightbox(img.src); });
+      viewer.replaceChildren(img);
+    });
+    modos.appendChild(botaoCover);
+  }
+  if (c.formats) {
+    const botaoFormats = el("button", { type: "button", text: "Formatos (preview-formats.png)" });
+    botaoFormats.addEventListener("click", function () {
+      const img = el("img", { src: urlFormats(c), alt: "Prévia de formatos da campanha " + c.slug });
+      img.addEventListener("click", function () { abrirLightbox(img.src); });
+      viewer.replaceChildren(img);
+    });
+    modos.appendChild(botaoFormats);
+  }
+  mostrarStoryboard();
+  media.appendChild(modos);
+  media.appendChild(viewer);
+  if (!SERVIDO) {
+    media.appendChild(el("p", { class: "nota", text: "Aberto via arquivo: player e sincronização de aprovações exigem python tools/review_dashboard.py --serve." }));
   }
   cardEl.appendChild(media);
 
@@ -250,29 +1479,74 @@ function card(c) {
   cardEl.appendChild(abas);
   cardEl.appendChild(area);
 
-  const checklist = el("div", { class: "checklist" });
-  checklist.appendChild(el("strong", { text: "Checklist de aprovação" }));
-  const st = estadoCampanha(c);
-  ITENS.forEach(function (par) {
-    const cb = el("input", { type: "checkbox" });
-    cb.checked = Boolean((st.itens || {})[par[0]]);
-    cb.addEventListener("change", function () {
-      const itens = estadoCampanha(c).itens || {};
-      itens[par[0]] = cb.checked;
-      registrar(c, "itens", itens);
-      atualizarChip();
-    });
-    checklist.appendChild(el("label", { class: "item" }, [cb, el("span", { text: par[1] })]));
+  const aprovacao = el("div", { class: "aprovacao" });
+  const e0 = estadoCampanha(c);
+  const selDecisao = el("select");
+  Object.keys(DECISOES).forEach(function (chave) {
+    const opt = el("option", { value: chave, text: DECISOES[chave] });
+    if (chave === e0.decisao) { opt.selected = true; }
+    selDecisao.appendChild(opt);
   });
-  const revisor = el("input", { type: "text", placeholder: "Revisor (opcional)" });
-  revisor.value = st.revisor || "";
-  revisor.addEventListener("input", function () { registrar(c, "revisor", revisor.value); });
-  const obs = el("textarea", { placeholder: "Observações (opcional)", rows: "2" });
-  obs.value = st.observacoes || "";
+  selDecisao.addEventListener("change", function () {
+    registrar(c, "decisao", selDecisao.value);
+    atualizarChip();
+  });
+  const linhaDecisao = el("div", { class: "linha" }, [
+    el("label", {}, [document.createTextNode("Decisão "), selDecisao])
+  ]);
+  if (c.politicaAudio === "-an") {
+    const cbLocucao = el("input", { type: "checkbox" });
+    cbLocucao.checked = e0.locucaoExternaConferida;
+    cbLocucao.addEventListener("change", function () {
+      registrar(c, "locucaoExternaConferida", cbLocucao.checked);
+    });
+    linhaDecisao.appendChild(el("label", {}, [
+      cbLocucao,
+      document.createTextNode(" Locução externa conferida")
+    ]));
+  }
+  aprovacao.appendChild(linhaDecisao);
+  const obs = el("textarea", { placeholder: "Observações do titular", rows: "2" });
+  obs.value = e0.observacoes;
   obs.addEventListener("input", function () { registrar(c, "observacoes", obs.value); });
-  checklist.appendChild(el("div", { class: "campos" }, [revisor, obs]));
-  cardEl.appendChild(checklist);
+  aprovacao.appendChild(obs);
+  cardEl.appendChild(aprovacao);
   return cardEl;
+}
+
+function correspondeBusca(c, termo) {
+  if (!termo) { return true; }
+  const alvo = [c.slug, c.campaignId, c.titulo, c.srt.text, c.narracao.text];
+  Object.keys(c.routeRules || {}).forEach(function (rota) { alvo.push(rota); });
+  Object.keys(c.copies || {}).forEach(function (canal) {
+    const copy = c.copies[canal];
+    if (copy) {
+      if (copy.text) { alvo.push(copy.text); }
+      if (copy.utmUrl) { alvo.push(copy.utmUrl); }
+    }
+  });
+  return normalizar(alvo.join(" ")).indexOf(termo) >= 0;
+}
+
+function atualizarPainel() {
+  const total = DATA.campaigns.length;
+  const an = DATA.campaigns.filter(function (c) { return c.politicaAudio === "-an"; }).length;
+  const conformes = DATA.campaigns.filter(function (c) {
+    return c.pacote && c.pacote.guardrailsAudited && !c.pacote.autoPublish;
+  }).length;
+  const contagens = { aprovado: 0, ajuste: 0, aguardando: 0 };
+  DATA.campaigns.forEach(function (c) {
+    contagens[estadoCampanha(c).decisao] += 1;
+  });
+  document.getElementById("metrica-nichos").textContent = DATA.totals.tenants;
+  document.getElementById("metrica-campanhas").textContent = DATA.totals.campaigns;
+  document.getElementById("metrica-videos-an").textContent = an;
+  document.getElementById("metrica-videos-aac").textContent = total - an;
+  document.getElementById("metrica-guardrails").textContent =
+    total ? Math.round((conformes / total) * 100) + "% conformes" : "0%";
+  document.getElementById("metrica-aprovados").textContent = contagens.aprovado;
+  document.getElementById("metrica-ajustes").textContent = contagens.ajuste;
+  document.getElementById("metrica-pendentes").textContent = contagens.aguardando;
 }
 
 function render() {
@@ -281,10 +1555,14 @@ function render() {
   const fTenant = document.getElementById("filtro-tenant").value;
   const fPreset = document.getElementById("filtro-preset").value;
   const fAudio = document.getElementById("filtro-audio").value;
+  const fStatus = document.getElementById("filtro-status").value;
+  const termo = normalizar(document.getElementById("busca").value.trim());
   const visiveis = DATA.campaigns.filter(function (c) {
     return (!fTenant || c.tenantId === fTenant)
       && (!fPreset || c.preset === fPreset)
-      && (!fAudio || c.politicaAudio === fAudio);
+      && (!fAudio || c.politicaAudio === fAudio)
+      && (!fStatus || estadoCampanha(c).decisao === fStatus)
+      && correspondeBusca(c, termo);
   });
   visiveis.forEach(function (c) { grid.appendChild(card(c)); });
   document.getElementById("vazio").hidden = visiveis.length > 0;
@@ -292,52 +1570,12 @@ function render() {
     visiveis.length + " de " + DATA.campaigns.length + " campanhas exibidas";
 }
 
-function exportarAprovacoes() {
-  const estado = carregarEstado();
-  const campanhas = DATA.campaigns.map(function (c) {
-    const st = estadoCampanha(c);
-    const itens = {};
-    ITENS.forEach(function (par) { itens[par[0]] = Boolean((st.itens || {})[par[0]]); });
-    const aprovada = ITENS.every(function (par) { return itens[par[0]]; });
-    return {
-      tenantId: c.tenantId,
-      slug: c.slug,
-      campaignId: c.campaignId,
-      preset: c.preset,
-      politicaAudio: c.politicaAudio,
-      aprovada: aprovada,
-      revisor: st.revisor || "",
-      observacoes: st.observacoes || "",
-      itens: itens,
-      hashes: {
-        video: c.video.sha256,
-        srt: c.srt.sha256,
-        narracao: c.narracao.sha256,
-        storyboard: c.storyboard.sha256
-      }
-    };
-  });
-  const aprovadas = campanhas.filter(function (c) { return c.aprovada; }).length;
-  const payload = {
-    schemaVersion: 1,
-    arquivo: "aprovacoes-titular.json",
-    origem: "05-review-portal",
-    exportadoEm: new Date().toISOString(),
-    resumo: {
-      totalCampanhas: campanhas.length,
-      aprovadas: aprovadas,
-      pendentes: campanhas.length - aprovadas
-    },
-    campanhas: campanhas
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "aprovacoes-titular.json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+function atualizarSwatch() {
+  const tenant = DATA.tenants.filter(function (t) {
+    return t.tenantId === document.getElementById("filtro-tenant").value;
+  })[0];
+  document.getElementById("swatch-tenant").style.background =
+    tenant && tenant.palette && tenant.palette.primary ? tenant.palette.primary : "#1f6feb";
 }
 
 (function init() {
@@ -345,16 +1583,42 @@ function exportarAprovacoes() {
   DATA.tenants.forEach(function (t) {
     const opt = document.createElement("option");
     opt.value = t.tenantId;
-    opt.textContent = t.brandName + " (" + t.tenantId + ")";
+    opt.textContent = t.monogram + " · " + t.brandName;
     selTenant.appendChild(opt);
   });
-  ["filtro-tenant", "filtro-preset", "filtro-audio"].forEach(function (id) {
+  selTenant.addEventListener("change", function () { atualizarSwatch(); render(); });
+  ["filtro-preset", "filtro-audio", "filtro-status"].forEach(function (id) {
     document.getElementById(id).addEventListener("change", render);
   });
+  document.getElementById("busca").addEventListener("input", render);
+  const inputRevisor = document.getElementById("input-revisor");
+  inputRevisor.value = carregarEstado().revisor || "";
+  inputRevisor.addEventListener("input", function () { registrarRevisor(inputRevisor.value); });
   document.getElementById("btn-exportar-aprovacoes").addEventListener("click", exportarAprovacoes);
+  document.getElementById("btn-importar-aprovacoes").addEventListener("click", function () {
+    document.getElementById("input-importar").click();
+  });
+  document.getElementById("input-importar").addEventListener("change", function (ev) {
+    if (ev.target.files && ev.target.files[0]) { importarAprovacoes(ev.target.files[0]); }
+  });
+  document.getElementById("lightbox").addEventListener("click", function (ev) {
+    if (ev.target.id === "lightbox") { fecharLightbox(); }
+  });
+  document.getElementById("lightbox-fechar").addEventListener("click", fecharLightbox);
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") { fecharLightbox(); }
+  });
   document.getElementById("sub-titulo").textContent =
     DATA.totals.tenants + " tenants · " + DATA.totals.campaigns + " campanhas";
+  if (SERVIDO) {
+    fetch("/api/health").then(function (r) { return r.json(); }).then(function (s) {
+      document.getElementById("badge-servidor").textContent =
+        "Servidor ativo · " + s.tenants + " tenants · " + s.campaigns + " campanhas";
+    }).catch(function () { /* servidor fora do ar: segue sem badge */ });
+  }
+  atualizarSwatch();
   render();
+  atualizarPainel();
 })();
 </script>
 </body>
