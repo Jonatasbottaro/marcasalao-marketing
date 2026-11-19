@@ -15,6 +15,10 @@ on:
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
       - '04-legendas/pacotes-publicacao/**'
+      - '04-legendas/calendario-editorial.*'
+      - '04-legendas/matriz-utm-consolidada.csv'
+      - '05-review-portal/**'
+      - 'docs/**'
       - '.github/workflows/local-render-validation.yml'
   pull_request:
     paths:
@@ -24,6 +28,10 @@ on:
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
       - '04-legendas/pacotes-publicacao/**'
+      - '04-legendas/calendario-editorial.*'
+      - '04-legendas/matriz-utm-consolidada.csv'
+      - '05-review-portal/**'
+      - 'docs/**'
       - '.github/workflows/local-render-validation.yml'
   workflow_dispatch:
 
@@ -87,11 +95,20 @@ jobs:
           npm run build
           test -f dist/src/validate-local-render-input.js
 
-      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2 e 3)
+      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3 e 4)
         run: |
           python tools/tenant_validator.py --all --json
           python tools/factory_cli.py list --json
-          python -m unittest tools/tests/test_tenant_contracts.py tools/tests/test_preset_runner.py tools/tests/test_factory_cli.py tools/tests/test_audio_tts.py tools/tests/test_publish_pack.py tools/tests/test_devlog_sync.py -v
+          python -m unittest \
+            tools/tests/test_render_local.py tools/tests/test_render_pipeline.py \
+            tools/tests/test_build_video.py tools/tests/test_multi_format.py \
+            tools/tests/test_srt_validate.py tools/tests/test_delivery_verify.py \
+            tools/tests/test_tenant_contracts.py tools/tests/test_preset_runner.py \
+            tools/tests/test_factory_cli.py tools/tests/test_audio_tts.py \
+            tools/tests/test_publish_pack.py tools/tests/test_devlog_sync.py \
+            tools/tests/test_derivative_formats.py tools/tests/test_review_dashboard.py \
+            tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py -v
+          python tools/release_audit.py --strict --json
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
         env:
