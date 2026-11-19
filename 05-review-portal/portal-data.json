@@ -1,0 +1,675 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "tools/review_dashboard.py",
+  "deliveriesRoot": "02-reels-shorts/deliveries",
+  "pacotesRoot": "04-legendas/pacotes-publicacao",
+  "archivesRoot": ".workspace/archives",
+  "totals": {
+    "tenants": 4,
+    "campaigns": 8
+  },
+  "tenants": [
+    {
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "displayTitle": "ESTUDIO FLOW",
+      "monogram": "EF",
+      "domain": "estudioflow.com.br",
+      "tagline": "PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
+      "palette": {
+        "primary": "#C86D51",
+        "secondary": "#6B8E78",
+        "accent": "#E6D5B8",
+        "background": "#1C1917",
+        "surface": "#292524",
+        "textPrimary": "#FAF7F2",
+        "textMuted": "#B8B0A4"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      }
+    },
+    {
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "displayTitle": "MARCA SALAO",
+      "monogram": "MS",
+      "domain": "marcasalao.com.br",
+      "tagline": "AGENDAMENTO ONLINE E AGENDA DO SALAO",
+      "palette": {
+        "primary": "#F5C107",
+        "secondary": "#4F8CFF",
+        "accent": "#28B463",
+        "background": "#121620",
+        "surface": "#222C40",
+        "textPrimary": "#F5F7FA",
+        "textMuted": "#B4C0D2"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "displayTitle": "MEU SALAO",
+      "monogram": "MS",
+      "domain": "meusalao.com.br",
+      "tagline": "GESTAO DE AGENDA E ATENDIMENTOS",
+      "palette": {
+        "primary": "#10B981",
+        "secondary": "#3B82F6",
+        "accent": "#F59E0B",
+        "background": "#0F172A",
+        "surface": "#1E293B",
+        "textPrimary": "#F8FAFC",
+        "textMuted": "#94A3B8"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "displayTitle": "MULTITRACK HUB",
+      "monogram": "MH",
+      "domain": "multitrackhub.com.br",
+      "tagline": "CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "palette": {
+        "primary": "#06B6D4",
+        "secondary": "#8B5CF6",
+        "accent": "#22C55E",
+        "background": "#090D16",
+        "surface": "#161F30",
+        "textPrimary": "#F1F5F9",
+        "textMuted": "#94A3B8"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": false
+      }
+    }
+  ],
+  "campaigns": [
+    {
+      "tenantId": "estudio-flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
+        "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
+        "bytes": 438290,
+        "audioStreams": 0,
+        "audioCodec": null
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt",
+        "sha256": "b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f",
+        "bytes": 572,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo organizar reservas de aulas experimentais no seu estúdio de Pilates?\n\n2\n00:00:04,000 --> 00:00:10,000\nA aluna escolhe a modalidade e a instrutora disponível.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário livre na turma e confirma a reserva.\n\n4\n00:00:17,000 --> 00:00:20,000\nAula experimental reservada com horário definido.\n\n5\n00:00:20,000 --> 00:00:26,000\nO gestor acompanha a reserva em /gestor/turmas com status manual.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a reserva de aulas no Estúdio Flow — estudioflow.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001_narracao.txt",
+        "sha256": "476a19bac49333ab030d02975f57c612e75b234f6ee8d157ccc1801aa7f71760",
+        "bytes": 923,
+        "text": "Roteiro de narracao - camp-saas-demo-estudio-flow-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo organizado do Estúdio Flow, da reserva experimental à grade do estúdio.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /aulas, a aluna escolhe a modalidade de Pilates e a instrutora.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /aulas/[studioId] e a reserva é confirmada.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nA reserva fica registrada e visível imediatamente na grade do estúdio.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão /gestor/turmas, a equipe visualiza a grade e atualiza o status manualmente.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização de turmas do Estúdio Flow em estudioflow.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
+        "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a",
+        "bytes": 591280,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/instagram-reels.md",
+          "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/youtube-shorts.md",
+          "text": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como organizar reservas de aulas experimentais no seu estúdio de Pilates?\n- 00:00:04,000 — A aluna escolhe a modalidade e a instrutora disponível.\n- 00:00:10,000 — Seleciona o horário livre na turma e confirma a reserva.\n- 00:00:17,000 — Aula experimental reservada com horário definido.\n- 00:00:20,000 — O gestor acompanha a reserva em /gestor/turmas com status manual.\n\nhttps://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/facebook-reels.md",
+          "text": "Conheca o Estúdio Flow\n\nPILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "marca-salao",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "campaignId": "SAAS-DEMO-MARCA-SALAO-001",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
+        "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
+        "bytes": 445686,
+        "audioStreams": 0,
+        "audioCodec": null
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
+        "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+        "bytes": 496,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Marca Salão — marcasalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001_narracao.txt",
+        "sha256": "5399ea58058cec2551f8f9843ed1c1196d337400bcbe1d561162014cba4bc36d",
+        "bytes": 906,
+        "text": "Roteiro de narracao - camp-saas-demo-marca-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Marca Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Marca Salão, marcasalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+        "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
+        "bytes": 643164,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/instagram-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/youtube-shorts.md",
+          "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/facebook-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "marca-salao",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "campaignId": "SAAS-DEMO-NS001-AGENDA-001",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
+        "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
+        "bytes": 585286,
+        "audioStreams": 0,
+        "audioCodec": null
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt",
+        "sha256": "8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e",
+        "bytes": 584,
+        "text": "1\n00:00:00,000 --> 00:00:05,000\nVocê consegue visualizar os agendamentos do seu salão com clareza?\n\n2\n00:00:05,000 --> 00:00:11,000\nTodos os atendimentos do dia reunidos na agenda do salão.\n\n3\n00:00:11,000 --> 00:00:17,000\nFiltre por profissional ou por status para localizar um atendimento.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe acompanha cada atendimento e atualiza o status manualmente.\n\n5\n00:00:23,000 --> 00:00:27,000\nNa hora da dúvida, localize o atendimento pelo nome do cliente.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Marca Salão — marcasalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001_narracao.txt",
+        "sha256": "ad925a6784c6a7baf59c5be095e94f152e35788598294fdab2f3b3d17d4382a7",
+        "bytes": 958,
+        "text": "Roteiro de narracao - camp-saas-demo-ns001-agenda-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVocê consegue visualizar os agendamentos do seu salão com clareza? Acompanhe o dia na agenda do Marca Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-visao-do-dia\nNa rota /gestor/agenda, todos os atendimentos do dia ficam reunidos em uma única tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-filtros\nUse os filtros por profissional e por status para localizar um atendimento na agenda.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe acompanha cada atendimento e atualiza o status manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-busca-cliente\nNa hora da dúvida, localize o atendimento pelo nome do cliente na agenda do salão.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Marca Salão, marcasalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-storyboard.png",
+        "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c",
+        "bytes": 703861,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/instagram-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/youtube-shorts.md",
+          "text": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Você consegue visualizar os agendamentos do seu salão com clareza?\n- 00:00:05,000 — Todos os atendimentos do dia reunidos na agenda do salão.\n- 00:00:11,000 — Filtre por profissional ou por status para localizar um atendimento.\n- 00:00:17,000 — A equipe acompanha cada atendimento e atualiza o status manualmente.\n- 00:00:23,000 — Na hora da dúvida, localize o atendimento pelo nome do cliente.\n\nhttps://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/facebook-reels.md",
+          "text": "Conheca o Marca Salão\n\nAGENDAMENTO ONLINE E AGENDA DO SALAO\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "campaignId": "SAAS-DEMO-MEU-SALAO-001",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
+        "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
+        "bytes": 418019,
+        "audioStreams": 0,
+        "audioCodec": null
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt",
+        "sha256": "8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc",
+        "bytes": 492,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo um horário escolhido pela cliente chega à agenda do salão?\n\n2\n00:00:04,000 --> 00:00:10,000\nA cliente escolhe o serviço e o profissional.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário disponível e confirma.\n\n4\n00:00:17,000 --> 00:00:20,000\nAgendamento realizado.\n\n5\n00:00:20,000 --> 00:00:26,000\nO mesmo atendimento aparece na agenda do salão.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça o agendamento online no Meu Salão — meusalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001_narracao.txt",
+        "sha256": "304d4a93157f8ef09fc094417f21d657a2c0b0567a8c701b41bc2fa8265d60a7",
+        "bytes": 898,
+        "text": "Roteiro de narracao - camp-saas-demo-meu-salao-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo conectado do Meu Salão, do horário escolhido pela cliente à agenda do salão.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres são calculados em /booking/[salonId] e a cliente confirma o agendamento.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-ponte\nO agendamento é realizado e fica visível na agenda do salão.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-salao-ve\nNa visão do gestor /gestor/agenda, o atendimento aparece com status manual.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça o agendamento online no Meu Salão, meusalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
+        "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87",
+        "bytes": 620208,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/instagram-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/youtube-shorts.md",
+          "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como um horário escolhido pela cliente chega à agenda do salão?\n- 00:00:04,000 — A cliente escolhe o serviço e o profissional.\n- 00:00:10,000 — Seleciona o horário disponível e confirma.\n- 00:00:17,000 — Agendamento realizado.\n- 00:00:20,000 — O mesmo atendimento aparece na agenda do salão.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/facebook-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "campaignId": "SAAS-DEMO-MEU-SALAO-002",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+        "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
+        "bytes": 513587,
+        "audioStreams": 0,
+        "audioCodec": null
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
+        "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49",
+        "bytes": 573,
+        "text": "1\n00:00:00,000 --> 00:00:05,000\nComo a equipe acompanha os atendimentos do dia no Meu Salão?\n\n2\n00:00:05,000 --> 00:00:11,000\nO dia da equipe começa com todos os atendimentos em uma tela.\n\n3\n00:00:11,000 --> 00:00:17,000\nCada profissional acompanha os próprios atendimentos na agenda.\n\n4\n00:00:17,000 --> 00:00:23,000\nA equipe atualiza o status de cada atendimento durante o dia.\n\n5\n00:00:23,000 --> 00:00:27,000\nDo primeiro ao último atendimento, a rotina fica registrada na agenda.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça a agenda do Meu Salão — meusalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002_narracao.txt",
+        "sha256": "1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb",
+        "bytes": 896,
+        "text": "Roteiro de narracao - camp-saas-demo-meu-salao-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:05,000] cena-01-hook\nVeja como a equipe acompanha os atendimentos do dia na agenda do Meu Salão.\n\n[00:00:05,000 --> 00:00:11,000] cena-02-abertura-do-dia\nNa rota /gestor/agenda, o dia da equipe começa com todos os atendimentos reunidos em uma tela.\n\n[00:00:11,000 --> 00:00:17,000] cena-03-equipe\nCada profissional encontra os próprios atendimentos na agenda do salão.\n\n[00:00:17,000 --> 00:00:23,000] cena-04-status-manual\nDurante o dia, a equipe atualiza o status de cada atendimento manualmente.\n\n[00:00:23,000 --> 00:00:27,000] cena-05-fim-do-dia\nDo primeiro ao último atendimento, a rotina do dia fica registrada na agenda.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Meu Salão, meusalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
+        "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
+        "bytes": 645948,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/instagram-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/youtube-shorts.md",
+          "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como a equipe acompanha os atendimentos do dia no Meu Salão?\n- 00:00:05,000 — O dia da equipe começa com todos os atendimentos em uma tela.\n- 00:00:11,000 — Cada profissional acompanha os próprios atendimentos na agenda.\n- 00:00:17,000 — A equipe atualiza o status de cada atendimento durante o dia.\n- 00:00:23,000 — Do primeiro ao último atendimento, a rotina fica registrada na agenda.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/facebook-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "campaignId": "SHORTS-COMPLETO-MULTITRACK-001",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
+        "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+        "bytes": 352348,
+        "audioStreams": 1,
+        "audioCodec": "aac"
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
+        "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+        "bytes": 444,
+        "text": "1\n00:00:00,000 --> 00:00:07,000\nCatalogo, stems e rateios organizados no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nTrês projetos com stems organizados por instrumento.\n\n3\n00:00:15,000 --> 00:00:21,000\nMultitrack Hub em números: projetos, stems e rateios.\n\n4\n00:00:21,000 --> 00:00:27,000\nParticipe dos rateios de faixas com cota a partir de R$ 24,90.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheça o Multitrack Hub — multitrackhub.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001_narracao.txt",
+        "sha256": "71afbf1558edf21f66553d6aba60c34517344f86738d590e2afcbc9fb04e16f1",
+        "bytes": 743,
+        "text": "Roteiro de narracao - camp-shorts-completo-multitrack-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nConheça o catálogo de projetos, stems e rateios do Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-catalogo\nTrês projetos no catálogo, cada um com BPM, tom e stems prontos para baixar.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nVeja os números do Multitrack Hub: projetos, stems e rateios disponíveis.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nParticipe dos rateios de faixas com cota a partir de R$ 24,90 no Multitrack Hub.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheça o Multitrack Hub, multitrackhub.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
+        "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
+        "bytes": 479092,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Catalogo, stems e rateios organizados no Multitrack Hub.\n- 00:00:07,000 — Três projetos com stems organizados por instrumento.\n- 00:00:15,000 — Multitrack Hub em números: projetos, stems e rateios.\n- 00:00:21,000 — Participe dos rateios de faixas com cota a partir de R$ 24,90.\n- 00:00:27,000 — Conheça o Multitrack Hub — multitrackhub.com.br\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-rateios-002",
+      "campaignId": "SHORTS-RATEIOS-MULTITRACK-002",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
+        "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
+        "bytes": 353932,
+        "audioStreams": 1,
+        "audioCodec": "aac"
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt",
+        "sha256": "f98de0175ca5a8637936f490670164c37763caa523e09fb9ad5c0533a0b0f5e1",
+        "bytes": 516,
+        "text": "1\n00:00:00,000 --> 00:00:07,000\nRateios organizados por faixas, cotas e vagas no Multitrack Hub.\n\n2\n00:00:07,000 --> 00:00:15,000\nCada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n\n3\n00:00:15,000 --> 00:00:21,000\nStatus de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n\n4\n00:00:21,000 --> 00:00:27,000\nPacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n\n5\n00:00:27,000 --> 00:00:30,000\nAbra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002_narracao.txt",
+        "sha256": "570a33fda5d10ff6cb839d2fa7b5717b2e6ae56d4d988c239100f9d7bd60c952",
+        "bytes": 825,
+        "text": "Roteiro de narracao - camp-shorts-rateios-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:07,000] cena-01-hook\nVeja os rateios de multitracks organizados por faixas, cotas e vagas no Multitrack Hub.\n\n[00:00:07,000 --> 00:00:15,000] cena-02-rateios\nCada rateio mostra as faixas inclusas, a cota por faixa e as vagas restantes.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nAcompanhe o status de cada rateio, com vagas restantes e cota a partir de vinte e quatro reais e noventa centavos.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nDois rateios no catalogo: Pacote Louvor Contemporaneo e Sessao Acustica, com faixas e cotas claras.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nAbra a secao Rateios no site oficial, multitrackhub.com.br/rateios.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-storyboard.png",
+        "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02",
+        "bytes": 479669,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Rateios organizados por faixas, cotas e vagas no Multitrack Hub.\n- 00:00:07,000 — Cada rateio mostra faixas inclusas, cota por faixa e vagas restantes.\n- 00:00:15,000 — Status de cada rateio: aberto, vagas restantes e cota a partir de R$ 24,90.\n- 00:00:21,000 — Pacote Louvor Contemporaneo e Sessao Acustica com faixas e cotas claras.\n- 00:00:27,000 — Abra a secao Rateios no site oficial: multitrackhub.com.br/rateios.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-shorts-stems-workflow-003",
+      "campaignId": "SHORTS-STEMS-WORKFLOW-MULTITRACK-003",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
+        "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+        "bytes": 446684,
+        "audioStreams": 1,
+        "audioCodec": "aac"
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
+        "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89",
+        "bytes": 488,
+        "text": "1\n00:00:00,000 --> 00:00:06,000\nCada projeto traz stems Click, Guide e banda separados por instrumento.\n\n2\n00:00:06,000 --> 00:00:15,000\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n\n3\n00:00:15,000 --> 00:00:21,000\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n4\n00:00:21,000 --> 00:00:27,000\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheca os stems disponiveis: multitrackhub.com.br.\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003_narracao.txt",
+        "sha256": "00a866f508f85b114b42a848bb1b9384255dc8d1a0e5665318efd363be0cb79b",
+        "bytes": 759,
+        "text": "Roteiro de narracao - camp-shorts-stems-workflow-003\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:06,000] cena-01-hook\nCada projeto do Multitrack Hub traz stems Click, Guide e banda separados por instrumento.\n\n[00:00:06,000 --> 00:00:15,000] cena-02-catalogo\nStems Click, Guide, Drums, Bass e harmonicos prontos para baixar em cada projeto.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-metricas\nDo Click e Guide a banda completa: stems sincronizados por projeto.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-catalogo\nOrganize Click, Guide e banda na ordem certa de edicao e mixagem.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheca os stems disponiveis no site oficial, multitrackhub.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png",
+        "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
+        "bytes": 537892,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Cada projeto traz stems Click, Guide e banda separados por instrumento.\n- 00:00:06,000 — Stems Click, Guide, Drums, Bass e harmonicos prontos para baixar.\n- 00:00:15,000 — Do Click e Guide a banda completa: stems sincronizados por projeto.\n- 00:00:21,000 — Organize Click, Guide e banda na ordem certa de edicao e mixagem.\n- 00:00:27,000 — Conheca os stems disponiveis: multitrackhub.com.br.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok"
+        },
+        "autoPublish": false
+      }
+    }
+  ]
+}
