@@ -420,16 +420,40 @@ def _collect_campaign(root: str, tenant_id: str, slug: str, tenant_ctx_audio: bo
 def _coletar_derivatives(delivery_dir: str, tenant_id: str, slug: str) -> list[dict] | None:
     """Le derivatives.json opcional da entrega (variantes 1x1/16x9 etc.).
 
-    Formato esperado: {"schemaVersion": 1, "derivatives": [{"variant": "1x1",
-    "path": "<slug>-1x1.mp4", "sha256": "...", "bytes": N}]} com path
-    relativo ao diretorio do slug em .workspace/archives/. Malformado aborta
-    o build (fail-closed).
+    Formatos aceitos: lista v1 [{"variant": "1x1", "path": "<slug>-1x1.mp4",
+    "sha256": "...", "bytes": N}] com path relativo ao diretorio do slug em
+    .workspace/archives/, ou dict v2 do derivative_formats (chaves por formato,
+    path relativo a raiz). Entradas PNG do v2 (cover/thumb/preview) sao
+    ignoradas aqui; o build as coleta separadamente. Malformado aborta o
+    build (fail-closed).
     """
     caminho = os.path.join(delivery_dir, "derivatives.json")
     if not os.path.isfile(render_local.fs_path(caminho)):
         return None
     doc = _load_json(caminho)
     itens = doc.get("derivatives") if isinstance(doc, dict) else None
+    if isinstance(itens, dict):
+        prefixo = f".workspace/archives/{slug}/"
+        convertido: list[dict] = []
+        for variante, item in itens.items():
+            if not _VARIANTE_RE.match(str(variante)):
+                continue
+            if not isinstance(item, dict):
+                raise ReviewPortalError(
+                    f"DERIVATIVOS_INVALIDOS: {tenant_id}/{slug} (item nao objeto)"
+                )
+            path = str(item.get("path", ""))
+            if path.startswith(prefixo):
+                path = path[len(prefixo):]
+            convertido.append(
+                {
+                    "variant": str(variante),
+                    "path": path,
+                    "sha256": item.get("sha256", ""),
+                    "bytes": item.get("bytes", 0),
+                }
+            )
+        itens = convertido
     if not isinstance(itens, list):
         raise ReviewPortalError(
             f"DERIVATIVOS_INVALIDOS: {tenant_id}/{slug} (lista 'derivatives' ausente)"

@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Estado atual (atualizado em 2026-11-18)
+## 1. Estado atual (atualizado em 2026-11-19)
 
 | Item | Valor |
 |------|-------|
@@ -762,6 +762,144 @@ fontes regeneradas, logs de suíte, frames de evidência e este devlog.
   explícita do CI (`local-render-validation.yml`, fora do território deste agente —
   o `discover` já o cobre na linha seguinte).
 
+---
+
+# Devlog — Rodada 2 (overnight): 5 formatos + manifesto v2 + resolucao de .workspace/
+
+- **Data**: 2026-11-19
+- **Papel**: Engenheiro de Midia Programatica e FFmpeg
+- **Branch**: `codex/etapa4-agente1-derivados-multiformato` (worktree recriada de `main` @ `f7298dc`)
+- **Worktree**: `<RAIZ>/.workspace/worktrees/etapa4-agente1`
+- **Territorio respeitado**: somente `tools/derivative_formats.py`,
+  `tools/tests/test_derivative_formats.py`, `02-reels-shorts/deliveries/**` e este
+  devlog. `contexto_projeto.md` e `tools/preset_runner.py` nao foram tocados; a
+  worktree do agente 3 desta rodada (`.workspace/worktrees/etapa4-agente3`) nao
+  foi acessada.
+
+## 1. O que mudou em relacao a rodada 1
+
+### `tools/derivative_formats.py` (v2, ~860 linhas)
+
+- **Cinco formatos por campanha** (rodada 1: tres):
+  - `<slug>-1x1.mp4` — 1080x1080, 30 fps, h264, yuv420p, crf 20; fundo desfocado
+    escurecido do proprio video (`boxblur=24:4,eq=brightness=-0.18:saturation=0.85`),
+    9:16 centralizado em altura total (608x1080, lanczos) com moldura lateral de
+    4 px na cor primaria (`pad=616:1080:4:0:<primaria>`).
+  - `<slug>-16x9.mp4` — 1920x1080, mesmos codecs; fundo `boxblur=28:5,
+    eq=brightness=-0.22:saturation=0.80`, mesmo primeiro plano 608x1080.
+  - `<slug>-cover.png` — 1080x1920, frame hero em t=2.5 s com tarjas translucidas
+    (fundo do brand-kit, alpha 0.55) e linhas de acento de 8 px na cor primaria
+    (alpha 0.95) no topo e na base.
+  - `<slug>-thumb-16x9.png` — 1920x1080, frame em t=2.5 s composto em 16:9
+    (mesma composicao do derivado largo).
+  - `<slug>-preview-grid.png` — 1920x1080, prancha comparativa 9:16 | 1:1 | 16:9
+    extraida em t=2.5 s, altura uniforme de 540 px sobre fundo do brand-kit.
+- **Previews leves versionados** na pasta da entrega: `cover.png`,
+  `thumb-16x9.png` e `preview-formats.png` (24 PNGs no total; nenhum MP4).
+- **Manifesto v2** (`derivatives.json`): `schemaVersion: 2`, `sourceVideoSha256`,
+  `allowAudioTrack`, `appliedAudioPolicy` e por derivado (`1x1`, `16x9`, `cover`,
+  `thumb-16x9`, `preview-formats`): caminho relativo, dimensoes, fps, codec,
+  audioStreams, audioCodec, bytes, sha256, ffprobe resumido, metadados de
+  composicao e `versionedCopy` (imagens). Nenhum caminho absoluto de estacao.
+- **Resolucao de `.workspace/`**: `resolve_workspace_root(repo_root)` tenta
+  `repo_root/.workspace` (com `archives/`) e, em worktree sem `.workspace/`
+  proprio, resolve o checkout principal via `git rev-parse --git-common-dir`
+  (pai do `.git` compartilhado). Ferramentas: `build_video.get_ffmpeg()/
+  get_ffprobe()` com fallback `<MAIN_ROOT>/.workspace/tools/ffmpeg`.
+- **CLI**: `--all [--formats 1x1,16x9,cover,thumb,grid] [--force] [--json]` e
+  `--tenant <id> [--campaign <slug>] [--json]`; pulo por integridade (skip) quando
+  o manifesto v2 em disco ja cobre os formatos pedidos com hashes validos.
+- **API**: `generate_campaign_derivatives(...)`, `generate_all_derivatives(...)`,
+  `probe_media(...)`, `discover_campaigns(...)`, `resolve_workspace_root(...)`.
+- Politica de audio estrita, auditoria ffprobe pre-manifesto e erros contratuais
+  da rodada 1 preservados (+ `FORMATO_INVALIDO`, `WORKSPACE_NAO_ENCONTRADO`,
+  `PREVIEW_COPIA_DIVERGENTE`).
+
+### `tools/tests/test_derivative_formats.py` (v2, 12 testes)
+
+1. `test_01` — 1x1 1080x1080/30 fps/h264/yuv420p com **`-an` forcado**
+   (fonte COM audio + marca-salao): 0 streams; sonda independente confirma;
+   metadados do primeiro plano 608x1080/pad 616/4 px/#F5C107.
+2. `test_02` — 16x9 1920x1080 com o mesmo bloqueio.
+3. `test_03` — cover PNG 1080x1920, t=2.5 s, tarjas #121620 + acento #F5C107,
+   copia versionada com sha identico.
+4. `test_04` — thumb 1920x1080 e prancha 9:16|1:1|16:9 (altura 540, fundo da
+   marca) com copias versionadas integras.
+5. `test_05` — multitrack-hub preserva AAC: 1 stream aac 44100 Hz stereo em 1x1
+   e 16x9 (sonda independente).
+6. `test_06` — `FONTE_SEM_AUDIO` rejeitado e nenhum derivado gerado.
+7. `test_07` — integridade SHA-256/bytes dos 5 derivados contra o retorno e o
+   `derivatives.json` v2 em disco; LF puro; **sem caminhos absolutos**; MP4s sem
+   `versionedCopy`.
+8. `test_08` — `FONTE_AUSENTE` / `ENTREGA_NAO_ENCONTRADA` / `FORMATO_INVALIDO`.
+9. `test_09` — `resolve_workspace_root` (worktree -> checkout principal) e
+   `probe_media` normalizado.
+10. `test_10` — `discover_campaigns` (>= 8 entregas reais, filtros), pulo por
+    integridade (skip) e regeneracao com `force=True`.
+11. `test_11` — CLI `--tenant --campaign --formats cover --force --json` exit 0,
+    payload ok/generated=1; manifesto preserva entradas dos formatos nao
+    re-gerados.
+12. `test_12` — validacao consolidada das 8 campanhas reais: manifestos v2
+    versionados, dimensoes por formato, politica de audio por tenant, previews
+    PNG com sha identico; MP4s conferidos quando presentes no `.workspace/`.
+
+## 2. Execucao nas 8 campanhas (rodada 2)
+
+Comando: `python tools/derivative_formats.py --all --force --json` (worktree,
+fontes 9:16 arquivadas no checkout principal via `resolve_workspace_root`).
+Relatorio: `ok=true, total=8, generated=8, skipped=0, errors=0`
+(log: `.workspace/logs/etapa4-agente1/all-force-round2.json`).
+
+| Tenant | Slug | Politica | src (12) | 1x1 (12) | 16x9 (12) | cover (12) | thumb (12) | grid (12) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| estudio-flow | camp-saas-demo-estudio-flow-001 | -an | 4256c7d9c73a | 3e19313171dc | d69956a99265 | b8d1a5326c6f | 38ce7ca2d726 | 736fa583b004 |
+| marca-salao | camp-saas-demo-marca-salao-001 | -an | df1d45bbb8d7 | 88509bea624e | 26e94cdf20bf | b1b2c7ad44ce | 3ca6015838fe | 74ccc468c93a |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | -an | 45166ac75e7c | d47ddf83365b | 2b2d8099ac20 | 064fe6914ce9 | d94c940ff1ba | e38df77e0534 |
+| meu-salao | camp-saas-demo-meu-salao-001 | -an | 76b3eb2ced36 | 40202ef56207 | 1caad008800d | abda6e305111 | 8811842a4891 | 5e8203fe53ec |
+| meu-salao | camp-saas-demo-meu-salao-002 | -an | a2c9b047d498 | 2d7ab532ecaf | 4f7f5cbf97b6 | 05e5c0ab5e08 | 0493926491fa | a25e0010af34 |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | aac-44100-stereo | 2a909fbb4b80 | a1ad8e3e91ba | 5744688f821c | 631dc53b3cb4 | f5e50cc70d0a | 5f849c00ce3a |
+| multitrack-hub | camp-shorts-rateios-002 | aac-44100-stereo | 3e141f3bc1fd | f29466c9fea6 | f4e1fc34a22c | 66bc14a85a01 | 0c7995eba129 | e2af7197ed66 |
+| multitrack-hub | camp-shorts-stems-workflow-003 | aac-44100-stereo | 50b0a0fcfa8f | 9a5d949f1bf7 | dec1784fcce6 | 9fb74cbb11ff | 243e0d42d2d2 | 90ee5ead70fd |
+
+## 3. Auditoria independente (ffprobe direto, fora do motor)
+
+- **16 MP4s** em `.workspace/archives/<slug>/derivatives/` (8x1x1 + 8x16x9):
+  todos `h264`, `yuv420p`, `30/1 fps`, geometria 1080x1080 / 1920x1080.
+- **Audio**: os 10 MP4s dos tenants `-an` (estudio-flow 1, marca-salao 2,
+  meu-salao 2 — por formato) com **0 streams**; os 6 MP4s multitrack-hub com
+  **1 stream `aac,44100,2`** cada.
+- **24 PNGs versionados** (8x cover.png + 8x thumb-16x9.png + 8x
+  preview-formats.png) e **8 derivatives.json v2** nas pastas de entrega;
+  **0 arquivos .mp4/.wav** em `02-reels-shorts/deliveries/`.
+- ffmpeg/ffprobe 9.0.2 (gyan.dev full build) no PATH da estacao.
+
+## 4. Suite de testes
+
+- Modulo alvo: `python -m unittest tools.tests.test_derivative_formats -v` ->
+  **12/12 OK em 33.2 s** (0 falhas, 0 erros, 0 skips).
+- Discover completo: `python -m unittest discover -s tools/tests -v` ->
+  `Ran 270 tests in 269.4s — FAILED (failures=2, errors=34, skipped=59)`, exit 1.
+  As 2 failures + 34 errors estao **todas** em modulos studio (`test_studio_*`,
+  `test_campaign_studio_e2e`, `test_queue_process_restart`, `test_studio_work_backup`,
+  `test_render_local` timeout) que exigem `platform/dist` compilado — condicao
+  pre-existente desta worktree nova (sem build npm), **sem relacao com esta
+  etapa** e identica ao baseline registrado na rodada 1; os 12 testes de
+  `test_derivative_formats` estao todos `ok` no mesmo log
+  (`.workspace/logs/etapa4-agente1/suite-discover-round2.log`).
+
+## 5. Arquivos versionados neste commit (rodada 2)
+
+- `tools/derivative_formats.py` (v2)
+- `tools/tests/test_derivative_formats.py` (v2, 12 testes)
+- `02-reels-shorts/deliveries/{estudio-flow,marca-salao,meu-salao,multitrack-hub}/*/derivatives.json`
+  (8 manifestos v1 -> v2)
+- `02-reels-shorts/deliveries/*/cover.png`, `thumb-16x9.png`, `preview-formats.png`
+  (24 previews leves novos)
+
+Permanecem somente no `.workspace/` local (por desenho): os 16 MP4s + 40 PNGs
+derivados em `archives/<slug>/derivatives/`, fontes 9:16, relatorios JSON e este
+devlog.
+
 ### Sessão 2026-11-18 — Etapa 4 (Agente 2): Portal de Revisão do Titular (`tools/review_dashboard.py` + `05-review-portal/`)
 <!-- devlog-sync:etapa4-agente2.md -->
 
@@ -818,6 +956,162 @@ fontes regeneradas, logs de suíte, frames de evidência e este devlog.
 - **Nota para a consolidação (fora do território deste agente):** `.gitattributes` não cobre `05-review-portal/**`. Os blobs commitados são LF (determinísticos no Git), mas num checkout Windows com `core.autocrlf=true` a cópia de trabalho viraria CRLF até o próximo `--build` (ruído de diff apenas). Sugestão para o consolidador, seguindo o precedente da Etapa 3: adicionar `05-review-portal/** text eol=lf`.
 
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `C:/Repos/marcasalao-marketing`.
+
+---
+
+# Etapa 4 — Agente 2 (Full-Stack de Ferramentas Internas) — devlog
+
+- Data: 19/11/2026
+- Branch: `codex/etapa4-agente2-review-portal`
+- Worktree: `<RAIZ>/.workspace/worktrees/etapa4-agente2`
+- Base: `f83fce3` (portal v1 — build + servidor somente leitura)
+- Território exclusivo respeitado: `tools/review_dashboard.py`,
+  `tools/tests/test_review_dashboard.py`, `05-review-portal/**`.
+  `contexto_projeto.md` não foi tocado.
+
+## Brief expandido — o que foi entregue
+
+### 1. Modelo de dados expandido (`_collect_campaign`)
+
+- `titulo` (primeira linha da copy Instagram; fallback `campaignId`).
+- `cover` e `formats`: PNGs opcionais da entrega (`cover.png`,
+  `preview-formats.png`), `None` quando ausentes.
+- `derivatives`: leitura opcional de `derivatives.json` na entrega
+  (`{variant, path, sha256, bytes}`, path relativo ao diretório do slug em
+  `.workspace/archives/`); malformado aborta o build com
+  `DERIVATIVOS_INVALIDOS` (fail-closed).
+- `video.variants`: variante primária derivada da geometria
+  (`9x16`/`16x9`/`1x1`) + derivadas declaradas.
+- `pacote`: checklist de publicação (`guardrailsAudited`, `autoPublish`,
+  `guardrailStatus`).
+
+### 2. Resolução de `.workspace/` entre estações
+
+- `resolve_workspace_dir(root)`: quando a raiz é o toplevel de uma worktree
+  (`--git-dir` ≠ `--git-common-dir`), resolve a raiz principal via
+  `git rev-parse` e usa o `.workspace/` dela (archives de vídeo e
+  aprovacoes do titular ficam no checkout principal); raízes não-toplevel
+  usam o próprio `<raiz>/.workspace`. `approvals_store_path` deriva de
+  `resolve_workspace_dir` (`<workspace>/tmp/aprovacoes-titular.json`).
+
+### 3. UI executiva (index.html v2)
+
+- Painel de métricas (nichos, campanhas, vídeos -an × AAC, % guardrails
+  conformes, aprovados/pendentes/ajustes dinâmicos).
+- Filtros tenant (monograma + swatch da paleta), preset, áudio, status e
+  busca textual (slug, título, legenda, roteiro, rotas, UTM).
+- Cartões com player por variante (servido), storyboard com lightbox, abas
+  SRT em blocos numerados, narração, copies por rede com contador e URL UTM,
+  aba Guardrails & Hashes.
+- Controle editorial v2: decisão (`aguardando`/`aprovado`/`ajuste`),
+  conferência de locução externa (tenants `-an`) e observações; persistência
+  em `localStorage` (`reviewPortal.aprovacoes.v2`) + sync debounced
+  `POST /api/approvals` quando servido; exportar/importar
+  `aprovacoes-titular.json`.
+- Badge do servidor via `GET /api/health`.
+
+### 4. Servidor HTTP v2
+
+- Rotas novas: `GET /api/health`, `GET /api/data`,
+  `GET /media/storyboard|cover|formats/<tenant>/<slug>`,
+  `GET /media/video/<tenant>/<slug>/<variante>` (Range 200/206/416; derivadas
+  via `derivatives.json` ou convenção `<stem>-<variante>.mp4`),
+  `GET|POST /api/approvals`.
+- Rotas legadas mantidas: `/deliveries/...` (extensões permitidas) e
+  `/archives/<slug>/<arquivo>.mp4`.
+- Escrita restrita: `POST /api/approvals` com validação estrita do schema v2
+  (`JSON_INVALIDO`, `SCHEMA_INVALIDO`, `CHAVE_DESCONHECIDA`,
+  `CAMPANHA_DESCONHECIDA`, `DECISAO_INVALIDA`, `TIPO_INVALIDO`), corpo
+  limitado a 1 MB, persistência em `<workspace>/tmp/aprovacoes-titular.json`;
+  demais métodos → 405. Traversal (`..`, `%2e%2e`, `\`, UNC) → 404; toda
+  resolução confinada por `render_local.contained` com base explícita
+  (raiz do portal × archives resolvidos).
+
+### 5. CLI
+
+- Três modos mutuamente exclusivos: `--build`, `--serve`
+  (reconstrói antes de servir), `--export-aprovacoes` (stdout do documento
+  persistido; sem arquivo → `APROVACOES_AUSENTES`, exit 1). `--host` novo.
+
+### 6. Escape do JSON embutido
+
+- `render_index_html` escapa `</` → `<\/` no bloco
+  `<script id="portal-data">`; `json.loads` restaura o documento idêntico.
+
+## TDD
+
+- 26 testes escritos antes da implementação (RED confirmado: 25/26 falhando
+  pelos motivos certos + 1 guarda).
+- GREEN em uma única execução: `Ran 26 tests ... OK` (3.3 s), incluindo
+  servidor efêmero (porta 0) sobre raiz falsa e sobre a raiz real da
+  worktree, roundtrip de aprovacoes e rejeição de schemas inválidos.
+
+## Suíte completa (regressão)
+
+- Comando: `python -m unittest discover -s tools/tests -p "test_*.py"`
+  na worktree. **Resultado final limpo: `Ran 413 tests ... OK`
+  (2980 s)**, exit 0. Evidência: `<RAIZ>/.workspace/logs/etapa4-agente2/full-suite.log`.
+- Pré-requisito descoberto: as suítes `test_studio_*`, `test_queue_process_restart`
+  e `test_campaign_studio_e2e` exigem `platform/dist` (build TypeScript).
+  Executado `npm ci` + `npm run build` com Node 22.23.2 na worktree
+  (`platform/node_modules` e `platform/dist`, ambos ignorados pelo Git).
+  Primeira passada (sem build): 34 erros + 1 falha e2e, todos atribuídos ao
+  build ausente (`build da platform ausente; execute npm run build em platform/`).
+  Re-execução das 9 suítes afetadas: 98 testes, OK.
+- `test_render_local.test_render_timeout_preserves_delivery` falhou 1 vez na
+  primeira passada (exit 2 ≠ 1) e passou isolado e na re-execução completa —
+  transitório de ordem (não toca este módulo).
+- Efeito colateral dos testes: 8 `checklist-publicacao.json` de
+  `04-legendas/pacotes-publicacao/` são reauditados pelas suítes e gravam
+  `sha256_disk_ok: false` (MP4s ausentes nesta estação). Restaurados com
+  `git checkout --` **após** a suíte; não entraram no commit (fora do território).
+
+## Prova no navegador (Playwright, servidor em 127.0.0.1:8791)
+
+- Página carrega com título correto; único erro de console: `favicon.ico`
+  404 (esperado, sem rota de favicon).
+- Métricas: 4 nichos · 8 campanhas · 5 vídeos -an · 3 AAC · 100% conformes ·
+  0 aprovados · 8 pendentes · 0 ajustes; badge
+  "Servidor ativo · 4 tenants · 8 campanhas".
+- Filtro tenant `marca-salao` → 2 cartões e swatch muda para `#F5C107`.
+- Busca "rateios" → 3 cartões correspondentes.
+- Decisão "Aprovado para Publicação Manual" no 1º cartão → chip atualizado,
+  métricas 1/7 e documento persistido em
+  `<RAIZ>/.workspace/tmp/aprovacoes-titular.json` (schemaVersion 2, 8 itens,
+  resumo 1 aprovada) — confirma a resolução `git-common-dir` na prática.
+- Lightbox abre/fecha; abas completas; aba Guardrails lista rotas
+  autorizadas, claims bloqueados, `autoPublish: false`,
+  `guardrailsAudited: true` e 4 hashes SHA-256.
+- Player: MP4 ausente nesta estação (archives são locais por estação; só há
+  `r002-video-local`) → 404 legítimo com fallback desenhado
+  "MP4 não disponível nesta estação". O streaming em si (200/206/416,
+  derivadas) está coberto pelo teste 17 sobre raiz falsa.
+- Evidência: `<RAIZ>/.workspace/logs/etapa4-agente2/portal-proof.png`
+  (captura full-page; cópia externa removida).
+
+## Resíduos removidos
+
+- Arquivo `aprovacoes-titular.json` gerado pela prova (decisão fictícia)
+  removido de `<RAIZ>/.workspace/tmp/` ao final.
+- Servidor de prova encerrado (porta 8791 livre).
+
+## Arquivos alterados (versionados)
+
+| Arquivo | Δ |
+| --- | --- |
+| `tools/review_dashboard.py` | +1320/-… (build v2, servidor v2, CLI v3 modos) |
+| `tools/tests/test_review_dashboard.py` | 26 testes (hash, UTM, workspace, build, escape, servidor, CLI) |
+| `05-review-portal/index.html` | UI v2 (painel, filtros, busca, lightbox, abas, aprovacao) |
+| `05-review-portal/portal-data.json` | modelo expandido (titulo, cover, formats, derivatives, variants, pacote) |
+| `05-review-portal/README.md` | documentação v2 (endpoints, aprovações, modo servido) |
+
+## Pendências / observações para o próximo agente
+
+- Os 8 MP4s de campanha não existem nesta estação (`.workspace/archives`
+  contém apenas `r002-video-local`); o player cai no storyboard por desenho.
+  Numa estação com os archives, o streaming funciona sem mudança de código.
+- `portal-data.json` é determinístico; após qualquer mudança de dados nos
+  deliveries, rodar `--build` novamente.
 
 ### Etapa 4 — Agente 3: Calendário Editorial & Matriz UTM (2026-11-18)
 <!-- devlog-sync:etapa4-agente3.md -->
@@ -905,6 +1199,102 @@ Território respeitado: `tools/campaign_calendar.py`, `tools/tests/test_campaign
   interseção com o território desta tarefa; a regressão cobriu os módulos consumidos
   (publish_pack, tenant_validator, devlog_sync).
 
+---
+
+### Etapa 4 — Agente 3: Calendário Editorial v2 & Matriz UTM expandida (2026-11-19)
+
+Branch: `codex/etapa4-agente3-calendario-utm` (worktree `.workspace/worktrees/etapa4-agente3`,
+base `main` @ f7298dc). Território v2: `tools/campaign_calendar.py`,
+`tools/tests/test_campaign_calendar.py`, `04-legendas/calendario-editorial.md`,
+`04-legendas/calendario-editorial.json`, `04-legendas/matriz-utm-consolidada.csv`,
+`docs/rastreio-utm.md`, `.workspace/devlogs/etapa4-agente3.md`. `contexto_projeto.md` e
+`.gitattributes` não tocados (sugestão de eol=lf para o CSV registrada abaixo).
+
+#### Tarefa 1 — Motor de planejamento editorial v2 (campaign_calendar.py)
+
+- CLI estendida: `--start-date YYYY-MM-DD`, `--weeks N` (padrão 4), `--json`; API programática
+  `build_editorial_calendar(...)`.
+- **Onda 1 (semanas 1-2, 24 slots 9:16):** 8 campanhas × 3 canais. Dias publicáveis
+  segunda-sábado (domingo nunca publica); cada campanha ocupa uma lane com offsets de canal
+  +0/+2/+4 dias na ordem interna youtube → instagram → facebook — única ordem que satisfaz o
+  espaçamento ≥48h entre canais da mesma campanha com janelas fixas (yt 12:00 D → ig 18:30
+  D+2 = 54,5h → fb 20:00 D+4 = 49,5h). Regra dura mantida: nunca duas publicações do mesmo
+  tenant no mesmo dia. Janelas v2: YouTube 12:00-13:00, Instagram 18:30-19:30, Facebook
+  20:00-21:00 (BRT).
+- **Onda 2 (semanas 3-4, 8 slots):** 1 slot de reaproveitamento por campanha, alternando
+  Instagram Feed 1:1 (`utm_content=repurpose-1x1`, `utm_medium=feed`) e YouTube Vídeo 16:9
+  (`utm_content=repurpose-16x9`, `utm_medium=video`); o checklist do slot referencia a mídia
+  derivada `<slug>-1x1.mp4` / `<slug>-16x9.mp4` e o `derivatives.json` da entrega (Agente 1);
+  zero colisão tenant-dia também na Onda 2.
+- **Hooks A/B:** `hookVarianteA` = abertura original da legenda do canal no pacote
+  (`instagram-reels.md` / `youtube-shorts.md` / `facebook-reels.md`); `hookVarianteB` =
+  abertura alternativa de clareza operacional por nicho (salão/agenda, link de agendamento,
+  aulas/turmas em estúdio, stems/rateios multitrack).
+- Auditoria guardrails obrigatória por slot sobre hooks A/B + títulos + notas operacionais +
+  URLs UTM contra os guardrails do PRÓPRIO tenant (`check_ui_elements=True`); qualquer
+  violação aborta com `GUARDRAIL_VIOLACAO` antes de gravar qualquer arquivo. Armadilha
+  preservada: "meu salão" é forbiddenClaim de marca-salao mas brandName de meu-salao — texto
+  de um tenant nunca é auditado contra guardrails de outro.
+- Capacidade: `SEMANAS_INSUFICIENTES` (rc 1) quando weeks < onda1Weeks + ceil(campanhas/6).
+- 3 artefatos sincronizados, determinísticos (sem timestamps), UTF-8, LF:
+  - `calendario-editorial.json`: 32 slots com `slotId, onda, semana, dataSugerida, diaSemana,
+    janelaHorarioBrt, tenantId, brandName, slug, preset, audioPolicy, canal, formatoVideo,
+    hookVarianteA, hookVarianteB, utmParams, utmUrl, checklistPrePublicacao, statusEditorial,
+    autoPublish` + metadados consolidados, regras aplicadas e métricas por tenant/canal.
+  - `calendario-editorial.md`: resumo executivo por tenant e por canal, cronograma completo
+    das 4 semanas, checklist de operação manual pré-publicação (11 itens — incl. locução
+    externa para tenants `-an` e confirmação de analytics ativa) e tabela de URLs UTM por
+    campanha.
+  - `matriz-utm-consolidada.csv`: 32 linhas × 20 colunas padronizadas (`slot_id` …
+    `auto_publish`), UTF-8 com fim de linha LF, pronta para Google Sheets/Excel/Looker Studio.
+
+#### Tarefa 2 — docs/rastreio-utm.md (v1.2 → v1.3)
+
+- Seção 2: nova subseção **Convenção multi-tenant (Etapa 4)** — tabela dos 4 tenants com
+  domínios e nichos + regras de `utm_content` por onda; conteúdo Fase 1 preservado
+  integralmente.
+- Seção 5: nova subseção **5.2 Guia de leitura dos UTMs (antes da primeira publicação)** —
+  como conferir source/medium/campaign/content em GA4, Plausible e Umami, com teste de ponta
+  a ponta e conversão nomeada por tenant.
+- Seção 6: nova subseção **6.1 Matriz de reaproveitamento — Onda 2** com as 8 URLs
+  `repurpose-1x1` / `repurpose-16x9` (matriz completa = 24 + 8 = 32 URLs, casando com o CSV).
+- Seção 7 reescrita para o calendário v2 (2 ondas, regras duras, CLI com `--weeks`, 3 saídas,
+  cronograma vigente por semana). Histórico (seção 8) com linha nova de 2026-11-19.
+- Verificação programática do doc: 32/32 URLs do calendário presentes verbatim; 8/8 Onda 2;
+  strings pt-BR por contagem exata; zero caracteres de corrupção; 406 linhas.
+
+#### Tarefa 3 — Execução oficial e testes
+
+- `python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json` → `ok: true`,
+  32 slots, 8 campanhas, 4 tenants, `guardrailsAudited: true`, `guardrailViolations: []`,
+  período 2026-11-23 → 2026-12-15. Hashes: JSON
+  `b7288f75d1bf5f4661aeec96d3bf796dfb55349b6fd9b40b4f34582b1e864ab1` (66647 bytes), MD
+  `658ca3e3e1f6bed60e640fe2b4ae929ea0e399f986c3ba6ff42395025dda5f4f` (19888 bytes), CSV
+  `609f186e44f7e30f658a2728985f182d058ce784d8b82294a4c95b8304dc70e3` (11983 bytes).
+- Distribuição: semanas {1: 12, 2: 12, 3: 6, 4: 2}; ondas {1: 24, 2: 8}; tenants
+  {estudio-flow: 4, marca-salao: 8, meu-salao: 8, multitrack-hub: 12}; canais
+  {instagram: 12, youtube: 12, facebook: 8}.
+- `tools/tests/test_campaign_calendar.py` reescrito: **14 testes, todos passando** —
+  01 contagem 32 (24+8) cobrindo 4 tenants/8 campanhas; 02 anti-colisão mesmo-tenant/mesmo-
+  dia; 03 ≥48h entre canais da mesma campanha na Onda 1; 04 validade sintática das 32 URLs
+  (urlparse + 4 parâmetros UTM); 05 unicidade de slotId e (slug, canal, onda); 06 autoPublish
+  false + statusEditorial em 100% dos slots; 07 guardrails dos hooks A/B nos 4 tenants;
+  08 paridade JSON↔CSV (32 registros); 09 bloqueio com frase proibida injetada; 10 CLI
+  `--start-date` + `--json` rc 0; 11 dias publicáveis e semanas; 12 alternância e formatos da
+  Onda 2; 13 saídas operacionais do Markdown; 14 idempotência (regeneração byte a byte).
+- Regressões: `test_publish_pack.py` (7 OK), `test_tenant_contracts.py` (7 OK),
+  `test_devlog_sync.py` (7 OK), `test_release_audit.py` (11 OK) — 32 testes de regressão.
+
+#### Observações para consolidação
+
+- `test_publish_pack.py` voltou a regenerar os 8 checklists no worktree (sem os `.mp4`) e a
+  inverter `sha256_disk_ok` para false; restaurados ao HEAD antes do commit (32× true).
+- Sugestão mantida (`.gitattributes` fora do território): estender o padrão `text eol=lf` a
+  `04-legendas/matriz-utm-consolidada.csv` (novo arquivo; `calendario-editorial.*` já foram
+  cobertos pelo consolidador após a v1).
+- Suíte studio/render completa não executada (sem interseção com o território; as regressões
+  cobriram publish_pack, tenant_validator, devlog_sync, release_audit).
+
 ### Sessão 2026-11-18 — Etapa 4 (Agente 4): Gate de Release (`tools/release_audit.py`), Sync de Devlogs Multi-Etapa e Documentação Mestra
 <!-- devlog-sync:etapa4-agente4.md -->
 
@@ -952,6 +1342,53 @@ Território respeitado: `tools/campaign_calendar.py`, `tools/tests/test_campaign
 - Rodar `python tools/devlog_sync.py` na consolidação para aplicar este devlog ao `contexto_projeto.md` (não executado aqui: aplicaria apenas a etapa 4 nesta worktree e o `contexto_projeto.md` é compartilhado entre agentes).
 - Gate final de release: `python tools/release_audit.py --strict --json` na estação que possui os `.mp4` renderizados.
 - Este devlog vive em `.workspace/` (local da estação, fora do Git por desenho): a consolidação precisa rodar nesta estação ou transferir o conteúdo antes de sincronizar.
+
+---
+
+## Continuação — Etapa 4, Agente 4 (gate de release 7 domínios + CI + docs), 2026-11-19
+
+Base: main `f7298dc`. Branch `codex/etapa4-agente4-release-gate-docs` re-apontada de `01d6c22` para a main com `git branch -f` (sem perda: o conteúdo da fase 1 já estava consolidado como `bad5063`); worktree isolada criada em `.workspace/worktrees/etapa4-agente4`. Nenhuma worktree histórica ou de outro agente foi tocada.
+
+### Tarefa 1 — devlog_sync multi-etapa (verificação)
+
+Já consolidado na main (fase 1 absorvida). `python -m unittest tools/tests/test_devlog_sync.py` → 7 testes OK: ordenação numérica por `(etapa, agente)`, atualização da linha "Fase atual" na Seção 1, idempotência byte a byte, filtro `--pattern`, `PATH_OUTSIDE_ROOT`. `contexto_projeto.md` não foi editado diretamente.
+
+### Tarefa 2/5 — release_audit em 7 domínios (TDD RED→GREEN)
+
+`tools/release_audit.py` reescrito: relatório `schemaVersion: 2` com `domains[]` (ids e nomes na ordem do briefing) e `summary`; problemas tipados `{severity: error|warning, code, message}`; API pública `run_release_audit(root=".", strict=False)` (renomeada de `run_audit`, sem alias — nenhum outro chamador no repositório, confirmado por grep); CLI `[--strict] [--json] [--report-out <arquivo>] [--root <raiz>]`; exit 0/1/2 inalterados.
+
+Domínios: 1 `contratos_tenants`, 2 `entregas_video`, 3 `pacotes_sociais`, 4 `derivados_multiformato`, 5 `calendario_utm`, 6 `portal_revisao`, 7 `higiene_git`.
+
+Severidades: mídia local da estação ausente (`<slug>.mp4` da entrega e derivados em `.workspace/archives/`) NÃO gera problema — os avisos antigos `VIDEO_NAO_VERSIONADO_AUSENTE_NO_DISCO` e `WORKTREE_AUSENTE_NA_ESTACAO` foram removidos; presente em disco, o SHA-256 é conferido. Isso torna o `--strict` executável em checkout novo/CI. Artefatos de consolidação ausentes (`derivatives.json`, `calendario-editorial.*`, `matriz-utm-consolidada.csv`, arquivos do portal) = warning; defeitos de conteúdo (hash divergente, `autoPublish: true`, `guardrailsAudited: false`, caminho absoluto vazado, política de áudio violada, declaração de derivado incompleta, mídia rastreada, `.gitattributes` sem cobertura `eol=lf`, worktree registrada sem diretório) = error sempre. `domain.ok` = sem erros; `ok` global = sem erros e, no `--strict`, sem avisos.
+
+Política de áudio simétrica, validada contra os 8 manifestos reais: `allowAudioTrack: false` ⇒ `ffprobe.audioStreams == 0` (`-an`); `true` ⇒ `>= 1` (aac). 5 campanhas saas-demo com 0 stream; 3 multitrack com 1 stream aac.
+
+`.gitattributes` conferido por extensão: cada uma de `.json`/`.srt`/`.md`/`.html` precisa de ao menos uma regra `eol=lf` (`GITATTRIBUTES_EXT_SEM_EOL_LF`). Varredura de vazamento no portal: regex `(?<![A-Za-z0-9])[A-Za-z]:[/\\]|/users/` (o lookbehind evita falso positivo em `https://`), aplicada só a `index.html` e `portal-data.json`.
+
+Testes: `tools/tests/test_release_audit.py` reescrito com 22 testes. RED observado (21 erros): `AttributeError: module 'release_audit' has no attribute 'run_release_audit'` e `SystemExit: 2` do argparse sem `--report-out`. GREEN: 22/22 OK. Bug adicional encontrado e corrigido por TDD (`test_22_cli_json_stdout_is_utf8`, RED com `UnicodeDecodeError: 0xed`): a saída do CLI no Windows saía em cp1252 por causa dos nomes de domínio acentuados, corrompendo o relatório para qualquer consumidor UTF-8 (inclusive o runner `windows-latest`); corrigido com `sys.stdout.reconfigure(encoding="utf-8")` sob guarda `getattr` (os testes capturam via `StringIO`, que não tem `reconfigure`). `--report-out` já gravava UTF-8 explícito.
+
+Evidência do estado real desta branch (worktree sobre `f7298dc`):
+
+- `release_audit --json` → exit 0, `ok: true`, 6 domínios ok, 1 aviso `MATRIZ_UTM_AUSENTE: 04-legendas/matriz-utm-consolidada.csv`, 0 erros, tenants 4/4 válidos, 8 campanhas, 0 entregas/pacotes/derivados reprovados.
+- `release_audit --strict --json` → exit 1, bloqueado apenas por esse aviso (gate honesto).
+
+### Tarefa 3 — CI
+
+`.github/workflows/local-render-validation.yml`: 4 paths novos nos gatilhos `push` e `pull_request` (`05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv`, `docs/**`); step renomeado para "(Etapas 2, 3 e 4)" com a suíte consolidada de 16 módulos (todos confirmados presentes em `tools/tests/`) + `python tools/release_audit.py --strict --json`. YAML validado por parse; paths de `push` e `pull_request` idênticos.
+
+PENDÊNCIA PARA O TITULAR: com `--strict` no CI, o gate fica vermelho até a `matriz-utm-consolidada.csv` do Agente 3 chegar na main (o `campaign_calendar` atual grava a matriz dentro do `.md`, não o CSV separado). Remover `--strict` daquela linha é a alternativa de uma palavra, se preferir CI verde antes dessa consolidação.
+
+### Tarefa 4 — Documentação
+
+`docs/arquitetura-fabrica.md`: tabela de invariantes com `derivatives.json`; diagrama ASCII ponta a ponta (schemas/tenants → tenant_validator → preset_runner (+audio_tts) → derivative_formats → publish_pack → campaign_calendar → review_dashboard → release_audit; devlog_sync transversal); §2.8 reescrita com a tabela dos 7 domínios, severidades, `--report-out` e a regra de mídia local; §2.10/2.11/2.12 novas (derivative_formats, campaign_calendar com a pendência do CSV, review_dashboard); §4 com 10 passos; §5 com a suíte de 16 módulos e a dependência de consolidação.
+
+`README.md`: `05-review-portal/` na estrutura; status (4 tenants, 8 campanhas, 16 módulos); declaração explícita de que nenhuma ferramenta publica, agenda ou cria rascunho; referência rápida de todos os CLIs (incluindo `derivative_formats`, `campaign_calendar`, `review_dashboard --build/--serve`, `release_audit --report-out`); protocolo de revisão humana e publicação manual.
+
+### Handoff de armazenamento
+
+Raiz usada: `D:/Mega/Marketing/marcasalao-marketing` (worktree `.workspace/worktrees/etapa4-agente4`). Versionados e alterados: `tools/release_audit.py`, `tools/tests/test_release_audit.py`, `.github/workflows/local-render-validation.yml`, `docs/arquitetura-fabrica.md`, `README.md`. Somente em `.workspace/` (não versionado): este devlog, `.workspace/tmp/suite-16.log`, `.workspace/tmp/audit-*.json`, `.workspace/tmp/devlog-contin.md` e `.workspace/tmp/commit-msg.txt` (auxiliares desta sessão, removíveis), sandboxes `.workspace/tmp/rel-audit` (removidos pelo tearDown). Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/Mega/Marketing/marcasalao-marketing`.
+- Evidência da suíte consolidada de 16 módulos (rodada definitiva, com a ponte TypeScript compilada na worktree — Node v22.23.2, npm 10.9.8, npm ci + npm run build exit 0, package-lock.json intacto): Ran 215 tests in 1407.353s — OK, 0 falhas, 0 erros, 0 skips, exit 0. Rodada anterior, sem o build da platform na worktree: Ran 165 tests, 33 skips e 1 falha em test_render_local.TimeoutAndInspectionTest.test_render_timeout_preserves_delivery (2 != 1) — causa ambiental (platform/dist ausente faz render_local.main sair com código 2 antes do caminho de timeout); revalidada isoladamente OK após o build. O CI compila a ponte antes da suíte, logo reproduz a rodada definitiva.
+- Evidência do release_audit nesta branch (estado commitado 6c58cc9): modo normal ok=True | dominios ok=6 warn=1 fail=0 | erros=0 avisos=1 | tenants=4/4 | campanhas=8 (entregas=0 pacotes=0 derivados=0), exit 0; --strict exit 1, bloqueado apenas por: [warning] MATRIZ_UTM_AUSENTE: 04-legendas/matriz-utm-consolidada.csv.
 
 ## 1. Gerador modular de áudio — `tools/audio_tts.py`
 

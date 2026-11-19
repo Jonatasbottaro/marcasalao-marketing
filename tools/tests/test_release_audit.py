@@ -144,6 +144,12 @@ class ReleaseAuditTests(unittest.TestCase):
             os.path.join(REPO_ROOT, ".gitattributes"),
             os.path.join(sandbox, ".gitattributes"),
         )
+        # Sem o .gitignore real, estacoes com midia local em disco rastreiam
+        # MP4/WAV no `git add -A` do sandbox e disparam MIDIA_RASTREADA.
+        shutil.copy2(
+            os.path.join(REPO_ROOT, ".gitignore"),
+            os.path.join(sandbox, ".gitignore"),
+        )
         _git(sandbox, "init", "-q")
         _git(sandbox, "add", "-A")
         _git(
@@ -384,8 +390,8 @@ class ReleaseAuditTests(unittest.TestCase):
     def test_11_derivative_declaration_defects_fail(self):
         sandbox = self._build_sandbox(with_matriz=True)
         def break_declarations(data):
-            del data["derivatives"]["square"]
-            data["derivatives"]["wide"]["sha256"] = None
+            del data["derivatives"]["1x1"]
+            data["derivatives"]["16x9"]["sha256"] = None
         self._edit_json(
             os.path.join(
                 sandbox, "02-reels-shorts", "deliveries", "marca-salao",
@@ -512,7 +518,7 @@ class ReleaseAuditTests(unittest.TestCase):
             handle.write(b"fake-video")
         with open(os.path.join(sandbox, "fake.wav"), "wb") as handle:
             handle.write(b"fake-audio")
-        _git(sandbox, "add", "fake.mp4", "fake.wav")
+        _git(sandbox, "add", "-f", "fake.mp4", "fake.wav")
         result = release_audit.run_release_audit(root=sandbox)
         self.assertFalse(result["ok"])
         dominio = self._find_domain(result, "higiene_git")

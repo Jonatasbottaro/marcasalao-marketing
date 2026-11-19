@@ -369,10 +369,14 @@ class BuildPortalTest(unittest.TestCase):
                 # variante primaria derivada da geometria (1080x1920 -> 9x16)
                 self.assertEqual(c["video"]["variants"][0], "9x16")
                 self.assertIn("9x16", c["video"]["variants"])
-                # opcionais ausentes hoje: sem cover, formats ou derivatives
-                self.assertIsNone(c.get("cover"))
-                self.assertIsNone(c.get("formats"))
-                self.assertIsNone(c.get("derivatives"))
+                # opcionais presentes apos a consolidacao da Etapa 4 (agente 1)
+                self.assertTrue(c.get("cover"))
+                self.assertTrue(c.get("formats"))
+                derivs = c.get("derivatives")
+                self.assertTrue(derivs)
+                self.assertEqual({d["variant"] for d in derivs}, {"1x1", "16x9"})
+                self.assertIn("1x1", c["video"]["variants"])
+                self.assertIn("16x9", c["video"]["variants"])
                 self.assertTrue(c["copies"])
                 self.assertTrue(c["pacote"])
 

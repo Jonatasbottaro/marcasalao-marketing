@@ -14,7 +14,7 @@ organizado nos 7 dominios da Etapa 4:
                              autoPublish false, guardrailsAudited true e hashes
                              das midias conferidos.
   4. derivados_multiformato  derivatives.json com declaracoes completas
-                             (cover, square, wide); derivado presente em disco
+                             (cover, 1x1, 16x9); derivado presente em disco
                              tem SHA-256 conferido.
   5. calendario_utm          calendario-editorial.json/.md (estrutura, contagem
                              de slots, autoPublish false) e
@@ -58,7 +58,7 @@ VIDEO_NAME_TEMPLATE = "{slug}.mp4"
 DELIVERY_ROOT = ("02-reels-shorts", "deliveries")
 PACKAGE_ROOT = ("04-legendas", "pacotes-publicacao")
 PACKAGE_FILES = ("instagram-reels.md", "youtube-shorts.md", "facebook-reels.md")
-DERIVATIVE_KEYS = ("cover", "square", "wide")
+DERIVATIVE_KEYS = ("cover", "1x1", "16x9")
 CALENDAR_JSON = ("04-legendas", "calendario-editorial.json")
 CALENDAR_MD = ("04-legendas", "calendario-editorial.md")
 MATRIZ_UTM = ("04-legendas", "matriz-utm-consolidada.csv")

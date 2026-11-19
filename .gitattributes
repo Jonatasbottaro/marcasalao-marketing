@@ -17,3 +17,4 @@ tenants/**/*.json text eol=lf
 05-review-portal/**/*.html text eol=lf
 05-review-portal/**/*.md text eol=lf
 04-legendas/calendario-editorial.* text eol=lf
+04-legendas/matriz-utm-consolidada.csv text eol=lf
