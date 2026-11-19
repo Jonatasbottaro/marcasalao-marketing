@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "slug": "camp-shorts-rateios-002",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br",
+    "palettePrimary": "#06B6D4"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false,
+    "appliedAudioPolicy": "aac-44100-stereo"
+  },
+  "source": {
+    "path": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
+    "sha256": "3e141f3bc1fd4d78b12c7a3ecf9f529a6d525977cb603ca8d598430e94a7022e",
+    "bytes": 825918,
+    "deliveryManifest": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/manifest.json",
+    "deliveryRecordedSha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 1,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": "aac",
+      "audioSampleRate": 44100,
+      "audioChannels": 2
+    }
+  },
+  "derivatives": {
+    "cover": {
+      "path": ".workspace/archives/camp-shorts-rateios-002/derivatives/camp-shorts-rateios-002-cover.png",
+      "sha256": "bedb296828a12cb8b60be30bc6cc431c429648b269e6ef1320d5cdc3ce42f59d",
+      "bytes": 227880,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "versioned": false,
+      "kind": "cover-png",
+      "codec": "png",
+      "width": 1080,
+      "height": 1920,
+      "timestampSeconds": 2.0,
+      "border": {
+        "color": "#06B6D4",
+        "thickness": 8,
+        "inset": 12,
+        "alpha": 0.85
+      },
+      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
+    },
+    "square": {
+      "path": ".workspace/archives/camp-shorts-rateios-002/derivatives/camp-shorts-rateios-002-1x1.mp4",
+      "sha256": "05dafd2c41dcced3388f1619492149a292b7914035301e3328779fa1aed2397b",
+      "bytes": 758438,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "versioned": false,
+      "kind": "1x1",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#06B6D4",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "wide": {
+      "path": ".workspace/archives/camp-shorts-rateios-002/derivatives/camp-shorts-rateios-002-16x9.mp4",
+      "sha256": "5902f9cbdaab8adf387dcd6f951091c4b3167c1b1ca49b5bf43ffacf0ee94e77",
+      "bytes": 773025,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "versioned": false,
+      "kind": "16x9",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "codec": "h264",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "position": "center-full-height"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
+        "tint": "#06B6D4",
+        "tintOpacity": 0.12
+      },
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    }
+  },
+  "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-rateios-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}
