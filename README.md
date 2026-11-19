@@ -15,7 +15,8 @@ A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/RE
 - `02-hooks/` - Hooks em rascunho por campanha, derivados dos briefings
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
 - `03-roteiros/` - Roteiros por campanha: cenas, textos de tela e narração em rascunho
-- `04-legendas/` - Legendas, roteiros e scripts de áudio
+- `04-legendas/` - Legendas, roteiros, scripts de áudio, pacotes de publicação, calendário editorial e matriz UTM
+- `05-review-portal/` - Portal estático de revisão humana (build determinístico, abre via `file://` ou servidor local)
 - `schemas/` - JSON Schema dos contratos multi-tenant (brand-kit, guardrails)
 - `tenants/` - Contratos por marca da fábrica de vídeo: brand-kit, guardrails, fixtures e campanhas
 - `marcas/` - Materiais, configurações e integrações específicas de Marca Salão e Multitrack Hub
@@ -24,7 +25,7 @@ A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/RE
 
 ## Fábrica de vídeo multi-tenant (contratos → render → pacotes → release)
 
-Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard e `manifest.json` com hashes SHA-256; o pacote social correspondente sai com `autoPublish: false` — **nada publica sozinho**. Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Estado atual: **4 tenants, 8 campanhas e 16 módulos de testes** no gate do CI. Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard, `manifest.json` com hashes SHA-256 e `derivatives.json` (cover, 1:1, 16:9); o pacote social sai com `autoPublish: false`, o calendário editorial nasce `aguardando_aprovacao_titular` e o portal de revisão é somente leitura. **Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes: a publicação é sempre manual e exige autorização específica do titular.** Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
 
 | Tenant | Marca | Preset | Domínio | Áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
@@ -36,15 +37,25 @@ Pipeline programático que transforma contratos JSON versionados em pacotes de v
 Comandos rápidos (a partir da raiz do checkout):
 
 ```bash
-python tools/tenant_validator.py --all --json          # 1. validar contratos
-python tools/factory_cli.py render --all --json        # 2. renderizar em lote
-python tools/publish_pack.py --all                      # 3. pacotes sociais (autoPublish: false)
-python tools/release_audit.py --json                    # 4. auditoria de prontidão
-python tools/release_audit.py --strict --json           # 5. gate de release (estação com os vídeos)
-python tools/devlog_sync.py --json                     # 6. consolidar devlogs no contexto_projeto.md
+python tools/tenant_validator.py --all --json           # 1. validar contratos (brand-kit, guardrails, fixture)
+python tools/factory_cli.py list --json                 # 2. descobrir tenants e campanhas
+python tools/factory_cli.py render --all --json         # 3. renderizar em lote (MP4, SRT, narração, storyboard, manifesto)
+python tools/audio_tts.py --tenant multitrack-hub \
+  --output .workspace/tmp/audio-mth/bed-30s.wav --duration 30 --mode ambient-bed   # 3a. trilha (só tenant com áudio permitido)
+python tools/derivative_formats.py --all --json         # 4. derivados cover/1:1/16:9 + derivatives.json
+python tools/publish_pack.py --all                      # 5. pacotes sociais (autoPublish: false)
+python tools/campaign_calendar.py --start-date 2026-11-23 --json   # 6. calendário editorial + matriz UTM
+python tools/review_dashboard.py --build --json         # 7. gerar o portal de revisão (05-review-portal/)
+python tools/review_dashboard.py --serve --port 8765    # 7a. revisar no navegador (somente leitura)
+python tools/release_audit.py --json                    # 8. auditoria de prontidão (7 domínios; avisos não reprovam)
+python tools/release_audit.py --strict --json           # 9. gate de release (avisos também reprovam)
+python tools/release_audit.py --strict --report-out .workspace/tmp/release-audit.json   # 9a. gravar o relatório
+python tools/devlog_sync.py --json                      # 10. consolidar devlogs no contexto_projeto.md
 ```
 
-Checklist de operação manual: alinhar a estação (`git pull --ff-only`) → validar contratos → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → renderizar → gerar pacotes → auditoria `release_audit` → gate `--strict` na estação de release → consolidar devlogs. Novo nicho/tenant: [docs/guia-novo-nicho.md](docs/guia-novo-nicho.md).
+Checklist de operação manual: alinhar a estação (`git fetch origin --prune && git pull --ff-only`) → validar contratos → renderizar → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → derivados → pacotes → calendário → portal → auditoria `release_audit` → gate `--strict` → consolidar devlogs.
+
+Protocolo de revisão humana e publicação: o portal `05-review-portal/` e o calendário editorial são instrumentos de **revisão e proposta** — o titular aprova, e a publicação nas redes é feita manualmente por ele (ou por ferramenta externa mediante autorização específica). `autoPublish: false` e `statusEditorial: "aguardando_aprovacao_titular"` são verificados pelo gate de release; nada neste repositório publica, agenda ou cria rascunho por conta própria. Novo nicho/tenant: [docs/guia-novo-nicho.md](docs/guia-novo-nicho.md).
 
 ## Ferramentas
 - CapCut (mobile/desktop)

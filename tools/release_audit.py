@@ -1,32 +1,44 @@
-"""Auditor final de prontidao de release da fabrica de video.
+"""Auditor final de prontidao de release da fabrica de video (7 dominios).
 
-Verifica, em uma unica passada, o estado de prontidao de release do checkout:
+Verifica, em uma unica passada, o estado de prontidao de release do checkout,
+organizado nos 7 dominios da Etapa 4:
 
-  1. Tenants: pelo menos 4 tenants validos via tenant_validator (brand-kit,
-     guardrails e fixture validados por schema e guardrails de texto).
-  2. Entregas: toda campanha em `tenants/*/campaigns/*.json` possui pacote de
-     entrega em `02-reels-shorts/deliveries/<tenant>/<slug>/` com manifest.json,
-     `<slug>.srt`, `<slug>_narracao.txt` e `preview-storyboard.png`, com hashes
-     SHA-256 e tamanhos conferidos em disco. O video `<slug>.mp4` nao e
-     versionado (`.gitignore` cobre `*.mp4`): quando presente em disco o hash
-     e conferido; quando ausente gera aviso, pois o manifesto preserva hash,
-     ffprobe e comando reproduzivel.
-  3. Pacotes sociais: `04-legendas/pacotes-publicacao/<tenant>/<slug>/` com
-     checklist-publicacao.json e `autoPublish: false`.
-  4. Higiene Git: nenhum `.mp4`/`.wav` rastreado, regras `eol=lf` em
-     `.gitattributes` e worktrees historicas preservadas
-     (prova-campanha-conclusao e studio-package-verify2).
+  1. contratos_tenants       brand-kit, guardrails e fixture de >= 4 tenants,
+                             validados por tenant_validator.
+  2. entregas_video          manifest.json e artefatos versionados de cada
+                             campanha (<slug>.srt, <slug>_narracao.txt,
+                             preview-storyboard.png) com SHA-256/bytes conferidos
+                             em disco, e politica de audio do manifesto
+                             (guardrails.allowAudioTrack vs ffprobe.audioStreams).
+  3. pacotes_sociais         textos por rede e checklist-publicacao.json com
+                             autoPublish false, guardrailsAudited true e hashes
+                             das midias conferidos.
+  4. derivados_multiformato  derivatives.json com declaracoes completas
+                             (cover, square, wide); derivado presente em disco
+                             tem SHA-256 conferido.
+  5. calendario_utm          calendario-editorial.json/.md (estrutura, contagem
+                             de slots, autoPublish false) e
+                             matriz-utm-consolidada.csv.
+  6. portal_revisao          05-review-portal/ completo e sem caminhos absolutos
+                             de estacao vazados no JSON/HTML.
+  7. higiene_git             nenhuma midia binaria rastreada, .gitattributes com
+                             eol=lf para .json/.srt/.md/.html e worktrees
+                             historicas preservadas.
 
-O modo padrao reprova somente falhas. `--strict` tambem reprova avisos (video
-nao versionado ausente no disco, worktree historica ausente na estacao e
-worktree orfa), cobrindo o gate de release na estacao que possui os videos.
+Severidades: `error` reprova sempre; `warning` nao reprova no modo padrao e
+reprova com `--strict`. Midia local da estacao (`<slug>.mp4` de entrega e
+derivados sob `.workspace/archives/`) ausente em disco NAO gera problema: o
+manifesto e a declaracao preservam hash, ffprobe e comando reproduzivel, e o
+`.gitignore` cobre `*.mp4`. Quando o arquivo esta presente, o hash e conferido.
 
+CLI: python tools/release_audit.py [--strict] [--json] [--report-out <arquivo>]
 Exit codes: 0 aprovado; 1 auditoria reprovada; 2 erro de uso ou execucao.
 """
 
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -43,10 +55,57 @@ EXPECTED_ARTIFACTS = (
     ("storyboard", "preview-storyboard.png"),
 )
 VIDEO_NAME_TEMPLATE = "{slug}.mp4"
+DELIVERY_ROOT = ("02-reels-shorts", "deliveries")
+PACKAGE_ROOT = ("04-legendas", "pacotes-publicacao")
+PACKAGE_FILES = ("instagram-reels.md", "youtube-shorts.md", "facebook-reels.md")
+DERIVATIVE_KEYS = ("cover", "square", "wide")
+CALENDAR_JSON = ("04-legendas", "calendario-editorial.json")
+CALENDAR_MD = ("04-legendas", "calendario-editorial.md")
+MATRIZ_UTM = ("04-legendas", "matriz-utm-consolidada.csv")
+PORTAL_DIR = "05-review-portal"
+PORTAL_FILES = ("index.html", "portal-data.json", "README.md")
+PORTAL_SCANNED_FILES = ("index.html", "portal-data.json")
+GITATTRIBUTES_EXTENSIONS = (".json", ".srt", ".md", ".html")
+# Lookbehind evita falso positivo em URLs ("https://" termina em "s:/").
+ABSOLUTE_PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[/\\]|/users/", re.IGNORECASE)
+
+DOMAIN_NAMES = (
+    ("contratos_tenants", "Contratos & Tenants"),
+    ("entregas_video", "Entregas de Vídeo & Manifestos"),
+    ("pacotes_sociais", "Pacotes Sociais & Guardrails"),
+    ("derivados_multiformato", "Derivados Multiformato"),
+    ("calendario_utm", "Calendário Editorial & Matriz UTM"),
+    ("portal_revisao", "Portal Visual de Revisão"),
+    ("higiene_git", "Higiene Git, EOL e Worktrees"),
+)
 
 
 class ReleaseAuditError(Exception):
-    """Erro de execucao do auditor (raiz ausente, git indisponivel)."""
+    """Erro de execucao do auditor (raiz ausente, git indisponivel, caminho)."""
+
+
+def _error(code: str, message: str) -> dict:
+    return {"severity": "error", "code": code, "message": message}
+
+
+def _warning(code: str, message: str) -> dict:
+    return {"severity": "warning", "code": code, "message": message}
+
+
+def _has_error(problems: list[dict]) -> bool:
+    return any(problem["severity"] == "error" for problem in problems)
+
+
+def _domain(domain_id: str, name: str, problems: list[dict]) -> dict:
+    has_error = _has_error(problems)
+    has_warning = any(problem["severity"] == "warning" for problem in problems)
+    return {
+        "id": domain_id,
+        "name": name,
+        "ok": not has_error,
+        "status": "fail" if has_error else "warn" if has_warning else "ok",
+        "problems": problems,
+    }
 
 
 def _run_git(root: str, *args: str) -> str:
@@ -70,6 +129,10 @@ def _read_json(path: str) -> dict:
     return data
 
 
+def _join_rel(root_real: str, rel_path: str) -> str:
+    return os.path.join(root_real, *rel_path.replace("\\", "/").split("/"))
+
+
 def discover_campaigns(root_real: str) -> list[dict]:
     """Lista campanhas como pares {tenant, slug} a partir de tenants/*/campaigns/*.json."""
     campaigns: list[dict] = []
@@ -88,147 +151,353 @@ def discover_campaigns(root_real: str) -> list[dict]:
     return campaigns
 
 
-def _check_tenants(root_real: str) -> dict:
-    check: dict = {"id": "tenants", "status": "ok", "problems": [], "valid": [], "invalid": []}
+def _check_contratos(root_real: str) -> tuple[list[dict], dict]:
+    problems: list[dict] = []
+    valid: list[str] = []
+    invalid: list[str] = []
     for tenant_id in tenant_validator.list_tenants(root_real):
         try:
             result = tenant_validator.load_and_validate_tenant(
                 tenant_id, root=root_real, strict=False
             )
         except tenant_validator.TenantContractError as exc:
-            check["invalid"].append(tenant_id)
-            check["problems"].append(f"TENANT_INVALIDO: {tenant_id}: {exc}")
+            invalid.append(tenant_id)
+            problems.append(_error("TENANT_INVALIDO", f"{tenant_id}: {exc}"))
             continue
         if result["ok"]:
-            check["valid"].append(tenant_id)
+            valid.append(tenant_id)
         else:
-            check["invalid"].append(tenant_id)
-            for error in result["errors"]:
-                check["problems"].append(f"TENANT_INVALIDO: {tenant_id}: {error}")
-    if len(check["valid"]) < MIN_VALID_TENANTS:
-        check["problems"].append(
-            f"TENANTS_INSUFICIENTES: {len(check['valid'])} validos, minimo {MIN_VALID_TENANTS}"
+            invalid.append(tenant_id)
+            for message in result["errors"]:
+                problems.append(_error("TENANT_INVALIDO", f"{tenant_id}: {message}"))
+    if len(valid) < MIN_VALID_TENANTS:
+        problems.append(
+            _error(
+                "TENANTS_INSUFICIENTES",
+                f"{len(valid)} tenant(s) valido(s), minimo {MIN_VALID_TENANTS}",
+            )
         )
-    if check["invalid"] or len(check["valid"]) < MIN_VALID_TENANTS:
-        check["status"] = "fail"
-    return check
+    summary = {"total": len(valid) + len(invalid), "valid": len(valid), "invalid": len(invalid)}
+    return problems, summary
 
 
-def _check_delivery(root_real: str, tenant: str, slug: str) -> dict:
-    check: dict = {"id": f"delivery:{tenant}/{slug}", "status": "ok", "problems": []}
-    delivery_dir = os.path.join(root_real, "02-reels-shorts", "deliveries", tenant, slug)
-    if not os.path.isdir(render_local.fs_path(delivery_dir)):
-        check["status"] = "fail"
-        check["problems"].append(
-            f"DELIVERY_DIR_AUSENTE: 02-reels-shorts/deliveries/{tenant}/{slug}"
-        )
-        return check
-    manifest_path = os.path.join(delivery_dir, "manifest.json")
-    if not os.path.isfile(render_local.fs_path(manifest_path)):
-        check["status"] = "fail"
-        check["problems"].append("MANIFEST_AUSENTE: manifest.json")
-        return check
-    try:
-        manifest = _read_json(manifest_path)
-    except (OSError, ValueError) as exc:
-        check["status"] = "fail"
-        check["problems"].append(f"MANIFEST_INVALIDO: {exc}")
-        return check
+def _check_manifest_artifacts(
+    manifest: dict, delivery_dir: str, slug: str, label: str, problems: list[dict]
+) -> None:
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, dict):
-        check["status"] = "fail"
-        check["problems"].append("ARTIFACTO_MANIFESTO_AUSENTE: secao artifacts")
-        return check
+        problems.append(_error("ARTIFACTO_MANIFESTO_AUSENTE", f"{label}: secao artifacts"))
+        return
     for key, template in EXPECTED_ARTIFACTS:
         filename = template.format(slug=slug)
         artifact = artifacts.get(key)
         if not isinstance(artifact, dict) or not artifact.get("sha256"):
-            check["status"] = "fail"
-            check["problems"].append(f"ARTIFACTO_MANIFESTO_AUSENTE: artifacts.{key}")
+            problems.append(_error("ARTIFACTO_MANIFESTO_AUSENTE", f"{label}: artifacts.{key}"))
             continue
         artifact_path = os.path.join(delivery_dir, filename)
         if not os.path.isfile(render_local.fs_path(artifact_path)):
-            check["status"] = "fail"
-            check["problems"].append(f"ARQUIVO_AUSENTE: {filename}")
+            problems.append(_error("ARQUIVO_AUSENTE", f"{label}: {filename}"))
             continue
         if render_local.sha256_file(artifact_path) != artifact["sha256"]:
-            check["status"] = "fail"
-            check["problems"].append(f"HASH_DIVERGENTE: {filename}")
+            problems.append(_error("HASH_DIVERGENTE", f"{label}: {filename}"))
             continue
         if "bytes" in artifact and os.path.getsize(
             render_local.fs_path(artifact_path)
         ) != artifact["bytes"]:
-            check["status"] = "fail"
-            check["problems"].append(f"TAMANHO_DIVERGENTE: {filename}")
-    video = artifacts.get("video")
+            problems.append(_error("TAMANHO_DIVERGENTE", f"{label}: {filename}"))
+
+
+def _check_audio_policy(manifest: dict, label: str, problems: list[dict]) -> None:
+    guardrails = manifest.get("guardrails")
+    artifacts = manifest.get("artifacts")
+    video = artifacts.get("video") if isinstance(artifacts, dict) else None
+    ffprobe = video.get("ffprobe") if isinstance(video, dict) else None
+    allow = guardrails.get("allowAudioTrack") if isinstance(guardrails, dict) else None
+    streams = ffprobe.get("audioStreams") if isinstance(ffprobe, dict) else None
+    if not isinstance(allow, bool) or not isinstance(streams, int):
+        problems.append(
+            _error(
+                "FFPROBE_AUDIO_AUSENTE",
+                f"{label}: manifesto sem guardrails.allowAudioTrack ou "
+                "artifacts.video.ffprobe.audioStreams",
+            )
+        )
+        return
+    if allow and streams < 1:
+        problems.append(
+            _error(
+                "POLITICA_AUDIO_DESCUMPRIDA",
+                f"{label}: allowAudioTrack=true exige audioStreams >= 1 (trilha aac), "
+                f"manifesto declara {streams}",
+            )
+        )
+    elif not allow and streams != 0:
+        problems.append(
+            _error(
+                "POLITICA_AUDIO_DESCUMPRIDA",
+                f"{label}: allowAudioTrack=false exige audioStreams 0 (export -an), "
+                f"manifesto declara {streams}",
+            )
+        )
+
+
+def _check_video_file(manifest: dict, delivery_dir: str, slug: str, label: str, problems: list[dict]) -> None:
+    artifacts = manifest.get("artifacts")
+    video = artifacts.get("video") if isinstance(artifacts, dict) else None
+    if not isinstance(video, dict) or not video.get("sha256"):
+        return
     video_name = VIDEO_NAME_TEMPLATE.format(slug=slug)
     video_path = os.path.join(delivery_dir, video_name)
-    if isinstance(video, dict) and video.get("sha256"):
-        if os.path.isfile(render_local.fs_path(video_path)):
-            if render_local.sha256_file(video_path) != video["sha256"]:
-                check["status"] = "fail"
-                check["problems"].append(f"HASH_DIVERGENTE: {video_name}")
+    if not os.path.isfile(render_local.fs_path(video_path)):
+        return
+    if render_local.sha256_file(video_path) != video["sha256"]:
+        problems.append(_error("HASH_DIVERGENTE", f"{label}: {video_name}"))
+
+
+def _check_entregas(root_real: str, campaigns: list[dict]) -> tuple[list[dict], int]:
+    problems: list[dict] = []
+    failed = 0
+    for campaign in campaigns:
+        tenant, slug = campaign["tenant"], campaign["slug"]
+        label = f"{tenant}/{slug}"
+        campaign_problems: list[dict] = []
+        delivery_dir = os.path.join(root_real, *DELIVERY_ROOT, tenant, slug)
+        if not os.path.isdir(render_local.fs_path(delivery_dir)):
+            campaign_problems.append(
+                _error(
+                    "DELIVERY_DIR_AUSENTE",
+                    f"{'/'.join(DELIVERY_ROOT)}/{tenant}/{slug}",
+                )
+            )
         else:
-            if check["status"] != "fail":
-                check["status"] = "warn"
-            check["problems"].append(f"VIDEO_NAO_VERSIONADO_AUSENTE_NO_DISCO: {video_name}")
-    return check
+            manifest_path = os.path.join(delivery_dir, "manifest.json")
+            manifest = None
+            if not os.path.isfile(render_local.fs_path(manifest_path)):
+                campaign_problems.append(_error("MANIFEST_AUSENTE", f"{label}: manifest.json"))
+            else:
+                try:
+                    manifest = _read_json(manifest_path)
+                except (OSError, ValueError) as exc:
+                    campaign_problems.append(_error("MANIFEST_INVALIDO", f"{label}: {exc}"))
+            if manifest is not None:
+                _check_manifest_artifacts(manifest, delivery_dir, slug, label, campaign_problems)
+                _check_audio_policy(manifest, label, campaign_problems)
+                _check_video_file(manifest, delivery_dir, slug, label, campaign_problems)
+        if _has_error(campaign_problems):
+            failed += 1
+        problems.extend(campaign_problems)
+    return problems, failed
 
 
-def _check_package(root_real: str, tenant: str, slug: str) -> dict:
-    check: dict = {"id": f"package:{tenant}/{slug}", "status": "ok", "problems": []}
-    package_rel = f"04-legendas/pacotes-publicacao/{tenant}/{slug}"
-    checklist_path = os.path.join(
-        root_real, "04-legendas", "pacotes-publicacao", tenant, slug, "checklist-publicacao.json"
-    )
-    if not os.path.isfile(render_local.fs_path(checklist_path)):
-        check["status"] = "fail"
-        check["problems"].append(f"PACOTE_AUSENTE: {package_rel}/checklist-publicacao.json")
-        return check
-    try:
-        checklist = _read_json(checklist_path)
-    except (OSError, ValueError) as exc:
-        check["status"] = "fail"
-        check["problems"].append(f"CHECKLIST_INVALIDO: {exc}")
-        return check
-    if checklist.get("autoPublish") is not False:
-        check["status"] = "fail"
-        check["problems"].append("AUTO_PUBLICACAO_ATIVO: autoPublish deve ser false")
-    return check
+def _check_package_media(
+    root_real: str, checklist: dict, label: str, problems: list[dict]
+) -> None:
+    media = checklist.get("media")
+    if not isinstance(media, list):
+        return
+    for entry in media:
+        if not isinstance(entry, dict):
+            continue
+        rel_path = entry.get("path")
+        expected = entry.get("sha256")
+        if not isinstance(rel_path, str) or not expected:
+            continue
+        target = _join_rel(root_real, rel_path)
+        if not os.path.isfile(render_local.fs_path(target)):
+            continue
+        if render_local.sha256_file(target) != expected:
+            problems.append(_error("HASH_DIVERGENTE", f"{label}: {rel_path}"))
 
 
-def _check_no_binary_media(root_real: str) -> dict:
-    check: dict = {
-        "id": "git_hygiene:no_binary_media_tracked",
-        "status": "ok",
-        "problems": [],
-    }
-    output = _run_git(root_real, "ls-files", "--", "*.mp4", "*.wav")
-    tracked = [line.strip() for line in output.splitlines() if line.strip()]
-    if tracked:
-        check["status"] = "fail"
-        check["problems"].append("MIDIA_RASTREADA: " + ", ".join(tracked))
-    return check
+def _check_pacotes(root_real: str, campaigns: list[dict]) -> tuple[list[dict], int]:
+    problems: list[dict] = []
+    failed = 0
+    for campaign in campaigns:
+        tenant, slug = campaign["tenant"], campaign["slug"]
+        label = f"{tenant}/{slug}"
+        campaign_problems: list[dict] = []
+        package_dir = os.path.join(root_real, *PACKAGE_ROOT, tenant, slug)
+        checklist_path = os.path.join(package_dir, "checklist-publicacao.json")
+        if not os.path.isfile(render_local.fs_path(checklist_path)):
+            campaign_problems.append(
+                _error(
+                    "PACOTE_AUSENTE",
+                    f"{'/'.join(PACKAGE_ROOT)}/{tenant}/{slug}/checklist-publicacao.json",
+                )
+            )
+        else:
+            checklist = None
+            try:
+                checklist = _read_json(checklist_path)
+            except (OSError, ValueError) as exc:
+                campaign_problems.append(_error("CHECKLIST_INVALIDO", f"{label}: {exc}"))
+            if checklist is not None:
+                if checklist.get("autoPublish") is not False:
+                    campaign_problems.append(
+                        _error("AUTO_PUBLICACAO_ATIVO", f"{label}: autoPublish deve ser false")
+                    )
+                if checklist.get("guardrailsAudited") is not True:
+                    campaign_problems.append(
+                        _error("GUARDRAILS_NAO_AUDITADOS", f"{label}: guardrailsAudited deve ser true")
+                    )
+                for name in PACKAGE_FILES:
+                    if not os.path.isfile(render_local.fs_path(os.path.join(package_dir, name))):
+                        campaign_problems.append(
+                            _error("ARQUIVO_PACOTE_AUSENTE", f"{label}: {name}")
+                        )
+                _check_package_media(root_real, checklist, label, campaign_problems)
+        if _has_error(campaign_problems):
+            failed += 1
+        problems.extend(campaign_problems)
+    return problems, failed
 
 
-def _check_gitattributes_eol(root_real: str) -> dict:
-    check: dict = {"id": "git_hygiene:gitattributes_eol_lf", "status": "ok", "problems": []}
-    gitattributes_path = os.path.join(root_real, ".gitattributes")
-    if not os.path.isfile(render_local.fs_path(gitattributes_path)):
-        check["status"] = "fail"
-        check["problems"].append("GITATTRIBUTES_AUSENTE: .gitattributes")
-        return check
-    with open(
-        render_local.fs_path(gitattributes_path), "r", encoding="utf-8", errors="replace"
-    ) as handle:
-        content = handle.read()
-    rules = [line.strip() for line in content.splitlines() if "eol=lf" in line]
+def _check_derivados(root_real: str, campaigns: list[dict]) -> tuple[list[dict], int]:
+    problems: list[dict] = []
+    failed = 0
+    for campaign in campaigns:
+        tenant, slug = campaign["tenant"], campaign["slug"]
+        label = f"{tenant}/{slug}"
+        campaign_problems: list[dict] = []
+        derivatives_path = os.path.join(root_real, *DELIVERY_ROOT, tenant, slug, "derivatives.json")
+        if not os.path.isfile(render_local.fs_path(derivatives_path)):
+            campaign_problems.append(_warning("DERIVATIVES_AUSENTE", f"{label}: derivatives.json"))
+        else:
+            data = None
+            try:
+                data = _read_json(derivatives_path)
+            except (OSError, ValueError) as exc:
+                campaign_problems.append(_error("DERIVATIVES_INVALIDO", f"{label}: {exc}"))
+            if data is not None:
+                declarations = data.get("derivatives")
+                if not isinstance(declarations, dict):
+                    campaign_problems.append(
+                        _error("DERIVATIVES_INVALIDO", f"{label}: secao derivatives")
+                    )
+                else:
+                    for key in DERIVATIVE_KEYS:
+                        entry = declarations.get(key)
+                        if not isinstance(entry, dict):
+                            campaign_problems.append(
+                                _error("DERIVADO_DECLARACAO_AUSENTE", f"{label}: derivatives.{key}")
+                            )
+                            continue
+                        expected = entry.get("sha256")
+                        rel_path = entry.get("path")
+                        if not expected or not isinstance(rel_path, str):
+                            campaign_problems.append(
+                                _error(
+                                    "DERIVADO_SEM_HASH",
+                                    f"{label}: derivatives.{key} sem sha256 ou path",
+                                )
+                            )
+                            continue
+                        target = _join_rel(root_real, rel_path)
+                        if not os.path.isfile(render_local.fs_path(target)):
+                            continue
+                        if render_local.sha256_file(target) != expected:
+                            campaign_problems.append(
+                                _error("HASH_DIVERGENTE", f"{label}: derivatives.{key} ({rel_path})")
+                            )
+        if _has_error(campaign_problems):
+            failed += 1
+        problems.extend(campaign_problems)
+    return problems, failed
+
+
+def _check_calendario(root_real: str) -> list[dict]:
+    problems: list[dict] = []
+    json_path = os.path.join(root_real, *CALENDAR_JSON)
+    md_path = os.path.join(root_real, *CALENDAR_MD)
+    json_present = os.path.isfile(render_local.fs_path(json_path))
+    if not json_present:
+        problems.append(_warning("CALENDARIO_AUSENTE", "/".join(CALENDAR_JSON)))
+    if not os.path.isfile(render_local.fs_path(md_path)):
+        problems.append(_warning("CALENDARIO_AUSENTE", "/".join(CALENDAR_MD)))
+    if json_present:
+        data = None
+        try:
+            data = _read_json(json_path)
+        except (OSError, ValueError) as exc:
+            problems.append(_error("CALENDARIO_INVALIDO", f"calendario-editorial.json: {exc}"))
+        if data is not None:
+            if data.get("autoPublish") is not False:
+                problems.append(
+                    _error(
+                        "AUTO_PUBLICACAO_ATIVO",
+                        "calendario-editorial.json: autoPublish deve ser false",
+                    )
+                )
+            slots = data.get("slots")
+            if not isinstance(slots, list):
+                problems.append(_error("SLOTS_AUSENTES", "calendario-editorial.json: secao slots"))
+            else:
+                total = data.get("totalSlots")
+                if isinstance(total, int) and total != len(slots):
+                    problems.append(
+                        _error(
+                            "SLOTS_CONTAGEM_DIVERGENTE",
+                            f"calendario-editorial.json: totalSlots={total}, "
+                            f"{len(slots)} slot(s) declarado(s)",
+                        )
+                    )
+                offending = sum(
+                    1
+                    for slot in slots
+                    if isinstance(slot, dict) and slot.get("autoPublish") is not False
+                )
+                if offending:
+                    problems.append(
+                        _error(
+                            "AUTO_PUBLICACAO_ATIVO",
+                            f"calendario-editorial.json: {offending} slot(s) com autoPublish "
+                            "diferente de false",
+                        )
+                    )
+    if not os.path.isfile(render_local.fs_path(os.path.join(root_real, *MATRIZ_UTM))):
+        problems.append(_warning("MATRIZ_UTM_AUSENTE", "/".join(MATRIZ_UTM)))
+    return problems
+
+
+def _check_portal(root_real: str) -> list[dict]:
+    problems: list[dict] = []
+    portal_dir = os.path.join(root_real, PORTAL_DIR)
+    for name in PORTAL_FILES:
+        if not os.path.isfile(render_local.fs_path(os.path.join(portal_dir, name))):
+            problems.append(_warning("PORTAL_ARQUIVO_AUSENTE", f"{PORTAL_DIR}/{name}"))
+    for name in PORTAL_SCANNED_FILES:
+        path = os.path.join(portal_dir, name)
+        if not os.path.isfile(render_local.fs_path(path)):
+            continue
+        with open(render_local.fs_path(path), "r", encoding="utf-8", errors="replace") as handle:
+            content = handle.read()
+        match = ABSOLUTE_PATH_PATTERN.search(content)
+        if match:
+            problems.append(
+                _error(
+                    "CAMINHO_ABSOLUTO_VAZADO",
+                    f"{PORTAL_DIR}/{name}: caminho local '{match.group(0)}'",
+                )
+            )
+    return problems
+
+
+def _check_gitattributes(root_real: str) -> list[dict]:
+    path = os.path.join(root_real, ".gitattributes")
+    if not os.path.isfile(render_local.fs_path(path)):
+        return [_error("GITATTRIBUTES_AUSENTE", ".gitattributes")]
+    with open(render_local.fs_path(path), "r", encoding="utf-8", errors="replace") as handle:
+        lines = handle.read().splitlines()
+    rules = [line.strip() for line in lines if "eol=lf" in line]
     if not rules:
-        check["status"] = "fail"
-        check["problems"].append("GITATTRIBUTES_SEM_EOL_LF: nenhuma regra 'text eol=lf'")
-    else:
-        check["rules"] = len(rules)
-    return check
+        return [_error("GITATTRIBUTES_SEM_EOL_LF", ".gitattributes sem nenhuma regra 'eol=lf'")]
+    problems: list[dict] = []
+    for ext in GITATTRIBUTES_EXTENSIONS:
+        if not any(ext in rule for rule in rules):
+            problems.append(
+                _error("GITATTRIBUTES_EXT_SEM_EOL_LF", f".gitattributes sem regra 'eol=lf' para {ext}")
+            )
+    return problems
 
 
 def _list_worktrees(root_real: str) -> dict[str, str]:
@@ -241,98 +510,187 @@ def _list_worktrees(root_real: str) -> dict[str, str]:
     return registered
 
 
-def _check_historical_worktree(root_real: str, name: str, registered: dict[str, str]) -> dict:
-    check: dict = {"id": f"git_hygiene:worktree:{name}", "status": "ok", "problems": []}
-    if name in registered:
-        path = registered[name]
-        if os.path.isdir(render_local.fs_path(path)):
-            check["path"] = path
-        else:
-            check["status"] = "fail"
-            check["problems"].append(f"WORKTREE_REGISTRADA_SEM_DIRETORIO: {path}")
-        return check
-    orphan_dir = os.path.join(root_real, ".workspace", "worktrees", name)
-    if os.path.isdir(render_local.fs_path(orphan_dir)):
-        check["status"] = "warn"
-        check["problems"].append(
-            f"WORKTREE_ORFA: diretorio sem registro ({render_local.rel(root_real, orphan_dir)})"
-        )
-    else:
-        check["status"] = "warn"
-        check["problems"].append(
-            "WORKTREE_AUSENTE_NA_ESTACAO: nem registro nem diretorio nesta estacao"
-        )
-    return check
+def _check_worktrees(root_real: str) -> list[dict]:
+    problems: list[dict] = []
+    registered = _list_worktrees(root_real)
+    for name in HISTORICAL_WORKTREES:
+        if name in registered:
+            path = registered[name]
+            if not os.path.isdir(render_local.fs_path(path)):
+                problems.append(
+                    _error("WORKTREE_REGISTRADA_SEM_DIRETORIO", f"{name}: {path}")
+                )
+            continue
+        orphan_dir = os.path.join(root_real, ".workspace", "worktrees", name)
+        if os.path.isdir(render_local.fs_path(orphan_dir)):
+            problems.append(
+                _warning(
+                    "WORKTREE_ORFA",
+                    f"{name}: diretorio sem registro ({render_local.rel(root_real, orphan_dir)})",
+                )
+            )
+    return problems
 
 
-def run_audit(root: str = ".", strict: bool = False) -> dict:
-    """Executa a auditoria completa e retorna o relatorio com todos os checks."""
+def _check_higiene(root_real: str) -> list[dict]:
+    problems: list[dict] = []
+    output = _run_git(root_real, "ls-files", "--", "*.mp4", "*.wav")
+    tracked = [line.strip() for line in output.splitlines() if line.strip()]
+    if tracked:
+        problems.append(_error("MIDIA_RASTREADA", ", ".join(tracked)))
+    problems.extend(_check_gitattributes(root_real))
+    problems.extend(_check_worktrees(root_real))
+    return problems
+
+
+def run_release_audit(root: str = ".", strict: bool = False) -> dict:
+    """Executa a auditoria dos 7 dominios e retorna o relatorio schemaVersion 2."""
     root_real = os.path.realpath(root)
     if not os.path.isdir(render_local.fs_path(root_real)):
         raise ReleaseAuditError(f"raiz ausente: {root_real}")
 
-    checks: list[dict] = []
-    tenants_check = _check_tenants(root_real)
-    checks.append(tenants_check)
-
     campaigns = discover_campaigns(root_real)
-    for campaign in campaigns:
-        checks.append(_check_delivery(root_real, campaign["tenant"], campaign["slug"]))
-        checks.append(_check_package(root_real, campaign["tenant"], campaign["slug"]))
+    contrato_problems, tenants_summary = _check_contratos(root_real)
+    entrega_problems, deliveries_failed = _check_entregas(root_real, campaigns)
+    pacote_problems, packages_failed = _check_pacotes(root_real, campaigns)
+    derivado_problems, derivatives_failed = _check_derivados(root_real, campaigns)
+    calendario_problems = _check_calendario(root_real)
+    portal_problems = _check_portal(root_real)
+    higiene_problems = _check_higiene(root_real)
 
-    checks.append(_check_no_binary_media(root_real))
-    checks.append(_check_gitattributes_eol(root_real))
-    registered = _list_worktrees(root_real)
-    for name in HISTORICAL_WORKTREES:
-        checks.append(_check_historical_worktree(root_real, name, registered))
-
-    failed = [check for check in checks if check["status"] == "fail"]
-    warned = [check for check in checks if check["status"] == "warn"]
-    ok = not failed and not (strict and warned)
+    results = (
+        contrato_problems,
+        entrega_problems,
+        pacote_problems,
+        derivado_problems,
+        calendario_problems,
+        portal_problems,
+        higiene_problems,
+    )
+    domains = [
+        _domain(domain_id, name, problems)
+        for (domain_id, name), problems in zip(DOMAIN_NAMES, results)
+    ]
+    all_problems = [problem for problems in results for problem in problems]
+    errors = sum(1 for problem in all_problems if problem["severity"] == "error")
+    warnings = sum(1 for problem in all_problems if problem["severity"] == "warning")
 
     return {
-        "schemaVersion": 1,
-        "ok": ok,
+        "schemaVersion": 2,
+        "ok": errors == 0 and not (strict and warnings > 0),
         "strict": strict,
         "root": root_real,
+        "domains": domains,
         "summary": {
-            "tenants": {
-                "total": len(tenants_check["valid"]) + len(tenants_check["invalid"]),
-                "valid": len(tenants_check["valid"]),
-                "invalid": len(tenants_check["invalid"]),
+            "domains": {
+                "ok": sum(1 for domain in domains if domain["status"] == "ok"),
+                "warn": sum(1 for domain in domains if domain["status"] == "warn"),
+                "fail": sum(1 for domain in domains if domain["status"] == "fail"),
             },
+            "problems": {"errors": errors, "warnings": warnings},
+            "tenants": tenants_summary,
             "campaigns": {
                 "total": len(campaigns),
-                "deliveryFailed": sum(
-                    1 for check in checks
-                    if check["id"].startswith("delivery:") and check["status"] == "fail"
-                ),
-                "packageFailed": sum(
-                    1 for check in checks
-                    if check["id"].startswith("package:") and check["status"] == "fail"
-                ),
-            },
-            "checks": {
-                "ok": sum(1 for check in checks if check["status"] == "ok"),
-                "warn": len(warned),
-                "fail": len(failed),
+                "deliveriesFailed": deliveries_failed,
+                "packagesFailed": packages_failed,
+                "derivativesFailed": derivatives_failed,
             },
         },
-        "checks": checks,
     }
 
 
+def _resolve_report_path(root_real: str, report_out: str | None) -> str | None:
+    if not report_out:
+        return None
+    candidate = (
+        report_out
+        if os.path.isabs(report_out)
+        else os.path.join(root_real, *report_out.replace("\\", "/").split("/"))
+    )
+    resolved = os.path.realpath(candidate)
+    if not render_local.contained(root_real, resolved):
+        raise ReleaseAuditError(
+            f"PATH_OUTSIDE_ROOT: --report-out deve ficar sob a raiz ({root_real})"
+        )
+    return resolved
+
+
+def _write_report(path: str, result: dict) -> None:
+    try:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(render_local.fs_path(parent), exist_ok=True)
+        with open(render_local.fs_path(path), "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(result, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+    except OSError as exc:
+        raise ReleaseAuditError(f"REPORT_OUT_FALHOU: {exc}") from exc
+
+
+def _stdout_utf8() -> None:
+    """Garante UTF-8 na saida: no Windows o encoding padrao de pipe ou arquivo
+    redirecionado e o da locale (cp1252), que corromperia os nomes acentuados
+    dos dominios para qualquer consumidor UTF-8 (inclusive o CI)."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8")
+
+
+def _print_human(result: dict) -> None:
+    status_label = {"ok": "OK", "warn": "AVISO", "fail": "FALHA"}
+    for domain in result["domains"]:
+        print(f"[{status_label[domain['status']]}] {domain['id']} — {domain['name']}")
+        for problem in domain["problems"]:
+            print(f"    - [{problem['severity']}] {problem['code']}: {problem['message']}")
+    summary = result["summary"]
+    print()
+    print(
+        f"Tenants validos: {summary['tenants']['valid']}/{summary['tenants']['total']}"
+        f" (minimo {MIN_VALID_TENANTS})"
+    )
+    print(
+        f"Campanhas: {summary['campaigns']['total']} | "
+        f"entregas reprovadas: {summary['campaigns']['deliveriesFailed']} | "
+        f"pacotes reprovados: {summary['campaigns']['packagesFailed']} | "
+        f"derivados reprovados: {summary['campaigns']['derivativesFailed']}"
+    )
+    print(
+        f"Dominios: {summary['domains']['ok']} ok, {summary['domains']['warn']} aviso(s), "
+        f"{summary['domains']['fail']} falha(s)"
+    )
+    print(
+        f"Problemas: {summary['problems']['errors']} erro(s), "
+        f"{summary['problems']['warnings']} aviso(s)"
+    )
+    mode = " (strict)" if result["strict"] else ""
+    print(f"Resultado{mode}: {'APROVADO' if result['ok'] else 'REPROVADO'}")
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Auditor final de prontidao de release")
+    _stdout_utf8()
+    parser = argparse.ArgumentParser(
+        description="Auditor final de prontidao de release (7 dominios)"
+    )
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     parser.add_argument(
         "--strict", action="store_true", help="Avisos tambem reprovam o release"
     )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
+    parser.add_argument(
+        "--report-out",
+        default=None,
+        help="Grava o relatorio JSON neste caminho, obrigatoriamente sob a raiz",
+    )
     args = parser.parse_args(argv)
 
     try:
-        result = run_audit(root=args.root, strict=args.strict)
+        root_real = os.path.realpath(args.root)
+        if not os.path.isdir(render_local.fs_path(root_real)):
+            raise ReleaseAuditError(f"raiz ausente: {root_real}")
+        report_path = _resolve_report_path(root_real, args.report_out)
+        result = run_release_audit(root=root_real, strict=args.strict)
+        if report_path:
+            _write_report(report_path, result)
     except ReleaseAuditError as exc:
         if args.json:
             print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False, indent=2))
@@ -342,30 +700,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0 if result["ok"] else 1
-
-    status_label = {"ok": "OK", "warn": "AVISO", "fail": "FALHA"}
-    for check in result["checks"]:
-        print(f"[{status_label[check['status']]}] {check['id']}")
-        for problem in check["problems"]:
-            print(f"    - {problem}")
-    summary = result["summary"]
-    print()
-    print(
-        f"Tenants validos: {summary['tenants']['valid']}/{summary['tenants']['total']}"
-        f" (minimo {MIN_VALID_TENANTS})"
-    )
-    print(
-        f"Campanhas: {summary['campaigns']['total']} | "
-        f"entregas reprovadas: {summary['campaigns']['deliveryFailed']} | "
-        f"pacotes reprovados: {summary['campaigns']['packageFailed']}"
-    )
-    print(
-        f"Checks: {summary['checks']['ok']} ok, {summary['checks']['warn']} aviso(s), "
-        f"{summary['checks']['fail']} falha(s)"
-    )
-    mode = " (strict)" if result["strict"] else ""
-    print(f"Resultado{mode}: {'APROVADO' if result['ok'] else 'REPROVADO'}")
+    else:
+        _print_human(result)
     return 0 if result["ok"] else 1
 
 
