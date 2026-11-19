@@ -1,14 +1,19 @@
-"""Consolidador automatico e idempotente de devlogs da Etapa 3.
+"""Consolidador automatico e idempotente de devlogs por etapa (etapa3, etapa4, ...).
 
-Le arquivos `.workspace/devlogs/etapa3-agente-*.md` (e `etapa3-agente*.md`) em
-ordem numerica de agente, verifica se cada sessao ja foi incorporada em
-`contexto_projeto.md`, atualiza a data e o status da Secao 1 e anexa apenas as
-novas entradas ao final da Secao 7 (Historico de sessoes), sem nunca apagar o
-historico anterior.
+Le arquivos `.workspace/devlogs/` que casam com `--pattern` (padrao:
+`etapa*-agente*.md`) em ordem numerica pela tupla `(etapa_num, agente_num)`,
+verifica se cada sessao ja foi incorporada em `contexto_projeto.md`, atualiza
+a data e o status da Secao 1 e anexa apenas as novas entradas ao final da
+Secao 7 (Historico de sessoes), sem nunca apagar o historico anterior.
+
+Marcadores `<!-- devlog-sync:<arquivo> -->` gravados por esta ferramenta
+(inclusive os historicos `etapa3-agente*.md`) continuam sendo reconhecidos e
+garantem idempotencia entre etapas.
 
 Uso (a partir da raiz do checkout ou worktree):
     python tools/devlog_sync.py --devlogs-dir .workspace/devlogs --target contexto_projeto.md
     python tools/devlog_sync.py --devlogs-dir .workspace/devlogs --target contexto_projeto.md --json
+    python tools/devlog_sync.py --pattern "etapa4-agente*.md" --json
 """
 
 from __future__ import annotations
@@ -25,7 +30,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import render_local
 
-DEVLOG_FILENAME_RE = re.compile(r"^etapa3-agente-?(\d+)\.md$", re.IGNORECASE)
+DEFAULT_PATTERN = "etapa*-agente*.md"
+ETAPA_NUM_RE = re.compile(r"etapa(-?\d+)", re.IGNORECASE)
+AGENTE_NUM_RE = re.compile(r"agente(-?\d+)", re.IGNORECASE)
 SECTION_1_RE = re.compile(r"^(##\s+1\.\s+Estado atual)(.*)$", re.MULTILINE)
 SECTION_7_RE = re.compile(r"^##\s+7\.\s+Hist[oó]rico de sess[oõ]es.*$", re.MULTILINE)
 NEXT_SECTION_RE = re.compile(r"^##\s+\d+\.", re.MULTILINE)
@@ -52,24 +59,53 @@ def _resolve_contained(root_real: str, path_value: str, label: str) -> str:
     return candidate
 
 
-def discover_devlogs(devlogs_abs: str) -> list[tuple[int, str, str]]:
-    """Descobre `etapa3-agente-*.md` / `etapa3-agente*.md` ordenados numericamente."""
+def _glob_to_regex(pattern: str) -> re.Pattern[str]:
+    """Traduz um glob simples em regex ancorada; `*` casa apenas numeros."""
+    parts: list[str] = []
+    for char in pattern:
+        if char == "*":
+            parts.append(r"(-?\d+)")
+        else:
+            parts.append(re.escape(char))
+    return re.compile("^" + "".join(parts) + "$", re.IGNORECASE)
+
+
+def _extract_num(regex: re.Pattern[str], filename: str) -> int:
+    match = regex.search(filename)
+    if not match:
+        return 0
+    digits = re.sub(r"\D", "", match.group(1))
+    return int(digits) if digits else 0
+
+
+def discover_devlogs(
+    devlogs_abs: str,
+    pattern: str = DEFAULT_PATTERN,
+) -> list[tuple[int, int, str, str]]:
+    """Descobre devlogs que casam com `pattern`, ordenados por (etapa, agente)."""
     fs_dir = render_local.fs_path(devlogs_abs)
     if not os.path.isdir(fs_dir):
         return []
-    found: list[tuple[int, str, str]] = []
+    name_re = _glob_to_regex(pattern)
+    found: list[tuple[int, int, str, str]] = []
     for name in os.listdir(fs_dir):
-        match = DEVLOG_FILENAME_RE.match(name)
-        if not match:
+        if not name_re.match(name):
             continue
         full_path = os.path.join(devlogs_abs, name)
         if os.path.isfile(render_local.fs_path(full_path)):
-            found.append((int(match.group(1)), name, full_path))
-    found.sort(key=lambda item: (item[0], item[1].lower()))
+            etapa_num = _extract_num(ETAPA_NUM_RE, name)
+            agent_num = _extract_num(AGENTE_NUM_RE, name)
+            found.append((etapa_num, agent_num, name, full_path))
+    found.sort(key=lambda item: (item[0], item[1], item[2].lower()))
     return found
 
 
-def _parse_devlog_entry(devlog_abs: str, filename: str, agent_num: int) -> dict[str, Any]:
+def _parse_devlog_entry(
+    devlog_abs: str,
+    filename: str,
+    etapa_num: int,
+    agent_num: int,
+) -> dict[str, Any]:
     with open(render_local.fs_path(devlog_abs), "r", encoding="utf-8") as handle:
         raw = handle.read().replace("\r\n", "\n").replace("\r", "\n").strip()
 
@@ -88,7 +124,7 @@ def _parse_devlog_entry(devlog_abs: str, filename: str, agent_num: int) -> dict[
             after = raw[m_top.end():].strip()
             body_tail = "\n\n".join(part for part in (before, after) if part)
         else:
-            heading_line = f"### Sessão — Etapa 3 (Agente {agent_num})"
+            heading_line = f"### Sessão — Etapa {etapa_num} (Agente {agent_num})"
             body_tail = raw
 
     marker = f"<!-- devlog-sync:{filename} -->"
@@ -102,6 +138,7 @@ def _parse_devlog_entry(devlog_abs: str, filename: str, agent_num: int) -> dict[
         rendered_block = f"{heading_line}\n{marker}"
 
     return {
+        "etapa": etapa_num,
         "agent": agent_num,
         "filename": filename,
         "heading": heading_line,
@@ -120,7 +157,36 @@ def _already_incorporated(target_text: str, entry: dict[str, Any]) -> bool:
     return False
 
 
-def _update_section_1(text: str, date_str: str, all_agent_nums: list[int]) -> str:
+def _join_labels(items: list[str]) -> str:
+    if len(items) == 1:
+        return items[0]
+    return ", ".join(items[:-1]) + " e " + items[-1]
+
+
+def _etapas_summary(parsed_entries: list[dict[str, Any]]) -> tuple[int, str, int]:
+    """Resume (total de agentes, rotulo, maior etapa) das entradas descobertas.
+
+    Com uma unica etapa o rotulo preserva o formato historico
+    (`Agentes 1, 2, 4`); com multiplas etapas o rotulo passa a agrupar por
+    etapa (`Etapa 3: Agentes 1, 2 + Etapa 4: Agentes 1, 2, 10`).
+    """
+    etapas: dict[int, set[int]] = {}
+    for entry in parsed_entries:
+        etapas.setdefault(entry["etapa"], set()).add(entry["agent"])
+    etapas_sorted = sorted(etapas)
+    if len(etapas_sorted) == 1:
+        agents = sorted(etapas[etapas_sorted[0]])
+        return len(agents), ", ".join(str(n) for n in agents), etapas_sorted[0]
+    total = 0
+    parts: list[str] = []
+    for etapa in etapas_sorted:
+        agents = sorted(etapas[etapa])
+        total += len(agents)
+        parts.append(f"Etapa {etapa}: Agentes " + ", ".join(str(n) for n in agents))
+    return total, " + ".join(parts), etapas_sorted[-1]
+
+
+def _update_section_1(text: str, date_str: str, parsed_entries: list[dict[str, Any]]) -> str:
     m1 = SECTION_1_RE.search(text)
     if not m1:
         raise DevlogSyncError("SECAO_1_AUSENTE", "Cabecalho `## 1. Estado atual` nao encontrado")
@@ -143,25 +209,34 @@ def _update_section_1(text: str, date_str: str, all_agent_nums: list[int]) -> st
         else:
             lines[0] = f"{lines[0].rstrip()} (atualizado em {date_str})"
 
-    agents_label = ", ".join(str(n) for n in sorted(set(all_agent_nums)))
-    count_agents = len(set(all_agent_nums))
+    count_agents, agents_label, max_etapa = _etapas_summary(parsed_entries)
+    etapas_sorted = sorted({entry["etapa"] for entry in parsed_entries})
+
+    if len(etapas_sorted) == 1:
+        fase_atual = (
+            f"Etapa {max_etapa} concluída — Plataforma Multi-Tenant + Sync Multi-Agente "
+            f"({count_agents} agente(s): {agents_label})"
+        )
+        status_agents = f"(Agentes {agents_label})"
+    else:
+        fase_atual = (
+            f"Etapas {_join_labels([str(e) for e in etapas_sorted])} concluídas — Sync Multi-Agente "
+            f"({count_agents} agente(s): {agents_label})"
+        )
+        status_agents = f"({agents_label})"
+
+    fases_prefix = "Fase 1, " + _join_labels([f"Etapa {n}" for n in range(1, max_etapa + 1)])
 
     updated_lines: list[str] = []
     for line in lines:
         if line.startswith("| Fase atual |"):
-            updated_lines.append(
-                f"| Fase atual | Etapa 3 concluída — Plataforma Multi-Tenant + Sync Multi-Agente "
-                f"({count_agents} agente(s): {agents_label}) |"
-            )
+            updated_lines.append(f"| Fase atual | {fase_atual} |")
         elif line.startswith("| Status das 5 tarefas |"):
             updated_lines.append(
-                f"| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2 e Etapa 3 "
-                f"(Agentes {agents_label}) concluídas — ver seções 2 e 7 |"
+                f"| Status das 5 tarefas | {fases_prefix} {status_agents} concluídas — ver seções 2 e 7 |"
             )
         elif re.match(r"^\|\s*Status\s*\|", line):
-            updated_lines.append(
-                f"| Status | Fase 1, Etapa 1, Etapa 2 e Etapa 3 (Agentes {agents_label}) concluídas |"
-            )
+            updated_lines.append(f"| Status | {fases_prefix} {status_agents} concluídas |")
         else:
             updated_lines.append(line)
 
@@ -195,6 +270,7 @@ def sync_devlogs(
     target_path: str = "contexto_projeto.md",
     root: str = ".",
     date_str: str | None = None,
+    pattern: str = DEFAULT_PATTERN,
 ) -> dict[str, Any]:
     """Consolida novos devlogs em `target_path` de forma idempotente."""
     root_real = os.path.realpath(root)
@@ -208,17 +284,19 @@ def sync_devlogs(
     with open(target_fs, "r", encoding="utf-8") as handle:
         original_text = handle.read().replace("\r\n", "\n").replace("\r", "\n")
 
-    discovered = discover_devlogs(devlogs_abs)
+    discovered = discover_devlogs(devlogs_abs, pattern=pattern)
     parsed_entries = [
-        _parse_devlog_entry(full_path, filename, agent_num)
-        for agent_num, filename, full_path in discovered
+        _parse_devlog_entry(full_path, filename, etapa_num, agent_num)
+        for etapa_num, agent_num, filename, full_path in discovered
     ]
 
     applied: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     for entry in parsed_entries:
         if _already_incorporated(original_text, entry):
-            skipped.append({"agent": entry["agent"], "filename": entry["filename"], "heading": entry["heading"]})
+            skipped.append(
+                {"etapa": entry["etapa"], "agent": entry["agent"], "filename": entry["filename"], "heading": entry["heading"]}
+            )
         else:
             applied.append(entry)
 
@@ -226,8 +304,7 @@ def sync_devlogs(
     changed = False
 
     if applied:
-        all_agents = [entry["agent"] for entry in parsed_entries]
-        updated = _update_section_1(original_text, effective_date, all_agents)
+        updated = _update_section_1(original_text, effective_date, parsed_entries)
         updated = _append_to_section_7(updated, [e["block"] for e in applied])
         if updated != original_text:
             with open(target_fs, "w", encoding="utf-8", newline="\n") as handle:
@@ -237,16 +314,17 @@ def sync_devlogs(
     return {
         "schemaVersion": 1,
         "ok": True,
+        "pattern": pattern,
         "target": render_local.rel(root_real, target_abs),
         "devlogsDir": render_local.rel(root_real, devlogs_abs),
         "date": effective_date,
         "changed": changed,
         "discovered": [
-            {"agent": e["agent"], "filename": e["filename"], "heading": e["heading"]}
+            {"etapa": e["etapa"], "agent": e["agent"], "filename": e["filename"], "heading": e["heading"]}
             for e in parsed_entries
         ],
         "applied": [
-            {"agent": e["agent"], "filename": e["filename"], "heading": e["heading"]}
+            {"etapa": e["etapa"], "agent": e["agent"], "filename": e["filename"], "heading": e["heading"]}
             for e in applied
         ],
         "skipped": skipped,
@@ -254,11 +332,16 @@ def sync_devlogs(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Consolidador automatico de devlogs Etapa 3")
-    parser.add_argument("--devlogs-dir", default=".workspace/devlogs", help="Diretorio com etapa3-agente-*.md")
+    parser = argparse.ArgumentParser(description="Consolidador automatico de devlogs por etapa")
+    parser.add_argument("--devlogs-dir", default=".workspace/devlogs", help="Diretorio com os devlogs")
     parser.add_argument("--target", default="contexto_projeto.md", help="Arquivo devlog consolidado alvo")
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout/worktree")
     parser.add_argument("--date", default=None, help="Data YYYY-MM-DD para Secao 1 (opcional)")
+    parser.add_argument(
+        "--pattern",
+        default=DEFAULT_PATTERN,
+        help=f"Glob dos devlogs (default: {DEFAULT_PATTERN}; ex.: 'etapa4-agente*.md')",
+    )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
     args = parser.parse_args(argv)
@@ -268,6 +351,7 @@ def main(argv: list[str] | None = None) -> int:
             target_path=args.target,
             root=args.root,
             date_str=args.date,
+            pattern=args.pattern,
         )
     except DevlogSyncError as exc:
         if args.json:

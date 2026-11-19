@@ -179,7 +179,149 @@ class DevlogSyncTest(unittest.TestCase):
         self.assertEqual(final_text.count("### Sessão 2026-11-18 — Etapa 3 (Agente 2): Áudio"), 1)
         self.assertEqual(final_text.count("### Sessão 2026-11-18 — Etapa 3 (Agente 3): Publish UTM"), 1)
 
-    def test_04_cli_json_and_path_containment(self) -> None:
+    def test_04_multi_etapa_orders_by_etapa_then_agent(self) -> None:
+        self._write_devlog(
+            "etapa4-agente2.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 2): Review Portal\n\n- Detalhe etapa4 agente2.\n",
+        )
+        self._write_devlog(
+            "etapa3-agente2.md",
+            "### Sessão 2026-11-19 — Etapa 3 (Agente 2): Base\n\n- Detalhe etapa3 agente2.\n",
+        )
+        self._write_devlog(
+            "etapa4-agente-10.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 10): Pós\n\n- Detalhe etapa4 agente10.\n",
+        )
+        self._write_devlog(
+            "etapa3-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 3 (Agente 1): Motor\n\n- Detalhe etapa3 agente1.\n",
+        )
+        self._write_devlog(
+            "etapa4-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 1): Formatos\n\n- Detalhe etapa4 agente1.\n",
+        )
+
+        res = devlog_sync.sync_devlogs(
+            devlogs_dir=self.devlogs_dir,
+            target_path=self.target,
+            root=REPO_ROOT,
+            date_str="2026-11-19",
+        )
+        self.assertTrue(res["ok"])
+        self.assertTrue(res["changed"])
+        self.assertEqual(
+            [(e["etapa"], e["agent"]) for e in res["applied"]],
+            [(3, 1), (3, 2), (4, 1), (4, 2), (4, 10)],
+        )
+
+        with open(self.target, "r", encoding="utf-8") as handle:
+            content = handle.read()
+
+        pos_old = content.index("### Sessão 2026-11-17 — Entrada Anterior")
+        pos_31 = content.index("Etapa 3 (Agente 1)")
+        pos_32 = content.index("Etapa 3 (Agente 2)")
+        pos_41 = content.index("Etapa 4 (Agente 1)")
+        pos_42 = content.index("Etapa 4 (Agente 2)")
+        pos_410 = content.index("Etapa 4 (Agente 10)")
+        self.assertLess(pos_old, pos_31)
+        self.assertLess(pos_31, pos_32)
+        self.assertLess(pos_32, pos_41)
+        self.assertLess(pos_41, pos_42)
+        self.assertLess(pos_42, pos_410)
+
+        self.assertIn(
+            "| Fase atual | Etapas 3 e 4 concluídas — Sync Multi-Agente "
+            "(5 agente(s): Etapa 3: Agentes 1, 2 + Etapa 4: Agentes 1, 2, 10) |",
+            content,
+        )
+        self.assertIn(
+            "| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3 e Etapa 4 "
+            "(Etapa 3: Agentes 1, 2 + Etapa 4: Agentes 1, 2, 10) concluídas — ver seções 2 e 7 |",
+            content,
+        )
+
+    def test_05_multi_etapa_idempotent_second_run(self) -> None:
+        self._write_devlog(
+            "etapa3-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 3 (Agente 1): Antiga\n\n- Item antigo.\n",
+        )
+        self._write_devlog(
+            "etapa4-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 1): Nova\n\n- Item novo.\n",
+        )
+        first = devlog_sync.sync_devlogs(
+            devlogs_dir=self.devlogs_dir, target_path=self.target, root=REPO_ROOT, date_str="2026-11-19"
+        )
+        self.assertTrue(first["changed"])
+        with open(self.target, "rb") as handle:
+            bytes_after_first = handle.read()
+
+        second = devlog_sync.sync_devlogs(
+            devlogs_dir=self.devlogs_dir, target_path=self.target, root=REPO_ROOT, date_str="2026-11-20"
+        )
+        self.assertTrue(second["ok"])
+        self.assertFalse(second["changed"])
+        self.assertEqual(second["applied"], [])
+        self.assertEqual(len(second["skipped"]), 2)
+
+        with open(self.target, "rb") as handle:
+            bytes_after_second = handle.read()
+        self.assertEqual(bytes_after_first, bytes_after_second)
+
+    def test_06_custom_pattern_restricts_discovery(self) -> None:
+        self._write_devlog(
+            "etapa3-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 3 (Agente 1): Antiga\n\n- Antiga.\n",
+        )
+        self._write_devlog(
+            "etapa4-agente1.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 1): Nova\n\n- Nova 1.\n",
+        )
+        self._write_devlog(
+            "etapa4-agente-2.md",
+            "### Sessão 2026-11-19 — Etapa 4 (Agente 2): Nova\n\n- Nova 2.\n",
+        )
+
+        res = devlog_sync.sync_devlogs(
+            devlogs_dir=self.devlogs_dir,
+            target_path=self.target,
+            root=REPO_ROOT,
+            date_str="2026-11-19",
+            pattern="etapa4-agente*.md",
+        )
+        self.assertEqual(res["pattern"], "etapa4-agente*.md")
+        self.assertEqual(
+            [(e["etapa"], e["agent"]) for e in res["discovered"]],
+            [(4, 1), (4, 2)],
+        )
+        self.assertEqual(
+            [e["filename"] for e in res["applied"]],
+            ["etapa4-agente1.md", "etapa4-agente-2.md"],
+        )
+        with open(self.target, "r", encoding="utf-8") as handle:
+            content = handle.read()
+        self.assertNotIn("Antiga.", content)
+        self.assertIn("Nova 1.", content)
+        self.assertIn("Nova 2.", content)
+
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            rc = devlog_sync.main([
+                "--devlogs-dir", ".workspace/tmp/test_devlog_sync/devlogs",
+                "--target", ".workspace/tmp/test_devlog_sync/contexto_projeto.md",
+                "--root", REPO_ROOT,
+                "--date", "2026-11-19",
+                "--pattern", "etapa3-agente*.md",
+                "--json",
+            ])
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["pattern"], "etapa3-agente*.md")
+        self.assertEqual([e["filename"] for e in payload["applied"]], ["etapa3-agente1.md"])
+        with open(self.target, "r", encoding="utf-8") as handle:
+            content = handle.read()
+        self.assertIn("Antiga.", content)
+
+    def test_07_cli_json_and_path_containment(self) -> None:
         self._write_devlog(
             "etapa3-agente4.md",
             "### Sessão 2026-11-18 — Etapa 3 (Agente 4): Teste CLI\n\n- Conteúdo CLI.\n",
