@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 18261,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-01-capa.png",
+          "sha256": "3a0318a9843ae26658238279728455dbd69643dd219656efbd82b15e167f66f0",
+          "width": 1080
+        },
+        {
+          "bytes": 17030,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-02-problema.png",
+          "sha256": "21f5505afdeb78b4e1aa30b112cfa37dbf7d970c2fb2dc50acec8b6c52752866",
+          "width": 1080
+        },
+        {
+          "bytes": 15557,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-03-pratica.png",
+          "sha256": "c244b55d6a8876e4cf7bad73c17d32f8356cd4e5be3ace1937de3b90804f00e1",
+          "width": 1080
+        },
+        {
+          "bytes": 16280,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-04-resumo-cta.png",
+          "sha256": "7717ac6cf17a556ee85095f36e0d441b56f8050fa75aa9013a4db2ba3e73e4dc",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 24628,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-01-hook.png",
+          "sha256": "223c82924af69b728dc486f99567c433609e15d7b765b9635ac5b5f99bd0d12b",
+          "width": 1080
+        },
+        {
+          "bytes": 24108,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-02-fluxo.png",
+          "sha256": "6363715c793d85c6260fe57bcc25a95a543a2806be4bed0cdb649a3aa169ed8d",
+          "width": 1080
+        },
+        {
+          "bytes": 21035,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-03-cta.png",
+          "sha256": "b4cc9a404b71c355883bdd9be20fdabd87fd4f9e37801f6a1dfa95fa4ba44d8f",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-saas-demo-marca-salao-001",
+  "tenantId": "marca-salao"
+}
