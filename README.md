@@ -16,9 +16,35 @@ A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/RE
 - `03-youtube-pdf/` - PDFs e apresentações para YouTube/Site
 - `03-roteiros/` - Roteiros por campanha: cenas, textos de tela e narração em rascunho
 - `04-legendas/` - Legendas, roteiros e scripts de áudio
+- `schemas/` - JSON Schema dos contratos multi-tenant (brand-kit, guardrails)
+- `tenants/` - Contratos por marca da fábrica de vídeo: brand-kit, guardrails, fixtures e campanhas
 - `marcas/` - Materiais, configurações e integrações específicas de Marca Salão e Multitrack Hub
 - `platform/` - Contratos, schemas, validação, relatórios, CLIs e testes do núcleo reutilizável
 - `docs/contexto/` - Contexto compartilhado, estado atual, próximos passos e procedimento de retomada
+
+## Fábrica de vídeo multi-tenant (contratos → render → pacotes → release)
+
+Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard e `manifest.json` com hashes SHA-256; o pacote social correspondente sai com `autoPublish: false` — **nada publica sozinho**. Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+
+| Tenant | Marca | Preset | Domínio | Áudio | Campanhas |
+| --- | --- | --- | --- | --- | --- |
+| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibido (`-an`) | 2 |
+| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitido (opcional) | 3 |
+| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibido | 2 |
+| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibido | 1 |
+
+Comandos rápidos (a partir da raiz do checkout):
+
+```bash
+python tools/tenant_validator.py --all --json          # 1. validar contratos
+python tools/factory_cli.py render --all --json        # 2. renderizar em lote
+python tools/publish_pack.py --all                      # 3. pacotes sociais (autoPublish: false)
+python tools/release_audit.py --json                    # 4. auditoria de prontidão
+python tools/release_audit.py --strict --json           # 5. gate de release (estação com os vídeos)
+python tools/devlog_sync.py --json                     # 6. consolidar devlogs no contexto_projeto.md
+```
+
+Checklist de operação manual: alinhar a estação (`git pull --ff-only`) → validar contratos → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → renderizar → gerar pacotes → auditoria `release_audit` → gate `--strict` na estação de release → consolidar devlogs. Novo nicho/tenant: [docs/guia-novo-nicho.md](docs/guia-novo-nicho.md).
 
 ## Ferramentas
 - CapCut (mobile/desktop)
