@@ -1,21 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tenantId": "marca-salao",
   "slug": "camp-saas-demo-marca-salao-001",
   "preset": "saas-demo",
-  "brand": {
-    "tenantId": "marca-salao",
-    "brandName": "Marca Salão",
-    "monogram": "MS",
-    "domain": "marcasalao.com.br",
-    "palettePrimary": "#F5C107"
-  },
-  "guardrails": {
-    "allowAudioTrack": false,
-    "requireSrt": true,
-    "requireExternalNarration": true,
-    "appliedAudioPolicy": "-an"
-  },
+  "sourceVideoSha256": "df1d45bbb8d716c2f61ba9d732f9c8e60ae8d78714d25df239d3bd21aeb31c86",
+  "allowAudioTrack": false,
+  "appliedAudioPolicy": "-an",
   "source": {
     "path": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
     "sha256": "df1d45bbb8d716c2f61ba9d732f9c8e60ae8d78714d25df239d3bd21aeb31c86",
@@ -37,41 +27,16 @@
     }
   },
   "derivatives": {
-    "cover": {
-      "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-cover.png",
-      "sha256": "d285336ae18c369e1c78a13d6c31b1adc0d5fa07324e9ac32e84863d2515ba49",
-      "bytes": 305432,
-      "ffprobe": {
-        "videoStreams": 1,
-        "audioStreams": 0,
-        "codec": "png",
-        "width": 1080,
-        "height": 1920,
-        "fps": 25.0,
-        "pixFmt": "rgb24",
-        "duration": 0.0,
-        "audioCodec": null,
-        "audioSampleRate": null,
-        "audioChannels": null
-      },
-      "versioned": false,
-      "kind": "cover-png",
-      "codec": "png",
-      "width": 1080,
-      "height": 1920,
-      "timestampSeconds": 2.0,
-      "border": {
-        "color": "#F5C107",
-        "thickness": 8,
-        "inset": 12,
-        "alpha": 0.85
-      },
-      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
-    },
-    "square": {
+    "1x1": {
       "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-1x1.mp4",
-      "sha256": "94e6ca50f4daa42f2e338e6a570c06412614a6534829dfbac990041f12df7d9a",
-      "bytes": 365942,
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 406960,
+      "sha256": "88509bea624e1ffbc09f727521d3476f45ae0cdb083dfaad0d97426e39c1cb8c",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -85,32 +50,33 @@
         "audioSampleRate": null,
         "audioChannels": null
       },
-      "versioned": false,
       "kind": "1x1",
-      "width": 1080,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#F5C107",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#F5C107",
-        "tintOpacity": 0.12
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
       },
-      "audioStreams": 0,
-      "audioCodec": null,
       "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
     },
-    "wide": {
+    "16x9": {
       "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-16x9.mp4",
-      "sha256": "17a6b4543efe36dc93ab9a47b6284f4f4d2ece35ec2f43261b6f6c386f6e0642",
-      "bytes": 416475,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 479859,
+      "sha256": "26e94cdf20bf673d1a68a966c23fbf4f61b219468ef07a5dab0382e6eb43eff1",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -124,27 +90,129 @@
         "audioSampleRate": null,
         "audioChannels": null
       },
-      "versioned": false,
       "kind": "16x9",
-      "width": 1920,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#F5C107",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#F5C107",
-        "tintOpacity": 0.12
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
       },
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+      "bytes": 283608,
+      "sha256": "b1b2c7ad44ce56e0ba6818082967df27d090c5da4f0dd3c304b9207eb2cf2938",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#121620",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#121620",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#F5C107",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 236696,
+      "sha256": "3ca6015838fe37fe50862c9ee8ab91872c4f824a960a1d11e908bad2675e8c19",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-saas-demo-marca-salao-001/derivatives/camp-saas-demo-marca-salao-001-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 177635,
+      "sha256": "74ccc468c93ad0e2904860f83ca0f69c1a5a152dbe9c1fa475f7ca79288bfb37",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#121620"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-formats.png"
     }
   },
   "command": "python tools/derivative_formats.py --tenant marca-salao --campaign camp-saas-demo-marca-salao-001",

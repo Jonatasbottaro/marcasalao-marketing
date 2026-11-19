@@ -1,21 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tenantId": "multitrack-hub",
   "slug": "camp-shorts-stems-workflow-003",
   "preset": "shorts-completo",
-  "brand": {
-    "tenantId": "multitrack-hub",
-    "brandName": "Multitrack Hub",
-    "monogram": "MH",
-    "domain": "multitrackhub.com.br",
-    "palettePrimary": "#06B6D4"
-  },
-  "guardrails": {
-    "allowAudioTrack": true,
-    "requireSrt": true,
-    "requireExternalNarration": false,
-    "appliedAudioPolicy": "aac-44100-stereo"
-  },
+  "sourceVideoSha256": "50b0a0fcfa8f5e6a2e3f594e96b6886ee1ec49101b33116bf64f5d20f9d7e686",
+  "allowAudioTrack": true,
+  "appliedAudioPolicy": "aac-44100-stereo",
   "source": {
     "path": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
     "sha256": "50b0a0fcfa8f5e6a2e3f594e96b6886ee1ec49101b33116bf64f5d20f9d7e686",
@@ -37,41 +27,16 @@
     }
   },
   "derivatives": {
-    "cover": {
-      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-cover.png",
-      "sha256": "3d9a6246c9a673e761130dc02289d6e86d090d67c7b75342fe255cdb05d6f76e",
-      "bytes": 233744,
-      "ffprobe": {
-        "videoStreams": 1,
-        "audioStreams": 0,
-        "codec": "png",
-        "width": 1080,
-        "height": 1920,
-        "fps": 25.0,
-        "pixFmt": "rgb24",
-        "duration": 0.0,
-        "audioCodec": null,
-        "audioSampleRate": null,
-        "audioChannels": null
-      },
-      "versioned": false,
-      "kind": "cover-png",
-      "codec": "png",
-      "width": 1080,
-      "height": 1920,
-      "timestampSeconds": 2.0,
-      "border": {
-        "color": "#06B6D4",
-        "thickness": 8,
-        "inset": 12,
-        "alpha": 0.85
-      },
-      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
-    },
-    "square": {
+    "1x1": {
       "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-1x1.mp4",
-      "sha256": "712c1e8b40ad069714c5d2292b09387e070bc93b222a0b0e34bdc87dbfd38c88",
-      "bytes": 830517,
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 854461,
+      "sha256": "9a5d949f1bf7558cd1acb0ebca4f7cc5b49e0fa732f2470b3b034954708513e0",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -85,32 +50,33 @@
         "audioSampleRate": 44100,
         "audioChannels": 2
       },
-      "versioned": false,
       "kind": "1x1",
-      "width": 1080,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#06B6D4",
-        "tintOpacity": 0.12
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
       },
-      "audioStreams": 1,
-      "audioCodec": "aac",
       "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
     },
-    "wide": {
+    "16x9": {
       "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-16x9.mp4",
-      "sha256": "8b9156bf3cf7da24951e052646c5d7bde20b0ce99ac160c9a253e2d446469046",
-      "bytes": 859991,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 893391,
+      "sha256": "dec1784fcce67081dc2f7937ff7c9fb229928bf69e6bce15604353d2598e6175",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -124,27 +90,129 @@
         "audioSampleRate": 44100,
         "audioChannels": 2
       },
-      "versioned": false,
       "kind": "16x9",
-      "width": 1920,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#06B6D4",
-        "tintOpacity": 0.12
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
       },
-      "audioStreams": 1,
-      "audioCodec": "aac",
       "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 220651,
+      "sha256": "9fb74cbb11ff62210515c496794252390433b23a5cf41aeef7b96b86b9235a2c",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#06B6D4",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 156702,
+      "sha256": "243e0d42d2d2c47e378373088d6148b8d9d99c1ca57e03bef0cdea9b0449eed2",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-shorts-stems-workflow-003/derivatives/camp-shorts-stems-workflow-003-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 109604,
+      "sha256": "90ee5ead70fdb9f24139742f6f232e9822374bae2c72164a7e66ed97b63d925a",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#090D16"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-formats.png"
     }
   },
   "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-stems-workflow-003",
