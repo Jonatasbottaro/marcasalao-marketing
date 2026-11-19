@@ -1,6 +1,6 @@
 # Padrão de Rastreio UTM — Marca Salão
 
-> **Versão:** 1.0  
+> **Versão:** 1.2  
 > **Data:** 2026-11-18  
 > **Responsável:** pendente de definição  
 > **Status:** rascunho para validação do titular
@@ -81,6 +81,54 @@ https://marcasalao.com.br/?utm_source=instagram&utm_medium=stories&utm_campaign=
 - **Acesso:** [PENDENTE — inserir responsável e nível de acesso]
 - **Dashboard de campanha:** [PENDENTE — inserir link do relatório oficial]
 
+### 5.1 Passo a passo de configuração (antes da primeira publicação)
+
+A escolha da ferramenta é decisão do titular. Os passos abaixo valem para os três
+candidatos avaliados (GA4, Plausible, Umami) e devem ser executados **por domínio
+de tenant** (`marcasalao.com.br`, `meusalao.com.br`, `estudioflow.com.br`,
+`multitrackhub.com.br`) antes da primeira publicação com link rastreado.
+
+**Opção A — GA4 (Google Analytics 4)**
+
+1. Criar uma propriedade GA4 por domínio em analytics.google.com.
+2. Instalar a Google tag (gtag.js) em todas as páginas do site, no template base.
+3. Confirmar que a página de destino preserva a query string UTM — nenhum
+   redirect pode descartar os parâmetros `utm_*`.
+4. Verificar o relatório de aquisição (fontes de tráfego / origem e mídia):
+   `utm_source` / `utm_medium` devem aparecer como origem/mídia da sessão.
+5. Teste de ponta a ponta: abrir uma URL da matriz da seção 6 em janela limpa
+   de navegador, navegar ao menos uma página e conferir a sessão no relatório
+   em tempo real.
+6. Registrar nesta seção o acesso e o link do relatório oficial.
+
+**Opção B — Plausible**
+
+1. Criar o site no Plausible (nuvem em plausible.io) ou em instância self-hosted.
+2. Inserir o script do Plausible (`script.js` com `data-domain`) no `<head>` de
+   todas as páginas.
+3. Os parâmetros UTM são capturados automaticamente como propriedades (source,
+   medium, campaign, content), visíveis em Top Sources e nos filtros UTM.
+4. Teste de ponta a ponta igual ao da Opção A, conferindo o painel em tempo real.
+5. Registrar nesta seção o acesso e o link do painel.
+
+**Opção C — Umami**
+
+1. Criar a instância na nuvem (umami.is) ou self-hosted (Docker).
+2. Adicionar o website no painel e inserir o script de rastreamento no `<head>`.
+3. Ativar o rastreamento UTM nas configurações do website (utm_source,
+   utm_medium, utm_campaign, utm_content).
+4. Teste de ponta a ponta igual ao da Opção A, conferindo a visão de UTM nos
+   relatórios do website.
+5. Registrar nesta seção o acesso e o link do painel.
+
+**Checklist comum às três opções**
+
+1. A ferramenta deve ser escolhida e validada pelo titular antes da primeira
+   publicação com link rastreado.
+2. Sem analytics validado, manter a marcação `<!-- rastreamento: NÃO CONFIGURADO -->`
+   (regra 4 da seção 4) e não declarar links UTM como ativos.
+3. Não alterar parâmetros UTM de posts já publicados (regra 5 da seção 4).
+
 > [!NOTE]
 > Esta seção deve ser preenchida antes das primeiras publicações com link rastreado.
 > Enquanto estiver como PENDENTE, nenhum link UTM deve ser declarado como ativo
@@ -122,19 +170,34 @@ Todas as cópias de legenda geradas são auditadas com
 qualquer palavra proibida de `forbiddenClaims`/`forbiddenUiElements` aparecer,
 o script aborta e não grava o pacote parcial.
 
-### Tabela de URLs geradas (2026-11-18)
+### Tabela consolidada de URLs (8 campanhas × 3 canais = 24 URLs)
 
 | Tenant | Campanha (slug) | Canal | URL rastreada |
 |--------|-----------------|-------|---------------|
+| estudio-flow | camp-saas-demo-estudio-flow-001 | Instagram Reels | https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow |
+| estudio-flow | camp-saas-demo-estudio-flow-001 | YouTube Shorts | https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow |
+| estudio-flow | camp-saas-demo-estudio-flow-001 | Facebook Reels | https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow |
 | marca-salao | camp-saas-demo-marca-salao-001 | Instagram Reels | https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
 | marca-salao | camp-saas-demo-marca-salao-001 | YouTube Shorts | https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
 | marca-salao | camp-saas-demo-marca-salao-001 | Facebook Reels | https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | Instagram Reels | https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | YouTube Shorts | https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | Facebook Reels | https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao |
 | meu-salao | camp-saas-demo-meu-salao-001 | Instagram Reels | https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
 | meu-salao | camp-saas-demo-meu-salao-001 | YouTube Shorts | https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
 | meu-salao | camp-saas-demo-meu-salao-001 | Facebook Reels | https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao |
+| meu-salao | camp-saas-demo-meu-salao-002 | Instagram Reels | https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao |
+| meu-salao | camp-saas-demo-meu-salao-002 | YouTube Shorts | https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao |
+| meu-salao | camp-saas-demo-meu-salao-002 | Facebook Reels | https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao |
 | multitrack-hub | camp-shorts-completo-multitrack-001 | Instagram Reels | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
 | multitrack-hub | camp-shorts-completo-multitrack-001 | YouTube Shorts | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
 | multitrack-hub | camp-shorts-completo-multitrack-001 | Facebook Reels | https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-rateios-002 | Instagram Reels | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-rateios-002 | YouTube Shorts | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-rateios-002 | Facebook Reels | https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-stems-workflow-003 | Instagram Reels | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-stems-workflow-003 | YouTube Shorts | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub |
+| multitrack-hub | camp-shorts-stems-workflow-003 | Facebook Reels | https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub |
 
 > [!IMPORTANT]
 > Enquanto a ferramenta de analytics (seção 5) estiver como PENDENTE, nenhum
@@ -142,9 +205,63 @@ o script aborta e não grava o pacote parcial.
 
 ---
 
-## 7. Histórico
+## 7. Calendário editorial automatizado (tools/campaign_calendar.py)
+
+A partir da versão 1.2, o cronograma editorial das campanhas publicáveis é gerado
+por `tools/campaign_calendar.py`, que lê os tenants em `tenants/*/` e os pacotes
+em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/checklist-publicacao.json` e
+distribui as campanhas em um cronograma intercalado:
+
+- **Nunca duas campanhas do mesmo tenant no mesmo dia** (regra dura, validada
+  por teste automatizado).
+- Até 2 campanhas por dia; cada campanha cobre os 3 canais (Instagram Reels,
+  YouTube Shorts, Facebook Reels) — 8 campanhas × 3 canais = 24 slots.
+- Cada slot recebe janela de horário sugerida, política de áudio do tenant
+  (`-an` para estudio-flow, marca-salao e meu-salao; faixa própria para
+  multitrack-hub) e a URL UTM da matriz da seção 6.
+- Todo texto gerado é auditado por tenant com
+  `tenant_validator.validate_text_against_guardrails(...)`; qualquer violação
+  aborta antes de gravar.
+- `statusEditorial: "aguardando_aprovacao_titular"` e `autoPublish: false` em
+  todos os slots: publicação 100% manual e condicionada à aprovação do titular.
+
+### CLI
+
+```text
+# Cronograma a partir de uma data (ISO YYYY-MM-DD)
+python tools/campaign_calendar.py --start-date 2026-11-23
+
+# Saída JSON com hashes SHA-256 dos arquivos gerados
+python tools/campaign_calendar.py --start-date 2026-11-23 --json
+```
+
+### Saídas
+
+- `04-legendas/calendario-editorial.json`: 24 slots estruturados (`slotId`,
+  `dataSugerida`, `janelaHorario`, `tenantId`, `brandName`, `slug`, `canal`,
+  `formato`, `audioPolicy`, `utmUrl`, `statusEditorial`, `autoPublish`).
+- `04-legendas/calendario-editorial.md`: cronograma visual para operação manual,
+  checklist pré-publicação (incluindo o lembrete de locução externa para os
+  tenants `-an`) e a matriz UTM consolidada.
+
+### Cronograma vigente (gerado em 2026-11-18, início 2026-11-23)
+
+| Data | Campanhas do dia | Tenants |
+|------|------------------|---------|
+| 2026-11-23 | camp-shorts-completo-multitrack-001; camp-saas-demo-marca-salao-001 | multitrack-hub, marca-salao |
+| 2026-11-24 | camp-saas-demo-meu-salao-001; camp-shorts-rateios-002 | meu-salao, multitrack-hub |
+| 2026-11-25 | camp-saas-demo-estudio-flow-001; camp-saas-demo-ns001-agenda-001 | estudio-flow, marca-salao |
+| 2026-11-26 | camp-saas-demo-meu-salao-002; camp-shorts-stems-workflow-003 | meu-salao, multitrack-hub |
+
+> A fonte da verdade é `04-legendas/calendario-editorial.json`; regenerar com
+> outra data inicial substitui o cronograma vigente.
+
+---
+
+## 8. Histórico
 
 | Data       | Autor       | Alteração |
 |------------|-------------|-----------|
 | 2026-11-18 | Agente — codex/fase1-conformidade-editorial | Criação do padrão inicial |
 | 2026-11-18 | Agente 3 — codex/etapa3-agente3-publish-utm | Geração automatizada de URLs via tools/publish_pack.py e tabela de URLs por canal/tenant |
+| 2026-11-18 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário editorial automatizado (campaign_calendar.py), matriz UTM consolidada de 8 campanhas × 3 canais (24 URLs) e passo a passo de analytics (GA4/Plausible/Umami) |
