@@ -30,7 +30,77 @@
         "ffmpegFlag": "-an",
         "requireSrt": true,
         "requireExternalNarration": true
-      }
+      },
+      "routeRules": {
+        "/aulas/[studioId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-aluno-ficticia",
+            "escolha-modalidade",
+            "escolha-instrutor",
+            "calculo-horarios-livres",
+            "reserva-aula-experimental"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "promessa-cura-clinica",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/turmas": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-grade-turmas",
+            "filtro-instrutor-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "cura clínica",
+        "cura clinica",
+        "cura garantida",
+        "tratamento médico",
+        "tratamento medico",
+        "emagrecimento garantido",
+        "perda de peso garantida",
+        "resultado imediato",
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
     },
     {
       "tenantId": "marca-salao",
@@ -53,7 +123,73 @@
         "ffmpegFlag": "-an",
         "requireSrt": true,
         "requireExternalNarration": true
-      }
+      },
+      "routeRules": {
+        "/booking/[salonId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-cliente-ficticia",
+            "escolha-servico",
+            "escolha-profissional",
+            "calculo-horarios-livres",
+            "confirmacao-agendamento"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/agenda": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-agendamentos",
+            "filtro-profissional-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show",
+        "aumento de faturamento",
+        "faturamento garantido",
+        "agenda sempre cheia",
+        "meu salão",
+        "meu salao"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
     },
     {
       "tenantId": "meu-salao",
@@ -76,7 +212,71 @@
         "ffmpegFlag": "-an",
         "requireSrt": true,
         "requireExternalNarration": true
-      }
+      },
+      "routeRules": {
+        "/booking/[salonId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-cliente-ficticia",
+            "escolha-servico",
+            "escolha-profissional",
+            "calculo-horarios-livres",
+            "confirmacao-agendamento"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/agenda": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-agendamentos",
+            "filtro-profissional-status",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp",
+        "sms",
+        "lembrete",
+        "24 horas",
+        "24h",
+        "automático",
+        "automatico",
+        "automática",
+        "automatica",
+        "automatizado",
+        "automatizar",
+        "confirmação automática",
+        "confirmacao automatica",
+        "envio automático",
+        "envio automatico",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "no-show",
+        "aumento de faturamento",
+        "faturamento garantido",
+        "agenda sempre cheia"
+      ],
+      "forbiddenUiElements": [
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "checkout",
+        "cartão de crédito",
+        "cartao de credito"
+      ]
     },
     {
       "tenantId": "multitrack-hub",
@@ -99,7 +299,48 @@
         "ffmpegFlag": "-an",
         "requireSrt": true,
         "requireExternalNarration": false
-      }
+      },
+      "routeRules": {
+        "/": {
+          "surface": "public-catalog",
+          "allowedResponsibilities": [
+            "busca-catalogo-multitracks",
+            "visualizacao-stems-bpm-tom",
+            "direcionamento-site-oficial"
+          ],
+          "forbiddenResponsibilities": [
+            "configuracao-whatsapp-comercial",
+            "alteracao-marca-salao"
+          ]
+        },
+        "/rateios": {
+          "surface": "group-splits",
+          "allowedResponsibilities": [
+            "listagem-rateios-disponiveis",
+            "status-vagas-rateio",
+            "detalhes-faixas-inclusas"
+          ],
+          "forbiddenResponsibilities": [
+            "cobranca-automatica-externa",
+            "garantia-entrega-instantanea-sem-revisao"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "whatsapp comercial",
+        "telefone comercial",
+        "faturamento garantido",
+        "lucro garantido",
+        "sem direitos autorais garantido",
+        "gratuito ilimitado",
+        "100% livre de licenciamento",
+        "download automatico ilimitado"
+      ],
+      "forbiddenUiElements": [
+        "whatsapp",
+        "telefone comercial",
+        "checkout simulado"
+      ]
     }
   ],
   "campaigns": [
@@ -107,6 +348,7 @@
       "tenantId": "estudio-flow",
       "slug": "camp-saas-demo-estudio-flow-001",
       "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001",
+      "titulo": "Conheca o Estúdio Flow",
       "preset": "saas-demo",
       "politicaAudio": "-an",
       "audioStreams": 0,
@@ -122,7 +364,10 @@
         "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
         "bytes": 438290,
         "audioStreams": 0,
-        "audioCodec": null
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt",
@@ -147,6 +392,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/estudio-flow/camp-saas-demo-estudio-flow-001/instagram-reels.md",
@@ -178,6 +426,7 @@
       "tenantId": "marca-salao",
       "slug": "camp-saas-demo-marca-salao-001",
       "campaignId": "SAAS-DEMO-MARCA-SALAO-001",
+      "titulo": "Conheca o Marca Salão",
       "preset": "saas-demo",
       "politicaAudio": "-an",
       "audioStreams": 0,
@@ -193,7 +442,10 @@
         "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
         "bytes": 445686,
         "audioStreams": 0,
-        "audioCodec": null
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
@@ -218,6 +470,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-marca-salao-001/instagram-reels.md",
@@ -249,6 +504,7 @@
       "tenantId": "marca-salao",
       "slug": "camp-saas-demo-ns001-agenda-001",
       "campaignId": "SAAS-DEMO-NS001-AGENDA-001",
+      "titulo": "Conheca o Marca Salão",
       "preset": "saas-demo",
       "politicaAudio": "-an",
       "audioStreams": 0,
@@ -264,7 +520,10 @@
         "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
         "bytes": 585286,
         "audioStreams": 0,
-        "audioCodec": null
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt",
@@ -289,6 +548,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/marca-salao/camp-saas-demo-ns001-agenda-001/instagram-reels.md",
@@ -320,6 +582,7 @@
       "tenantId": "meu-salao",
       "slug": "camp-saas-demo-meu-salao-001",
       "campaignId": "SAAS-DEMO-MEU-SALAO-001",
+      "titulo": "Conheca o Meu Salão",
       "preset": "saas-demo",
       "politicaAudio": "-an",
       "audioStreams": 0,
@@ -335,7 +598,10 @@
         "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
         "bytes": 418019,
         "audioStreams": 0,
-        "audioCodec": null
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt",
@@ -360,6 +626,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-001/instagram-reels.md",
@@ -391,6 +660,7 @@
       "tenantId": "meu-salao",
       "slug": "camp-saas-demo-meu-salao-002",
       "campaignId": "SAAS-DEMO-MEU-SALAO-002",
+      "titulo": "Conheca o Meu Salão",
       "preset": "saas-demo",
       "politicaAudio": "-an",
       "audioStreams": 0,
@@ -406,7 +676,10 @@
         "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
         "bytes": 513587,
         "audioStreams": 0,
-        "audioCodec": null
+        "audioCodec": null,
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
@@ -431,6 +704,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/instagram-reels.md",
@@ -462,6 +738,7 @@
       "tenantId": "multitrack-hub",
       "slug": "camp-shorts-completo-multitrack-001",
       "campaignId": "SHORTS-COMPLETO-MULTITRACK-001",
+      "titulo": "Conheca o Multitrack Hub",
       "preset": "shorts-completo",
       "politicaAudio": "AAC",
       "audioStreams": 1,
@@ -477,7 +754,10 @@
         "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
         "bytes": 352348,
         "audioStreams": 1,
-        "audioCodec": "aac"
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
@@ -502,6 +782,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-completo-multitrack-001/instagram-reels.md",
@@ -533,6 +816,7 @@
       "tenantId": "multitrack-hub",
       "slug": "camp-shorts-rateios-002",
       "campaignId": "SHORTS-RATEIOS-MULTITRACK-002",
+      "titulo": "Conheca o Multitrack Hub",
       "preset": "shorts-completo",
       "politicaAudio": "AAC",
       "audioStreams": 1,
@@ -548,7 +832,10 @@
         "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
         "bytes": 353932,
         "audioStreams": 1,
-        "audioCodec": "aac"
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt",
@@ -573,6 +860,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-rateios-002/instagram-reels.md",
@@ -604,6 +894,7 @@
       "tenantId": "multitrack-hub",
       "slug": "camp-shorts-stems-workflow-003",
       "campaignId": "SHORTS-STEMS-WORKFLOW-MULTITRACK-003",
+      "titulo": "Conheca o Multitrack Hub",
       "preset": "shorts-completo",
       "politicaAudio": "AAC",
       "audioStreams": 1,
@@ -619,7 +910,10 @@
         "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
         "bytes": 446684,
         "audioStreams": 1,
-        "audioCodec": "aac"
+        "audioCodec": "aac",
+        "variants": [
+          "9x16"
+        ]
       },
       "srt": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
@@ -644,6 +938,9 @@
           24.0
         ]
       },
+      "cover": null,
+      "formats": null,
+      "derivatives": null,
       "copies": {
         "instagram": {
           "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-shorts-stems-workflow-003/instagram-reels.md",

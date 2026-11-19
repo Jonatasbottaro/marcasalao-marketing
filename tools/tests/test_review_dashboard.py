@@ -1,19 +1,24 @@
 """Testes automatizados (unittest) para tools/review_dashboard.py (Etapa 4 - Agente 2).
 
-Cobre obrigatoriamente:
-  1. Geracao do portal consolidado (05-review-portal/index.html,
-     portal-data.json e README.md) para 4 tenants / 8 campanhas.
-  2. Integridade dos hashes SHA-256 (srt, narracao, storyboard) declarados no
-     portal-data.json contra os arquivos reais em disco e contra o manifest.json
-     de cada entrega.
-  3. Zero vazamento de caminhos fora da raiz: somente caminhos relativos
-     contidos no checkout (sem caminho absoluto, sem UNC, sem "..").
-  4. Determinismo do build (duas geracoes produzem bytes identicos).
-  5. Marcadores da interface (filtros, abas, checklist, exportacao).
-  6. Servidor HTTP local (--serve) em porta efemera (port=0): index, dados e
-     storyboard 200; MP4 com suporte a Range (206/416); travessia de caminho
-     e extensao nao permitida bloqueadas (404); metodo de escrita recusado.
-  7. CLI --build --json com codigo de saida 0 e resumo JSON consistente.
+Cobre obrigatoriamente (brief expandido da Etapa 4):
+  1. Build estatico gerando index.html, portal-data.json e README.md com
+     4 tenants e 8 campanhas; CLI --build --json encerra com codigo 0.
+  2. Sanitizacao de paths: zero ocorrencias de caminhos absolutos do host
+     (D:/, C:/) em portal-data.json e no bloco embutido do index.html.
+  3. Escape seguro de HTML/JSON: strings hostis (</script>, aspas, tags)
+     nao quebram o script embutido e fazem roundtrip identico.
+  4. Resolucao de .workspace/ em worktrees via git rev-parse
+     --git-common-dir (raiz principal) e fallback para raizes sem git.
+  5. Servidor HTTP efemero (port=0): /, /api/health, /api/data,
+     /media/storyboard|cover|formats/<tenant>/<slug>,
+     /media/video/<tenant>/<slug>/<variante> com Range (200/206/416),
+     travessia de caminho bloqueada (404) e metodos de escrita recusados
+     (exceto POST /api/approvals).
+  6. Roundtrip POST + GET /api/approvals persistindo em
+     .workspace/tmp/aprovacoes-titular.json com validacao estrita de
+     schema e limpeza apos o teste.
+  7. autoPublish: false e URLs UTM nos 3 canais para as 8 campanhas;
+     guardrails por tenant (rotas autorizadas e claims bloqueados).
 """
 
 from __future__ import annotations
@@ -49,9 +54,9 @@ EXPECTED_CAMPAIGNS = {
     ("multitrack-hub", "camp-shorts-rateios-002"),
     ("multitrack-hub", "camp-shorts-stems-workflow-003"),
 }
-PATH_KEYS_SUFFIX = ("Path", "Root")
 
 MP4_BYTES = bytes(range(64))
+MP4_DERIV_BYTES = bytes(range(64, 128))
 
 
 def _sha256_abs(path: str) -> str:
@@ -102,8 +107,162 @@ def _http_method(port: int, method: str, path: str):
         conn.close()
 
 
+def _http_post(port: int, path: str, body: bytes):
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    try:
+        conn.request(
+            "POST",
+            path,
+            body=body,
+            headers={"Content-Type": "application/json", "Content-Length": str(len(body))},
+        )
+        resp = conn.getresponse()
+        return resp.status, resp.read()
+    finally:
+        conn.close()
+
+
+def _git(root: str, *args: str) -> str:
+    saida = subprocess.run(
+        ["git", "-C", root, *args], capture_output=True, text=True, timeout=15
+    )
+    if saida.returncode != 0:
+        raise AssertionError(f"git {' '.join(args)} falhou: {saida.stderr.strip()}")
+    return saida.stdout.strip()
+
+
+def _fake_portal_data() -> dict:
+    return {
+        "schemaVersion": 1,
+        "generatedBy": "tools/review_dashboard.py",
+        "deliveriesRoot": "02-reels-shorts/deliveries",
+        "pacotesRoot": "04-legendas/pacotes-publicacao",
+        "archivesRoot": ".workspace/archives",
+        "totals": {"tenants": 1, "campaigns": 1},
+        "tenants": [
+            {
+                "tenantId": "t-tenant",
+                "brandName": "Tenant Teste",
+                "displayTitle": "TENANT TESTE",
+                "monogram": "TT",
+                "domain": "t.example",
+                "tagline": "TAGLINE",
+                "palette": {
+                    "primary": "#10B981",
+                    "secondary": "#4F8CFF",
+                    "accent": "#F5C107",
+                    "background": "#121620",
+                    "surface": "#222C40",
+                    "textPrimary": "#F5F7FA",
+                    "textMuted": "#B4C0D2",
+                },
+                "audioPolicy": {
+                    "allowAudioTrack": False,
+                    "ffmpegFlag": "-an",
+                    "requireSrt": True,
+                    "requireExternalNarration": True,
+                },
+                "routeRules": {},
+                "forbiddenClaims": [],
+                "forbiddenUiElements": [],
+            }
+        ],
+        "campaigns": [
+            {
+                "tenantId": "t-tenant",
+                "slug": "t-slug",
+                "campaignId": "t-slug",
+                "titulo": "Tenant Teste",
+                "preset": "saas-demo",
+                "politicaAudio": "-an",
+                "audioStreams": 0,
+                "format": {"width": 1080, "height": 1920, "fps": 30, "duration": 30.0},
+                "scenes": 4,
+                "video": {
+                    "archiveRelPath": ".workspace/archives/t-slug/t-slug.mp4",
+                    "sha256": "a" * 64,
+                    "bytes": 64,
+                    "audioStreams": 0,
+                    "audioCodec": None,
+                    "variants": ["9x16", "1x1"],
+                },
+                "srt": {
+                    "relPath": "02-reels-shorts/deliveries/t-tenant/t-slug/t-slug.srt",
+                    "sha256": "b" * 64,
+                    "bytes": 10,
+                    "text": "1\n00:00:00,000 --> 00:00:02,000\nOi",
+                },
+                "narracao": {
+                    "relPath": "02-reels-shorts/deliveries/t-tenant/t-slug/t-slug_narracao.txt",
+                    "sha256": "c" * 64,
+                    "bytes": 8,
+                    "text": "Narração de teste",
+                },
+                "storyboard": {
+                    "relPath": "02-reels-shorts/deliveries/t-tenant/t-slug/preview-storyboard.png",
+                    "sha256": "d" * 64,
+                    "bytes": 9,
+                    "timestampsSeconds": [2.0, 8.0, 16.0, 24.0],
+                },
+                "copies": {
+                    "instagram": {
+                        "relPath": "04-legendas/pacotes-publicacao/t-tenant/t-slug/instagram-reels.md",
+                        "text": "Tenant Teste\n\nhttps://t.example/?utm_source=instagram",
+                        "utmUrl": "https://t.example/?utm_source=instagram",
+                    },
+                    "youtube": {
+                        "relPath": "04-legendas/pacotes-publicacao/t-tenant/t-slug/youtube-shorts.md",
+                        "text": "Tenant Teste\n\nhttps://t.example/?utm_source=youtube",
+                        "utmUrl": "https://t.example/?utm_source=youtube",
+                    },
+                    "facebook": {
+                        "relPath": "04-legendas/pacotes-publicacao/t-tenant/t-slug/facebook-reels.md",
+                        "text": "Tenant Teste\n\nhttps://t.example/?utm_source=facebook",
+                        "utmUrl": "https://t.example/?utm_source=facebook",
+                    },
+                },
+                "pacote": {
+                    "checklistRelPath": "04-legendas/pacotes-publicacao/t-tenant/t-slug/checklist-publicacao.json",
+                    "guardrailsAudited": True,
+                    "guardrailStatus": {"srt": "ok", "narration": "ok"},
+                    "autoPublish": False,
+                },
+            }
+        ],
+    }
+
+
+def _doc_aprovacoes() -> dict:
+    return {
+        "schemaVersion": 2,
+        "arquivo": "aprovacoes-titular.json",
+        "origem": "05-review-portal",
+        "exportadoEm": "2026-11-18T12:00:00Z",
+        "revisor": "Titular Teste",
+        "resumo": {"totalCampanhas": 1, "aprovadas": 1, "ajustes": 0, "pendentes": 0},
+        "campanhas": [
+            {
+                "tenantId": "t-tenant",
+                "slug": "t-slug",
+                "campaignId": "t-slug",
+                "preset": "saas-demo",
+                "politicaAudio": "-an",
+                "decisao": "aprovado",
+                "locucaoExternaConferida": True,
+                "observacoes": "Aprovado no teste",
+                "hashes": {
+                    "video": "a" * 64,
+                    "srt": "b" * 64,
+                    "narracao": "c" * 64,
+                    "storyboard": "d" * 64,
+                },
+            }
+        ],
+    }
+
+
 class HelpersTest(unittest.TestCase):
-    """Unidades internas: verificacao de hash e extracao de URL UTM."""
+    """Unidades internas: hash, UTM e resolucao de .workspace/."""
 
     def test_01_verify_sha256_ok_and_mismatch(self) -> None:
         os.makedirs(render_local.fs_path(TMP_DIR), exist_ok=True)
@@ -132,153 +291,254 @@ class HelpersTest(unittest.TestCase):
         self.assertIn("utm_campaign=camp-x", url)
         self.assertIsNone(review_dashboard._extract_utm_url("sem url aqui"))
 
+    def test_03_resolve_workspace_dir(self) -> None:
+        # Worktree (git-dir != git-common-dir): resolve para o .workspace/
+        # da raiz principal, mesmo que a worktree tenha .workspace/ proprio.
+        common = _git(REPO_ROOT, "rev-parse", "--git-common-dir")
+        raiz_principal = os.path.dirname(os.path.abspath(os.path.join(REPO_ROOT, common)))
+        esperado = os.path.normpath(os.path.join(raiz_principal, ".workspace"))
+        obtido = os.path.normpath(review_dashboard.resolve_workspace_dir(REPO_ROOT))
+        self.assertEqual(obtido, esperado)
+        self.assertTrue(os.path.isdir(render_local.fs_path(esperado)))
+
+        # Raiz que nao e toplevel de checkout (raiz falsa dentro da worktree):
+        # cai no proprio .workspace/.
+        fake = os.path.join(TMP_DIR, "resolver-probe")
+        _rmtree(fake)
+        os.makedirs(render_local.fs_path(os.path.join(fake, ".workspace", "archives")))
+        self.assertEqual(
+            os.path.normpath(review_dashboard.resolve_workspace_dir(fake)),
+            os.path.normpath(os.path.join(fake, ".workspace")),
+        )
+        _rmtree(fake)
+
+        # Caminho do arquivo de aprovacoes fica dentro do workspace resolvido.
+        store = review_dashboard.approvals_store_path(REPO_ROOT)
+        self.assertEqual(
+            os.path.normpath(store),
+            os.path.normpath(os.path.join(esperado, "tmp", "aprovacoes-titular.json")),
+        )
+
 
 class BuildPortalTest(unittest.TestCase):
+    """Build consolidado sobre a raiz real da worktree."""
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.summary = review_dashboard.build_portal(root=REPO_ROOT)
-        with open(render_local.fs_path(os.path.join(PORTAL_DIR, "portal-data.json")), "r", encoding="utf-8") as handle:
+        with open(
+            render_local.fs_path(os.path.join(PORTAL_DIR, "portal-data.json")),
+            "r",
+            encoding="utf-8",
+        ) as handle:
             cls.data = json.load(handle)
 
-    def test_03_generates_portal_files(self) -> None:
-        self.assertTrue(self.summary.get("ok"))
+    def test_04_generates_portal_files(self) -> None:
         for filename in ("index.html", "portal-data.json", "README.md"):
             abs_path = os.path.join(PORTAL_DIR, filename)
             self.assertTrue(os.path.isfile(render_local.fs_path(abs_path)), filename)
-            self.assertGreater(os.path.getsize(render_local.fs_path(abs_path)), 0, filename)
-            entry = self.summary["files"][filename]
-            self.assertEqual(entry["sha256"], _sha256_abs(abs_path))
-            self.assertEqual(entry["bytes"], os.path.getsize(render_local.fs_path(abs_path)))
+            info = self.summary["files"][filename]
+            self.assertEqual(info["sha256"], _sha256_abs(abs_path))
+            self.assertEqual(info["bytes"], os.path.getsize(render_local.fs_path(abs_path)))
+        self.assertTrue(self.summary["ok"])
+        self.assertEqual(self.summary["outputDir"], "05-review-portal")
 
-    def test_04_totals_four_tenants_eight_campaigns(self) -> None:
+    def test_05_totals_four_tenants_eight_campaigns(self) -> None:
         self.assertEqual(self.summary["totalTenants"], 4)
         self.assertEqual(self.summary["totalCampaigns"], 8)
-        self.assertEqual(tuple(sorted(self.summary["tenants"])), EXPECTED_TENANTS)
-        self.assertEqual(self.data["totals"]["tenants"], 4)
-        self.assertEqual(self.data["totals"]["campaigns"], 8)
-        tenants_data = {t["tenantId"]: t for t in self.data["tenants"]}
-        self.assertEqual(tuple(sorted(tenants_data)), EXPECTED_TENANTS)
-        campaigns = self.data["campaigns"]
-        self.assertEqual(len(campaigns), 8)
-        self.assertEqual({(c["tenantId"], c["slug"]) for c in campaigns}, EXPECTED_CAMPAIGNS)
-        for tenant_id, tenant in tenants_data.items():
-            with self.subTest(tenant=tenant_id):
-                for key in ("brandName", "monogram", "domain", "palette", "audioPolicy"):
-                    self.assertIn(key, tenant)
-                for key in ("primary", "secondary", "accent", "background"):
-                    self.assertIn(key, tenant["palette"])
-                self.assertIn(tenant["audioPolicy"]["ffmpegFlag"], ("-an", "aac"))
+        self.assertEqual(self.data["totals"], {"tenants": 4, "campaigns": 8})
+        self.assertEqual(
+            sorted(t["tenantId"] for t in self.data["tenants"]), list(EXPECTED_TENANTS)
+        )
+        self.assertEqual(
+            {(c["tenantId"], c["slug"]) for c in self.data["campaigns"]},
+            EXPECTED_CAMPAIGNS,
+        )
 
-    def test_05_campaign_fields(self) -> None:
-        for campaign in self.data["campaigns"]:
-            slug = campaign["slug"]
-            with self.subTest(slug=slug):
-                self.assertIn(campaign["preset"], ("saas-demo", "shorts-completo"))
-                self.assertIn(campaign["politicaAudio"], ("-an", "AAC"))
-                self.assertTrue(campaign["campaignId"])
-                self.assertGreater(campaign["format"]["duration"], 0)
-                self.assertGreater(campaign["scenes"], 0)
-                self.assertIn("-->", campaign["srt"]["text"])
-                self.assertGreater(len(campaign["narracao"]["text"].strip()), 0)
-                self.assertTrue(campaign["storyboard"]["relPath"].endswith("preview-storyboard.png"))
-                self.assertTrue(campaign["video"]["archiveRelPath"].endswith(".mp4"))
-                for channel in ("instagram", "youtube", "facebook"):
-                    copy = campaign["copies"][channel]
-                    self.assertGreater(len(copy["text"].strip()), 0)
-                    self.assertIsNotNone(copy["utmUrl"], channel)
-                    self.assertIn(f"utm_campaign={slug}", copy["utmUrl"])
-                pacote = campaign["pacote"]
-                self.assertTrue(pacote["checklistRelPath"].endswith("checklist-publicacao.json"))
-                self.assertFalse(pacote["autoPublish"])
-                self.assertTrue(pacote["guardrailsAudited"])
-                if campaign["preset"] == "saas-demo":
-                    self.assertEqual(campaign["politicaAudio"], "-an")
-                    self.assertEqual(campaign["audioStreams"], 0)
-                else:
-                    self.assertEqual(campaign["politicaAudio"], "AAC")
-                    self.assertEqual(campaign["audioStreams"], 1)
+    def test_06_campaign_fields(self) -> None:
+        for c in self.data["campaigns"]:
+            with self.subTest(slug=c["slug"]):
+                self.assertIn(c["politicaAudio"], ("-an", "AAC"))
+                self.assertTrue(c["titulo"])
+                self.assertIsInstance(c["titulo"], str)
+                fmt = c["format"]
+                self.assertEqual(fmt["duration"], 30.0)
+                self.assertEqual(fmt["fps"], 30)
+                self.assertEqual(fmt["width"], 1080)
+                self.assertEqual(fmt["height"], 1920)
+                # variante primaria derivada da geometria (1080x1920 -> 9x16)
+                self.assertEqual(c["video"]["variants"][0], "9x16")
+                self.assertIn("9x16", c["video"]["variants"])
+                # opcionais ausentes hoje: sem cover, formats ou derivatives
+                self.assertIsNone(c.get("cover"))
+                self.assertIsNone(c.get("formats"))
+                self.assertIsNone(c.get("derivatives"))
+                self.assertTrue(c["copies"])
+                self.assertTrue(c["pacote"])
 
-    def test_06_hash_integrity_against_disk_and_manifest(self) -> None:
-        for campaign in self.data["campaigns"]:
-            slug = campaign["slug"]
-            with self.subTest(slug=slug):
-                for section in ("srt", "narracao", "storyboard"):
-                    rel = campaign[section]["relPath"]
-                    abs_path = os.path.join(REPO_ROOT, rel.replace("/", os.sep))
-                    self.assertEqual(
-                        campaign[section]["sha256"],
-                        _sha256_abs(abs_path),
-                        f"{section} divergiu do arquivo em disco",
-                    )
-                delivery_dir = os.path.dirname(
-                    os.path.join(REPO_ROOT, campaign["srt"]["relPath"].replace("/", os.sep))
+    def test_07_hash_integrity_against_disk_and_manifest(self) -> None:
+        for c in self.data["campaigns"]:
+            with self.subTest(slug=c["slug"]):
+                delivery = os.path.join(
+                    REPO_ROOT, "02-reels-shorts", "deliveries", c["tenantId"], c["slug"]
                 )
-                with open(render_local.fs_path(os.path.join(delivery_dir, "manifest.json")), "r", encoding="utf-8") as handle:
+                with open(
+                    render_local.fs_path(os.path.join(delivery, "manifest.json")),
+                    "r",
+                    encoding="utf-8",
+                ) as handle:
                     manifest = json.load(handle)
                 artifacts = manifest["artifacts"]
-                self.assertEqual(campaign["srt"]["sha256"], artifacts["srt"]["sha256"])
-                self.assertEqual(campaign["narracao"]["sha256"], artifacts["narration"]["sha256"])
-                self.assertEqual(campaign["storyboard"]["sha256"], artifacts["storyboard"]["sha256"])
-                self.assertEqual(campaign["video"]["sha256"], artifacts["video"]["sha256"])
-                self.assertEqual(campaign["video"]["bytes"], artifacts["video"]["bytes"])
-
-    def test_07_no_path_leakage_outside_root(self) -> None:
-        root_real = os.path.realpath(REPO_ROOT)
-        variants = {root_real, root_real.replace(os.sep, "/")}
-        for key, value in _walk_strings(self.data):
-            with self.subTest(key=key, value=value[:60]):
-                for variant in variants:
-                    self.assertNotIn(variant, value)
-                self.assertNotRegex(value, r"^[A-Za-z]:[\\/]")
-                self.assertFalse(value.startswith("\\\\"))
-                if key.endswith(PATH_KEYS_SUFFIX):
-                    self.assertFalse(value.startswith("/"), value)
-                    self.assertNotIn("..", value)
-                    resolved = os.path.realpath(os.path.join(REPO_ROOT, value.replace("/", os.sep)))
-                    self.assertTrue(
-                        render_local.contained(REPO_ROOT, resolved),
-                        f"caminho fora da raiz: {value}",
-                    )
-
-    def test_08_build_is_deterministic(self) -> None:
-        out_dir = os.path.join(TMP_DIR, "portal-deterministico")
-        _rmtree(out_dir)
-        review_dashboard.build_portal(root=REPO_ROOT, output_dir=out_dir)
-        for filename in ("index.html", "portal-data.json", "README.md"):
-            with self.subTest(file=filename):
+                self.assertEqual(c["srt"]["sha256"], artifacts["srt"]["sha256"])
                 self.assertEqual(
-                    _sha256_abs(os.path.join(out_dir, filename)),
-                    _sha256_abs(os.path.join(PORTAL_DIR, filename)),
+                    c["narracao"]["sha256"], artifacts["narration"]["sha256"]
                 )
-        _rmtree(out_dir)
+                self.assertEqual(
+                    c["storyboard"]["sha256"], artifacts["storyboard"]["sha256"]
+                )
+                self.assertEqual(c["video"]["sha256"], artifacts["video"]["sha256"])
+                self.assertEqual(
+                    c["srt"]["sha256"],
+                    _sha256_abs(os.path.join(delivery, c["slug"] + ".srt")),
+                )
+                self.assertEqual(
+                    c["narracao"]["sha256"],
+                    _sha256_abs(os.path.join(delivery, c["slug"] + "_narracao.txt")),
+                )
+                self.assertEqual(
+                    c["storyboard"]["sha256"],
+                    _sha256_abs(os.path.join(delivery, "preview-storyboard.png")),
+                )
 
-    def test_09_index_html_ui_markers(self) -> None:
-        with open(render_local.fs_path(os.path.join(PORTAL_DIR, "index.html")), "r", encoding="utf-8") as handle:
+    def test_08_no_path_leakage_outside_root(self) -> None:
+        with open(
+            render_local.fs_path(os.path.join(PORTAL_DIR, "portal-data.json")),
+            "r",
+            encoding="utf-8",
+        ) as handle:
+            bruto = handle.read()
+        with open(
+            render_local.fs_path(os.path.join(PORTAL_DIR, "index.html")),
+            "r",
+            encoding="utf-8",
+        ) as handle:
             html = handle.read()
-        for marker in (
-            'id="filtro-tenant"',
+        for texto in (bruto, html):
+            self.assertNotIn("D:/", texto)
+            self.assertNotIn("C:/", texto)
+            self.assertNotIn("C:\\", texto)
+        for key, valor in _walk_strings(self.data):
+            if key.endswith(("Path", "Root")):
+                self.assertFalse(valor.startswith(("/", "\\")), f"{key}={valor}")
+                self.assertNotIn("..", valor)
+                self.assertRegex(valor, r"^[A-Za-z0-9_.\-/]")
+
+    def test_09_build_is_deterministic(self) -> None:
+        antes = {
+            filename: self.summary["files"][filename]["sha256"]
+            for filename in ("index.html", "portal-data.json", "README.md")
+        }
+        resumo2 = review_dashboard.build_portal(root=REPO_ROOT)
+        for filename, sha in antes.items():
+            self.assertEqual(resumo2["files"][filename]["sha256"], sha, filename)
+
+    def test_10_index_html_ui_markers(self) -> None:
+        with open(
+            render_local.fs_path(os.path.join(PORTAL_DIR, "index.html")),
+            "r",
+            encoding="utf-8",
+        ) as handle:
+            html = handle.read()
+        marcadores = (
+            'id="painel-metricas"',
+            'id="busca"',
+            'id="lightbox"',
             'id="filtro-preset"',
             'id="filtro-audio"',
+            'id="filtro-status"',
             'id="btn-exportar-aprovacoes"',
-            'id="portal-data"',
-            "aprovacoes-titular.json",
-            "localStorage",
-            "<video",
-            "Copy Instagram",
-            "Copy YouTube",
-            "Copy Facebook",
-            "Legenda .srt",
-        ):
-            self.assertIn(marker, html, marker)
-        for slug in {slug for _, slug in EXPECTED_CAMPAIGNS}:
-            self.assertIn(slug, html)
+            'id="btn-importar-aprovacoes"',
+            'id="input-revisor"',
+            "Guardrails & Hashes",
+            "Aprovado para Publicação Manual",
+            "Solicitar Ajuste",
+            "Locução externa conferida",
+            "reviewPortal.aprovacoes.v2",
+            "/media/storyboard/",
+            "/media/video/",
+            "/api/approvals",
+            "/api/health",
+        )
+        for marcador in marcadores:
+            self.assertIn(marcador, html)
 
-    def test_10_readme_documents_usage(self) -> None:
-        with open(render_local.fs_path(os.path.join(PORTAL_DIR, "README.md")), "r", encoding="utf-8") as handle:
+    def test_11_auto_publish_false_and_utm_all_channels(self) -> None:
+        self.assertEqual(len(self.data["campaigns"]), 8)
+        for c in self.data["campaigns"]:
+            with self.subTest(slug=c["slug"]):
+                self.assertIsNotNone(c["pacote"])
+                self.assertIsNot(c["pacote"]["autoPublish"], True)
+                self.assertFalse(c["pacote"]["autoPublish"])
+                for canal in ("instagram", "youtube", "facebook"):
+                    copy = c["copies"][canal]
+                    self.assertIn("utm_", copy["utmUrl"], canal)
+                    self.assertIn("utm_campaign=", copy["utmUrl"], canal)
+
+    def test_12_tenant_guardrails_fields(self) -> None:
+        tenants = {t["tenantId"]: t for t in self.data["tenants"]}
+        marca = tenants["marca-salao"]
+        self.assertIn("/booking/[salonId]", marca["routeRules"])
+        rota = marca["routeRules"]["/booking/[salonId]"]
+        self.assertIn("identificacao-cliente-ficticia", rota["allowedResponsibilities"])
+        self.assertIn("whatsapp", marca["forbiddenClaims"])
+        self.assertTrue(marca["forbiddenClaims"])
+        for tenant_id in EXPECTED_TENANTS:
+            self.assertIn("routeRules", tenants[tenant_id])
+            self.assertIn("forbiddenClaims", tenants[tenant_id])
+
+    def test_13_readme_documents_usage(self) -> None:
+        with open(
+            render_local.fs_path(os.path.join(PORTAL_DIR, "README.md")),
+            "r",
+            encoding="utf-8",
+        ) as handle:
             readme = handle.read()
-        self.assertIn("--build", readme)
-        self.assertIn("--serve", readme)
-        self.assertIn("review_dashboard.py", readme)
+        for trecho in (
+            "--build",
+            "--serve",
+            "--export-aprovacoes",
+            "/media/video/",
+            "/api/health",
+            "/api/approvals",
+            "aprovacoes-titular.json",
+        ):
+            self.assertIn(trecho, readme)
+
+
+class EscapeTest(unittest.TestCase):
+    """Escape do bloco JSON embutido no index.html."""
+
+    def test_14_embeds_hostile_json_safely(self) -> None:
+        hostil = {
+            "schemaVersion": 1,
+            "totals": {"tenants": 0, "campaigns": 1},
+            "tenants": [],
+            "campaigns": [
+                {
+                    "tenantId": "</script><img src=x onerror=alert(1)>",
+                    "slug": 'aspas " contra\\barra',
+                    "srt": {"text": "</script>\nlinha"},
+                }
+            ],
+        }
+        html = review_dashboard.render_index_html(hostil)
+        abertura = '<script id="portal-data" type="application/json">'
+        inicio = html.index(abertura) + len(abertura)
+        fim = html.index("</script>", inicio)
+        embutido = html[inicio:fim]
+        self.assertEqual(json.loads(embutido), hostil)
+        self.assertNotIn("</script><img", embutido)
+        self.assertIn("<\\/script>", embutido)
 
 
 class ServeFakeRootTest(unittest.TestCase):
@@ -290,17 +550,37 @@ class ServeFakeRootTest(unittest.TestCase):
         _rmtree(cls.fake_root)
         portal = os.path.join(cls.fake_root, "05-review-portal")
         os.makedirs(render_local.fs_path(portal))
-        with open(render_local.fs_path(os.path.join(portal, "index.html")), "w", encoding="utf-8", newline="\n") as handle:
+        with open(
+            render_local.fs_path(os.path.join(portal, "index.html")),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as handle:
             handle.write("<!DOCTYPE html><html><body>portal-teste</body></html>")
-        with open(render_local.fs_path(os.path.join(portal, "portal-data.json")), "w", encoding="utf-8", newline="\n") as handle:
-            handle.write('{"schemaVersion": 1, "totals": {"tenants": 1, "campaigns": 1}}')
-        archives = os.path.join(cls.fake_root, ".workspace", "archives", "test-slug")
+        with open(
+            render_local.fs_path(os.path.join(portal, "portal-data.json")),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as handle:
+            handle.write(json.dumps(_fake_portal_data(), ensure_ascii=False, indent=2))
+        archives = os.path.join(cls.fake_root, ".workspace", "archives", "t-slug")
         os.makedirs(render_local.fs_path(archives))
-        with open(render_local.fs_path(os.path.join(archives, "test.mp4")), "wb") as handle:
+        with open(render_local.fs_path(os.path.join(archives, "t-slug.mp4")), "wb") as handle:
             handle.write(MP4_BYTES)
-        deliveries = os.path.join(cls.fake_root, "02-reels-shorts", "deliveries", "t-tenant", "t-slug")
+        deriv = os.path.join(archives, "derivatives")
+        os.makedirs(render_local.fs_path(deriv))
+        with open(
+            render_local.fs_path(os.path.join(deriv, "t-slug-1x1.mp4")), "wb"
+        ) as handle:
+            handle.write(MP4_DERIV_BYTES)
+        deliveries = os.path.join(
+            cls.fake_root, "02-reels-shorts", "deliveries", "t-tenant", "t-slug"
+        )
         os.makedirs(render_local.fs_path(deliveries))
-        with open(render_local.fs_path(os.path.join(deliveries, "preview-storyboard.png")), "wb") as handle:
+        with open(
+            render_local.fs_path(os.path.join(deliveries, "preview-storyboard.png")), "wb"
+        ) as handle:
             handle.write(b"\x89PNG-fake")
 
         cls.server = review_dashboard.make_server(root=cls.fake_root, port=0)
@@ -315,22 +595,44 @@ class ServeFakeRootTest(unittest.TestCase):
         cls.thread.join(timeout=5)
         _rmtree(cls.fake_root)
 
-    def test_11_serves_index_data_and_storyboard(self) -> None:
+    def test_15_serves_index_data_api(self) -> None:
         status, body, _ = _http_get(self.port, "/")
         self.assertEqual(status, 200)
         self.assertIn(b"portal-teste", body)
+        status, _, _ = _http_get(self.port, "/index.html")
+        self.assertEqual(status, 200)
         status, body, hdrs = _http_get(self.port, "/portal-data.json")
         self.assertEqual(status, 200)
         self.assertEqual(hdrs["content-type"], "application/json; charset=utf-8")
         self.assertEqual(json.loads(body)["totals"]["campaigns"], 1)
-        status, body, _ = _http_get(self.port, "/deliveries/t-tenant/t-slug/preview-storyboard.png")
+        status, body, hdrs = _http_get(self.port, "/api/data")
         self.assertEqual(status, 200)
+        self.assertEqual(hdrs["content-type"], "application/json; charset=utf-8")
+        self.assertEqual(json.loads(body)["totals"]["campaigns"], 1)
+        status, body, _ = _http_get(self.port, "/api/health")
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            json.loads(body), {"ok": True, "tenants": 1, "campaigns": 1}
+        )
+
+    def test_16_media_storyboard_cover_formats(self) -> None:
+        status, body, hdrs = _http_get(self.port, "/media/storyboard/t-tenant/t-slug")
+        self.assertEqual(status, 200)
+        self.assertEqual(hdrs["content-type"], "image/png")
         self.assertEqual(body, b"\x89PNG-fake")
-        status, _, _ = _http_get(self.port, "/index.html")
+        status, _, _ = _http_get(self.port, "/media/cover/t-tenant/t-slug")
+        self.assertEqual(status, 404)
+        status, _, _ = _http_get(self.port, "/media/formats/t-tenant/t-slug")
+        self.assertEqual(status, 404)
+        status, _, _ = _http_get(self.port, "/media/storyboard/t-tenant/nao-existe")
+        self.assertEqual(status, 404)
+        status, _, _ = _http_get(
+            self.port, "/deliveries/t-tenant/t-slug/preview-storyboard.png"
+        )
         self.assertEqual(status, 200)
 
-    def test_12_video_streaming_with_range(self) -> None:
-        url = "/archives/test-slug/test.mp4"
+    def test_17_video_variant_streaming_with_range(self) -> None:
+        url = "/media/video/t-tenant/t-slug/9x16"
         status, body, hdrs = _http_get(self.port, url)
         self.assertEqual(status, 200)
         self.assertEqual(body, MP4_BYTES)
@@ -353,15 +655,29 @@ class ServeFakeRootTest(unittest.TestCase):
         self.assertEqual(status, 416)
         self.assertEqual(hdrs["content-range"], f"bytes */{len(MP4_BYTES)}")
 
-    def test_13_traversal_and_restrictions_blocked(self) -> None:
+        status, body, _ = _http_get(self.port, "/media/video/t-tenant/t-slug/1x1")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, MP4_DERIV_BYTES)
+
+        status, _, _ = _http_get(self.port, "/media/video/t-tenant/t-slug/16x9")
+        self.assertEqual(status, 404)
+
+        status, body, _ = _http_get(self.port, "/archives/t-slug/t-slug.mp4")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, MP4_BYTES)
+
+    def test_18_traversal_and_restrictions_blocked(self) -> None:
         cases = (
+            "/media/video/../../secret",
+            "/media/video/t-tenant/t-slug/9x16/extra",
+            "/media/storyboard/../t-tenant/t-slug",
+            "/media/%2e%2e/video/t-tenant/t-slug/9x16",
+            "/api/health/extra",
             "/archives/../05-review-portal/index.html",
             "/archives/%2e%2e/05-review-portal/portal-data.json",
             "/archives/..%5c..%5cindex.html",
             "/deliveries/../../../../tools/review_dashboard.py",
             "/deliveries/t-tenant/../../../../tools/review_dashboard.py",
-            "/archives/test-slug/notes.txt",
-            "/archives/test-slug/",
             "/qualquer/coisa",
         )
         for path in cases:
@@ -369,16 +685,129 @@ class ServeFakeRootTest(unittest.TestCase):
                 status, _, _ = _http_get(self.port, path)
                 self.assertEqual(status, 404, path)
 
-    def test_14_write_methods_refused(self) -> None:
+    def test_19_write_methods_refused(self) -> None:
         for method in ("POST", "PUT", "DELETE"):
             with self.subTest(method=method):
                 status, _ = _http_method(self.port, method, "/")
                 self.assertIn(status, (405, 501))
+        status, _ = _http_method(self.port, "POST", "/api/data")
+        self.assertIn(status, (405, 501))
 
-    def test_15_head_supported(self) -> None:
+    def test_20_head_supported(self) -> None:
         status, body = _http_method(self.port, "HEAD", "/")
         self.assertEqual(status, 200)
         self.assertEqual(body, b"")
+
+    def test_21_approvals_roundtrip_persists_and_cleans(self) -> None:
+        store = os.path.join(
+            self.fake_root, ".workspace", "tmp", "aprovacoes-titular.json"
+        )
+        self.assertTrue(
+            render_local.contained(self.fake_root, os.path.realpath(store))
+        )
+        status, body, _ = _http_get(self.port, "/api/approvals")
+        self.assertEqual(status, 200)
+        doc = json.loads(body)
+        self.assertTrue(doc["ok"])
+        self.assertFalse(doc["existe"])
+        self.assertIsNone(doc["aprovacoes"])
+        self.assertFalse(os.path.exists(render_local.fs_path(store)))
+
+        doc1 = _doc_aprovacoes()
+        status, body = _http_post(
+            self.port, "/api/approvals", json.dumps(doc1, ensure_ascii=False).encode("utf-8")
+        )
+        self.assertEqual(status, 200)
+        resp = json.loads(body)
+        self.assertTrue(resp["ok"])
+        self.assertEqual(resp["campanhas"], 1)
+        self.assertEqual(resp["salvoEm"], ".workspace/tmp/aprovacoes-titular.json")
+        self.assertTrue(os.path.isfile(render_local.fs_path(store)))
+        with open(render_local.fs_path(store), "r", encoding="utf-8") as handle:
+            gravado = json.load(handle)
+        self.assertEqual(gravado, doc1)
+
+        status, body, _ = _http_get(self.port, "/api/approvals")
+        self.assertEqual(status, 200)
+        doc = json.loads(body)
+        self.assertTrue(doc["existe"])
+        self.assertEqual(doc["aprovacoes"], doc1)
+
+        doc2 = _doc_aprovacoes()
+        doc2["campanhas"][0]["decisao"] = "ajuste"
+        doc2["campanhas"][0]["observacoes"] = "Ajustar antes de publicar"
+        status, body = _http_post(
+            self.port, "/api/approvals", json.dumps(doc2, ensure_ascii=False).encode("utf-8")
+        )
+        self.assertEqual(status, 200)
+        status, body, _ = _http_get(self.port, "/api/approvals")
+        self.assertEqual(json.loads(body)["aprovacoes"], doc2)
+
+        # limpeza apos o teste: remove o arquivo persistido
+        os.remove(render_local.fs_path(store))
+        self.assertFalse(os.path.exists(render_local.fs_path(store)))
+
+    def test_22_approvals_invalid_schema_rejected(self) -> None:
+        casos = [
+            (b"isto nao e json", "JSON_INVALIDO"),
+            (
+                json.dumps({"schemaVersion": 1, "campanhas": []}).encode("utf-8"),
+                "SCHEMA_INVALIDO",
+            ),
+            (
+                json.dumps({"schemaVersion": 2, "campanhas": [], "hack": 1}).encode("utf-8"),
+                "CHAVE_DESCONHECIDA",
+            ),
+            (
+                json.dumps(
+                    {
+                        "schemaVersion": 2,
+                        "campanhas": [
+                            {"tenantId": "t-tenant", "slug": "x", "decisao": "aprovado"}
+                        ],
+                    }
+                ).encode("utf-8"),
+                "CAMPANHA_DESCONHECIDA",
+            ),
+            (
+                json.dumps(
+                    {
+                        "schemaVersion": 2,
+                        "campanhas": [
+                            {
+                                "tenantId": "t-tenant",
+                                "slug": "t-slug",
+                                "decisao": "publicar",
+                            }
+                        ],
+                    }
+                ).encode("utf-8"),
+                "DECISAO_INVALIDA",
+            ),
+            (
+                json.dumps(
+                    {
+                        "schemaVersion": 2,
+                        "campanhas": [
+                            {
+                                "tenantId": "t-tenant",
+                                "slug": "t-slug",
+                                "decisao": "aprovado",
+                                "locucaoExternaConferida": "sim",
+                            }
+                        ],
+                    }
+                ).encode("utf-8"),
+                "TIPO_INVALIDO",
+            ),
+        ]
+        for corpo, erro in casos:
+            with self.subTest(erro=erro):
+                status, body = _http_post(self.port, "/api/approvals", corpo)
+                self.assertEqual(status, 400)
+                resp = json.loads(body)
+                self.assertFalse(resp["ok"])
+                self.assertEqual(resp["erro"], erro)
 
 
 class ServeRealRootTest(unittest.TestCase):
@@ -398,63 +827,82 @@ class ServeRealRootTest(unittest.TestCase):
         cls.server.server_close()
         cls.thread.join(timeout=5)
 
-    def test_16_serves_real_portal(self) -> None:
+    def test_23_serves_real_portal(self) -> None:
         status, body, _ = _http_get(self.port, "/")
         self.assertEqual(status, 200)
         self.assertIn(b"<!DOCTYPE html>", body)
         status, body, _ = _http_get(self.port, "/portal-data.json")
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["totals"]["campaigns"], 8)
-        status, body, _ = _http_get(
-            self.port,
-            "/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
+        status, body, _ = _http_get(self.port, "/api/health")
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body), {"ok": True, "tenants": 4, "campaigns": 8})
+        status, body, hdrs = _http_get(
+            self.port, "/media/storyboard/marca-salao/camp-saas-demo-marca-salao-001"
         )
         self.assertEqual(status, 200)
+        self.assertEqual(hdrs["content-type"], "image/png")
         disk = os.path.join(
             REPO_ROOT,
-            "02-reels-shorts", "deliveries", "marca-salao",
-            "camp-saas-demo-marca-salao-001", "preview-storyboard.png",
+            "02-reels-shorts",
+            "deliveries",
+            "marca-salao",
+            "camp-saas-demo-marca-salao-001",
+            "preview-storyboard.png",
         )
-        with open(render_local.fs_path(disk), "rb") as handle:
-            self.assertEqual(body, handle.read())
+        self.assertEqual(
+            hashlib.sha256(body).hexdigest(), _sha256_abs(disk)
+        )
 
 
 class CliTest(unittest.TestCase):
-    def test_17_build_json_exit_zero(self) -> None:
-        proc = subprocess.run(
-            [sys.executable, "tools/review_dashboard.py", "--build", "--json"],
-            cwd=REPO_ROOT,
+    """CLI: --build --json, validacao de modos e --export-aprovacoes."""
+
+    @staticmethod
+    def _run_cli(*args: str):
+        return subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "review_dashboard.py"), *args],
             capture_output=True,
             text=True,
-            encoding="utf-8",
-            errors="replace",
             timeout=180,
         )
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        payload = json.loads(proc.stdout)
-        self.assertTrue(payload["ok"])
-        self.assertEqual(payload["totalTenants"], 4)
-        self.assertEqual(payload["totalCampaigns"], 8)
-        self.assertEqual(
-            tuple(sorted(payload["tenants"])),
-            EXPECTED_TENANTS,
-        )
-        for filename in ("index.html", "portal-data.json", "README.md"):
-            self.assertIn(filename, payload["files"])
 
-    def test_18_requires_build_or_serve(self) -> None:
-        proc = subprocess.run(
-            [sys.executable, "tools/review_dashboard.py"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=60,
-        )
-        self.assertEqual(proc.returncode, 2)
-        self.assertIn("--build", proc.stderr + proc.stdout)
+    def test_24_build_json_exit_zero(self) -> None:
+        saida = self._run_cli("--build", "--json", "--root", REPO_ROOT)
+        self.assertEqual(saida.returncode, 0, saida.stderr)
+        resumo = json.loads(saida.stdout)
+        self.assertTrue(resumo["ok"])
+        self.assertEqual(resumo["totalTenants"], 4)
+        self.assertEqual(resumo["totalCampaigns"], 8)
+        self.assertEqual(len(resumo["files"]), 3)
+
+    def test_25_requires_exactly_one_mode(self) -> None:
+        saida = self._run_cli("--root", REPO_ROOT)
+        self.assertEqual(saida.returncode, 2)
+        saida = self._run_cli("--build", "--serve", "--root", REPO_ROOT)
+        self.assertEqual(saida.returncode, 2)
+
+    def test_26_export_aprovacoes(self) -> None:
+        fake = os.path.join(TMP_DIR, "cli-aprovacoes")
+        _rmtree(fake)
+        store = os.path.join(fake, ".workspace", "tmp", "aprovacoes-titular.json")
+        os.makedirs(render_local.fs_path(os.path.dirname(store)))
+        doc = _doc_aprovacoes()
+        with open(render_local.fs_path(store), "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(doc, ensure_ascii=False, indent=2) + "\n")
+
+        saida = self._run_cli("--export-aprovacoes", "--root", fake)
+        self.assertEqual(saida.returncode, 0, saida.stderr)
+        self.assertEqual(json.loads(saida.stdout), doc)
+
+        os.remove(render_local.fs_path(store))
+        saida = self._run_cli("--export-aprovacoes", "--root", fake)
+        self.assertEqual(saida.returncode, 1)
+        self.assertIn("APROVACOES_AUSENTES", saida.stderr)
+        _rmtree(fake)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
+
+
