@@ -1,21 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tenantId": "multitrack-hub",
   "slug": "camp-shorts-completo-multitrack-001",
   "preset": "shorts-completo",
-  "brand": {
-    "tenantId": "multitrack-hub",
-    "brandName": "Multitrack Hub",
-    "monogram": "MH",
-    "domain": "multitrackhub.com.br",
-    "palettePrimary": "#06B6D4"
-  },
-  "guardrails": {
-    "allowAudioTrack": true,
-    "requireSrt": true,
-    "requireExternalNarration": false,
-    "appliedAudioPolicy": "aac-44100-stereo"
-  },
+  "sourceVideoSha256": "2a909fbb4b80104a1dde4dd8a97bc1b3d521f8e2c22d9b11fb92d067317a3bb4",
+  "allowAudioTrack": true,
+  "appliedAudioPolicy": "aac-44100-stereo",
   "source": {
     "path": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
     "sha256": "2a909fbb4b80104a1dde4dd8a97bc1b3d521f8e2c22d9b11fb92d067317a3bb4",
@@ -37,41 +27,16 @@
     }
   },
   "derivatives": {
-    "cover": {
-      "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-cover.png",
-      "sha256": "374f8c24a3d277002d7eaf590229f019b93922d12a0bf4e3b31bbbf6feeb9605",
-      "bytes": 208876,
-      "ffprobe": {
-        "videoStreams": 1,
-        "audioStreams": 0,
-        "codec": "png",
-        "width": 1080,
-        "height": 1920,
-        "fps": 25.0,
-        "pixFmt": "rgb24",
-        "duration": 0.0,
-        "audioCodec": null,
-        "audioSampleRate": null,
-        "audioChannels": null
-      },
-      "versioned": false,
-      "kind": "cover-png",
-      "codec": "png",
-      "width": 1080,
-      "height": 1920,
-      "timestampSeconds": 2.0,
-      "border": {
-        "color": "#06B6D4",
-        "thickness": 8,
-        "inset": 12,
-        "alpha": 0.85
-      },
-      "reasonNotVersioned": "derivados vivem em .workspace/archives/ (local da estacao); o manifesto versionado preserva hash, geometria e comando reproduzivel"
-    },
-    "square": {
+    "1x1": {
       "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-1x1.mp4",
-      "sha256": "05656be7276989d318fc84fa224047c1b22f78b9e8fdf5682ac78daa9667eac1",
-      "bytes": 754758,
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 774024,
+      "sha256": "a1ad8e3e91bacef0ecbcdeb307298fb4789e0d6900a0364aa4bb08f0724f53ee",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -85,32 +50,33 @@
         "audioSampleRate": 44100,
         "audioChannels": 2
       },
-      "versioned": false,
       "kind": "1x1",
-      "width": 1080,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#06B6D4",
-        "tintOpacity": 0.12
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
       },
-      "audioStreams": 1,
-      "audioCodec": "aac",
       "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
     },
-    "wide": {
+    "16x9": {
       "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-16x9.mp4",
-      "sha256": "af799d2b6954df436da6bc686c3d8d09719fa35ade0f24336cbc57687f3fb737",
-      "bytes": 777840,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 795798,
+      "sha256": "5744688f821c913f77f54e1be689eb19d0293eb969ebf8bcc12c8ebef2efcfca",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -124,27 +90,129 @@
         "audioSampleRate": 44100,
         "audioChannels": 2
       },
-      "versioned": false,
       "kind": "16x9",
-      "width": 1920,
-      "height": 1080,
-      "fps": 30,
-      "codec": "h264",
       "pixFmt": "yuv420p",
       "foreground": {
         "width": 608,
         "height": 1080,
-        "position": "center-full-height"
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
       },
       "background": {
         "source": "self",
-        "filters": "boxblur=20:2,eq=brightness=-0.2:saturation=0.9",
-        "tint": "#06B6D4",
-        "tintOpacity": 0.12
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
       },
-      "audioStreams": 1,
-      "audioCodec": "aac",
       "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 194970,
+      "sha256": "631dc53b3cb40ea404f2644577b0b3e172732b590de9fd2fc5469fe5682b3ea5",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#06B6D4",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 151562,
+      "sha256": "f5e50cc70d0adf8c139869630935e6a98d1dfd584d4a5364a2fcca35688e4625",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-shorts-completo-multitrack-001/derivatives/camp-shorts-completo-multitrack-001-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 104475,
+      "sha256": "5f849c00ce3a261d49fa6b83097d17e8e4209ddf30e46a52568a5b54889f81ff",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#090D16"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-formats.png"
     }
   },
   "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-completo-multitrack-001",
