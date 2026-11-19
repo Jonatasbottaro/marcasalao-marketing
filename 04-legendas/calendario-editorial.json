@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "tools/campaign_calendar.py",
+  "startDate": "2026-11-23",
+  "endDate": "2026-11-26",
+  "campaignsPerDay": 2,
+  "channels": [
+    "instagram",
+    "youtube",
+    "facebook"
+  ],
+  "tenants": [
+    "estudio-flow",
+    "marca-salao",
+    "meu-salao",
+    "multitrack-hub"
+  ],
+  "totalTenants": 4,
+  "totalCampaigns": 8,
+  "totalSlots": 24,
+  "statusEditorial": "aguardando_aprovacao_titular",
+  "autoPublish": false,
+  "guardrailsAudited": true,
+  "guardrailViolations": [],
+  "slots": [
+    {
+      "slotId": "slot-001",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-002",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-003",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-004",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-005",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-006",
+      "dataSugerida": "2026-11-23",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-007",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-008",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-rateios-002",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-009",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-010",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-rateios-002",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-011",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-012",
+      "dataSugerida": "2026-11-24",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-rateios-002",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-013",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-014",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-015",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-016",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-017",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-018",
+      "dataSugerida": "2026-11-25",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-019",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-020",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-stems-workflow-003",
+      "canal": "instagram",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-021",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-022",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "18:00-19:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-stems-workflow-003",
+      "canal": "youtube",
+      "formato": "shorts",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-023",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-024",
+      "dataSugerida": "2026-11-26",
+      "janelaHorario": "19:00-20:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-stems-workflow-003",
+      "canal": "facebook",
+      "formato": "reels",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    }
+  ]
+}
