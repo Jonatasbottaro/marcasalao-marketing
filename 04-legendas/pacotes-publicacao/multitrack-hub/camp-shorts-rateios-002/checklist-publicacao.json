@@ -15,7 +15,7 @@
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
       "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
       "bytes": 353932,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": false
     },
     {
       "kind": "srt",

@@ -18,3 +18,14 @@ tenants/**/*.json text eol=lf
 05-review-portal/**/*.md text eol=lf
 04-legendas/calendario-editorial.* text eol=lf
 04-legendas/matriz-utm-consolidada.csv text eol=lf
+# Etapa 5: stories/carrosseis, entregas multi-tenant e docs — bytes estaveis entre estacoes.
+01-insta-stories/deliveries/**/*.json text eol=lf
+01-insta-stories/deliveries/**/*.md text eol=lf
+01-insta-stories/deliveries/**/*.csv text eol=lf
+01-insta-stories/deliveries/**/*.srt text eol=lf
+01-insta-stories/deliveries/**/*.html text eol=lf
+02-reels-shorts/deliveries/**/*.md text eol=lf
+02-reels-shorts/deliveries/**/*.csv text eol=lf
+02-reels-shorts/deliveries/**/*.html text eol=lf
+docs/**/*.md text eol=lf
+docs/**/*.json text eol=lf

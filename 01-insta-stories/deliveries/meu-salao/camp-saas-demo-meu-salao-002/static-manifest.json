@@ -5,35 +5,35 @@
       "count": 4,
       "items": [
         {
-          "bytes": 17088,
+          "bytes": 16182,
           "height": 1350,
           "name": "slide-01-capa.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/carousel/slide-01-capa.png",
-          "sha256": "9e0d2d8383ec941e5bda584b035efa47f184edf518adb7805cd7103f2cd9fa29",
+          "sha256": "56e36b1fc9b5d3f0b4c2914e2cf0bdcb3506c33a64a4cc2b98fd6d5d427fd804",
           "width": 1080
         },
         {
-          "bytes": 17273,
+          "bytes": 16342,
           "height": 1350,
           "name": "slide-02-problema.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/carousel/slide-02-problema.png",
-          "sha256": "adc316965beec1f8b034cb7891e1433c76e407cc0fbb1d67c2d81374df1ef857",
+          "sha256": "02bc8ea8a6161c8913a30ad77d8ad2d616f3a88233d608ed8c161a75fb960554",
           "width": 1080
         },
         {
-          "bytes": 16104,
+          "bytes": 15400,
           "height": 1350,
           "name": "slide-03-pratica.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/carousel/slide-03-pratica.png",
-          "sha256": "9bca3829920a6598c891bc6166977c51a5a5c3c9e8c11cac74dd7ff7bd676f21",
+          "sha256": "182a421f94b3c1ae1f1524eeca8733f6732786b3ef67b27fd4e315b143d824a4",
           "width": 1080
         },
         {
-          "bytes": 16317,
+          "bytes": 15368,
           "height": 1350,
           "name": "slide-04-resumo-cta.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/carousel/slide-04-resumo-cta.png",
-          "sha256": "c412c347baf64c18fff1c8fac2a81b34833906b48fb986be005b5199c33f6eb9",
+          "sha256": "0a1b1f3d3d8d43bbbbe26078f14be93afd3ad5b4ba2abdc34148946bd11fba3e",
           "width": 1080
         }
       ],
@@ -43,27 +43,27 @@
       "count": 3,
       "items": [
         {
-          "bytes": 23814,
+          "bytes": 22894,
           "height": 1920,
           "name": "story-01-hook.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/stories/story-01-hook.png",
-          "sha256": "e8fb2fbceb0c09edb07c882cbe41468440e36d153f3e6a9829fd0ba416f807b8",
+          "sha256": "fe6befa7365f114c11f3ef2d816765a518a1fec66e689fbdf0002536a056ac5c",
           "width": 1080
         },
         {
-          "bytes": 24297,
+          "bytes": 22597,
           "height": 1920,
           "name": "story-02-fluxo.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/stories/story-02-fluxo.png",
-          "sha256": "5dddebacb4873569d67cddf6c07c5fc451b06c5e5eb3314fa174f31ee1e0c548",
+          "sha256": "ea53f4351eb1ca72544c38f7517eee770805d52e762561892e73e71e9afbb04f",
           "width": 1080
         },
         {
-          "bytes": 21199,
+          "bytes": 20294,
           "height": 1920,
           "name": "story-03-cta.png",
           "path": "01-insta-stories/deliveries/meu-salao/camp-saas-demo-meu-salao-002/stories/story-03-cta.png",
-          "sha256": "017187b17843a22d80a4a30d328d2df736f22449af970f2e3329843f5eeabb7b",
+          "sha256": "2427f087961e4797dc6b6593b6be1e994865d618cff3cb4d7db6a28d7bdbc404",
           "width": 1080
         }
       ],

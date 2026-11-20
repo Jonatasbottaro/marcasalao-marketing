@@ -15,7 +15,7 @@
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
       "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
       "bytes": 446684,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": false
     },
     {
       "kind": "srt",

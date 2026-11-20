@@ -5,35 +5,35 @@
       "count": 4,
       "items": [
         {
-          "bytes": 18261,
+          "bytes": 17809,
           "height": 1350,
           "name": "slide-01-capa.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-01-capa.png",
-          "sha256": "3a0318a9843ae26658238279728455dbd69643dd219656efbd82b15e167f66f0",
+          "sha256": "c614a7a37fcb3f06bc2ee8014afa1e76d573bb950fcd57851ec351599573fb41",
           "width": 1080
         },
         {
-          "bytes": 17030,
+          "bytes": 16594,
           "height": 1350,
           "name": "slide-02-problema.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-02-problema.png",
-          "sha256": "21f5505afdeb78b4e1aa30b112cfa37dbf7d970c2fb2dc50acec8b6c52752866",
+          "sha256": "f73a534f9a40976cba16e34e6613a1f94afdff53ca7f91dacd54c2e99c3cebb5",
           "width": 1080
         },
         {
-          "bytes": 15557,
+          "bytes": 15304,
           "height": 1350,
           "name": "slide-03-pratica.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-03-pratica.png",
-          "sha256": "c244b55d6a8876e4cf7bad73c17d32f8356cd4e5be3ace1937de3b90804f00e1",
+          "sha256": "68628964728c09f8776248dd26e8dabb5cd5f1b6e1ce934dc6d35853cb13727c",
           "width": 1080
         },
         {
-          "bytes": 16280,
+          "bytes": 15743,
           "height": 1350,
           "name": "slide-04-resumo-cta.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/carousel/slide-04-resumo-cta.png",
-          "sha256": "7717ac6cf17a556ee85095f36e0d441b56f8050fa75aa9013a4db2ba3e73e4dc",
+          "sha256": "ada29b6350fb5af1cb64255eb1bda87867b80a4084007e6e58c73c6e7629e71c",
           "width": 1080
         }
       ],
@@ -43,27 +43,27 @@
       "count": 3,
       "items": [
         {
-          "bytes": 24628,
+          "bytes": 24028,
           "height": 1920,
           "name": "story-01-hook.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-01-hook.png",
-          "sha256": "223c82924af69b728dc486f99567c433609e15d7b765b9635ac5b5f99bd0d12b",
+          "sha256": "a007ebc5141b0199b00b1ab5e390e66cc30fdffc713e09a1b87c34c9408ad493",
           "width": 1080
         },
         {
-          "bytes": 24108,
+          "bytes": 22889,
           "height": 1920,
           "name": "story-02-fluxo.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-02-fluxo.png",
-          "sha256": "6363715c793d85c6260fe57bcc25a95a543a2806be4bed0cdb649a3aa169ed8d",
+          "sha256": "9825b495b7ce7b17aa10d78d93dbce5e1f1a7b74c432e26d7495a26148e831d7",
           "width": 1080
         },
         {
-          "bytes": 21035,
+          "bytes": 20626,
           "height": 1920,
           "name": "story-03-cta.png",
           "path": "01-insta-stories/deliveries/marca-salao/camp-saas-demo-marca-salao-001/stories/story-03-cta.png",
-          "sha256": "b4cc9a404b71c355883bdd9be20fdabd87fd4f9e37801f6a1dfa95fa4ba44d8f",
+          "sha256": "41e4fe999b2dfb815eec45a170585a458c619563443425e191fc31a228810079",
           "width": 1080
         }
       ],

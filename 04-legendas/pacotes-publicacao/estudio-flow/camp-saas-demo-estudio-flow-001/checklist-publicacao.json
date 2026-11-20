@@ -15,7 +15,7 @@
       "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
       "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
       "bytes": 438290,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": false
     },
     {
       "kind": "srt",
