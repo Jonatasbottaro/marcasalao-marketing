@@ -7,36 +7,50 @@
   "guardrailsAudited": true,
   "guardrailStatus": {
     "srt": "ok",
-    "narration": "ok"
+    "narration": "ok",
+    "srt_violations": [],
+    "narration_violations": []
   },
   "media": [
     {
       "kind": "video",
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
+      "resolvedFrom": "archive",
       "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
       "bytes": 513587,
-      "sha256_disk_ok": false
+      "sha256_disk_ok": false,
+      "presentOnDisk": false
     },
     {
       "kind": "srt",
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49",
       "bytes": 573,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "narration",
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002_narracao.txt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "1d05c23c8c48566fc3de547b1a94127b0e62d44523f9f8b6d9f3f6bca1a465eb",
       "bytes": 896,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "storyboard",
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
       "bytes": 645948,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     }
   ],
   "autoPublish": false,
