@@ -145,3 +145,64 @@ Os artefatos são gravados transacionalmente em `02-reels-shorts/deliveries/estu
 > **Nota sobre testes globais com novo tenant:** `tools/tests/test_tenant_contracts.py` (`test_07_cli_exit_codes`) e `tools/tests/test_factory_cli.py` (`test_01`/`test_03`) originalmente fixavam a contagem `3` para os tenants iniciais. Ao integrar o 4º+ nicho na `main`, atualize essas asserções ou torne-as dinâmicas (`>= 3`) e re-execute `python tools/factory_cli.py render --all --json`.
 
 > **Nota sobre `.gitattributes` no Windows:** `.gitattributes` garante `eol=lf` para `tenants/**/*.json` e `02-reels-shorts/**` (`.srt`, `*_narracao.txt`, `*.json`), preservando os hashes SHA-256 idênticos entre worktrees e CI Linux.
+
+---
+
+## Nicho regulado (saúde/clínicas) — exemplo `clinica-vital`
+
+O tenant `tenants/clinica-vital/` é o modelo de referência para nichos regulados, em que a peça pública não pode prometer resultado clínico, diagnosticar à distância, expor dados sensíveis ou sugerir automação de contato. Use este tenant como base para clínicas, consultórios e estúdios de saúde.
+
+### Estrutura
+
+```text
+tenants/clinica-vital/
+├── brand-kit.json
+├── guardrails.json
+├── fixtures/
+│   └── fixture-editorial-clinica-vital.json
+└── campaigns/
+    ├── README.md
+    ├── camp-saas-demo-clinica-vital-001.json
+    └── camp-saas-demo-clinica-vital-002.json
+```
+
+### Identidade e preset
+
+- Paleta clínico-moderna: Azul Petróleo `#0EA5E9` (primary), Verde Menta `#14B8A6` (secondary), Âmbar Suave `#F59E0B` (accent) e Azul Profundo `#0B1324` (background).
+- `defaultPreset: "saas-demo"`, `utmDefaults` (`instagram` / `reels` / `cv`), `audioPolicy` com `allowAudioTrack: false`, `requireSrt: true`, `requireExternalNarration: true` e `ffmpegFlag: "-an"`.
+
+### Superfícies separadas por contrato
+
+| Rota | `surface` | Responsabilidades permitidas |
+| --- | --- | --- |
+| `/avaliacao/[clinicId]` | `public-booking` | escolha de procedimento e especialista, seleção de horário livre e confirmação da avaliação, com paciente fictícia |
+| `/gestor/consultas` | `manager-agenda` | grade de consultas, filtro por especialista e status, busca por paciente e alteração **manual** de status |
+
+`routeRules` em `guardrails.json` torna essa separação auditável: a rota pública não pode exibir pagamento, diagnóstico online, prontuário ou promessa de cura; a rota da recepção não pode calcular horários livres nem exibir slots de marcação.
+
+### Guardrails obrigatórios do nicho
+
+- `forbiddenClaims`: cura/promessa de cura, resultado estético garantido, tratamento sem dor garantido, diagnóstico médico ou odontológico online, antes e depois, mensagens automáticas por WhatsApp/SMS/e-mail, lembretes automáticos de 24h, redução de faltas/zero absenteísmo e aumento de faturamento.
+- `forbiddenUiElements`: checkout/pagamento/cobrança, prontuário médico sensível, receita digital, fotos antes/depois, `Meu Salão`, `E2E` e `Lorem ipsum`.
+
+### Compatibilidade com o motor `saas-demo`
+
+A fixture usa nomes próprios do nicho (`especialistas`, `procedimentos`, `gradeDiaria.consultas`) e replica as chaves estruturais lidas pelo motor bitmap: `profissionais`, `servicos`, `agenda.atendimentos` e `booking.rota`.
+
+### Campanhas de referência
+
+- `camp-saas-demo-clinica-vital-001.json`: jornada pública em `/avaliacao/clinica-vital-centro` → recepção em `/gestor/consultas` (paciente fictícia Patricia Monteiro), 6 cenas, `30.0s`.
+- `camp-saas-demo-clinica-vital-002.json`: rotina exclusiva da recepção em `/gestor/consultas` (filtro por especialista, status manual e busca por paciente), sem cenas de `/avaliacao`, 6 cenas, `30.0s`.
+
+### Validação e render
+
+```bash
+python tools/tenant_validator.py --tenant clinica-vital --json
+python tools/tenant_validator.py --all --json
+python tools/factory_cli.py list --tenant clinica-vital
+python tools/factory_cli.py render --tenant clinica-vital --report .workspace/tmp/etapa5b-agente3/report.json --json
+python tools/derivative_formats.py --tenant clinica-vital --json
+python -m unittest tools/tests/test_tenant_contracts.py -v
+```
+
+> **Consolidação pós-bootstrap:** ao integrar o 5º tenant, ajuste as contagens fixas em `tools/tests/test_factory_cli.py` (`totalTenants`, `totalCampaigns` e o número de entregas) para o novo total e re-execute `python tools/factory_cli.py render --all --json` com `ffmpeg`/`ffprobe` disponíveis.

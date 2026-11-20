@@ -28,8 +28,17 @@ class TenantContractsTest(unittest.TestCase):
 
     def test_01_all_three_tenants_pass_contract_validation(self) -> None:
         discovered = tenant_validator.list_tenants(REPO_ROOT)
-        for expected in ("estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"):
+        for expected in ("clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"):
             self.assertIn(expected, discovered)
+
+        cv = tenant_validator.load_and_validate_tenant("clinica-vital", root=REPO_ROOT, strict=True)
+        self.assertTrue(cv["ok"])
+        self.assertEqual(cv["brandKit"]["brandName"], "Clínica Vital")
+        self.assertEqual(cv["brandKit"]["monogram"], "CV")
+        self.assertEqual(cv["brandKit"]["defaultPreset"], "saas-demo")
+        self.assertFalse(cv["guardrails"]["audioPolicy"]["allowAudioTrack"])
+        self.assertTrue(cv["guardrails"]["audioPolicy"]["requireSrt"])
+        self.assertTrue(cv["guardrails"]["audioPolicy"]["requireExternalNarration"])
 
         ef = tenant_validator.load_and_validate_tenant("estudio-flow", root=REPO_ROOT, strict=True)
         self.assertTrue(ef["ok"])
@@ -178,13 +187,113 @@ class TenantContractsTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertEqual(len(payload["tenants"]), 4)
+        self.assertGreaterEqual(len(payload["tenants"]), 5)
+        validated_ids = {entry["tenantId"] for entry in payload["tenants"]}
+        self.assertIn("clinica-vital", validated_ids)
 
         with contextlib.redirect_stdout(io.StringIO()) as err_buf:
             rc_missing = tenant_validator.main(["--tenant", "inexistente", "--root", REPO_ROOT, "--json"])
         self.assertEqual(rc_missing, 1)
         err_payload = json.loads(err_buf.getvalue())
         self.assertFalse(err_payload["ok"])
+
+    def test_08_clinica_vital_regulated_niche_guardrails(self) -> None:
+        gr = self._load_json("tenants/clinica-vital/guardrails.json")
+
+        for bad_text in (
+            "Prometemos cura garantida em poucas sessões",
+            "Resultado estético garantido após a primeira avaliação",
+            "Tratamento sem dor garantido para todos os pacientes",
+            "Diagnóstico online em cinco minutos",
+            "Mensagens automáticas por WhatsApp, SMS e e-mail",
+            "Lembrete automático 24 horas antes da consulta",
+            "Redução de faltas garantida e zero absenteísmo",
+            "Aumento de faturamento comprovado para a clínica",
+        ):
+            self.assertTrue(
+                tenant_validator.validate_text_against_guardrails(bad_text, gr),
+                f"clinica-vital deveria vetar promessa clínica: {bad_text}",
+            )
+
+        for bad_ui in (
+            "Tela de checkout simulada",
+            "Pagamento e cobrança no aplicativo",
+            "Prontuário médico sensível exposto na tela",
+            "Receita digital liberada na consulta",
+            "Fotos antes e depois dos procedimentos",
+            "Painel do Meu Salão E2E",
+            "Lorem ipsum dolor sit amet",
+        ):
+            self.assertTrue(
+                tenant_validator.validate_text_against_guardrails(bad_ui, gr, check_ui_elements=True),
+                f"clinica-vital deveria vetar elemento de UI: {bad_ui}",
+            )
+
+        self.assertEqual(
+            tenant_validator.validate_text_against_guardrails(
+                "A recepção organiza a agenda de consultas em /gestor/consultas.", gr
+            ),
+            [],
+        )
+
+        rules = gr["routeRules"]
+        self.assertEqual(rules["/avaliacao/[clinicId]"]["surface"], "public-booking")
+        self.assertEqual(rules["/gestor/consultas"]["surface"], "manager-agenda")
+        self.assertIn("busca-paciente", rules["/gestor/consultas"]["allowedResponsibilities"])
+        self.assertIn("alteracao-manual-status", rules["/gestor/consultas"]["allowedResponsibilities"])
+        self.assertIn("diagnostico-online", rules["/avaliacao/[clinicId]"]["forbiddenResponsibilities"])
+
+    def test_09_clinica_vital_fixture_and_campaigns_match_contracts(self) -> None:
+        fixture = self._load_json("tenants/clinica-vital/fixtures/fixture-editorial-clinica-vital.json")
+        self.assertEqual(fixture["tenantId"], "clinica-vital")
+        self.assertEqual(len(fixture["profissionais"]), 4)
+        self.assertEqual(len(fixture["servicos"]), 5)
+        self.assertEqual(fixture["booking"]["rota"], "/avaliacao/clinica-vital-centro")
+        self.assertEqual(fixture["agenda"]["visaoRota"], "/gestor/consultas")
+        self.assertEqual(len(fixture["agenda"]["atendimentos"]), 6)
+        statuses = {item["status"] for item in fixture["agenda"]["atendimentos"]}
+        self.assertEqual(statuses, {"Confirmado", "Aguardando", "Concluído"})
+        self.assertIn("Patricia Monteiro", {item["cliente"] for item in fixture["agenda"]["atendimentos"]})
+
+        gr = self._load_json("tenants/clinica-vital/guardrails.json")
+        campaigns = {}
+        for name in ("camp-saas-demo-clinica-vital-001.json", "camp-saas-demo-clinica-vital-002.json"):
+            cfg = self._load_json(f"tenants/clinica-vital/campaigns/{name}")
+            campaigns[cfg["id"]] = cfg
+            self.assertEqual(cfg["tenantId"], "clinica-vital")
+            self.assertEqual(cfg["preset"], "saas-demo")
+            self.assertEqual(len(cfg["scenes"]), 6)
+            self.assertAlmostEqual(
+                sum(float(scene["duration"]) for scene in cfg["scenes"]),
+                float(cfg["format"]["duration"]),
+                places=3,
+            )
+            for scene in cfg["scenes"]:
+                for key in ("badge", "headline", "subline", "caption", "ctaLabel", "narrationText", "route"):
+                    text = scene.get(key)
+                    if not text:
+                        continue
+                    self.assertEqual(
+                        tenant_validator.validate_text_against_guardrails(
+                            str(text), gr, check_ui_elements=True
+                        ),
+                        [],
+                        f"{cfg['id']} {scene['id']}.{key}: texto viola guardrails",
+                    )
+
+        journey = campaigns["camp-saas-demo-clinica-vital-001"]
+        routes = {scene.get("route") for scene in journey["scenes"] if scene.get("route")}
+        self.assertIn("/avaliacao/clinica-vital-centro", routes)
+        self.assertIn("/gestor/consultas", routes)
+        self.assertEqual(journey["bookingCase"]["cliente"], "Patricia Monteiro")
+        self.assertEqual(journey["bookingCase"]["servicoId"], "srv-cv-001")
+
+        reception = campaigns["camp-saas-demo-clinica-vital-002"]
+        for scene in reception["scenes"]:
+            self.assertFalse(str(scene.get("route", "")).startswith("/avaliacao"))
+        reception_surfaces = [scene["surface"] for scene in reception["scenes"]]
+        self.assertEqual(reception_surfaces.count("manager-agenda"), 4)
+        self.assertEqual(reception_surfaces.count("public-booking"), 0)
 
 
 if __name__ == "__main__":
