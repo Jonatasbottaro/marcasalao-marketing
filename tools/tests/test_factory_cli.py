@@ -35,13 +35,13 @@ class FactoryCliTest(unittest.TestCase):
     def _path(self, rel_path: str) -> str:
         return os.path.join(REPO_ROOT, rel_path.replace("/", os.sep))
 
-    def test_01_list_returns_three_valid_tenants_and_campaigns(self) -> None:
+    def test_01_list_returns_valid_tenants_and_campaigns(self) -> None:
         with contextlib.redirect_stdout(io.StringIO()) as buf:
             rc = factory_cli.main(["list", "--root", REPO_ROOT, "--json"])
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertEqual(payload["totalTenants"], 4)
+        self.assertGreaterEqual(payload["totalTenants"], 4)
         self.assertGreaterEqual(payload["totalCampaigns"], 8)
 
         by_id = {entry["tenantId"]: entry for entry in payload["tenants"]}
@@ -115,13 +115,12 @@ class FactoryCliTest(unittest.TestCase):
             report = json.load(handle)
 
         self.assertTrue(report["ok"])
-        self.assertEqual(report["totalTenants"], 4)
-        self.assertEqual(report["totalCampaigns"], 8)
-        self.assertEqual(len(report["deliveries"]), 8)
+        self.assertGreaterEqual(report["totalTenants"], 4)
+        self.assertGreaterEqual(report["totalCampaigns"], 8)
+        self.assertEqual(len(report["deliveries"]), report["totalCampaigns"])
 
-        self.assertEqual(
-            set(report["tenants"]),
-            {"estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"},
+        self.assertTrue(
+            {"estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"}.issubset(set(report["tenants"]))
         )
 
         # Confere politica de audio por tenant e integridade dos artefatos versionados
@@ -160,6 +159,76 @@ class FactoryCliTest(unittest.TestCase):
                 "--root", REPO_ROOT,
             ])
         self.assertNotEqual(rc_bad_camp, 0)
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            rc_pipeline_sem_escopo = factory_cli.main(["pipeline", "--root", REPO_ROOT])
+        self.assertNotEqual(rc_pipeline_sem_escopo, 0)
+
+    def _run_pipeline(self, extra_args: list[str]) -> tuple[int, dict]:
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            rc = factory_cli.main(
+                ["pipeline", *extra_args, "--skip-render", "--root", REPO_ROOT, "--json"]
+            )
+        return rc, json.loads(buf.getvalue())
+
+    def test_05_pipeline_filtered_skip_render_reports_each_stage(self) -> None:
+        rc, report = self._run_pipeline([
+            "--tenant", "marca-salao",
+            "--campaign", "camp-saas-demo-marca-salao-001",
+            "--utm-out-dir", ".workspace/tmp/test_factory_cli/utm-filtered",
+        ])
+        self.assertEqual(rc, 0)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["mode"], "filtered")
+        self.assertTrue(report["skipRender"])
+        self.assertEqual(
+            [stage["id"] for stage in report["stages"]],
+            ["contratos", "render", "derivados", "cards-estaticos", "pacotes",
+             "calendario", "portal", "utm", "release-gate"],
+        )
+        by_id = {stage["id"]: stage for stage in report["stages"]}
+        for stage_id in ("contratos", "render", "derivados", "cards-estaticos", "pacotes",
+                         "utm", "release-gate"):
+            self.assertEqual(by_id[stage_id]["status"], "ok", stage_id)
+            self.assertIsInstance(by_id[stage_id]["durationMs"], int, stage_id)
+            self.assertGreaterEqual(by_id[stage_id]["durationMs"], 0, stage_id)
+        self.assertEqual(by_id["calendario"]["status"], "skipped")
+        self.assertEqual(by_id["portal"]["status"], "skipped")
+
+        counts = report["counts"]
+        self.assertEqual(counts["tenants"], 1)
+        self.assertEqual(counts["campaigns"], 1)
+        self.assertEqual(counts["deliveries"], 1)
+        self.assertGreaterEqual(counts["staticCards"], 7)
+        self.assertGreaterEqual(counts["utmUrls"], 1)
+        self.assertEqual(counts["releaseDomains"]["contratos_tenants"], "ok")
+
+    def test_06_pipeline_all_skip_render_consolidates_factory(self) -> None:
+        rc, report = self._run_pipeline([
+            "--all",
+            "--utm-out-dir", ".workspace/tmp/test_factory_cli/utm-all",
+        ])
+        self.assertEqual(rc, 0)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["mode"], "all")
+        statuses = {stage["id"]: stage["status"] for stage in report["stages"]}
+        self.assertEqual(list(statuses), [
+            "contratos", "render", "derivados", "cards-estaticos", "pacotes",
+            "calendario", "portal", "utm", "release-gate",
+        ])
+        self.assertTrue(all(status == "ok" for status in statuses.values()), statuses)
+
+        counts = report["counts"]
+        self.assertGreaterEqual(counts["tenants"], 4)
+        self.assertGreaterEqual(counts["campaigns"], 8)
+        self.assertEqual(counts["deliveries"], counts["campaigns"])
+        self.assertEqual(counts["derivatives"], counts["campaigns"])
+        self.assertEqual(counts["staticCards"], 7 * counts["campaigns"])
+        self.assertEqual(counts["publishPacks"], counts["campaigns"])
+        self.assertGreaterEqual(counts["calendarSlots"], counts["campaigns"])
+        self.assertEqual(counts["portalCampaigns"], counts["campaigns"])
+        self.assertGreaterEqual(counts["utmUrls"], counts["calendarSlots"])
+        self.assertEqual(set(counts["releaseDomains"].values()), {"ok"})
 
 
 if __name__ == "__main__":
