@@ -42,6 +42,8 @@ import { validateCompositionForOutputPlan } from './validate-composition-output.
 import { validateComposition } from './validate-composition.js'
 import { validateOutputPlan } from './validate-output-plan.js'
 import { validateProjectManifest } from './validate-project.js'
+import { validateExecutionPackageTenantCompatibility } from './validate-execution-tenant-compatibility.js'
+import type { TenantCompatibilityReport } from './tenant-policy-contract.js'
 import {
     PIPELINE_VALID_SUMMARY,
     pipelineInvalidSummary,
@@ -155,6 +157,7 @@ export function validateContentPipeline(
     let outputPlanReport: OutputPlanReport | null = null
     let outputCompatReport: OutputCompatibilityReport | null = null
     let beatPlanReport: BeatPlanValidationReport | null = null
+    let tenantCompatibility: TenantCompatibilityReport | null = null
 
     if (!projectReport.valid) {
         // Project invalido bloqueia todos os estagios dependentes
@@ -245,6 +248,28 @@ export function validateContentPipeline(
         beatPlanStage,
     ]
 
+    // Etapa 6: compatibilidade opcional ExecutionPackage x TenantPolicy. Secao
+    // aditiva, fora do DAG de 5 estagios (preserva stages/completedStages/
+    // blockedStages historicos). Exige ambas as entradas para produzir veredicto.
+    if (typedInput.executionPackage !== undefined || typedInput.tenantPolicy !== undefined) {
+        if (typedInput.executionPackage !== undefined && typedInput.tenantPolicy !== undefined) {
+            tenantCompatibility = validateExecutionPackageTenantCompatibility(
+                typedInput.executionPackage,
+                typedInput.tenantPolicy,
+            )
+            errors.push(...mapIssues('tenant-policy', 'error', tenantCompatibility.errors))
+            warnings.push(...mapIssues('tenant-policy', 'warning', tenantCompatibility.warnings))
+        } else {
+            errors.push({
+                stage: 'tenant-policy',
+                severity: 'error',
+                code: 'TENANT_COMPATIBILITY_INPUT_INCOMPLETE',
+                path: typedInput.tenantPolicy !== undefined ? 'executionPackage' : 'tenantPolicy',
+                message: 'Tenant compatibility requires both executionPackage and tenantPolicy.',
+            })
+        }
+    }
+
     const completedStages: ContentPipelineStage[] = []
     const blockedStages: ContentPipelineStage[] = []
     for (const stage of stages) {
@@ -291,5 +316,6 @@ export function validateContentPipeline(
         warnings,
         completedStages,
         blockedStages,
+        ...(tenantCompatibility !== null ? { tenantCompatibility } : {}),
     }
 }

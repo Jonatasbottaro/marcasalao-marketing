@@ -82,6 +82,7 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import build_video
+import preset_runner
 import render_local
 import tenant_validator
 
@@ -331,8 +332,18 @@ def discover_campaigns(root: str = ".", tenant_id: str | None = None,
 # Comandos FFmpeg dos derivados
 # ---------------------------------------------------------------------------
 def _composition_filter(canvas_w: int, canvas_h: int, bg_filters: str, primary_ff: str,
-                        in_label: str = "0:v", out_label: str = "out") -> str:
-    """Fundo desfocado/escurecido do proprio video + 9:16 centralizado com moldura primaria."""
+                        in_label: str = "0:v", out_label: str = "out",
+                        framing: dict | None = None) -> str:
+    """Fundo desfocado + 9:16 centralizado, respeitando os insets do perfil.
+
+    Os defaults de `framingByProfile` tem insets 0, preservando a geometria
+    historica (608x1080, moldura de 4 px) e enquadrando o quadro inteiro.
+    """
+    top_inset = max(0, int((framing or {}).get("derivativeTopInsetPx", 0)))
+    bottom_inset = max(0, int((framing or {}).get("derivativeBottomInsetPx", 0)))
+    fg_height = max(1, canvas_h - top_inset - bottom_inset)
+    fg_width = max(1, round(FG_WIDTH * fg_height / FG_HEIGHT))
+    pad_width = fg_width + 2 * FG_PAD_EDGE
     return ";".join([
         f"[{in_label}]split=2[bgsrc][fgsrc]",
         (
@@ -340,10 +351,10 @@ def _composition_filter(canvas_w: int, canvas_h: int, bg_filters: str, primary_f
             f"crop={canvas_w}:{canvas_h},{bg_filters},format=yuv420p[bg]"
         ),
         (
-            f"[fgsrc]scale={FG_WIDTH}:{FG_HEIGHT}:flags=lanczos,"
-            f"pad={FG_PAD_WIDTH}:{FG_HEIGHT}:{FG_PAD_EDGE}:0:{primary_ff},format=yuv420p[fg]"
+            f"[fgsrc]scale={fg_width}:{fg_height}:flags=lanczos,"
+            f"pad={pad_width}:{fg_height}:{FG_PAD_EDGE}:0:{primary_ff},format=yuv420p[fg]"
         ),
-        f"[bg][fg]overlay=(W-w)/2:0,format=yuv420p[{out_label}]",
+        f"[bg][fg]overlay=(W-w)/2:{top_inset},format=yuv420p[{out_label}]",
     ])
 
 
@@ -358,10 +369,11 @@ def _audio_args(allow_audio: bool) -> list[str]:
 
 def _render_video(ffmpeg: str, source: str, output: str, canvas_w: int, canvas_h: int,
                   bg_filters: str, primary_ff: str, duration: float,
-                  allow_audio: bool) -> None:
+                  allow_audio: bool, framing: dict | None = None) -> None:
     cmd = [
         ffmpeg, "-y", "-i", source,
-        "-filter_complex", _composition_filter(canvas_w, canvas_h, bg_filters, primary_ff),
+        "-filter_complex", _composition_filter(canvas_w, canvas_h, bg_filters, primary_ff,
+                                               framing=framing),
         "-map", "[out]",
     ]
     cmd += _audio_args(allow_audio)
@@ -389,17 +401,18 @@ def _render_cover(ffmpeg: str, source: str, output: str, timestamp: float,
 
 
 def _render_thumb(ffmpeg: str, source: str, output: str, timestamp: float,
-                  primary_ff: str) -> None:
+                  primary_ff: str, framing: dict | None = None) -> None:
     """Frame em 16:9 composto (mesma composicao do derivado largo)."""
     _run([
         ffmpeg, "-y", "-ss", f"{timestamp:.3f}", "-i", source,
-        "-filter_complex", _composition_filter(WIDE_WIDTH, WIDE_HEIGHT, WIDE_BG_FILTERS, primary_ff),
+        "-filter_complex", _composition_filter(WIDE_WIDTH, WIDE_HEIGHT, WIDE_BG_FILTERS, primary_ff,
+                                               framing=framing),
         "-map", "[out]", "-frames:v", "1", output,
     ])
 
 
 def _render_grid(ffmpeg: str, source: str, output: str, timestamp: float,
-                 background_ff: str, primary_ff: str) -> None:
+                 background_ff: str, primary_ff: str, framing: dict | None = None) -> None:
     """Prancha comparativa 9:16 | 1:1 | 16:9 em altura uniforme sobre fundo da marca."""
     height = GRID_PANEL_HEIGHT
     panels = ";".join([
@@ -412,7 +425,7 @@ def _render_grid(ffmpeg: str, source: str, output: str, timestamp: float,
                              in_label="sqsrc", out_label="sqcomp"),
         f"[sqcomp]scale={GRID_SQUARE_PANEL_WIDTH}:{height},format=rgb24[p2]",
         _composition_filter(WIDE_WIDTH, WIDE_HEIGHT, WIDE_BG_FILTERS, primary_ff,
-                            in_label="wdsrc", out_label="wdcomp"),
+                            in_label="wdsrc", out_label="wdcomp", framing=framing),
         f"[wdcomp]scale={GRID_WIDE_PANEL_WIDTH}:{height},format=rgb24[p3]",
         (
             f"[p1][p2][p3]hstack=inputs=3,"
@@ -557,6 +570,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
     # 1. Contratos do tenant: brand-kit (paleta) e guardrails (politica de audio).
     ctx = tenant_validator.load_and_validate_tenant(tenant_id, root=root_real, strict=True)
     brand_kit = ctx["brandKit"]
+    tokens_1x1 = preset_runner.resolve_visual_tokens(brand_kit, "1:1")
+    tokens_16x9 = preset_runner.resolve_visual_tokens(brand_kit, "16:9")
     audio_policy = ctx["guardrails"].get("audioPolicy", {})
     allow_audio = bool(audio_policy.get("allowAudioTrack", False))
     palette = brand_kit.get("palette", {})
@@ -644,7 +659,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
         rel_path = _ws_rel("archives", slug, "derivatives", filename)
         if key == "1x1":
             _render_video(ffmpeg, source_path, out_path, SQUARE_WIDTH, SQUARE_HEIGHT,
-                          SQUARE_BG_FILTERS, primary_ff, duration, allow_audio)
+                          SQUARE_BG_FILTERS, primary_ff, duration, allow_audio,
+                          framing=tokens_1x1["framing"])
             probe = probe_media(out_path)
             _audit_derivative("1x1", probe, SQUARE_WIDTH, SQUARE_HEIGHT, allow_audio, duration)
             entries[key] = _format_entry(rel_path, out_path, probe, {
@@ -652,11 +668,18 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 "pixFmt": "yuv420p",
                 "foreground": dict(fg_meta),
                 "background": {"source": "self", "filters": SQUARE_BG_FILTERS},
+                "visualStyle": tokens_1x1["visualStyle"],
+                "framing": tokens_1x1["framing"],
+                "framingPreservedFullFrame": (
+                    int(tokens_1x1["framing"]["derivativeTopInsetPx"]) == 0
+                    and int(tokens_1x1["framing"]["derivativeBottomInsetPx"]) == 0
+                ),
                 "reasonNotVersioned": not_versioned_reason,
             })
         elif key == "16x9":
             _render_video(ffmpeg, source_path, out_path, WIDE_WIDTH, WIDE_HEIGHT,
-                          WIDE_BG_FILTERS, primary_ff, duration, allow_audio)
+                          WIDE_BG_FILTERS, primary_ff, duration, allow_audio,
+                          framing=tokens_16x9["framing"])
             probe = probe_media(out_path)
             _audit_derivative("16x9", probe, WIDE_WIDTH, WIDE_HEIGHT, allow_audio, duration)
             entries[key] = _format_entry(rel_path, out_path, probe, {
@@ -664,6 +687,12 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 "pixFmt": "yuv420p",
                 "foreground": dict(fg_meta),
                 "background": {"source": "self", "filters": WIDE_BG_FILTERS},
+                "visualStyle": tokens_16x9["visualStyle"],
+                "framing": tokens_16x9["framing"],
+                "framingPreservedFullFrame": (
+                    int(tokens_16x9["framing"]["derivativeTopInsetPx"]) == 0
+                    and int(tokens_16x9["framing"]["derivativeBottomInsetPx"]) == 0
+                ),
                 "reasonNotVersioned": not_versioned_reason,
             })
         elif key == "cover":
@@ -680,7 +709,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 },
             })
         elif key == "thumb-16x9":
-            _render_thumb(ffmpeg, source_path, out_path, frame_ts, primary_ff)
+            _render_thumb(ffmpeg, source_path, out_path, frame_ts, primary_ff,
+                          framing=tokens_16x9["framing"])
             probe = probe_media(out_path)
             _audit_derivative("thumb-16x9", probe, WIDE_WIDTH, WIDE_HEIGHT, allow_audio, duration)
             entries[key] = _format_entry(rel_path, out_path, probe, {
@@ -688,7 +718,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 "timestampSeconds": frame_ts,
             })
         else:  # preview-formats
-            _render_grid(ffmpeg, source_path, out_path, frame_ts, background_ff, primary_ff)
+            _render_grid(ffmpeg, source_path, out_path, frame_ts, background_ff, primary_ff,
+                         framing=tokens_16x9["framing"])
             probe = probe_media(out_path)
             _audit_derivative("preview-formats", probe, WIDE_WIDTH, WIDE_HEIGHT,
                                allow_audio, duration)
@@ -747,6 +778,13 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
             "ffprobe": _probe_summary(source_info),
         },
         "derivatives": merged_entries,
+        "visualTokens": {
+            "schemaVersion": 1,
+            "visualStyle": tokens_1x1["visualStyle"],
+            "uiLabels": tokens_1x1["uiLabels"],
+            "framing": {"1:1": tokens_1x1["framing"], "16:9": tokens_16x9["framing"]},
+            "framingPreservedFullFrame": True,
+        },
         "command": f"python tools/derivative_formats.py --tenant {tenant_id} --campaign {slug}",
         "tools": {
             "ffmpeg": render_local.tool_version(build_video.get_ffmpeg()),

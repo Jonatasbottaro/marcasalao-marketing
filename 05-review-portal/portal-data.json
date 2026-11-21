@@ -6,7 +6,7 @@
   "archivesRoot": ".workspace/archives",
   "totals": {
     "tenants": 5,
-    "campaigns": 11
+    "campaigns": 14
   },
   "tenants": [
     {
@@ -481,6 +481,109 @@
     }
   ],
   "campaigns": [
+    {
+      "tenantId": "clinica-vital",
+      "slug": "camp-clinica-vital-002",
+      "campaignId": "CLINICA-VITAL-002",
+      "titulo": "Conheca o Clínica Vital",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+        "sha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+        "bytes": 473376,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16",
+          "1x1",
+          "16x9"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.srt",
+        "sha256": "41ee28cf56d86835fe6d1eee99ee1c51d1ab2da032704d9735677e97045b35cd",
+        "bytes": 504,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo organizar o retorno de pacientes na agenda?\n\n2\n00:00:04,000 --> 00:00:10,000\nA paciente escolhe o procedimento\ne a especialista.\n\n3\n00:00:10,000 --> 00:00:16,000\nO horário livre é escolhido na rota pública.\n\n4\n00:00:16,000 --> 00:00:21,000\nO retorno fica registrado com horário definido.\n\n5\n00:00:21,000 --> 00:00:26,000\nA recepção vê o retorno em /gestor/consultas.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a agenda da Clínica Vital —\nclinicavital.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002_narracao.txt",
+        "sha256": "1fc36ab2743d12d33bcd2370fe6cd9212fc58b40cb74111b3b536f8e89fa0a98",
+        "bytes": 893,
+        "text": "Roteiro de narracao - camp-clinica-vital-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nVeja como a Clínica Vital organiza o retorno de pacientes na agenda.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-procedimento\nNa rota pública /avaliacao, a paciente escolhe o procedimento e a especialista.\n\n[00:00:10,000 --> 00:00:16,000] cena-03-horario\nOs horários livres aparecem na rota pública e a paciente confirma a escolha.\n\n[00:00:16,000 --> 00:00:21,000] cena-04-registro\nO retorno da paciente fica registrado com horário definido.\n\n[00:00:21,000 --> 00:00:26,000] cena-05-recepcao\nNa visão /gestor/consultas, a recepção acompanha o retorno e atualiza o status manualmente.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização da agenda da Clínica Vital em clinicavital.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-storyboard.png",
+        "sha256": "bf4e8afda57b5429e526a22cf131e72be692d347974f6ff703d1b9799ea467b2",
+        "bytes": 618904,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/cover.png",
+        "sha256": "79e6b08ac101a8bf7bdcda9dc90883033d76e01d747a84717a01a76864cb8209",
+        "bytes": 247719
+      },
+      "formats": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-formats.png",
+        "sha256": "abe3122f05e3d254c04afe82b70fb9d7a2dd65ca864e253759e4b9f901a252ff",
+        "bytes": 161097
+      },
+      "derivatives": [
+        {
+          "variant": "1x1",
+          "path": "derivatives/camp-clinica-vital-002-1x1.mp4",
+          "sha256": "e41716ac441a9c66e9dd4c09442eafb6810be488f00f5aff5fc40d52dbf87d9c",
+          "bytes": 398279
+        },
+        {
+          "variant": "16x9",
+          "path": "derivatives/camp-clinica-vital-002-16x9.mp4",
+          "sha256": "18d29e4fb4144f820bcf558d3ff0b63765a4ba44706d7691529db6e6ea1038e4",
+          "bytes": 465338
+        }
+      ],
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-clinica-vital-002/instagram-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-clinica-vital-002/youtube-shorts.md",
+          "text": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como organizar o retorno de pacientes na agenda?\n- 00:00:04,000 — A paciente escolhe o procedimento\ne a especialista.\n- 00:00:10,000 — O horário livre é escolhido na rota pública.\n- 00:00:16,000 — O retorno fica registrado com horário definido.\n- 00:00:21,000 — A recepção vê o retorno em /gestor/consultas.\n\nhttps://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-clinica-vital-002/facebook-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-clinica-vital-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
+        },
+        "autoPublish": false
+      }
+    },
     {
       "tenantId": "clinica-vital",
       "slug": "camp-saas-demo-clinica-vital-001",
@@ -1101,6 +1204,109 @@
     },
     {
       "tenantId": "meu-salao",
+      "slug": "camp-meu-salao-002",
+      "campaignId": "MEU-SALAO-002",
+      "titulo": "Conheca o Meu Salão",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-meu-salao-002/camp-meu-salao-002.mp4",
+        "sha256": "9a0bd3acc0a8939b2dd9d316bd6475dc59d0f07be59816018c2abab93d89171d",
+        "bytes": 432075,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16",
+          "1x1",
+          "16x9"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.srt",
+        "sha256": "7755e7a7379e6cd3205ac46340f69d8490a3d30b4a1a8a891cef43abd5388f4b",
+        "bytes": 499,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nVeja a vitrine pública\ne a rotina interna do salão.\n\n2\n00:00:04,000 --> 00:00:10,000\nNa vitrine pública, a cliente escolhe o serviço.\n\n3\n00:00:10,000 --> 00:00:16,000\nA cliente confirma o horário\nescolhido na vitrine.\n\n4\n00:00:16,000 --> 00:00:22,000\nNa agenda interna,\na equipe vê o dia em uma tela.\n\n5\n00:00:22,000 --> 00:00:27,000\nO status de cada atendimento é atualizado à mão.\n\n6\n00:00:27,000 --> 00:00:30,000\nConheça o Meu Salão — meusalao.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002_narracao.txt",
+        "sha256": "39b9b74f4f35b4101bb07de2036ad6a3ad65522c443f2ef044093155382f78db",
+        "bytes": 885,
+        "text": "Roteiro de narracao - camp-meu-salao-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nVeja a diferença entre a vitrine pública de horários e a rotina interna da equipe.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-vitrine-escolha\nNa vitrine pública /booking, a cliente escolhe o serviço e o profissional.\n\n[00:00:10,000 --> 00:00:16,000] cena-03-vitrine-confirma\nA cliente confirma o horário escolhido na vitrine pública.\n\n[00:00:16,000 --> 00:00:22,000] cena-04-interna-abertura\nNa rota /gestor/agenda, a equipe acompanha os atendimentos do dia em uma tela.\n\n[00:00:22,000 --> 00:00:27,000] cena-05-interna-status\nA equipe atualiza o status de cada atendimento manualmente em /gestor/agenda.\n\n[00:00:27,000 --> 00:00:30,000] cena-06-cta\nConheça a agenda do Meu Salão em meusalao.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/preview-storyboard.png",
+        "sha256": "bdb4049324ae76fd060cf407a97f4cee9e27bbc374bf3f3f1117f14b63ec2c48",
+        "bytes": 613390,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/cover.png",
+        "sha256": "0b963bba3fc6cc0197a3c17e9db19a66a21d57db08fe267e71d7043725b63f05",
+        "bytes": 220919
+      },
+      "formats": {
+        "relPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/preview-formats.png",
+        "sha256": "858e6bb1f42ebbf0b1450727a2434f12f823ee9ab98575d448efa5e66166ce98",
+        "bytes": 147380
+      },
+      "derivatives": [
+        {
+          "variant": "1x1",
+          "path": "derivatives/camp-meu-salao-002-1x1.mp4",
+          "sha256": "87ec20b05fb176b64599869452e9fbc583d6a5e5a9be1b9daf00aa0c55a85dba",
+          "bytes": 409939
+        },
+        {
+          "variant": "16x9",
+          "path": "derivatives/camp-meu-salao-002-16x9.mp4",
+          "sha256": "b3cccf7c7b59a9c824927f3b40a2121b9f72291b0444c4b218f74b6a1f7a166a",
+          "bytes": 499170
+        }
+      ],
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-meu-salao-002/instagram-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-meu-salao-002/youtube-shorts.md",
+          "text": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Veja a vitrine pública\ne a rotina interna do salão.\n- 00:00:04,000 — Na vitrine pública, a cliente escolhe o serviço.\n- 00:00:10,000 — A cliente confirma o horário\nescolhido na vitrine.\n- 00:00:16,000 — Na agenda interna,\na equipe vê o dia em uma tela.\n- 00:00:22,000 — O status de cada atendimento é atualizado à mão.\n\nhttps://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-meu-salao-002&utm_content=meu-salao\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-meu-salao-002&utm_content=meu-salao"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/meu-salao/camp-meu-salao-002/facebook-reels.md",
+          "text": "Conheca o Meu Salão\n\nGESTAO DE AGENDA E ATENDIMENTOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-meu-salao-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "meu-salao",
       "slug": "camp-saas-demo-meu-salao-001",
       "campaignId": "SAAS-DEMO-MEU-SALAO-001",
       "titulo": "Conheca o Meu Salão",
@@ -1295,6 +1501,109 @@
       },
       "pacote": {
         "checklistRelPath": "04-legendas/pacotes-publicacao/meu-salao/camp-saas-demo-meu-salao-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "slug": "camp-multitrack-hub-002",
+      "campaignId": "MULTITRACK-HUB-002",
+      "titulo": "Conheca o Multitrack Hub",
+      "preset": "shorts-completo",
+      "politicaAudio": "AAC",
+      "audioStreams": 1,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 5,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+        "sha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+        "bytes": 424520,
+        "audioStreams": 1,
+        "audioCodec": "aac",
+        "variants": [
+          "9x16",
+          "1x1",
+          "16x9"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002.srt",
+        "sha256": "78f2338f792ac83410f434bc12d1efae869c650fe567003cb5fbefc890172fa1",
+        "bytes": 423,
+        "text": "1\n00:00:00,000 --> 00:00:06,000\nCada sessão reúne stems\ne entregas técnicas organizadas.\n\n2\n00:00:06,000 --> 00:00:15,000\nHorizonte Vivo: 124 BPM e nove stems separados.\n\n3\n00:00:15,000 --> 00:00:21,000\nAs entregas técnicas mantêm WAV 48 kHz\ne 24 bits.\n\n4\n00:00:21,000 --> 00:00:27,000\nEm /rateios,\nveja faixas inclusas e vagas do pacote.\n\n5\n00:00:27,000 --> 00:00:30,000\nConheça os projetos em multitrackhub.com.br.\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002_narracao.txt",
+        "sha256": "4d3f8032c927998c8d83ad54e3ae0d271b36cdc1e34ff3db803f8455543f54bd",
+        "bytes": 722,
+        "text": "Roteiro de narracao - camp-multitrack-hub-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:06,000] cena-01-hook\nCada sessão do Multitrack Hub reúne stems e entregas técnicas organizadas.\n\n[00:00:06,000 --> 00:00:15,000] cena-02-projetos\nHorizonte Vivo traz 124 BPM e nove stems separados por instrumento.\n\n[00:00:15,000 --> 00:00:21,000] cena-03-entregas\nAs entregas técnicas mantêm o padrão WAV 48 kHz e 24 bits.\n\n[00:00:21,000 --> 00:00:27,000] cena-04-rateios\nNa rota /rateios, confira as faixas inclusas e as vagas do pacote.\n\n[00:00:27,000 --> 00:00:30,000] cena-05-cta\nConheça os projetos e as entregas técnicas em multitrackhub.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/preview-storyboard.png",
+        "sha256": "d9a00dbbd4a8dd0da11d8878a28d5eaf52f03542e9bf52fd3c097806e71f5d32",
+        "bytes": 535728,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/cover.png",
+        "sha256": "8a0b45df647e19029d1a000b9b89d3e8022f9cf7c91b1337c88d779e80347b34",
+        "bytes": 227533
+      },
+      "formats": {
+        "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/preview-formats.png",
+        "sha256": "af06d4e859d59a51ef98c49f3328637e809e2dac670cca6537abc4656de66866",
+        "bytes": 129101
+      },
+      "derivatives": [
+        {
+          "variant": "1x1",
+          "path": "derivatives/camp-multitrack-hub-002-1x1.mp4",
+          "sha256": "1cfec650caa0a3c8319130b4844ef04a62915e62fb853a10ee89e003e73988d8",
+          "bytes": 371064
+        },
+        {
+          "variant": "16x9",
+          "path": "derivatives/camp-multitrack-hub-002-16x9.mp4",
+          "sha256": "511a1e03c9adf555ef1de8b18693294516d9cdaec0ee8c3e0938409b7ca6e234",
+          "bytes": 413130
+        }
+      ],
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-multitrack-hub-002/instagram-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-multitrack-hub-002/youtube-shorts.md",
+          "text": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Cada sessão reúne stems\ne entregas técnicas organizadas.\n- 00:00:06,000 — Horizonte Vivo: 124 BPM e nove stems separados.\n- 00:00:15,000 — As entregas técnicas mantêm WAV 48 kHz\ne 24 bits.\n- 00:00:21,000 — Em /rateios,\nveja faixas inclusas e vagas do pacote.\n- 00:00:27,000 — Conheça os projetos em multitrackhub.com.br.\n\nhttps://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub\n\nAssista ate o fim e acesse o link na descricao\n\n#MultitrackHub #Shorts #Stems #Rateios",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-multitrack-hub-002/facebook-reels.md",
+          "text": "Conheca o Multitrack Hub\n\nCATALOGO, STEMS E RATEIOS ORGANIZADOS\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/multitrack-hub/camp-multitrack-hub-002/checklist-publicacao.json",
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",

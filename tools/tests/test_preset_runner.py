@@ -357,16 +357,18 @@ class UiLabelsTest(unittest.TestCase):
     def _brand_kit(tid: str) -> dict:
         return tenant_validator.load_and_validate_tenant(tid, root=REPO_ROOT, strict=True)["brandKit"]
 
-    def test_ui01_resolve_fallback_sem_uilabels(self) -> None:
-        """Sem uiLabels => fallback identico aos rotulos de salao (retrocompativel)."""
+    def test_ui01_resolve_fallback_neutro_sem_uilabels(self) -> None:
+        """Sem uiLabels => fallback neutro, sem vocabulario de nicho no codigo."""
         bk = self._brand_kit("marca-salao")
         bk_sem = {k: v for k, v in bk.items() if k != "uiLabels"}
         labels = preset_runner._resolve_ui_labels(bk_sem)
         self.assertEqual(labels, preset_runner.DEFAULT_UI_LABELS)
-        self.assertEqual(labels["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
-        self.assertEqual(labels["publicRouteFallback"], "/booking/[salonId]")
-        # marca-salao com uiLabels tambem resolve para os mesmos valores de salao.
-        self.assertEqual(preset_runner._resolve_ui_labels(bk), preset_runner.DEFAULT_UI_LABELS)
+        self.assertEqual(labels["teamSectionTitle"], "EQUIPE")
+        self.assertEqual(labels["publicRouteFallback"], "/")
+        self.assertNotIn("SALAO", " ".join(preset_runner.DEFAULT_UI_LABELS.values()))
+        # marca-salao com uiLabels resolve os termos da propria marca.
+        self.assertEqual(preset_runner._resolve_ui_labels(bk)["teamSectionTitle"],
+                         "PROFISSIONAIS DO SALAO")
 
     def test_ui02_resolve_nichos_clinica_e_estudio(self) -> None:
         cv = preset_runner._resolve_ui_labels(self._brand_kit("clinica-vital"))
@@ -381,7 +383,7 @@ class UiLabelsTest(unittest.TestCase):
         # Fallback parcial: chave omitida cai no padrao de salao.
         parcial = preset_runner._resolve_ui_labels({"uiLabels": {"customerLabel": "Aluna"}})
         self.assertEqual(parcial["customerLabel"], "Aluna")
-        self.assertEqual(parcial["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
+        self.assertEqual(parcial["teamSectionTitle"], "EQUIPE")
 
     def test_ui03_guardrail_bloqueia_uilabel_proibido(self) -> None:
         ctx = tenant_validator.load_and_validate_tenant("marca-salao", root=REPO_ROOT, strict=True)
@@ -426,6 +428,91 @@ class UiLabelsTest(unittest.TestCase):
         ms = preset_runner._resolve_ui_labels(self._brand_kit("marca-salao"))
         self.assertEqual(ms["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
         self.assertEqual(ms["journeyBridgeCaption"], "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO")
+
+
+class VisualTokensTest(unittest.TestCase):
+    """Tokens unificados: VisualStyle v1, framing por perfil e contrato de audio."""
+
+    @staticmethod
+    def _kit(tid: str = "marca-salao") -> dict:
+        return tenant_validator.load_and_validate_tenant(tid, root=REPO_ROOT, strict=True)["brandKit"]
+
+    def test_vt01_visual_style_derivado_da_paleta(self) -> None:
+        kit = self._kit()
+        style = preset_runner.resolve_visual_style(kit, "9:16")
+        self.assertEqual(style["schemaVersion"], 1)
+        self.assertRegex(style["id"], r"^[a-z0-9]+(-[a-z0-9]+)*$")
+        self.assertEqual(style["title"]["textColor"], kit["palette"]["textPrimary"])
+        self.assertEqual(style["title"]["outlineColor"], kit["palette"]["background"])
+        self.assertEqual(style["title"]["fontSize"], 42)
+        self.assertEqual(style["title"]["marginTop"], 160)
+        self.assertEqual(style["title"]["marginHorizontal"], 56)
+
+    def test_vt02_framing_por_perfil(self) -> None:
+        kit = self._kit()
+        expected = {
+            "9:16": (1080, 1920, 160, 200),
+            "4:5": (1080, 1350, 120, 160),
+            "1:1": (1080, 1080, 96, 112),
+            "16:9": (1920, 1080, 48, 64),
+        }
+        for profile, (width, height, top, bottom) in expected.items():
+            framing = preset_runner.resolve_framing(kit, profile)
+            self.assertEqual(
+                (framing["width"], framing["height"], framing["topSafePx"], framing["bottomSafePx"]),
+                (width, height, top, bottom),
+                profile,
+            )
+            # Defaults de derivados preservam o quadro inteiro (insets 0).
+            self.assertEqual(framing["derivativeTopInsetPx"], 0)
+            self.assertEqual(framing["derivativeBottomInsetPx"], 0)
+
+    def test_vt03_override_de_framing_e_clamp_de_fonte(self) -> None:
+        kit = dict(self._kit())
+        kit["framingByProfile"] = {
+            "4:5": {"bottomSafePx": 210, "titleFontSize": 999},
+            "16:9": {"derivativeTopInsetPx": 40, "derivativeBottomInsetPx": 24},
+        }
+        framing = preset_runner.resolve_framing(kit, "4:5")
+        self.assertEqual(framing["bottomSafePx"], 210)
+        self.assertEqual(framing["titleFontSize"], 160)  # clamp do limite v1
+        style = preset_runner.resolve_visual_style(kit, "4:5")
+        self.assertEqual(style["title"]["marginTop"], 120)  # safe-zone do perfil
+        wide = preset_runner.resolve_framing(kit, "16:9")
+        self.assertEqual(wide["derivativeTopInsetPx"], 40)
+        self.assertEqual(wide["derivativeBottomInsetPx"], 24)
+
+    def test_vt04_visual_style_declarado_tem_prioridade(self) -> None:
+        kit = dict(self._kit())
+        kit["visualStyle"] = {
+            "schemaVersion": 1,
+            "id": "ci-style",
+            "title": {
+                "textColor": "#FFD700",
+                "outlineColor": "#000000",
+                "fontSize": 46,
+                "marginTop": 200,
+                "marginHorizontal": 80,
+            },
+        }
+        style = preset_runner.resolve_visual_style(kit, "9:16")
+        self.assertEqual(style["id"], "ci-style")
+        self.assertEqual(style["title"]["textColor"], "#FFD700")
+        self.assertEqual(style["title"]["fontSize"], 46)
+        self.assertEqual(style["title"]["marginHorizontal"], 80)
+
+    def test_vt05_audio_contrato_apenas_multitrack_habilita_aac(self) -> None:
+        tenants = ("clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub")
+        for tenant_id in tenants:
+            guardrails = tenant_validator.load_and_validate_tenant(
+                tenant_id, root=REPO_ROOT, strict=True
+            )["guardrails"]
+            allow = bool((guardrails.get("audioPolicy") or {}).get("allowAudioTrack", False))
+            self.assertEqual(allow, tenant_id == "multitrack-hub", tenant_id)
+            if tenant_id != "multitrack-hub":
+                self.assertEqual(
+                    (guardrails.get("audioPolicy") or {}).get("ffmpegFlag"), "-an", tenant_id
+                )
 
 
 if __name__ == "__main__":

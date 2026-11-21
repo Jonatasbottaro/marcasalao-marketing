@@ -180,6 +180,12 @@ class DerivativeFormatsTest(unittest.TestCase):
         self.assertEqual(sq["foreground"]["padWidth"], 616)
         self.assertEqual(sq["foreground"]["padEdge"], 4)
         self.assertEqual(sq["foreground"]["padColor"], MS_PRIMARY)
+        self.assertEqual(sq["visualStyle"]["schemaVersion"], 1)
+        self.assertEqual(sq["framing"]["profile"], "1:1")
+        self.assertEqual(
+            (sq["framing"]["width"], sq["framing"]["height"]), (1080, 1080)
+        )
+        self.assertTrue(sq["framingPreservedFullFrame"])
 
         # Sonda independente no arquivo: o -an derruba ate o audio da fonte.
         probe = build_video.probe_media(render_local.fs_path(os.path.join(REPO_ROOT, sq["path"])))
@@ -204,6 +210,9 @@ class DerivativeFormatsTest(unittest.TestCase):
         self.assertEqual(wd["audioStreams"], 0)
         self.assertEqual(wd["foreground"]["width"], 608)
         self.assertEqual(wd["foreground"]["height"], 1080)
+        self.assertEqual(wd["framing"]["profile"], "16:9")
+        self.assertEqual((wd["framing"]["width"], wd["framing"]["height"]), (1920, 1080))
+        self.assertTrue(wd["framingPreservedFullFrame"])
 
         probe = build_video.probe_media(render_local.fs_path(os.path.join(REPO_ROOT, wd["path"])))
         audio = [s for s in probe["streams"] if s.get("codec_type") == "audio"]

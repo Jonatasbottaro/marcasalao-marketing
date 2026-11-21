@@ -185,7 +185,7 @@ class EditorialQATests(unittest.TestCase):
             result["summary"]["campaigns"]["total"],
             len(editorial_qa.discover_campaigns(REPO_ROOT)),
         )
-        self.assertEqual(result["summary"]["campaigns"]["total"], 11)
+        self.assertEqual(result["summary"]["campaigns"]["total"], 14)
         self.assertEqual([row["id"] for row in result["checks"]], CHECK_IDS)
         self.assertEqual(result["summary"]["problems"]["errors"], 0)
         for check_id in STABLE_CHECKS:
@@ -262,7 +262,7 @@ class EditorialQATests(unittest.TestCase):
         sandbox = self._build_sandbox("tenant")
         result = editorial_qa.run_editorial_qa(root=sandbox, tenant="meu-salao")
         self.assertEqual(result["tenantFilter"], "meu-salao")
-        self.assertEqual(result["summary"]["campaigns"]["total"], 2)
+        self.assertEqual(result["summary"]["campaigns"]["total"], 3)
         self.assertTrue(all(row["tenant"] == "meu-salao" for row in result["campaigns"]))
         for problem in (p for c in result["checks"] for p in c["problems"]):
             self.assertTrue(problem["message"].startswith("meu-salao/"))
@@ -300,7 +300,7 @@ class EditorialQATests(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["schemaVersion"], 1)
-        self.assertEqual(payload["summary"]["campaigns"]["total"], 11)
+        self.assertEqual(payload["summary"]["campaigns"]["total"], 14)
         self.assertEqual([c["id"] for c in payload["checks"]], CHECK_IDS)
 
         path = self._srt_path(sandbox, "meu-salao", "camp-saas-demo-meu-salao-001")

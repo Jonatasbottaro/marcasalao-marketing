@@ -31,6 +31,7 @@ import zlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
+import preset_runner
 import static_cards
 import tenant_validator
 import render_local
@@ -40,13 +41,16 @@ DELIVERIES = os.path.join(ROOT, "01-insta-stories", "deliveries")
 SCRIPT = os.path.join(ROOT, "tools", "static_cards.py")
 TENANTS = ["clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"]
 CAMPAIGNS_BY_TENANT = {
-    "clinica-vital": ["camp-saas-demo-clinica-vital-001",
+    "clinica-vital": ["camp-clinica-vital-002",
+                      "camp-saas-demo-clinica-vital-001",
                       "camp-saas-demo-clinica-vital-002"],
     "estudio-flow": ["camp-saas-demo-estudio-flow-001",
                      "camp-saas-demo-estudio-flow-002"],
     "marca-salao": ["camp-saas-demo-marca-salao-001", "camp-saas-demo-ns001-agenda-001"],
-    "meu-salao": ["camp-saas-demo-meu-salao-001", "camp-saas-demo-meu-salao-002"],
-    "multitrack-hub": ["camp-shorts-completo-multitrack-001",
+    "meu-salao": ["camp-meu-salao-002",
+                  "camp-saas-demo-meu-salao-001", "camp-saas-demo-meu-salao-002"],
+    "multitrack-hub": ["camp-multitrack-hub-002",
+                       "camp-shorts-completo-multitrack-001",
                        "camp-shorts-rateios-002",
                        "camp-shorts-stems-workflow-003"],
 }
@@ -302,7 +306,7 @@ class TestStaticCards(unittest.TestCase):
                 self.assertEqual(set(static_cards.STORY_FILES), nomes_stories)
                 self.assertEqual(set(static_cards.CAROUSEL_FILES), nomes_carousel)
                 entregas.append((tid, slug))
-        self.assertEqual(len(entregas), 11, f"esperadas 11 entregas, achadas {len(entregas)}")
+        self.assertEqual(len(entregas), 14, f"esperadas 14 entregas, achadas {len(entregas)}")
 
     # --- Teste 12: caminhos OS-nativos e normalizacao de separadores ------
     def test_caminhos_os_nativos_e_normpath(self):
@@ -338,7 +342,41 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         total = sum(len(t["campaigns"]) for t in summary["tenants"])
-        self.assertEqual(total, 11, f"esperadas 11 campanhas no --all, achadas {total}")
+        self.assertEqual(total, 14, f"esperadas 14 campanhas no --all, achadas {total}")
+
+
+class StaticCardsTokenTest(unittest.TestCase):
+    """Paridade de tokens: cards usam uiLabels/framing, sem vocabulario fixo de nicho."""
+
+    def test_rotulos_padrao_sao_neutros(self):
+        joined = " ".join(preset_runner.DEFAULT_UI_LABELS.values()).upper()
+        for term in ("SALAO", "SERVICO", "PROFISSIONAL", "AGENDAMENTO", "RATEIO"):
+            self.assertNotIn(term, joined, term)
+
+    def test_copy_de_nichos_nao_salao_sem_vocabulario_fixo(self):
+        for tid in ("clinica-vital", "estudio-flow"):
+            ctx = tenant_validator.load_and_validate_tenant(tid, root=ROOT, strict=True)
+            slug = CAMPAIGNS_BY_TENANT[tid][0]
+            cfg = _load_json(os.path.join(ROOT, "tenants", tid, "campaigns", f"{slug}.json"))
+            copy = static_cards._build_copy(
+                cfg, ctx["brandKit"], ctx["guardrails"], ctx["fixture"], ""
+            )
+            surfaces = [
+                copy["flux_headline"], copy["flux_badge"], copy["cta_headline"],
+                *copy["value_lines"], *copy["route_lines"],
+            ]
+            joined = " ".join(surfaces).upper()
+            for term in ("SALAO", "SERVICO", "PROFISSIONAL", "AGENDAMENTO", "RATEIO"):
+                self.assertNotIn(term, joined, f"{tid}: {term} em {joined}")
+
+    def test_framing_dos_kits_cobre_stories_e_carrossel(self):
+        for tid in TENANTS:
+            ctx = tenant_validator.load_and_validate_tenant(tid, root=ROOT, strict=True)
+            story = preset_runner.resolve_framing(ctx["brandKit"], "9:16")
+            carousel = preset_runner.resolve_framing(ctx["brandKit"], "4:5")
+            self.assertEqual((story["width"], story["height"]), (1080, 1920), tid)
+            self.assertEqual((carousel["width"], carousel["height"]), (1080, 1350), tid)
+            self.assertGreaterEqual(carousel["bottomSafePx"], 100, tid)
 
 
 if __name__ == "__main__":

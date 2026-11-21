@@ -1997,5 +1997,304 @@ class StudioPlanningAndLLMAdapterTest(StudioReviewAndDeliveryPackageTest):
         self.assertEqual(delivery_package._sha256_bytes(zip_bytes), pkg2["packageDelivery"]["lastValidDelivery"]["zipSha256"])
 
 
+class StudioTenantEditorialIntegrationTest(StudioTestBase):
+    """Tenant selector, brand-kit, preflight editorial/guardrails e MCP local."""
+
+    def _cleanup_project(self, project_id):
+        path = os.path.join(
+            STUDIO_ROOT, ".workspace", "studio", "projects", f"{project_id}.project.json")
+        if os.path.isfile(render_local.fs_path(path)):
+            os.remove(render_local.fs_path(path))
+
+    def _cleanup_work(self, work_id):
+        work_dir = os.path.join(STUDIO_ROOT, ".workspace", "studio", "works", work_id)
+        shutil.rmtree(render_local.fs_path(work_dir, force=True), ignore_errors=True)
+        for piece in ("video", "carousel", "motion"):
+            st_path = self.studio._export_status_path(
+                f".workspace/studio/works/{work_id}/deliveries/{piece}")
+            if os.path.isfile(render_local.fs_path(st_path)):
+                os.remove(render_local.fs_path(st_path))
+
+    def _request_copy(self):
+        return json.loads(json.dumps(self.example))
+
+    @staticmethod
+    def _codes(preflight):
+        return {alert.get("code") for alert in preflight.get("alerts") or []}
+
+    def test_01_tenants_listing_brand_payload_and_selection(self):
+        status, data = self.request("GET", "/api/tenants")
+        self.assertEqual(status, 200, data)
+        ids = {row["tenantId"] for row in data["tenants"]}
+        self.assertEqual(ids, {"clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"})
+
+        status, data = self.request("GET", "/api/tenants/get?id=clinica-vital")
+        self.assertEqual(status, 200, data)
+        brand = data["tenant"]
+        self.assertEqual(brand["brandName"], "Clínica Vital")
+        self.assertTrue(brand["palette"]["primary"].startswith("#"))
+        self.assertTrue(brand["typography"]["fontFamily"])
+        self.assertTrue(brand["uiLabels"]["customerLabel"])
+        self.assertEqual(brand["visualStyle"]["schemaVersion"], 1)
+        self.assertRegex(brand["visualStyle"]["title"]["textColor"], r"^#[0-9a-fA-F]{6}$")
+        self.assertIs(brand["autoPublish"], False)
+
+        status, selected = self.request("POST", "/api/tenants/select", {"tenant_id": "multitrack-hub"})
+        self.assertEqual(status, 200, selected)
+        self.assertEqual(selected["activeTenantId"], "multitrack-hub")
+        status, data = self.request("GET", "/api/tenants")
+        self.assertEqual(data["activeTenantId"], "multitrack-hub")
+        self.request("POST", "/api/tenants/select", {"tenant_id": "marca-salao"})
+
+    def test_02_create_project_accepts_tenant_id(self):
+        pid = "t-tenant-proj"
+        pid_mcp = "t-tenant-proj-mcp"
+        for item in (pid, pid_mcp):
+            self._cleanup_project(item)
+            self.addCleanup(self._cleanup_project, item)
+
+        status, data = self.request("POST", "/api/projects/create", {
+            "schemaVersion": 1,
+            "id": pid,
+            "name": "Projeto Clinica",
+            "tenant_id": "clinica-vital",
+            "outputProfiles": ["instagram-reels-video"],
+        })
+        self.assertEqual(status, 200, data)
+        self.assertEqual(data["tenantId"], "clinica-vital")
+        self.assertEqual(data["brand"]["brandName"], "Clínica Vital")
+        manifest_path = os.path.join(
+            STUDIO_ROOT, ".workspace", "studio", "projects", f"{pid}.project.json")
+        manifest = read_json(render_local.fs_path(manifest_path))
+        self.assertEqual(manifest["brandTheme"], "clinica-vital")
+        self.assertTrue(data["report"]["valid"])
+
+        status, mcp = self.request("POST", "/api/mcp/projects/create", {
+            "schemaVersion": 1,
+            "id": pid_mcp,
+            "name": "Projeto via MCP",
+            "tenant_id": "meu-salao",
+            "outputProfiles": ["instagram-reels-video"],
+        })
+        self.assertEqual(status, 200, mcp)
+        self.assertTrue(mcp["mcp"])
+        self.assertEqual(mcp["tenantId"], "meu-salao")
+        self.assertEqual(mcp["brand"]["brandName"], "Meu Salão")
+
+    def test_03_create_work_applies_brand_visual_style(self):
+        wid = "t-tenant-work"
+        wid_mcp = "t-tenant-work-mcp"
+        for item in (wid, wid_mcp):
+            self._cleanup_work(item)
+            self.addCleanup(self._cleanup_work, item)
+
+        status, created = self.request("POST", "/api/works/create", {
+            "id": wid,
+            "name": "Trabalho Clinica",
+            "project": PROJECT_MS,
+            "template": "blank",
+            "tenant_id": "clinica-vital",
+        })
+        self.assertEqual(status, 200, created)
+        self.assertEqual(created["work"]["tenantId"], "clinica-vital")
+        self.assertIs(created["work"]["autoPublish"], False)
+        style = created["videoRequest"]["visualStyle"]
+        brand = self.studio.get_tenant_brand("clinica-vital")
+        self.assertEqual(style["schemaVersion"], 1)
+        self.assertEqual(style["title"]["textColor"], brand["palette"]["textPrimary"])
+        self.assertEqual(style["title"]["outlineColor"], brand["palette"]["background"])
+
+        # Payloads MCP de planejamento aceitam tenant_id no corpo.
+        status, prompt = self.request("POST", "/api/works/planning/prompt", {
+            "workId": wid, "stage": "creative", "tenant_id": "clinica-vital",
+        })
+        self.assertEqual(status, 200, prompt)
+
+        status, mcp = self.request("POST", "/api/mcp/works/create", {
+            "id": wid_mcp,
+            "name": "Trabalho MCP",
+            "project": PROJECT_MS,
+            "template": "blank",
+            "tenant_id": "multitrack-hub",
+        })
+        self.assertEqual(status, 200, mcp)
+        self.assertTrue(mcp["mcp"])
+        self.assertEqual(mcp["work"]["tenantId"], "multitrack-hub")
+        self.assertEqual(
+            mcp["videoRequest"]["visualStyle"]["title"]["textColor"],
+            self.studio.get_tenant_brand("multitrack-hub")["palette"]["textPrimary"],
+        )
+
+    def test_04_preflight_blocks_guardrails_routes_and_overlay(self):
+        request = self._request_copy()
+        request["scenes"][0]["caption"] = "Envie WhatsApp e receba lembrete automatico"
+        request["scenes"][1]["caption"] = "Pague no checkout com cartao de credito"
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": request,
+        })
+        self.assertEqual(status, 200, data)
+        preflight = data["preflight"]
+        self.assertFalse(preflight["ok"])
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(preflight))
+        self.assertEqual(
+            preflight["checks"]["guardrails"]["violations"] > 0, True)
+        self.assertIs(preflight["autoPublish"], False)
+
+        routes = self._request_copy()
+        routes["scenes"][0]["caption"] = "Agende em /booking/salao-1"
+        routes["scenes"][1]["caption"] = "A equipe ve tudo em /gestor/agenda"
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": routes,
+        })
+        self.assertEqual(status, 200, data)
+        self.assertIn("ROTAS_MISTURADAS", self._codes(data["preflight"]))
+
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": self._request_copy(),
+            "textOverlayPlan": {"schemaVersion": 2, "caseId": "case-a", "overlays": []},
+        })
+        self.assertEqual(status, 200, data)
+        self.assertIn("TEXT_OVERLAY_PLAN_INVALIDO", self._codes(data["preflight"]))
+
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": self._request_copy(),
+            "textOverlayPlan": {
+                "schemaVersion": 1,
+                "caseId": "case-a",
+                "overlays": [{"beatId": "beat-a", "text": "Pague no checkout"}],
+            },
+        })
+        self.assertEqual(status, 200, data)
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(data["preflight"]))
+
+    def test_05_preview_endpoint_enforces_preflight(self):
+        status, clean = self.request("POST", "/api/preview", {"request": self._request_copy()})
+        self.assertEqual(status, 200, clean)
+        self.assertTrue(clean["preflight"]["ok"])
+        self.assertEqual(len(clean["preflight"]["checks"]["editorialQa"]["lenses"]), 7)
+        self.assertEqual(clean["result"]["status"], "preview")
+
+        bad = self._request_copy()
+        bad["scenes"][0]["caption"] = "Envie WhatsApp para confirmar o horario"
+        status, blocked = self.request("POST", "/api/preview", {"request": bad})
+        self.assertEqual(status, 422, blocked)
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(blocked["preflight"]))
+        self.assertFalse(blocked["preflight"]["ok"])
+
+    def test_06_srt_formatter_keeps_48_columns(self):
+        request = self._request_copy()
+        long_caption = (
+            "A cliente escolhe o servico, o profissional e o horario disponivel "
+            "na agenda do salao sem precisar de mensagens."
+        )
+        self.assertGreater(len(long_caption), 48)
+        request["scenes"][0]["caption"] = long_caption
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": request,
+        })
+        self.assertEqual(status, 200, data)
+        srt = data["preflight"]["checks"]["srt"]
+        self.assertTrue(srt["ok"], srt)
+        self.assertGreater(srt["beforeMaxLineLength"], 48)
+        self.assertLessEqual(srt["maxLineLength"], 48)
+        for line in srt["formatted"].splitlines():
+            if "-->" not in line and not line.strip().isdigit():
+                self.assertLessEqual(len(line), 48, line)
+
+    def test_07_ui_tenant_selector_and_alert_banner_injected(self):
+        status, body = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        text = body.decode("utf-8") if isinstance(body, bytes) else str(body)
+        self.assertIn('id="studio-tenant-select"', text)
+        self.assertIn("/api/tenants/select", text)
+        self.assertIn("PREFLIGHT BLOQUEADO", text)
+
+    def test_08_package_preflight_blocks_before_review(self):
+        wid = "t-tenant-pkg-block"
+        self._cleanup_work(wid)
+        self.addCleanup(self._cleanup_work, wid)
+
+        status, created = self.request("POST", "/api/works/create", {
+            "id": wid,
+            "name": "Pacote bloqueado",
+            "project": PROJECT_MS,
+            "template": "blank",
+            "tenant_id": "marca-salao",
+        })
+        self.assertEqual(status, 200, created)
+        vreq = created["videoRequest"]
+        vreq["scenes"][0]["caption"] = "Pague no checkout para liberar o acesso"
+        status, saved = self.request("POST", "/api/works/save", {
+            "workId": wid, "videoRequest": vreq,
+        })
+        self.assertEqual(status, 200, saved)
+
+        status, blocked = self.request("POST", "/api/works/package", {
+            "workId": wid, "pieces": [], "channels": [],
+        })
+        self.assertEqual(status, 422, blocked)
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(blocked["preflight"]))
+
+        # Exportacao e download do ZIP tambem passam pelo mesmo preflight.
+        status, blocked_export = self.request("POST", "/api/export", {
+            "workId": wid,
+            "request": vreq,
+            "outputDir": created["work"]["paths"]["videoDeliveryDir"],
+            "profile": "instagram-reels-video",
+        })
+        self.assertEqual(status, 422, blocked_export)
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(blocked_export["preflight"]))
+        with self.assertRaises(video_studio.PreflightBlocked) as ctx_download:
+            self.studio.verified_package_download(wid)
+        self.assertIn("GUARDRAIL_VIOLACAO", self._codes(ctx_download.exception.report))
+
+        vreq["scenes"][0]["caption"] = "Agenda organizada no sistema"
+        self.request("POST", "/api/works/save", {"workId": wid, "videoRequest": vreq})
+        status, review_block = self.request("POST", "/api/works/package", {
+            "workId": wid, "pieces": [], "channels": [],
+        })
+        self.assertEqual(status, 400, review_block)
+
+    def test_09_preflight_is_read_only(self):
+        def snapshot():
+            files = set()
+            for base in (
+                os.path.join(STUDIO_ROOT, ".workspace", "studio"),
+                os.path.join(STUDIO_ROOT, "02-reels-shorts", "deliveries"),
+            ):
+                for dirpath, _dirs, names in os.walk(render_local.fs_path(base)):
+                    for name in names:
+                        files.add(os.path.relpath(os.path.join(dirpath, name), STUDIO_ROOT))
+            return files
+
+        before = snapshot()
+        status, data = self.request("POST", "/api/works/preflight", {
+            "tenant_id": "marca-salao",
+            "request": self._request_copy(),
+        })
+        self.assertEqual(status, 200, data)
+        self.assertTrue(data["preflight"]["ok"])
+        self.assertEqual(snapshot(), before)
+
+    def test_10_mcp_alias_projects_requires_known_tenant(self):
+        pid = "t-tenant-proj-bad"
+        self._cleanup_project(pid)
+        self.addCleanup(self._cleanup_project, pid)
+        status, err = self.request("POST", "/api/mcp/projects/create", {
+            "schemaVersion": 1,
+            "id": pid,
+            "name": "Projeto tenant invalido",
+            "tenant_id": "tenant-inexistente",
+            "outputProfiles": ["instagram-reels-video"],
+        })
+        self.assertEqual(status, 400, err)
+        self.assertIn("tenant_id", str(err.get("error", "")))
+
+
 if __name__ == "__main__":
     unittest.main()

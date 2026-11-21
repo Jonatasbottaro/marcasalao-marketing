@@ -2,7 +2,7 @@
 
 Cobre obrigatoriamente (brief expandido da Etapa 4):
   1. Build estatico gerando index.html, portal-data.json e README.md com
-     5 tenants e 11 campanhas; CLI --build --json encerra com codigo 0.
+     5 tenants e 14 campanhas; CLI --build --json encerra com codigo 0.
   2. Sanitizacao de paths: zero ocorrencias de caminhos absolutos do host
      (D:/, C:/) em portal-data.json e no bloco embutido do index.html.
   3. Escape seguro de HTML/JSON: strings hostis (</script>, aspas, tags)
@@ -51,14 +51,17 @@ EXPECTED_TENANTS = (
     "multitrack-hub",
 )
 EXPECTED_CAMPAIGNS = {
+    ("clinica-vital", "camp-clinica-vital-002"),
     ("clinica-vital", "camp-saas-demo-clinica-vital-001"),
     ("clinica-vital", "camp-saas-demo-clinica-vital-002"),
     ("estudio-flow", "camp-saas-demo-estudio-flow-001"),
     ("estudio-flow", "camp-saas-demo-estudio-flow-002"),
     ("marca-salao", "camp-saas-demo-marca-salao-001"),
     ("marca-salao", "camp-saas-demo-ns001-agenda-001"),
+    ("meu-salao", "camp-meu-salao-002"),
     ("meu-salao", "camp-saas-demo-meu-salao-001"),
     ("meu-salao", "camp-saas-demo-meu-salao-002"),
+    ("multitrack-hub", "camp-multitrack-hub-002"),
     ("multitrack-hub", "camp-shorts-completo-multitrack-001"),
     ("multitrack-hub", "camp-shorts-rateios-002"),
     ("multitrack-hub", "camp-shorts-stems-workflow-003"),
@@ -352,10 +355,10 @@ class BuildPortalTest(unittest.TestCase):
         self.assertTrue(self.summary["ok"])
         self.assertEqual(self.summary["outputDir"], "05-review-portal")
 
-    def test_05_totals_five_tenants_eleven_campaigns(self) -> None:
+    def test_05_totals_five_tenants_fourteen_campaigns(self) -> None:
         self.assertEqual(self.summary["totalTenants"], 5)
-        self.assertEqual(self.summary["totalCampaigns"], 11)
-        self.assertEqual(self.data["totals"], {"tenants": 5, "campaigns": 11})
+        self.assertEqual(self.summary["totalCampaigns"], 14)
+        self.assertEqual(self.data["totals"], {"tenants": 5, "campaigns": 14})
         self.assertEqual(
             sorted(t["tenantId"] for t in self.data["tenants"]), list(EXPECTED_TENANTS)
         )
@@ -486,7 +489,7 @@ class BuildPortalTest(unittest.TestCase):
             self.assertIn(marcador, html)
 
     def test_11_auto_publish_false_and_utm_all_channels(self) -> None:
-        self.assertEqual(len(self.data["campaigns"]), 11)
+        self.assertEqual(len(self.data["campaigns"]), 14)
         for c in self.data["campaigns"]:
             with self.subTest(slug=c["slug"]):
                 self.assertIsNotNone(c["pacote"])
@@ -846,10 +849,10 @@ class ServeRealRootTest(unittest.TestCase):
         self.assertIn(b"<!DOCTYPE html>", body)
         status, body, _ = _http_get(self.port, "/portal-data.json")
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["totals"]["campaigns"], 11)
+        self.assertEqual(json.loads(body)["totals"]["campaigns"], 14)
         status, body, _ = _http_get(self.port, "/api/health")
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body), {"ok": True, "tenants": 5, "campaigns": 11})
+        self.assertEqual(json.loads(body), {"ok": True, "tenants": 5, "campaigns": 14})
         status, body, hdrs = _http_get(
             self.port, "/media/storyboard/marca-salao/camp-saas-demo-marca-salao-001"
         )
@@ -886,7 +889,7 @@ class CliTest(unittest.TestCase):
         resumo = json.loads(saida.stdout)
         self.assertTrue(resumo["ok"])
         self.assertEqual(resumo["totalTenants"], 5)
-        self.assertEqual(resumo["totalCampaigns"], 11)
+        self.assertEqual(resumo["totalCampaigns"], 14)
         self.assertEqual(len(resumo["files"]), 3)
 
     def test_25_requires_exactly_one_mode(self) -> None:

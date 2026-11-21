@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -96,34 +97,203 @@ def _brand_palette(brand_kit: dict) -> dict:
     return brand_kit.get("palette", {}).get("rgb", {})
 
 
-# Rotulos de UI padrao (salao): fallback 100% retrocompativel para
-# marca-salao/meu-salao e para brand-kits sem a secao ``uiLabels``.
+# Rotulos de UI padrao: neutros e sem vocabulario de nicho. Cada tenant deve
+# declarar `uiLabels` no brand-kit para os termos da propria marca; chaves
+# ausentes usam estes fallbacks genericos. Os 7 primeiros sao o contrato
+# versionado de uiLabels; os demais cobrem a chrome compartilhada de videos e
+# cards (badges, rodapes, passos e resumos).
 DEFAULT_UI_LABELS = {
-    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
-    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
-    "publicRouteFallback": "/booking/[salonId]",
-    "managerRouteFallback": "/gestor/agenda",
-    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO",
-    "itemUnitLabel": "atendimento",
+    # Contrato versionado (schemas/brand-kit.schema.json)
+    "teamSectionTitle": "EQUIPE",
+    "catalogSectionTitle": "CATALOGO",
+    "publicRouteFallback": "/",
+    "managerRouteFallback": "/gestor",
+    "journeyBridgeCaption": "DA ESCOLHA A CONFIRMACAO",
+    "itemUnitLabel": "item",
     "customerLabel": "Cliente",
+    # Chrome compartilhada de video
+    "teamMemberLabel": "RESPONSAVEL",
+    "managerSectionLabel": "PAINEL DO GESTOR",
+    "selectedLabel": "SELECIONADO",
+    "availableLabel": "DISPONIVEL",
+    "selectedSlotLabel": "ESCOLHIDO",
+    "availableSlotLabel": "LIVRE",
+    "summaryTitle": "RESUMO DA CONFIRMACAO",
+    "statusLabel": "STATUS",
+    "confirmedLabel": "CONFIRMADO",
+    "successTitle": "REGISTRO",
+    "successHighlight": "REALIZADO!",
+    "visibleInPanelLabel": "VISIVEL NO PAINEL",
+    "dateLabel": "DATA",
+    "atLabel": "AS",
+    "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+    "estimatedValueLabel": "VALOR ESTIMADO POR",
+    "ctaConfirmLabel": "CONFIRMAR",
+    "stepChooseTemplate": "{customer} ESCOLHE",
+    "stepConfirmLabel": "CONFIRMA OS DADOS",
+    "stepAppearLabel": "ACOMPANHE O STATUS",
+    "managerCaption": "VISAO E STATUS",
+    "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+    # Chrome compartilhada de catalogo/metricas
+    "liveDataBadge": "DADOS REAIS",
+    "projectsLabel": "PROJETOS",
+    "stemsLabel": "STEMS",
+    "sharesLabel": "COTAS",
+    "tracksLabel": "FAIXAS",
+    "shareUnitLabel": "COTA",
+    "remainingSlotsLabel": "VAGAS RESTANTES",
+    "routeLabel": "ROTA",
+    "referenceLabel": "REFERENCIA",
+    "priceLabel": "PRECO",
+    "specialtyLabel": "ESPECIALIDADE",
+    "bpmLabel": "BPM",
+    "keyLabel": "TOM",
+    "scheduleLabel": "AGENDA",
+    "agendaSummaryLabel": "REGISTROS",
+    "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+    "sharesFromLabel": "COTAS A PARTIR DE",
+    "processingCaption": "PROCESSAMENTO EM NUVEM",
+    # Chrome compartilhada de cards estaticos
+    "guideBadge": "GUIA PRATICO",
+    "diagnosticBadge": "DIAGNOSTICO",
+    "practiceBadge": "PRATICA",
+    "summaryBadge": "RESUMO",
+    "ctaBadge": "CHAMADA PARA A ACAO",
+    "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+    "practiceTitle": "ITENS DA PRATICA",
+    "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+    "valueTitle": "RESUMO DE VALOR",
+    "chooseItemLabel": "ESCOLHA O ITEM",
+    "confirmStepLabel": "CONFIRME OS DADOS",
+    "followStepLabel": "ACOMPANHE O STATUS",
+    "accessLabel": "ACESSE",
+    "publicFlowCaption": "NO FLUXO PUBLICO",
+    "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+    "carouselFooter": "CARROSSEL - SEM AUDIO",
+    "publicRouteWord": "PUBLICA",
+    "ctaLinkBio": "LINK NA BIO",
+    "ctaLinkDescription": "LINK NA DESCRICAO",
 }
 
 
 def _resolve_ui_labels(brand_kit: dict) -> dict:
-    """Resolve rotulos de UI do brand-kit com fallback de salao por chave.
+    """Resolve rotulos de UI do brand-kit sobre defaults neutros.
 
-    ``brand_kit["uiLabels"]`` e opcional; chaves ausentes, vazias ou de tipo
-    invalido caem no valor padrao de salao, preservando o render de
-    marca-salao/meu-salao (e de qualquer brand-kit legado sem a secao).
+    ``brand_kit["uiLabels"]`` e opcional. Qualquer chave string nao vazia e
+    aceita (o schema versionado restringe o contrato publico, mas tenants
+    legados ou extensoes internas nao quebram o render); chaves ausentes caem
+    no fallback neutro acima.
     """
     provided = brand_kit.get("uiLabels")
     labels = dict(DEFAULT_UI_LABELS)
     if isinstance(provided, dict):
-        for key in DEFAULT_UI_LABELS:
-            value = provided.get(key)
+        for key, value in provided.items():
             if isinstance(value, str) and value.strip():
-                labels[key] = value
+                labels[str(key)] = value
     return labels
+
+
+# ---------------------------------------------------------------------------
+# VisualStyle v1 + enquadramento por perfil (fonte unica de tokens visuais)
+# ---------------------------------------------------------------------------
+VISUAL_STYLE_SCHEMA_VERSION = 1
+HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+VISUAL_STYLE_LIMITS = {
+    "fontSize": (16, 160),
+    "marginTop": (0, 600),
+    "marginHorizontal": (0, 400),
+}
+FRAMING_PROFILES = {
+    "9:16": {
+        "width": 1080, "height": 1920,
+        "topSafePx": 160, "bottomSafePx": 200, "sideSafePx": 56,
+        "titleFontSize": 42,
+        "derivativeTopInsetPx": 0, "derivativeBottomInsetPx": 0,
+    },
+    "4:5": {
+        "width": 1080, "height": 1350,
+        "topSafePx": 120, "bottomSafePx": 160, "sideSafePx": 56,
+        "titleFontSize": 36,
+        "derivativeTopInsetPx": 0, "derivativeBottomInsetPx": 0,
+    },
+    "1:1": {
+        "width": 1080, "height": 1080,
+        "topSafePx": 96, "bottomSafePx": 112, "sideSafePx": 56,
+        "titleFontSize": 32,
+        "derivativeTopInsetPx": 0, "derivativeBottomInsetPx": 0,
+    },
+    "16:9": {
+        "width": 1920, "height": 1080,
+        "topSafePx": 48, "bottomSafePx": 64, "sideSafePx": 64,
+        "titleFontSize": 24,
+        "derivativeTopInsetPx": 0, "derivativeBottomInsetPx": 0,
+    },
+}
+FRAMING_FIELDS = (
+    "width", "height", "topSafePx", "bottomSafePx", "sideSafePx",
+    "titleFontSize", "derivativeTopInsetPx", "derivativeBottomInsetPx",
+)
+
+
+def resolve_framing(brand_kit: dict, profile: str = "9:16") -> dict:
+    """Safe-zones do perfil, com override opcional em ``brand-kit.framingByProfile``."""
+    key = profile if profile in FRAMING_PROFILES else "9:16"
+    framing = dict(FRAMING_PROFILES[key])
+    framing["profile"] = key
+    overrides = brand_kit.get("framingByProfile")
+    if isinstance(overrides, dict) and isinstance(overrides.get(key), dict):
+        for field in FRAMING_FIELDS:
+            value = overrides[key].get(field)
+            if isinstance(value, int) and value >= 0:
+                framing[field] = value
+    framing["titleFontSize"] = max(16, min(160, int(framing["titleFontSize"])))
+    return framing
+
+
+def _style_number(value: Any, field: str, fallback: int) -> int:
+    minimum, maximum = VISUAL_STYLE_LIMITS[field]
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return max(minimum, min(maximum, int(round(value))))
+    return fallback
+
+
+def resolve_visual_style(brand_kit: dict, profile: str = "9:16") -> dict:
+    """VisualStyle v1 canonico: brand-kit.visualStyle valido ou derivado da paleta."""
+    framing = resolve_framing(brand_kit, profile)
+    palette = brand_kit.get("palette") or {}
+    provided = brand_kit.get("visualStyle")
+    provided = provided if isinstance(provided, dict) else {}
+    provided_title = provided.get("title")
+    provided_title = provided_title if isinstance(provided_title, dict) else {}
+
+    def color(value: Any, fallback: str) -> str:
+        return value if isinstance(value, str) and HEX_COLOR_RE.match(value) else fallback
+
+    title = {
+        "textColor": color(provided_title.get("textColor"), str(palette.get("textPrimary") or "#FFFFFF")),
+        "outlineColor": color(provided_title.get("outlineColor"), str(palette.get("background") or "#000000")),
+        "fontSize": _style_number(provided_title.get("fontSize"), "fontSize", framing["titleFontSize"]),
+        "marginTop": _style_number(provided_title.get("marginTop"), "marginTop", framing["topSafePx"]),
+        "marginHorizontal": _style_number(
+            provided_title.get("marginHorizontal"), "marginHorizontal", framing["sideSafePx"]
+        ),
+    }
+    tenant = str(brand_kit.get("tenantId") or "tenant")
+    style_id = str(provided.get("id") or f"{tenant}-{framing['profile'].replace(':', 'x')}")
+    return {"schemaVersion": VISUAL_STYLE_SCHEMA_VERSION, "id": style_id, "title": title}
+
+
+def resolve_visual_tokens(brand_kit: dict, profile: str = "9:16") -> dict:
+    """Fonte unica de tokens visuais para video, derivados e cards estaticos."""
+    framing = resolve_framing(brand_kit, profile)
+    return {
+        "profile": framing["profile"],
+        "uiLabels": _resolve_ui_labels(brand_kit),
+        "visualStyle": resolve_visual_style(brand_kit, profile),
+        "framing": framing,
+        "palette": brand_kit.get("palette") or {},
+        "typography": brand_kit.get("typography") or {},
+    }
 
 
 def _draw_brand_header_generic(canvas, width, height, brand_kit, route_label):
@@ -384,6 +554,26 @@ def _probe_summary(path: str, width: int, height: int, fps: int, duration: float
 # ===========================================================================
 # Renderizacao de frames (desenho bitmap puro) - preset saas-demo
 # ===========================================================================
+def _hex_to_rgb(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Converte #RRGGBB do VisualStyle em tupla RGB; fallback se invalido."""
+    text = str(value or "").strip().lstrip("#")
+    if len(text) == 6:
+        try:
+            return (int(text[0:2], 16), int(text[2:4], 16), int(text[4:6], 16))
+        except ValueError:
+            pass
+    return fallback
+
+
+def _display_date(value: Any) -> str:
+    """Converte YYYY-MM-DD em DD/MM/YYYY para exibicao; mantem outros formatos."""
+    text = str(value or "-")
+    parts = text.split("-")
+    if len(parts) == 3 and all(part.isdigit() for part in parts):
+        return f"{parts[2]}/{parts[1]}/{parts[0]}"
+    return text
+
+
 def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
                        base_capture_ref: str | None, booking_case: dict,
                        campaign_id: str) -> Any:
@@ -392,6 +582,10 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     e ctx['fixture'], sem exibir elementos proibidos."""
     palette = _brand_palette(brand_kit)
     width, height = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    tokens = resolve_visual_tokens(brand_kit, "9:16")
+    framing = tokens["framing"]
+    top_safe = int(framing["topSafePx"])
+    bottom_safe = int(framing["bottomSafePx"])
 
     bg_top = _pal(palette, "backgroundTop")
     bg_bot = _pal(palette, "backgroundBottom")
@@ -405,15 +599,19 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     text_pri = _pal(palette, "textPrimary")
     text_mut = _pal(palette, "textMuted")
     dark_ink = (14, 18, 28)
+    title_color = _hex_to_rgb(tokens["visualStyle"]["title"]["textColor"], text_pri)
 
-    labels = _resolve_ui_labels(brand_kit)
+    labels = tokens["uiLabels"]
     customer = _norm_text(labels["customerLabel"])
     public_route = _norm_text(labels["publicRouteFallback"])
     manager_route = _norm_text(labels["managerRouteFallback"])
     catalog_title = _norm_text(labels["catalogSectionTitle"])
     team_title = _norm_text(labels["teamSectionTitle"])
+    team_member = _norm_text(labels["teamMemberLabel"])
     unit_label = _norm_text(labels["itemUnitLabel"])
     bridge_caption = _norm_text(labels["journeyBridgeCaption"])
+    agenda_date = _display_date((fixture.get("agenda") or {}).get("data"))
+    booking_date = _display_date(booking_case.get("data") or agenda_date)
 
     kind = scene["kind"]
     if kind == "manager-agenda":
@@ -427,7 +625,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         "manager-agenda": manager_route,
     }
     header_pill = surface_labels.get(scene.get("surface"), campaign_id)
-    header_h = _draw_brand_header_generic(canvas, width, height, brand_kit, header_pill)
+    header_h = max(_draw_brand_header_generic(canvas, width, height, brand_kit, header_pill), top_safe)
 
     services_by_id = {s["id"]: s for s in fixture.get("servicos", [])}
     profs_by_id = {p["id"]: p for p in fixture.get("profissionais", [])}
@@ -445,11 +643,15 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         lines = _wrap_text(_scene_text(scene, "headline"), width - 190, 6)
         ly = header_h + 235
         for line in lines:
-            _draw_text(canvas, width, height, 102, ly, line, 6, text_pri)
+            _draw_text(canvas, width, height, 102, ly, line, 6, title_color)
             ly += carousel_layout.char_height(6) + 22
         _fill_rect(canvas, width, height, 102, ly + 18, 360, ly + 26, accent)
         _draw_text(canvas, width, height, 102, ly + 56, _scene_text(scene, "subline"), 3, accent)
-        steps = (f"1. {customer} ESCOLHE", "2. CONFIRMA HORARIO", "3. APARECE NA AGENDA")
+        steps = (
+            _norm_text(labels["stepChooseTemplate"].replace("{customer}", customer)),
+            _norm_text(labels["stepConfirmLabel"]),
+            _norm_text(labels["stepAppearLabel"]),
+        )
         step_w = (width - 112 - 32) // 3
         sy = header_h + 820
         for idx, label in enumerate(steps):
@@ -479,7 +681,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
             meta = f"{srv['duracaoMin']} MIN  -  {_format_price_brl(srv['precoBRL'])}"
             _draw_text(canvas, width, height, 84, cy + 70, meta, 3, text_mut)
             if is_sel:
-                _draw_pill(canvas, width, height, width - 310, cy + 34, "SELECIONADO", 3, accent, dark_ink,
+                _draw_pill(canvas, width, height, width - 310, cy + 34, _norm_text(labels["selectedLabel"]), 3, accent, dark_ink,
                            pad_x=16, pad_y=10)
             cy += 136
         cy += 14
@@ -501,10 +703,11 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     elif kind == "booking-confirm":
         cy = _draw_surface_banner_generic(canvas, width, height, header_h + 36,
                                           _scene_text(scene, "badge"), _scene_text(scene, "headline"), palette)
-        _draw_text(canvas, width, height, 56, cy, f"CALCULO DE HORARIOS LIVRES EM {public_route}", 2, text_mut)
+        _draw_text(canvas, width, height, 56, cy,
+                   f"{_norm_text(labels['availabilityCaption'])} {public_route}", 2, text_mut)
         cy += 34
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 335, card_bg, border_color=secondary, border_thickness=2)
-        _draw_text(canvas, width, height, 84, cy + 26, "TERCA-FEIRA  18/11/2026", 4, text_pri)
+        _draw_text(canvas, width, height, 84, cy + 26, booking_date, 4, text_pri)
         if selected_prof and selected_service:
             _draw_text(canvas, width, height, 84, cy + 72, f"{selected_prof['nome']}  |  {selected_service['nome']}", 3, text_mut)
         slots = list(scene.get("availableSlots", ["09:00", "11:00", "14:00", "16:30"]))
@@ -516,28 +719,33 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
             sx = 84 + col * (slot_w + 30)
             sy = cy + 126 + row * 94
             is_sel = slot == sel_slot
-            label = f"{slot}  [ESCOLHIDO]" if is_sel else f"{slot}  LIVRE"
+            slot_state = _norm_text(labels["selectedSlotLabel"] if is_sel else labels["availableSlotLabel"])
+            label = f"{slot}  [{slot_state}]" if is_sel else f"{slot}  {slot_state}"
             _draw_card(canvas, width, height, sx, sy, sx + slot_w, sy + 76,
                        accent if is_sel else card_hi,
                        border_color=accent if is_sel else secondary, border_thickness=3)
             _draw_text(canvas, width, height, sx + 22, sy + 24, label, 3, dark_ink if is_sel else text_pri)
         cy += 365
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 350, card_bg, left_stripe_color=ok_col)
-        _draw_text(canvas, width, height, 92, cy + 26, "RESUMO DO AGENDAMENTO", 4, accent)
+        _draw_text(canvas, width, height, 92, cy + 26, _norm_text(labels["summaryTitle"]), 4, accent)
         if booking_case:
             _draw_text(canvas, width, height, 92, cy + 84, f"{customer}: {booking_case.get('cliente', '-')}", 3, text_pri)
         if selected_service:
             _draw_text(canvas, width, height, 92, cy + 132,
-                       f"SERVICO: {selected_service['nome']} ({selected_service['duracaoMin']} MIN)", 3, text_pri)
+                       f"{unit_label.upper()}: {selected_service['nome']} ({selected_service['duracaoMin']} MIN)",
+                       3, text_pri)
         if selected_prof:
-            _draw_text(canvas, width, height, 92, cy + 180, f"PROFISSIONAL: {selected_prof['nome']}", 3, text_pri)
-        _draw_text(canvas, width, height, 92, cy + 228, f"DATA: 18/11 AS {sel_slot}", 3, ok_col)
+            _draw_text(canvas, width, height, 92, cy + 180, f"{team_member}: {selected_prof['nome']}", 3, text_pri)
+        _draw_text(canvas, width, height, 92, cy + 228,
+                   f"{_norm_text(labels['dateLabel'])}: {booking_date} "
+                   f"{_norm_text(labels['atLabel'])} {sel_slot}", 3, ok_col)
         if selected_service:
             _draw_text(canvas, width, height, 92, cy + 286,
-                       f"VALOR ESTIMADO POR {unit_label}: {_format_price_brl(selected_service['precoBRL'])}", 3, text_mut)
+                       f"{_norm_text(labels['estimatedValueLabel'])} {unit_label}: "
+                       f"{_format_price_brl(selected_service['precoBRL'])}", 3, text_mut)
         cy += 380
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 104, ok_col)
-        cta_txt = _scene_text(scene, "ctaLabel") or "CONFIRMAR AGENDAMENTO"
+        cta_txt = _scene_text(scene, "ctaLabel") or _norm_text(labels["ctaConfirmLabel"])
         tw = _text_width(cta_txt, 5)
         _draw_text(canvas, width, height, (width - tw) // 2, cy + 32, cta_txt, 5, dark_ink)
 
@@ -546,28 +754,38 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
                    pad_x=24, pad_y=14)
         _draw_card(canvas, width, height, 56, header_h + 150, width - 56, header_h + 860,
                    card_bg, border_color=ok_col, border_thickness=5, left_stripe_color=ok_col)
-        _draw_pill(canvas, width, height, 102, header_h + 210, "STATUS: CONFIRMADO", 3, ok_col, dark_ink,
+        _draw_pill(canvas, width, height, 102, header_h + 210,
+                   f"{_norm_text(labels['statusLabel'])}: {_norm_text(labels['confirmedLabel'])}",
+                   3, ok_col, dark_ink,
                    pad_x=20, pad_y=12)
-        _draw_text(canvas, width, height, 102, header_h + 295, "AGENDAMENTO", 6, text_pri)
-        _draw_text(canvas, width, height, 102, header_h + 360, "REALIZADO!", 6, ok_col)
+        _draw_text(canvas, width, height, 102, header_h + 295, _norm_text(labels["successTitle"]), 6, text_pri)
+        _draw_text(canvas, width, height, 102, header_h + 360, _norm_text(labels["successHighlight"]), 6, ok_col)
         _fill_rect(canvas, width, height, 102, header_h + 435, width - 102, header_h + 440, secondary)
         if booking_case:
             _draw_text(canvas, width, height, 102, header_h + 475, f"{customer}: {booking_case.get('cliente', '-')}", 4, text_pri)
         if selected_service:
-            _draw_text(canvas, width, height, 102, header_h + 530, f"SERVICO: {selected_service['nome']}", 4, text_pri)
+            _draw_text(canvas, width, height, 102, header_h + 530,
+                       f"{unit_label.upper()}: {selected_service['nome']}", 4, text_pri)
         if selected_prof:
-            _draw_text(canvas, width, height, 102, header_h + 585, f"PROFISSIONAL: {selected_prof['nome']}", 4, text_pri)
-        _draw_text(canvas, width, height, 102, header_h + 640, f"DATA: 18/11 AS {booking_case.get('horario', '--:--')}", 4, accent)
-        _draw_pill(canvas, width, height, 102, header_h + 735, _scene_text(scene, "subline") or "VISIVEL NA AGENDA", 3,
+            _draw_text(canvas, width, height, 102, header_h + 585,
+                       f"{team_member}: {selected_prof['nome']}", 4, text_pri)
+        _draw_text(canvas, width, height, 102, header_h + 640,
+                   f"{_norm_text(labels['dateLabel'])}: {booking_date} "
+                   f"{_norm_text(labels['atLabel'])} {booking_case.get('horario', '--:--')}", 4, accent)
+        _draw_pill(canvas, width, height, 102, header_h + 735,
+                   _scene_text(scene, "subline") or _norm_text(labels["visibleInPanelLabel"]), 3,
                    secondary, text_pri, pad_x=22, pad_y=14)
 
     elif kind == "manager-agenda":
         cy = _draw_surface_banner_generic(canvas, width, height, header_h + 28,
                                           _scene_text(scene, "badge"), _scene_text(scene, "headline"), palette)
-        _draw_text(canvas, width, height, 56, cy, "TERCA 18/11/2026 - VISUALIZACAO E STATUS MANUAL", 3, text_mut)
+        _draw_text(canvas, width, height, 56, cy,
+                   f"{agenda_date} - {_norm_text(labels['managerCaption'])}", 3, text_mut)
         cy += 44
         highlight_id = scene.get("highlightId", "atend-001")
         for item in fixture.get("agenda", {}).get("atendimentos", [])[:6]:
+            if cy + 132 > height - bottom_safe:
+                break
             is_hi = item["id"] == highlight_id
             srv = services_by_id.get(item.get("servico"), {})
             prof = profs_by_id.get(item.get("profissional"), {})
@@ -604,7 +822,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         lines = _wrap_text(_scene_text(scene, "headline"), width - 190, 6)
         ly = header_h + 275
         for line in lines:
-            _draw_text(canvas, width, height, 102, ly, line, 6, text_pri)
+            _draw_text(canvas, width, height, 102, ly, line, 6, title_color)
             ly += carousel_layout.char_height(6) + 22
         _fill_rect(canvas, width, height, 102, ly + 22, 420, ly + 30, accent)
         domain_txt = _scene_text(scene, "subline") or brand_kit.get("domain", "")
@@ -626,6 +844,11 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
     del root  # nao usamos captura externa no shorts-completo (graficos puros)
     palette = _brand_palette(brand_kit)
     width, height = OUTPUT_WIDTH, OUTPUT_HEIGHT
+    tokens = resolve_visual_tokens(brand_kit, "9:16")
+    framing = tokens["framing"]
+    labels = tokens["uiLabels"]
+    top_safe = int(framing["topSafePx"])
+    bottom_safe = int(framing["bottomSafePx"])
 
     bg_top = _pal(palette, "backgroundTop")
     bg_bot = _pal(palette, "backgroundBottom")
@@ -637,10 +860,11 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
     text_pri = _pal(palette, "textPrimary")
     text_mut = _pal(palette, "textMuted")
     dark_ink = (14, 18, 28)
+    title_color = _hex_to_rgb(tokens["visualStyle"]["title"]["textColor"], text_pri)
 
     canvas = _base_gradient(width, height, bg_top, bg_bot)
-    header_h = _draw_brand_header_generic(canvas, width, height, brand_kit,
-                                          scene.get("route", "/"))
+    header_h = max(_draw_brand_header_generic(canvas, width, height, brand_kit,
+                                              scene.get("route", "/")), top_safe)
     kind = scene["kind"]
 
     if kind == "shorts-hook":
@@ -649,7 +873,7 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
         lines = _wrap_text(_scene_text(scene, "headline"), width - 112, 6)
         ly = header_h + 130
         for line in lines:
-            _draw_text(canvas, width, height, 56, ly, line, 6, text_pri)
+            _draw_text(canvas, width, height, 56, ly, line, 6, title_color)
             ly += carousel_layout.char_height(6) + 18
         _draw_text(canvas, width, height, 56, ly + 26, _scene_text(scene, "subline") or brand_kit.get("domain", ""),
                    4, accent)
@@ -662,13 +886,17 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
         card_h = 250
         gap = 20
         for proj in projetos:
+            if cy + card_h > height - bottom_safe:
+                break
             _draw_card(canvas, width, height, 56, cy, width - 56, cy + card_h, card_bg, border_color=secondary, border_thickness=2)
-            _draw_text(canvas, width, height, 84, cy + 22, proj.get("titulo", "Projeto"), 4, accent)
+            _draw_text(canvas, width, height, 84, cy + 22,
+                       proj.get("titulo", labels["itemUnitLabel"].capitalize()), 4, accent)
             meta = f"BPM {proj.get('bpm', '-')}  •  Tom {proj.get('tom', '-')}  •  {proj.get('compasso', '-')}  •  {proj.get('duracao', '-')}"
             _draw_text(canvas, width, height, 84, cy + 66, meta, 3, text_mut)
-            _draw_text(canvas, width, height, 84, cy + 102, f"Referencia: {proj.get('artistaReferencia', '-')}", 3, text_mut)
+            _draw_text(canvas, width, height, 84, cy + 102,
+                       f"{labels['referenceLabel']}: {proj.get('artistaReferencia', '-')}", 3, text_mut)
             stems = proj.get("stems", [])
-            stem_txt = "Stems: " + ", ".join(stems)
+            stem_txt = f"{labels['stemsLabel']}: " + ", ".join(stems)
             sy = cy + 138
             for line in _wrap_text(stem_txt, width - 168, 2):
                 _draw_text(canvas, width, height, 84, sy, line, 2, text_mut)
@@ -684,10 +912,12 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
         projetos = list(fixture.get("projetos", []))
         rateios = list(fixture.get("rateios", []))
         total_stems = sum(len(p.get("stems", [])) for p in projetos)
+        min_cota = min((float(r.get("cotaBRL") or 0) for r in rateios), default=0.0)
         metrics = [
-            (f"{len(projetos)} PROJETOS", "Catalogo Multitrack Hub"),
-            (f"{total_stems} STEMS", "Click, Guide e faixas avulsas"),
-            (f"{len(rateios)} RATEIOS", "Cotas a partir de R$ 24,90"),
+            (f"{len(projetos)} {labels['projectsLabel']}", str(brand_kit.get("brandName", ""))),
+            (f"{total_stems} {labels['stemsLabel']}", labels["stemsCaption"]),
+            (f"{len(rateios)} {labels['sharesLabel']}",
+             f"{labels['sharesFromLabel']} {_format_price_brl(min_cota)}"),
         ]
         col_w = (width - 112 - 40) // 3
         for idx, (big, small) in enumerate(metrics):
@@ -700,21 +930,31 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
         by = cy + 240
         _fill_rect(canvas, width, height, 56, by, width - 56, by + 16, (40, 50, 70))
         _fill_rect(canvas, width, height, 56, by, int((width - 112) * 0.72) + 56, by + 16, accent)
-        _draw_text(canvas, width, height, 56, by + 30, "Processamento de faixas em nuvem — 72% concluido", 3, text_mut)
+        _draw_text(canvas, width, height, 56, by + 30,
+                   f"{labels['processingCaption']} - 72%", 3, text_mut)
 
     elif kind == "shorts-rateios":
         cy = _draw_surface_banner_generic(canvas, width, height, header_h + 36,
                                           _scene_text(scene, "badge"), _scene_text(scene, "headline"), palette)
         for rateio in list(fixture.get("rateios", []))[:4]:
+            if cy + 150 > height - bottom_safe:
+                break
             _draw_card(canvas, width, height, 56, cy, width - 56, cy + 150, card_bg, border_color=secondary, border_thickness=2)
-            _draw_text(canvas, width, height, 84, cy + 18, rateio.get("titulo", "Rateio"), 4, accent)
+            _draw_text(canvas, width, height, 84, cy + 18,
+                       rateio.get("titulo", labels["shareUnitLabel"].capitalize()), 4, accent)
             _draw_text(canvas, width, height, 84, cy + 60,
-                       f"{rateio.get('faixasInclusas', 0)} faixas  •  cota {_format_price_brl(rateio.get('cotaBRL', 0))}", 3, text_pri)
+                       f"{rateio.get('faixasInclusas', 0)} {labels['tracksLabel'].lower()}  •  "
+                       f"{labels['shareUnitLabel'].lower()} {_format_price_brl(rateio.get('cotaBRL', 0))}",
+                       3, text_pri)
             status = rateio.get("status", "")
             st_col = ok_col if status == "Aberto" else secondary
             _draw_pill(canvas, width, height, width - 250, cy + 20, status, 2, st_col, dark_ink, pad_x=10, pad_y=6)
-            _draw_text(canvas, width, height, 84, cy + 100, f"Vagas restantes: {rateio.get('vagasRestantes', 0)}", 3, text_mut)
-            _draw_text(canvas, width, height, 84, cy + 130, f"Rota: {rateio.get('rota', '/rateios')}", 2, text_mut)
+            _draw_text(canvas, width, height, 84, cy + 100,
+                       f"{labels['remainingSlotsLabel']}: {rateio.get('vagasRestantes', 0)}",
+                       3, text_mut)
+            _draw_text(canvas, width, height, 84, cy + 130,
+                       f"{labels['routeLabel']}: {rateio.get('rota', labels['managerRouteFallback'])}",
+                       2, text_mut)
             cy += 160
 
     elif kind == "shorts-cta":
@@ -723,11 +963,11 @@ def _render_shorts_frame(scene: dict, brand_kit: dict, fixture: dict, root: str)
         lines = _wrap_text(_scene_text(scene, "headline"), width - 190, 6)
         ly = header_h + 160
         for line in lines:
-            _draw_text(canvas, width, height, 102, ly, line, 6, text_pri)
+            _draw_text(canvas, width, height, 102, ly, line, 6, title_color)
             ly += carousel_layout.char_height(6) + 22
         domain_txt = _scene_text(scene, "subline") or brand_kit.get("domain", "")
         _draw_text(canvas, width, height, 102, ly + 40, domain_txt, 5, accent)
-        _draw_text(canvas, width, height, 102, ly + 110, "Acesse o link na bio / link da descricao", 3, text_mut)
+        _draw_text(canvas, width, height, 102, ly + 110, labels["linkCtaLabel"], 3, text_mut)
     else:
         raise build_video.DeliveryError(f"tipo de cena nao suportado (shorts-completo): {kind}")
 
@@ -764,7 +1004,8 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
     brand_kit = ctx["brandKit"]
     guardrails = ctx["guardrails"]
     fixture = ctx["fixture"]
-    ui_labels = _resolve_ui_labels(brand_kit)
+    visual_tokens = resolve_visual_tokens(brand_kit, "9:16")
+    ui_labels = visual_tokens["uiLabels"]
 
     # 2. Carrega o config da campanha.
     config_abs = (os.path.realpath(config_path) if os.path.isabs(config_path)
@@ -917,6 +1158,8 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
                 "domain": brand_kit.get("domain"),
             },
             "uiLabels": {key: _norm_text(val) for key, val in ui_labels.items()},
+            "visualStyle": visual_tokens["visualStyle"],
+            "framing": visual_tokens["framing"],
             "guardrails": {
                 "allowAudioTrack": allow_audio,
                 "requireSrt": bool(audio_policy.get("requireSrt")),

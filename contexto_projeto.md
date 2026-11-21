@@ -11,10 +11,10 @@
 | Item | Valor |
 |------|-------|
 | Raiz oficial | `<RAIZ>`, o checkout principal retornado por `git rev-parse --show-toplevel` |
-| Último commit técnico validado na main | `9a800d1`, com CI verde no Windows e no Ubuntu ([run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554)) |
-| Branch de trabalho ativa | `main`, com a Etapa 6 enviada ao remoto. Release `08555ad` e correções dos gates `2439fb0` e `9a800d1`. |
+| Último commit técnico validado na main | `9a800d1`, com CI verde no Windows e no Ubuntu ([run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554)). Etapa 7 local em `227e939` (3 commits ainda não enviados), validada nesta estação conforme a sessão de 21/11/2026. |
+| Branch de trabalho ativa | `main`, com a Etapa 6 enviada ao remoto. Release `08555ad` e correções dos gates `2439fb0` e `9a800d1`. Etapa 7 (`899d36b`, `19e74c0`, `227e939`) existe só nesta estação. |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 6 concluída — Acabamento Multi-Nicho, SRT Mobile, Aprovação CLI & Analytics Loop (8 agentes) |
+| Fase atual | Etapa 7 em validação local — 5 tenants / 14 campanhas e calendário de 7 semanas (acabamento, integridade bidirecional e E2E da fábrica) |
 | Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4, Etapa 5 e Etapa 6 (Etapa 5: Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9 + Etapa 6: Agentes 1, 2, 3, 4, 5, 6, 7, 8) concluídas — ver seções 2 e 7 |
 ---
 
@@ -3412,3 +3412,37 @@ exit 1). Correção do print sugerida para o dono do arquivo: usar
 O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).
 
 O ajuste final tornou as fixtures de FFmpeg e FFprobe do `workspace_doctor` portáveis entre Windows e Ubuntu. As entregas versionadas permaneceram intactas.
+
+### 21/11/2026 — Validação pós-merge da Etapa 7 (Release Manager, estação Windows)
+
+**Base validada:** `main` @ `227e939`, com 3 commits locais ainda não enviados ao remoto (`899d36b` E2E da fábrica no CI + pacote documental das decisões do titular; `19e74c0` cruzamento bidirecional manifestos/archives, snapshot local e gate de mídia; `227e939` 3 campanhas novas e calendário de 7 semanas). Portfólio vigente: **5 tenants / 14 campanhas**. Nenhum devlog da Etapa 7 existe em `.workspace/devlogs/` (nada para o `devlog_sync` sincronizar). A árvore contém trabalho não commitado de outra sessão (`platform/src/tenant-policy-*`, `platform/src/validate-*`, `tools/preset_runner.py`, `tools/static_cards.py`, `tools/video_studio.py` e testes correspondentes) — preservado, não tocado.
+
+**Script de validação recebido:** executado tal como enviado, a partir de `.workspace/tmp/etapa7/validate_etapa7.py`. Resultado do script: FALHOU com 5 pendências, sendo 3 incompatibilidades do script com as CLIs reais e 2 reais:
+
+- `tools/tenant_validator.py` sem argumentos encerra com código 2 — exige `--tenant <id>` ou `--all`.
+- `tools/factory_cli.py handoff --dry-run` não existe — as opções são `--date`, `--all-approved`, `--include-pending`, `--approvals-file`, `--output-dir`.
+- `pytest` não está instalado e o repositório usa `unittest`; `tests/e2e` documenta `python -m unittest discover -s tests/e2e -v`.
+- `ARCHIVE_HASH_DIVERGENTE` em masters locais de `.workspace/archives/` (não versionados).
+
+**Correção aplicada nos masters locais:** restaurados a partir dos `.mp4` das entregas, cujos hashes conferem com os manifestos — `camp-saas-demo-marca-salao-001`, `camp-saas-demo-meu-salao-001` e `camp-shorts-completo-multitrack-001`. Causa conhecida: os testes de render com áudio do `preset_runner` sobrescrevem os masters compartilhados em `.workspace/archives/`; isso se repete a cada execução da suíte. Após a restauração, `workspace_doctor` e `release_audit` voltam a verde e os dois testes de pipeline do `factory_cli` passam.
+
+**Expectativas de teste atualizadas para o novo portfólio (14 campanhas / calendário de 7 semanas):** `test_campaign_calendar` (`WEEKS` 5→7, 44→56 slots, ondas 33/11→42/14, 56 URLs, ids `slot-001..056`, 57 linhas no CSV, distribuição semanal `{1:12, 2:12, 3:12, 4:6, 5:6, 6:6, 7:2}`, formatos 42/7/7, cabeçalhos de Semana 5 e nova Semana 7, CLI `--weeks 7`, 14 campanhas esperadas), `test_review_dashboard` (11→14 e 3 campanhas novas), `test_static_cards` (11→14 e mapa por tenant), `test_editorial_qa` (11→14; filtro `meu-salao` 2→3) e `test_approval_cli` (11→14).
+
+**Gates executados com as flags corretas:**
+
+- `platform: npm run build` e `npm test` → OK (1003 testes, 0 falhas, 7 skips).
+- `python tools/tenant_validator.py --all --json` → 5/5 tenants.
+- `python tools/editorial_qa.py` → 14 campanhas, 7 lentes, 0 erros e 0 avisos.
+- `python tools/factory_cli.py handoff --json` → ok (0 aprovadas, nenhum empacotamento automático).
+- `python -m unittest discover -s tests/e2e -v` → 4 testes OK.
+- `python tools/workspace_doctor.py --check --json` → ok, 0 erros.
+- `python tools/release_audit.py --strict --json` → 7/7 domínios OK.
+- 5 módulos de teste corrigidos, isolados → 89 testes OK.
+
+**Suíte canônica do CI (25 módulos, `unittest`):**
+
+- Primeira execução: 366 testes, **11 falhas + 1 erro** — expectativas presas a 11 campanhas e calendário de 5 semanas, mais os masters corrompidos em `.workspace/archives/`.
+- Após as correções acima: **380 testes, 2 falhas** (`test_05_pipeline_filtered_skip_render_reports_each_stage` e `test_06_pipeline_all_skip_render_consolidates_factory`). As duas falham somente porque os testes de render com áudio sobrescrevem os masters compartilhados durante a própria execução; depois de restaurar os 3 masters a partir das entregas, os 2 testes passam (`OK`) e `workspace_doctor --check` e `release_audit --strict` voltam a 7/7.
+- **Pendência registrada para a próxima etapa:** `preset_runner`/testes de render não devem escrever masters em `.workspace/archives/<slug>/` durante a suíte — ou precisam de um diretório de archives isolado por execução, para que o gate de mídia não dependa de restauração manual.
+
+**Nada foi commitado nesta sessão de validação**: `contexto_projeto.md`, os 5 módulos de teste corrigidos e as alterações geradas pela suíte permanecem na árvore de trabalho, aguardando decisão do titular.

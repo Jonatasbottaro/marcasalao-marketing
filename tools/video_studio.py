@@ -18,6 +18,15 @@ Seguranca:
 
 O painel produz arquivos locais para revisao; nenhuma aprovacao editorial nem
 publicacao. Videos sem faixa de audio.
+
+Multi-tenant e preflight (Etapa 6): a interface servida injeta um seletor de
+tenant alimentado por ``tenants/*/brand-kit.json`` (paleta, tipografia,
+uiLabels e VisualStyle v1). Antes de preview, exportacao, criacao e download do
+pacote ZIP, o Studio executa ``preflight``: guardrails do tenant + termos
+globais do Studio, mistura de rotas publica/gestor, SRT de 48 colunas via
+``srt_formatter`` e as 7 lentes do ``editorial_qa``. Falhas viram bloqueio 422
+(409 no download) com payload estruturado que a UI exibe. ``autoPublish`` e
+sempre false; nenhum binario novo e gerado pelo preflight.
 """
 
 import argparse
@@ -31,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
@@ -39,11 +49,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import build_video
 import campaign_proof
+import editorial_qa
 import make_agenda_media
 import make_proof_assets
 import make_request_media
 import produce_video
 import render_local
+import srt_formatter
 import studio_queue
 import delivery_package
 import delivery_verify
@@ -55,6 +67,7 @@ import studio_review
 import studio_connections
 import studio_templates
 import studio_video_api
+import tenant_validator
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
 VIDEO_EXTENSIONS = ('.mp4', '.mov')
@@ -96,13 +109,151 @@ BRAND_EXAMPLES = {
     },
 }
 
+TENANTS_DIR = 'tenants'
+DEFAULT_TENANT_ID = 'marca-salao'
+STUDIO_SRT_MAX_CHARS = 48
+STUDIO_ROUTE_PUBLIC = '/booking/'
+STUDIO_ROUTE_MANAGER = '/gestor/'
+STUDIO_TENANT_UI = r'''<!-- STUDIO_TENANT_UI -->
+<style>
+#studio-tenant-bar{position:fixed;right:12px;bottom:12px;z-index:9999;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:10px 12px;font:12px/1.45 Arial,sans-serif;max-width:360px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#studio-tenant-bar label{display:block;margin:4px 0}
+#studio-tenant-bar select{width:100%;background:#0b0f14;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:4px}
+#studio-tenant-bar .studio-muted{color:#8b949e}
+#studio-tenant-bar .studio-swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin-left:4px;border:1px solid #30363d}
+#studio-tenant-bar button{margin-top:6px;background:#1f6feb;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer}
+#studio-tenant-alert{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:10000;display:none;max-width:78vw;background:#3d1214;border:1px solid #f85149;color:#ffdcdc;border-radius:8px;padding:10px 14px;font:12px/1.4 Consolas,monospace;white-space:pre-wrap;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+</style>
+<div id="studio-tenant-bar">
+  <strong>Tenant (brand-kit)</strong>
+  <label>Conta <select id="studio-tenant-select"></select></label>
+  <div id="studio-tenant-brand" class="studio-muted">carregando…</div>
+  <div id="studio-tenant-labels" class="studio-muted"></div>
+  <button id="studio-tenant-recheck" type="button">Verificar pré-requisitos</button>
+  <span id="studio-tenant-status" class="studio-muted"></span>
+</div>
+<div id="studio-tenant-alert" role="alert"></div>
+<script>
+(function(){
+  "use strict";
+  var select=document.getElementById("studio-tenant-select");
+  var brandEl=document.getElementById("studio-tenant-brand");
+  var labelsEl=document.getElementById("studio-tenant-labels");
+  var statusEl=document.getElementById("studio-tenant-status");
+  var alertEl=document.getElementById("studio-tenant-alert");
+  var bar=document.getElementById("studio-tenant-bar");
+  var KEY="studio.tenantId";
+  function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function color(v){return /^#[0-9a-fA-F]{6}$/.test(String(v||""))?String(v):"#000000";}
+  function showAlerts(pf){
+    if(!pf||pf.ok){alertEl.style.display="none";alertEl.textContent="";return;}
+    var lines=["PREFLIGHT BLOQUEADO — "+String(pf.tenantId||"")];
+    (pf.alerts||[]).forEach(function(a){lines.push("["+a.code+"] "+(a.field?("("+a.field+") "):"")+a.message);});
+    alertEl.textContent=lines.join("\n");alertEl.style.display="block";
+  }
+  function applyBrand(t){
+    if(!t){return;}
+    var p=t.palette||{};
+    document.documentElement.style.setProperty("--studio-brand-primary",color(p.primary));
+    document.documentElement.style.setProperty("--studio-brand-text",color(p.textPrimary));
+    var font=String((t.typography||{}).fontFamily||"Arial").replace(/[^A-Za-z0-9 ,-]/g,"")||"Arial";
+    document.body.style.fontFamily=font;
+    bar.style.borderColor=color(p.primary);
+    var labels=t.uiLabels||{};
+    brandEl.innerHTML=esc(t.brandName||t.tenantId)+" · "+esc(t.domain||"")+
+      '<span class="studio-swatch" style="background:'+color(p.primary)+'"></span>'+
+      '<span class="studio-swatch" style="background:'+color(p.secondary)+'"></span>'+
+      '<span class="studio-swatch" style="background:'+color(p.accent)+'"></span>';
+    labelsEl.textContent="Fonte: "+font+" · "+String(labels.customerLabel||"")+" · "+String(labels.itemUnitLabel||"");
+    statusEl.textContent="";
+  }
+  function selectTenant(id){
+    var body={tenant_id:id};
+    return fetch("/api/tenants/select",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.tenant){localStorage.setItem(KEY,id);applyBrand(d.tenant);} return d; })
+      .catch(function(){statusEl.textContent="tenant indisponível";});
+  }
+  fetch("/api/tenants").then(function(r){return r.json();}).then(function(d){
+    var tenants=(d&&d.tenants)||[];
+    select.innerHTML="";
+    tenants.forEach(function(t){var o=document.createElement("option");o.value=t.tenantId;o.textContent=t.brandName||t.tenantId;select.appendChild(o);});
+    var saved=localStorage.getItem(KEY)||"";
+    var pick=tenants.some(function(t){return t.tenantId===saved;})?saved:(tenants[0]&&tenants[0].tenantId);
+    if(pick){select.value=pick;selectTenant(pick);}
+  }).catch(function(){brandEl.textContent="tenants indisponíveis";});
+  select.addEventListener("change",function(){selectTenant(select.value);});
+  document.getElementById("studio-tenant-recheck").addEventListener("click",function(){
+    statusEl.textContent="verificando…";
+    fetch("/api/works/preflight",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenant_id:select.value})})
+      .then(function(r){return r.json();})
+      .then(function(d){showAlerts(d&&d.preflight?d.preflight:d);statusEl.textContent=(d&&d.preflight&&d.preflight.ok)?"pré-requisitos OK":"bloqueado";})
+      .catch(function(){statusEl.textContent="falha na verificação";});
+  });
+  var originalFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    var url=typeof input==="string"?input:((input&&input.url)||"");
+    try{
+      var tid=localStorage.getItem(KEY);
+      if(tid&&init&&init.body&&typeof init.body==="string"&&
+         (url.indexOf("/api/projects/create")>=0||url.indexOf("/api/works/create")>=0||url.indexOf("/api/mcp/")>=0)){
+        var payload=JSON.parse(init.body);
+        if(payload&&!payload.tenant_id&&!payload.tenantId){
+          payload.tenant_id=tid;
+          init=Object.assign({},init,{body:JSON.stringify(payload)});
+        }
+      }
+    }catch(e){}
+    return originalFetch(input,init).then(function(res){
+      if(/\/api\/(preview|video\/preview-render|export|works\/package)/.test(url)){
+        res.clone().json().then(function(d){if(d&&d.preflight){showAlerts(d.preflight);}}).catch(function(){});
+      }
+      return res;
+    });
+  };
+})();
+</script>
+<!-- /STUDIO_TENANT_UI -->'''
+# Termos exigidos pelo preflight do Studio, alem dos claims do guardrails.json.
+STUDIO_EXTRA_FORBIDDEN_TERMS = (
+    'whatsapp', 'sms', 'lembrete automatico', 'lembretes automaticos',
+    'mensagem automatica', 'mensagens automaticas', 'confirmacao automatica',
+    'confirmacoes automaticas', 'checkout', 'pagamento', 'pagamentos',
+    'cartao de credito', 'faturamento garantido', 'garantia de faturamento',
+    'resultado garantido', 'aumento de faturamento garantido',
+)
+
+
+class PreflightBlocked(ValueError):
+    """Preflight editorial/guardrails reprovou a operacao antes do render/download."""
+
+    def __init__(self, report):
+        self.report = report
+        alerts = report.get('alerts') or []
+        codes = ', '.join(sorted({a.get('code') for a in alerts if a.get('code')})) or 'PREFLIGHT'
+        self.code = (alerts[0].get('code') if alerts else 'PREFLIGHT')
+        super().__init__(f'Preflight bloqueou a operacao ({codes})')
+
 
 def now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
+def _srt_timestamp(ms):
+    ms = max(0, int(ms))
+    seconds, millis = divmod(ms, 1000)
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f'{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}'
+
+
 def atomic_write_json(target, value):
-    """Grava JSON de forma atomica com UTF-8, LF e flush+fsync antes de os.replace."""
+    """Grava JSON de forma atomica com UTF-8, LF e flush+fsync antes de os.replace.
+
+    No Windows o destino recem-criado pode ficar brevemente bloqueado por
+    antivirus/indexador; o replace e repetido com espera curta (mesmo arquivo
+    temporario) em vez de falhar a operacao inteira.
+    """
     fs = render_local.fs_path
     parent = os.path.dirname(os.path.abspath(target))
     os.makedirs(fs(parent), exist_ok=True)
@@ -116,7 +267,17 @@ def atomic_write_json(target, value):
                 os.fsync(handle.fileno())
             except OSError:
                 pass
-        os.replace(tmp, fs(target))
+        last_error = None
+        for attempt in range(6):
+            try:
+                os.replace(tmp, fs(target))
+                last_error = None
+                break
+            except PermissionError as exc:
+                last_error = exc
+                time.sleep(0.05 * (attempt + 1))
+        if last_error is not None:
+            raise last_error
     except OSError:
         if os.path.exists(fs(tmp)):
             os.remove(fs(tmp))
@@ -379,6 +540,9 @@ class Studio:
         self.preview_jobs = {}
         self.preview_jobs_by_key = {}
         self.preview_jobs_lock = threading.Lock()
+        self.active_tenant_id = None
+        self._editorial_cache = {}
+        self._editorial_cache_lock = threading.Lock()
         for folder in (self.projects_dir, self.works_dir, self.status_dir, self.drafts_dir, self.standalone_previews_dir):
             os.makedirs(folder, exist_ok=True)
         self.queue = studio_queue.StudioQueue(self, auto_start=auto_start_queue)
@@ -438,6 +602,425 @@ class Studio:
             return False
         parsed = urlparse(origin)
         return parsed.scheme == 'http' and parsed.hostname in ('127.0.0.1', 'localhost') and parsed.port == self.port
+
+    # ---- tenants (brand-kit + guardrails) ----
+    def tenant_ids(self):
+        base = os.path.join(self.root, TENANTS_DIR)
+        if not os.path.isdir(render_local.fs_path(base)):
+            return []
+        ids = []
+        for name in sorted(os.listdir(render_local.fs_path(base))):
+            if not KEBAB_CASE_RE.match(name):
+                continue
+            if os.path.isfile(render_local.fs_path(os.path.join(base, name, 'brand-kit.json'))):
+                ids.append(name)
+        return ids
+
+    def _tenant_dir(self, tenant_id):
+        tid = str(tenant_id or '').strip()
+        if not KEBAB_CASE_RE.match(tid):
+            raise ValueError(f'tenant_id invalido: {tenant_id!r}')
+        base = os.path.realpath(os.path.join(self.root, TENANTS_DIR))
+        target = os.path.realpath(os.path.join(base, tid))
+        if os.path.commonpath([base, target]) != base or not os.path.isdir(render_local.fs_path(target)):
+            raise ValueError(f'tenant_id inexistente: {tid}')
+        return target
+
+    def list_tenants(self):
+        rows = []
+        for tenant_id in self.tenant_ids():
+            kit_path = os.path.join(self.root, TENANTS_DIR, tenant_id, 'brand-kit.json')
+            try:
+                with open(render_local.fs_path(kit_path), 'r', encoding='utf-8') as handle:
+                    kit = json.load(handle)
+            except (OSError, ValueError):
+                continue
+            rows.append({
+                'tenantId': tenant_id,
+                'brandName': kit.get('brandName') or tenant_id,
+                'displayTitle': kit.get('displayTitle') or kit.get('brandName') or tenant_id,
+                'monogram': kit.get('monogram') or '',
+                'domain': kit.get('domain') or '',
+                'defaultPreset': kit.get('defaultPreset'),
+                'fontFamily': (kit.get('typography') or {}).get('fontFamily'),
+            })
+        return rows
+
+    def _tenant_visual_style(self, tenant_id, style_id=None):
+        """VisualStyle v1 (contrato do nucleo) derivado da paleta do brand-kit."""
+        kit_path = os.path.join(self.root, TENANTS_DIR, tenant_id, 'brand-kit.json')
+        with open(render_local.fs_path(kit_path), 'r', encoding='utf-8') as handle:
+            kit = json.load(handle)
+        palette = kit.get('palette') or {}
+
+        def _hex(value, fallback):
+            return value if isinstance(value, str) and re.match(r'^#[0-9a-fA-F]{6}$', value) else fallback
+
+        candidate_id = str(style_id or f'{tenant_id}-brand')
+        if not KEBAB_CASE_RE.match(candidate_id):
+            candidate_id = f'{tenant_id}-brand'
+        return {
+            'schemaVersion': 1,
+            'id': candidate_id,
+            'title': {
+                'textColor': _hex(palette.get('textPrimary'), '#FFFFFF'),
+                'outlineColor': _hex(palette.get('background'), '#000000'),
+                'fontSize': 44,
+                'marginTop': 170,
+                'marginHorizontal': 70,
+            },
+        }
+
+    def get_tenant_brand(self, tenant_id):
+        self._tenant_dir(tenant_id)
+        try:
+            ctx = tenant_validator.load_and_validate_tenant(
+                tenant_id, root=self.root, strict=True)
+        except tenant_validator.TenantContractError as exc:
+            raise ValueError(str(exc))
+        kit = ctx['brandKit']
+        guardrails = ctx['guardrails']
+        palette = kit.get('palette') or {}
+        return {
+            'tenantId': tenant_id,
+            'brandName': kit.get('brandName') or tenant_id,
+            'displayTitle': kit.get('displayTitle') or kit.get('brandName') or tenant_id,
+            'monogram': kit.get('monogram') or '',
+            'domain': kit.get('domain') or '',
+            'url': kit.get('url') or '',
+            'tagline': kit.get('tagline') or '',
+            'palette': {
+                key: palette.get(key)
+                for key in (
+                    'primary', 'secondary', 'accent', 'background', 'surface',
+                    'textPrimary', 'textMuted',
+                )
+            },
+            'typography': kit.get('typography') or {},
+            'uiLabels': kit.get('uiLabels') or {},
+            'visualStyle': self._tenant_visual_style(tenant_id),
+            'guardrails': {
+                'forbiddenClaims': list(guardrails.get('forbiddenClaims') or []),
+                'forbiddenUiElements': list(guardrails.get('forbiddenUiElements') or []),
+                'routeRules': guardrails.get('routeRules') or {},
+            },
+            'audioPolicy': guardrails.get('audioPolicy') or {},
+            'brandKitPath': ctx['brandKitPath'],
+            'guardrailsPath': ctx['guardrailsPath'],
+            'autoPublish': False,
+        }
+
+    def select_tenant(self, body):
+        if not isinstance(body, dict):
+            raise ValueError('payload de tenant invalido')
+        tenant_id = (body.get('tenant_id') or body.get('tenantId') or '').strip()
+        brand = self.get_tenant_brand(tenant_id)
+        self.active_tenant_id = tenant_id
+        return {'activeTenantId': tenant_id, 'tenant': brand}
+
+    def _tenant_from_project(self, project_rel):
+        if not project_rel:
+            return None
+        try:
+            doc = self._load_json(project_rel)
+        except (ValueError, OSError):
+            return None
+        candidate = str(doc.get('brandTheme') or '').strip()
+        return candidate if candidate in self.tenant_ids() else None
+
+    def _resolve_tenant_id(self, body=None, work_id=None, project_rel=None):
+        explicit = None
+        if isinstance(body, dict):
+            explicit = body.get('tenant_id') or body.get('tenantId')
+        if explicit:
+            self._tenant_dir(explicit)
+            return str(explicit)
+        if work_id and KEBAB_CASE_RE.match(str(work_id)):
+            work_abs = self.confine_workspace(self.work_paths(work_id)['workFile'])
+            if os.path.isfile(render_local.fs_path(work_abs)):
+                try:
+                    with open(render_local.fs_path(work_abs), 'r', encoding='utf-8') as handle:
+                        candidate = str(json.load(handle).get('tenantId') or '').strip()
+                except (OSError, ValueError):
+                    candidate = ''
+                if candidate:
+                    self._tenant_dir(candidate)
+                    return candidate
+        from_project = self._tenant_from_project(project_rel)
+        if from_project:
+            return from_project
+        if self.active_tenant_id:
+            self._tenant_dir(self.active_tenant_id)
+            return self.active_tenant_id
+        if DEFAULT_TENANT_ID in self.tenant_ids():
+            return DEFAULT_TENANT_ID
+        return None
+
+    def _request_texts(self, request, overlay_plan=None):
+        """Rotulos e textos auditaveis do roteiro/cards/TextOverlayPlan v1."""
+        texts = []
+        if isinstance(request, dict):
+            if str(request.get('title') or '').strip():
+                texts.append(('request.title', str(request['title'])))
+            for index, scene in enumerate(request.get('scenes') or []):
+                if not isinstance(scene, dict):
+                    continue
+                for key in ('caption', 'title', 'narration'):
+                    value = str(scene.get(key) or '').strip()
+                    if value:
+                        texts.append((f'scenes[{index}].{key}', value))
+            for index, card in enumerate(request.get('cards') or []):
+                if not isinstance(card, dict):
+                    continue
+                for key in ('title', 'body'):
+                    value = str(card.get(key) or '').strip()
+                    if value:
+                        texts.append((f'cards[{index}].{key}', value))
+            if overlay_plan is None:
+                overlay_plan = request.get('textOverlayPlan') or request.get('overlayPlan')
+        if overlay_plan is not None:
+            if not isinstance(overlay_plan, dict):
+                raise ValueError('TextOverlayPlan v1 deve ser um objeto')
+            if overlay_plan.get('schemaVersion') != 1:
+                raise ValueError('TextOverlayPlan exige schemaVersion 1')
+            overlays = overlay_plan.get('overlays')
+            if not isinstance(overlays, list):
+                raise ValueError('TextOverlayPlan.overlays deve ser lista')
+            for index, overlay in enumerate(overlays):
+                if not isinstance(overlay, dict):
+                    raise ValueError(f'TextOverlayPlan.overlays[{index}] invalido')
+                text = str(overlay.get('text') or '').strip()
+                if not text:
+                    raise ValueError(f'TextOverlayPlan.overlays[{index}].text vazio')
+                texts.append((f'textOverlayPlan.overlays[{index}].text', text))
+        return texts
+
+    def _synthesize_srt(self, request):
+        scenes = request.get('scenes') if isinstance(request, dict) else None
+        cues = []
+        cursor = 0
+        for scene in scenes or []:
+            if not isinstance(scene, dict):
+                continue
+            text = str(scene.get('caption') or scene.get('title') or '').strip()
+            if not text:
+                continue
+            duration = int(scene.get('durationMs') or 0)
+            if duration <= 0:
+                duration = 1000
+            end = cursor + duration
+            cues.append(
+                f'{len(cues) + 1}\n{_srt_timestamp(cursor)} --> {_srt_timestamp(end)}\n{text}'
+            )
+            cursor = end
+        return '\n\n'.join(cues) + '\n' if cues else ''
+
+    def _editorial_audit(self, tenant_id, strict):
+        key = (tenant_id, bool(strict))
+        with self._editorial_cache_lock:
+            cached = self._editorial_cache.get(key)
+        if cached is not None:
+            return cached
+        try:
+            report = editorial_qa.run_editorial_qa(
+                root=self.root, strict=strict, tenant=tenant_id)
+        except (OSError, ValueError, editorial_qa.EditorialQAError) as exc:
+            report = {
+                'schemaVersion': 1,
+                'ok': False,
+                'error': str(exc),
+                'checks': [],
+                'summary': {'problems': {'errors': 1, 'warnings': 0}},
+            }
+        with self._editorial_cache_lock:
+            if report.get('ok'):
+                self._editorial_cache[key] = report
+        return report
+
+    def preflight(self, tenant_id=None, request=None, overlay_plan=None, srt_text=None,
+                  work_id=None, project_rel=None, strict_editorial=False,
+                  include_editorial=True):
+        """Guardrails + rotas + SRT 48 col + 7 lentes antes de render/entrega."""
+        resolved = self._resolve_tenant_id(
+            {'tenant_id': tenant_id} if tenant_id else None,
+            work_id=work_id,
+            project_rel=project_rel,
+        )
+        if not resolved:
+            raise ValueError('nenhum tenant disponivel para o preflight')
+        brand = self.get_tenant_brand(resolved)
+        guardrails = brand['guardrails']
+        alerts = []
+
+        try:
+            texts = self._request_texts(request, overlay_plan)
+        except ValueError as exc:
+            texts = []
+            alerts.append({
+                'code': 'TEXT_OVERLAY_PLAN_INVALIDO',
+                'severity': 'error',
+                'field': 'textOverlayPlan',
+                'message': str(exc),
+            })
+
+        merged_claims = list(dict.fromkeys(
+            [str(c) for c in guardrails.get('forbiddenClaims') or []] +
+            [str(c) for c in STUDIO_EXTRA_FORBIDDEN_TERMS]
+        ))
+        merged_guardrails = {
+            'forbiddenClaims': merged_claims,
+            'forbiddenUiElements': list(guardrails.get('forbiddenUiElements') or []),
+        }
+        guardrail_hits = 0
+        for label, text in texts:
+            for violation in tenant_validator.validate_text_against_guardrails(
+                text, merged_guardrails, check_ui_elements=True
+            ):
+                guardrail_hits += 1
+                alerts.append({
+                    'code': 'GUARDRAIL_VIOLACAO',
+                    'severity': 'error',
+                    'field': label,
+                    'message': violation,
+                })
+
+        joined = '\n'.join(text for _, text in texts)
+        route_ok = not (
+            STUDIO_ROUTE_PUBLIC in joined and STUDIO_ROUTE_MANAGER in joined
+        )
+        if not route_ok:
+            alerts.append({
+                'code': 'ROTAS_MISTURADAS',
+                'severity': 'error',
+                'field': 'request',
+                'message': (
+                    f'mistura de rotas {STUDIO_ROUTE_PUBLIC}... e {STUDIO_ROUTE_MANAGER}... '
+                    'na mesma peca; separe fluxo publico e gestor'
+                ),
+            })
+
+        srt_check = {
+            'ok': True,
+            'maxLineChars': STUDIO_SRT_MAX_CHARS,
+            'cues': 0,
+            'maxLineLength': 0,
+        }
+        source = srt_text if isinstance(srt_text, str) and srt_text.strip() else self._synthesize_srt(request)
+        if source:
+            try:
+                formatted, stats = srt_formatter.format_srt_content(
+                    source, max_chars=STUDIO_SRT_MAX_CHARS)
+            except srt_formatter.SrtFormatterError as exc:
+                srt_check = {
+                    'ok': False,
+                    'maxLineChars': STUDIO_SRT_MAX_CHARS,
+                    'error': str(exc),
+                }
+                alerts.append({
+                    'code': 'SRT_INVALIDO',
+                    'severity': 'error',
+                    'field': 'srt',
+                    'message': str(exc),
+                })
+            else:
+                srt_ok = stats['afterLongLines'] == 0
+                srt_check = {
+                    'ok': srt_ok,
+                    'maxLineChars': STUDIO_SRT_MAX_CHARS,
+                    'cues': stats['cues'],
+                    'beforeMaxLineLength': stats['beforeMaxLineLength'],
+                    'maxLineLength': stats['afterMaxLineLength'],
+                }
+                if not srt_ok:
+                    alerts.append({
+                        'code': 'SRT_LINHA_LONGA',
+                        'severity': 'error',
+                        'field': 'srt',
+                        'message': (
+                            f"{stats['afterLongLines']} linha(s) acima de "
+                            f'{STUDIO_SRT_MAX_CHARS} caracteres'
+                        ),
+                    })
+                srt_check['formatted'] = formatted
+
+        editorial = {'enabled': bool(include_editorial), 'ok': True, 'strict': bool(strict_editorial)}
+        if include_editorial:
+            report = self._editorial_audit(resolved, strict_editorial)
+            editorial = {
+                'enabled': True,
+                'ok': bool(report.get('ok')),
+                'strict': bool(strict_editorial),
+                'lenses': [
+                    {
+                        'id': check.get('id'),
+                        'ok': bool(check.get('ok')),
+                        'status': check.get('status'),
+                        'problems': len(check.get('problems') or []),
+                    }
+                    for check in report.get('checks') or []
+                ],
+                'errors': ((report.get('summary') or {}).get('problems') or {}).get('errors', 0),
+                'warnings': ((report.get('summary') or {}).get('problems') or {}).get('warnings', 0),
+            }
+            if report.get('error'):
+                editorial['error'] = report['error']
+            if not editorial['ok']:
+                codes = sorted({
+                    problem.get('code')
+                    for check in report.get('checks') or []
+                    for problem in (check.get('problems') or [])
+                    if problem.get('severity') == 'error' and problem.get('code')
+                })
+                alerts.append({
+                    'code': 'EDITORIAL_QA_REPROVADO',
+                    'severity': 'error',
+                    'field': 'editorial_qa',
+                    'message': (
+                        'editorial_qa reprovou: ' + (', '.join(codes) if codes else
+                        (report.get('error') or 'consulte o relatorio'))
+                    ),
+                })
+
+        ok = not any(alert['severity'] == 'error' for alert in alerts)
+        return {
+            'schemaVersion': 1,
+            'ok': ok,
+            'tenantId': resolved,
+            'autoPublish': False,
+            'maxLineChars': STUDIO_SRT_MAX_CHARS,
+            'alerts': alerts,
+            'checks': {
+                'guardrails': {
+                    'ok': guardrail_hits == 0,
+                    'textFields': len(texts),
+                    'violations': guardrail_hits,
+                },
+                'rotas': {'ok': route_ok},
+                'srt': srt_check,
+                'editorialQa': editorial,
+            },
+            'brand': {
+                'brandName': brand['brandName'],
+                'palette': brand['palette'],
+                'typography': brand['typography'],
+                'uiLabels': brand['uiLabels'],
+                'visualStyle': brand['visualStyle'],
+            },
+        }
+
+    def preflight_for_work(self, work_id, strict_editorial=True, request=None,
+                           overlay_plan=None, tenant_id=None):
+        if not KEBAB_CASE_RE.match(str(work_id or '')):
+            raise ValueError('workId invalido para preflight')
+        work, disk_request, _ = self._load_work_draft_bundle(work_id)
+        return self.preflight(
+            tenant_id=tenant_id or work.get('tenantId'),
+            request=request or disk_request,
+            overlay_plan=overlay_plan,
+            work_id=work_id,
+            project_rel=work.get('project'),
+            strict_editorial=strict_editorial,
+        )
 
     # ---- projetos e perfis ----
     def _scan_project_dir(self, folder, source, source_label):
@@ -539,13 +1122,27 @@ class Studio:
         if not isinstance(profiles, list):
             profiles = []
 
+        tenant_hint = body.get('tenant_id') or body.get('tenantId') or manifest_in.get('tenantId')
+        tenant_id = None
+        brand = None
+        if tenant_hint:
+            tenant_id = self._resolve_tenant_id({'tenantId': tenant_hint})
+            brand = self.get_tenant_brand(tenant_id)
+
+        brand_theme = (manifest_in.get('brandTheme') or '').strip()
+        if not brand_theme:
+            brand_theme = tenant_id or project_id
+        name = (manifest_in.get('name') or '').strip()
+        if not name and brand:
+            name = brand['brandName']
+
         manifest = {
             'schemaVersion': manifest_in.get('schemaVersion', 1),
             'id': project_id,
-            'name': (manifest_in.get('name') or '').strip(),
+            'name': name,
             'locale': (manifest_in.get('locale') or 'pt-BR').strip(),
             'timezone': (manifest_in.get('timezone') or 'America/Sao_Paulo').strip(),
-            'brandTheme': (manifest_in.get('brandTheme') or project_id).strip(),
+            'brandTheme': brand_theme,
             'assetRoot': (manifest_in.get('assetRoot') or f'.workspace/studio/projects/{project_id}/assets').strip(),
             'contentPolicies': policies_in,
             'outputProfiles': [str(p).strip() for p in profiles if str(p).strip()],
@@ -570,6 +1167,8 @@ class Studio:
                 'sourceLabel': 'cadastrado',
             },
             'report': report,
+            'tenantId': tenant_id,
+            'brand': brand,
         }
 
     def list_profiles(self, project_rel=None, module=None):
@@ -804,6 +1403,20 @@ class Studio:
             project_doc = json.load(handle)
         self._validate_project_with_core(project_doc)
 
+        tenant_id = self._resolve_tenant_id(body, project_rel=project_rel)
+        brand = self.get_tenant_brand(tenant_id) if tenant_id else None
+        visual_style = (
+            self._tenant_visual_style(tenant_id, f'{work_id}-estilo')
+            if tenant_id else {
+                'schemaVersion': 1,
+                'id': f'{work_id}-estilo',
+                'title': {
+                    'textColor': '#FFFFFF', 'outlineColor': '#000000',
+                    'fontSize': 44, 'marginTop': 170, 'marginHorizontal': 70,
+                },
+            }
+        )
+
         listing = self.list_profiles(project_rel)
         video_profiles, carousel_profiles, _ = _default_output_profiles_from_listing(listing)
         if not video_profiles and not carousel_profiles:
@@ -871,14 +1484,7 @@ class Studio:
                 'title': ex_video.get('title', name),
                 'locale': ex_video.get('locale', project_doc.get('locale', 'pt-BR')),
                 'profiles': filtered_profiles or video_profiles,
-                'visualStyle': ex_video.get('visualStyle', {
-                    'schemaVersion': 1,
-                    'id': f'{work_id}-estilo',
-                    'title': {
-                        'textColor': '#FFFFFF', 'outlineColor': '#000000',
-                        'fontSize': 44, 'marginTop': 170, 'marginHorizontal': 70,
-                    },
-                }),
+                'visualStyle': visual_style if tenant_id else ex_video.get('visualStyle', visual_style),
                 'media': copied_media,
                 'scenes': json.loads(json.dumps(ex_video.get('scenes', []))),
             }
@@ -939,14 +1545,7 @@ class Studio:
                 'title': ex_video.get('title', name),
                 'locale': ex_video.get('locale', project_doc.get('locale', 'pt-BR')),
                 'profiles': video_profiles or ex_video.get('profiles', []),
-                'visualStyle': ex_video.get('visualStyle', {
-                    'schemaVersion': 1,
-                    'id': f'{work_id}-estilo',
-                    'title': {
-                        'textColor': '#FFFFFF', 'outlineColor': '#000000',
-                        'fontSize': 44, 'marginTop': 170, 'marginHorizontal': 70,
-                    },
-                }),
+                'visualStyle': visual_style if tenant_id else ex_video.get('visualStyle', visual_style),
                 'media': [m for m in shared_media if m['id'] != 'agenda' or any(s['mediaId'] == 'agenda' for s in scenes)],
                 'scenes': scenes,
             }
@@ -1023,14 +1622,7 @@ class Studio:
                 'title': name,
                 'locale': project_doc.get('locale', 'pt-BR'),
                 'profiles': video_profiles or ['instagram-reels-video'],
-                'visualStyle': {
-                    'schemaVersion': 1,
-                    'id': f'{work_id}-estilo',
-                    'title': {
-                        'textColor': '#FFFFFF', 'outlineColor': '#000000',
-                        'fontSize': 44, 'marginTop': 170, 'marginHorizontal': 70,
-                    },
-                },
+                'visualStyle': visual_style,
                 'media': json.loads(json.dumps(shared)),
                 'scenes': [
                     {
@@ -1092,6 +1684,16 @@ class Studio:
             'name': name,
             'project': project_rel,
             'projectId': project_doc.get('id'),
+            'tenantId': tenant_id,
+            'autoPublish': False,
+            'brand': {
+                'brandName': brand['brandName'],
+                'monogram': brand['monogram'],
+                'palette': brand['palette'],
+                'typography': brand['typography'],
+                'uiLabels': brand['uiLabels'],
+                'visualStyle': brand['visualStyle'],
+            } if brand else None,
             'createdAt': ts,
             'updatedAt': ts,
             'paths': paths,
@@ -1266,7 +1868,16 @@ class Studio:
     def _tool_for(self, kind):
         return 'produce_carousel.py' if kind == 'carousel' else 'produce_video.py'
 
-    def preview(self, request, profile=None, kind='video', motion_plan=None):
+    def preview(self, request, profile=None, kind='video', motion_plan=None,
+                tenant_id=None, overlay_plan=None, enforce_preflight=True):
+        preflight = None
+        if enforce_preflight:
+            project_rel = request.get('project') if isinstance(request, dict) else None
+            preflight = self.preflight(
+                tenant_id=tenant_id, request=request, overlay_plan=overlay_plan,
+                project_rel=project_rel, strict_editorial=False)
+            if not preflight['ok']:
+                raise PreflightBlocked(preflight)
         tmp = self._write_temp_request(request)
         plan_tmp = None
         cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
@@ -1287,7 +1898,7 @@ class Studio:
             payload = json.loads(res.stdout)
         except ValueError:
             payload = {'status': 'error', 'error': res.stderr.strip() or 'previa ilegivel'}
-        return {'returncode': res.returncode, 'result': payload}
+        return {'returncode': res.returncode, 'result': payload, 'preflight': preflight}
 
     def _finalize_job(self, job):
         with job['lock']:
@@ -1374,9 +1985,21 @@ class Studio:
         finally:
             self._finalize_job(job)
 
-    def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None, work_id=None):
+    def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None,
+                     work_id=None, tenant_id=None, overlay_plan=None):
         if self.is_single_export_active(output_dir_rel, profile=profile) or self.queue.is_destination_active(output_dir_rel):
             raise ValueError('Destino em uso por uma exportacao ou item da fila em andamento. Aguarde a conclusao.')
+        if work_id:
+            preflight = self.preflight_for_work(
+                work_id, strict_editorial=False, request=request,
+                overlay_plan=overlay_plan, tenant_id=tenant_id)
+        else:
+            preflight = self.preflight(
+                tenant_id=tenant_id, request=request, overlay_plan=overlay_plan,
+                project_rel=request.get('project') if isinstance(request, dict) else None,
+                strict_editorial=False)
+        if not preflight['ok']:
+            raise PreflightBlocked(preflight)
         export_lineage = None
         if work_id:
             save_payload = {'workId': work_id}
@@ -1708,6 +2331,20 @@ class Studio:
         if not isinstance(req, dict) or not req:
             raise ValueError('VideoRequest ausente para gerar previa')
         project_rel = req.get('project')
+        if work_id:
+            preflight = self.preflight_for_work(
+                work_id, strict_editorial=False, request=req,
+                overlay_plan=body.get('textOverlayPlan') or body.get('overlayPlan'),
+                tenant_id=body.get('tenant_id') or body.get('tenantId'))
+        else:
+            preflight = self.preflight(
+                tenant_id=body.get('tenant_id') or body.get('tenantId'),
+                request=req,
+                overlay_plan=body.get('textOverlayPlan') or body.get('overlayPlan'),
+                project_rel=project_rel,
+                strict_editorial=False)
+        if not preflight['ok']:
+            raise PreflightBlocked(preflight)
         profile_meta, _ = self._resolve_video_profile_meta(project_rel, profile_id)
         mplan = self._applicable_motion_plan(req, profile_meta, mplan)
         preview_dir = self._preview_dir(work_id)
@@ -1740,6 +2377,7 @@ class Studio:
             'workId': work_id,
             'profileId': profile_id,
             'previewFingerprint': fp,
+            'preflight': preflight,
         }
 
     def video_preview_status(self, work_id=None, profile_id=None, job_id=None, request=None, motion_plan=None):
@@ -1946,14 +2584,24 @@ class Studio:
 
     def create_package(self, body):
         work_id = (body.get('workId') or body.get('id') or '').strip() if isinstance(body, dict) else ''
+        preflight = self.preflight_for_work(
+            work_id, strict_editorial=False,
+            overlay_plan=(body.get('textOverlayPlan') or body.get('overlayPlan')) if isinstance(body, dict) else None,
+            tenant_id=(body.get('tenant_id') or body.get('tenantId')) if isinstance(body, dict) else None,
+        )
+        if not preflight['ok']:
+            raise PreflightBlocked(preflight)
         pkg = delivery_package.build_and_promote_package(self, work_id, body)
         overview = studio_review.build_review_overview(self, work_id)
-        return {**overview, 'packageDelivery': pkg}
+        return {**overview, 'packageDelivery': pkg, 'preflight': preflight}
 
     def read_package_delivery(self, work_id):
         return delivery_package.read_package_delivery(self, work_id)
 
     def verified_package_download(self, work_id):
+        preflight = self.preflight_for_work(work_id, strict_editorial=False)
+        if not preflight['ok']:
+            raise PreflightBlocked(preflight)
         return delivery_package.verified_package_zip_path(self, work_id)
 
     def verify_package_delivery(self, work_id):
@@ -2229,6 +2877,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             html = handle.read()
         tags = self._astryx_frontend_tags()
         html = html.replace('<!-- ASTRYX_FRONTEND_ASSETS -->', tags)
+        if '</body>' in html:
+            html = html.replace('</body>', STUDIO_TENANT_UI + '\n</body>')
         body = html.encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -2380,6 +3030,17 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.serve_static(path[len('/static/'):])
             elif path == '/api/readiness':
                 self.send_json(200, {'ok': True, 'readiness': studio.check_readiness()})
+            elif path == '/api/tenants':
+                self.send_json(200, {
+                    'ok': True,
+                    'tenants': studio.list_tenants(),
+                    'activeTenantId': studio.active_tenant_id,
+                })
+            elif path == '/api/tenants/get':
+                self.send_json(200, {
+                    'ok': True,
+                    'tenant': studio.get_tenant_brand(query.get('id', [''])[0]),
+                })
             elif path == '/api/projects':
                 self.send_json(200, {'ok': True, 'projects': studio.list_projects()})
             elif path == '/api/profiles':
@@ -2458,6 +3119,12 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == '/api/works/package/download':
                 try:
                     target, download_name = studio.verified_package_download(query.get('id', [''])[0])
+                except PreflightBlocked as exc:
+                    self.send_error_json(409, str(exc), {
+                        'preflight': exc.report,
+                        'code': exc.code,
+                    })
+                    return
                 except (ValueError, OSError) as exc:
                     self.send_error_json(404, str(exc))
                     return
@@ -2518,6 +3185,11 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
+        except PreflightBlocked as exc:
+            self.send_error_json(422, str(exc), {
+                'preflight': exc.report,
+                'code': exc.code,
+            })
         except studio_review.ReviewVersionConflictError as exc:
             self.send_error_json(409, str(exc), {'conflict': True})
         except studio_planning.PlanningValidationError as exc:
@@ -2553,6 +3225,31 @@ class StudioHandler(BaseHTTPRequestHandler):
                 return
             if path == '/api/projects/create':
                 self.send_json(200, {'ok': True, **studio.create_project(body)})
+            elif path == '/api/mcp/projects/create':
+                self.send_json(200, {'ok': True, 'mcp': True, **studio.create_project(body)})
+            elif path == '/api/mcp/works/create':
+                self.send_json(200, {'ok': True, 'mcp': True, **studio.create_work(body)})
+            elif path == '/api/tenants/select':
+                self.send_json(200, {'ok': True, **studio.select_tenant(body)})
+            elif path == '/api/works/preflight':
+                work_id = (body.get('workId') or body.get('id') or '').strip()
+                overlay = body.get('textOverlayPlan') or body.get('overlayPlan')
+                if work_id:
+                    report = studio.preflight_for_work(
+                        work_id,
+                        strict_editorial=bool(body.get('strict', False)),
+                        request=body.get('request'),
+                        overlay_plan=overlay,
+                        tenant_id=body.get('tenant_id') or body.get('tenantId'),
+                    )
+                else:
+                    report = studio.preflight(
+                        tenant_id=body.get('tenant_id') or body.get('tenantId'),
+                        request=body.get('request'),
+                        overlay_plan=overlay,
+                        strict_editorial=bool(body.get('strict', False)),
+                    )
+                self.send_json(200, {'ok': True, 'preflight': report})
             elif path == '/api/works/create':
                 self.send_json(200, {'ok': True, **studio.create_work(body)})
             elif path == '/api/works/demo':
@@ -2582,8 +3279,16 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == '/api/works/planning/save':
                 self.send_json(200, {'ok': True, **studio.save_planning(body)})
             elif path == '/api/works/planning/prompt':
+                if isinstance(body, dict):
+                    tenant_hint = body.pop('tenant_id', None) or body.pop('tenantId', None)
+                    if tenant_hint:
+                        studio.get_tenant_brand(tenant_hint)
                 self.send_json(200, {'ok': True, **studio.build_planning_prompt(body)})
             elif path == '/api/works/planning/import':
+                if isinstance(body, dict):
+                    tenant_hint = body.pop('tenant_id', None) or body.pop('tenantId', None)
+                    if tenant_hint:
+                        studio.get_tenant_brand(tenant_hint)
                 self.send_json(200, {'ok': True, **studio.import_planning_suggestion(body)})
             elif path == '/api/works/planning/generate':
                 self.send_json(200, {'ok': True, **studio.generate_planning_suggestion(body)})
@@ -2634,7 +3339,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, 'path': rel})
             elif path == '/api/preview':
                 self.send_json(200, {'ok': True, **studio.preview(
-                    body.get('request'), body.get('profile'), body.get('kind', 'video'), body.get('motionPlan'))})
+                    body.get('request'), body.get('profile'), body.get('kind', 'video'),
+                    body.get('motionPlan'),
+                    tenant_id=body.get('tenant_id') or body.get('tenantId'),
+                    overlay_plan=body.get('textOverlayPlan') or body.get('overlayPlan'))})
             elif path == '/api/video/frame-info':
                 self.send_json(200, studio.video_frame_info(body))
             elif path == '/api/video/preview-render':
@@ -2655,6 +3363,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                     body.get('kind', 'video'),
                     body.get('motionPlan'),
                     work_id=body.get('workId'),
+                    tenant_id=body.get('tenant_id') or body.get('tenantId'),
+                    overlay_plan=body.get('textOverlayPlan') or body.get('overlayPlan'),
                 )
                 self.send_json(200, {'ok': True, 'jobId': job_id})
             elif path == '/api/queue/plan':
@@ -2697,6 +3407,11 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_error_json(409, exc.message, {'code': exc.code})
         except studio_queue.QueueConflictError as exc:
             self.send_error_json(409, exc.message, {'code': exc.code, 'canUseCurrent': exc.can_use_current})
+        except PreflightBlocked as exc:
+            self.send_error_json(422, str(exc), {
+                'preflight': exc.report,
+                'code': exc.code,
+            })
         except studio_review.ReviewVersionConflictError as exc:
             self.send_error_json(409, str(exc), {'conflict': True})
         except studio_planning.PlanningValidationError as exc:

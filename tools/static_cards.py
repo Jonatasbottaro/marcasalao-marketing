@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import carousel_layout
 import ns002_pilot
+import preset_runner
 import render_local
 import tenant_validator
 
@@ -157,13 +158,26 @@ def _overlay_cfg(brand_kit: dict) -> dict:
     return brand_kit.get("headerOverlay") or {}
 
 
+def _hex_rgb(value: Any, fallback: tuple[int, int, int]) -> tuple[int, int, int]:
+    text = str(value or "").strip().lstrip("#")
+    if len(text) == 6:
+        try:
+            return (int(text[0:2], 16), int(text[2:4], 16), int(text[4:6], 16))
+        except ValueError:
+            pass
+    return fallback
+
+
 def _utm_source(brand_kit: dict) -> str:
     return str(((brand_kit.get("utmDefaults") or {})).get("utm_source", "instagram"))
 
 
-def _cta_call(brand_kit: dict) -> str:
-    """CTA explícito sem desenhar botão/sticker clicável falso."""
-    return "LINK NA BIO" if _utm_source(brand_kit) == "instagram" else "LINK NA DESCRICAO"
+def _cta_call(brand_kit: dict, labels: dict | None = None) -> str:
+    """CTA explicito sem desenhar botão/sticker clicável falso."""
+    labels = labels or preset_runner._resolve_ui_labels(brand_kit)
+    if _utm_source(brand_kit) == "instagram":
+        return labels["ctaLinkBio"]
+    return labels["ctaLinkDescription"]
 
 
 def _first_narration_line(narration_text: str) -> str:
@@ -231,51 +245,41 @@ def _audit_texts(texts: list[tuple[str, str]], guardrails: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 # Montagem de copias (todos os textos que serao renderizados)
 # ---------------------------------------------------------------------------
-def _problema_lines(brand_kit: dict) -> list[str]:
-    brand_name = str(brand_kit.get("brandName", ""))
-    if brand_name == "Estúdio Flow":
-        return [
-            "Reserva por troca de mensagens com a instrutora",
-            "Modalidade e instrutora sem confirmacao na hora",
-            "Grade de turmas sem visualizacao unificada",
-            "Status da aula atualizado fora do sistema",
-        ]
-    if str(brand_kit.get("tenantId")) == "multitrack-hub":
-        return [
-            "Stems espalhados por pastas diferentes",
-            "BPM e tom sem um catalogo unificado",
-            "Rateio de faixas sem controle de vagas",
-            "Download de projetos dificil de organizar",
-        ]
+def _problema_lines(labels: dict) -> list[str]:
+    """Diagnostico operacional derivado de uiLabels, sem vocabulario de nicho."""
     return [
-        "Horario anotado em papel ou planilha avulsa",
-        "Horario escolhido pelo cliente nao chega a agenda do salão",
-        "Profissional confere o status manualmente",
-        "Risco de horarios sobrepostos e dupla marcacao",
+        f"{labels['catalogSectionTitle']} SEM VISAO UNIFICADA",
+        f"{labels['itemUnitLabel'].upper()} SEM FLUXO UNIFICADO",
+        f"{labels['managerSectionLabel']} ATUALIZADO FORA DO SISTEMA",
+        "RISCO DE CONFLITO DE REGISTROS",
     ]
 
 
-def _campaign_routes(guardrails: dict, fixture: dict) -> list[str]:
+def _campaign_routes(guardrails: dict, fixture: dict, labels: dict) -> list[str]:
     """Linhas de rota extraídas de routeRules (sep. de superfícies, sem simulação)."""
     route_lines: list[str] = []
     route_rules = guardrails.get("routeRules") or {}
     for route, rule in list(route_rules.items())[:2]:
         surface = str(rule.get("surface", route))
-        route_lines.append(f"ROTA {surface.upper()}: {route}")
+        route_lines.append(f"{labels['routeLabel']} {surface.upper()}: {route}")
     if not route_lines:
         rota = str((fixture.get("booking") or {}).get("rota", "/"))
-        route_lines.append(f"ROTA PUBLICA: {rota}")
+        route_lines.append(f"{labels['routeLabel']} {labels['publicRouteWord']}: {rota}")
     return route_lines
 
 
 def _build_copy(config: dict, brand_kit: dict, guardrails: dict, fixture: dict, narration_text: str) -> dict:
+    labels = preset_runner._resolve_ui_labels(brand_kit)
+    style = preset_runner.resolve_visual_style(brand_kit, "9:16")
+    title_color = _hex_rgb(style["title"]["textColor"],
+                           _pal(_brand_palette(brand_kit), "textPrimary"))
     scenes = list(config.get("scenes", []))
     first = scenes[0] if scenes else {}
     hook = str(first.get("headline") or "")
     subline = str(first.get("subline") or brand_kit.get("tagline") or "")
     badge = str(first.get("badge") or "")
     domain = str(brand_kit.get("domain", ""))
-    cta = _cta_call(brand_kit)
+    cta = _cta_call(brand_kit, labels)
     narration_first = _first_narration_line(narration_text)
 
     is_multitrack = bool(fixture.get("projetos") or fixture.get("rateios"))
@@ -284,55 +288,64 @@ def _build_copy(config: dict, brand_kit: dict, guardrails: dict, fixture: dict, 
     projects = fixture.get("projetos", [])
     rateios = fixture.get("rateios", [])
 
+    flux_badge = labels["liveDataBadge"]
+    flux_headline = labels["catalogSectionTitle"]
+    rows: list[str] = []
     if is_multitrack:
-        flux_badge = "DADOS REAIS DO CATALOGO"
-        flux_headline = "PROJETO, STEMS E RATEIO"
-        rows: list[str] = []
         if projects:
             p = projects[0]
             stems = p.get("stems", [])
-            rows.append(f"PROJETO: {p.get('titulo', '-')}")
-            rows.append(f"REFERENCIA: {p.get('artistaReferencia', '-')}")
-            rows.append(f"BPM {p.get('bpm', '-')} | TOM {p.get('tom', '-')} | {p.get('compasso', '-')}")
-            rows.append(f"STEMS: {len(stems)} | {p.get('formato', '-')}")
+            rows.append(f"{labels['itemUnitLabel'].upper()}: {p.get('titulo', '-')}")
+            rows.append(f"{labels['referenceLabel']}: {p.get('artistaReferencia', '-')}")
+            rows.append(
+                f"{labels['bpmLabel']} {p.get('bpm', '-')} | {labels['keyLabel']} {p.get('tom', '-')} | "
+                f"{p.get('compasso', '-')}"
+            )
+            rows.append(f"{labels['stemsLabel']}: {len(stems)} | {p.get('formato', '-')}")
         if rateios:
             r = rateios[0]
-            rows.append(f"RATEIO: {r.get('titulo', '-')}")
-            rows.append(f"COTA: {_format_price_brl(r.get('cotaBRL', 0))} | VAGAS: {r.get('vagasRestantes', 0)}")
+            rows.append(f"{labels['sharesLabel']}: {r.get('titulo', '-')}")
+            rows.append(
+                f"{labels['shareUnitLabel']}: {_format_price_brl(r.get('cotaBRL', 0))} | "
+                f"{labels['remainingSlotsLabel']}: {r.get('vagasRestantes', 0)}"
+            )
         value_lines = [
-            "Catalogo, stems e rateios organizados por projeto",
-            "BPM, tom e stems separados por instrumento",
-            "Rateios com cota e vagas restantes claras",
+            f"{labels['catalogSectionTitle']} COM VISAO UNIFICADA",
+            f"REGISTRO DE {labels['itemUnitLabel'].upper()} NO {labels['managerSectionLabel']}",
+            f"{labels['customerLabel']} ACOMPANHA O {labels['statusLabel']}",
         ]
-        pratica_items = [f"{p.get('titulo', '-')} - {len(p.get('stems', []))} stems" for p in projects[:3]]
-        cta_headline = "POR QUE ORGANIZAR O CATALOGO"
+        pratica_items = [f"{p.get('titulo', '-')} - {len(p.get('stems', []))} {labels['stemsLabel'].lower()}"
+                         for p in projects[:3]]
+        cta_headline = labels["valueTitle"]
     else:
-        flux_badge = "DADOS REAIS DA FIXTURE EDITORIAL"
-        flux_headline = "SERVICO, PROFISSIONAL E PRECO BRL"
-        rows = []
         if services:
             s = services[0]
-            rows.append(f"SERVICO: {s.get('nome', '-')} - {s.get('duracaoMin', 0)} MIN")
-            rows.append(f"PRECO: {_format_price_brl(s.get('precoBRL', 0))}")
+            rows.append(
+                f"{labels['itemUnitLabel'].upper()}: {s.get('nome', '-')} - {s.get('duracaoMin', 0)} MIN"
+            )
+            rows.append(f"{labels['priceLabel']}: {_format_price_brl(s.get('precoBRL', 0))}")
         if profs:
             pr = profs[0]
-            rows.append(f"PROFISSIONAL: {pr.get('nome', '-')}")
+            rows.append(f"{labels['teamMemberLabel']}: {pr.get('nome', '-')}")
             especialidade = str(pr.get("especialidade", "-"))
-            rows.append(f"ESPECIALIDADE: {especialidade[:40]}")
+            rows.append(f"{labels['specialtyLabel']}: {especialidade[:40]}")
         agenda = fixture.get("agenda", {})
         atendimentos = agenda.get("atendimentos", [])
         if atendimentos:
-            rows.append(f"AGENDA {agenda.get('data', '')}: {len(atendimentos)} atendimentos")
+            rows.append(
+                f"{labels['scheduleLabel']} {agenda.get('data', '')}: "
+                f"{len(atendimentos)} {labels['agendaSummaryLabel']}"
+            )
         value_lines = [
-            "Horario escolhido pela cliente chega direto a agenda do salão",
-            "Agenda do dia com status em uma unica tela",
-            "Confirmacao de agendamento concluida no fluxo publico",
+            f"{labels['catalogSectionTitle']} COM VISAO UNIFICADA",
+            f"REGISTRO DE {labels['itemUnitLabel'].upper()} NO {labels['managerSectionLabel']}",
+            f"{labels['customerLabel']} ACOMPANHA O {labels['statusLabel']}",
         ]
         pratica_items = [
             f"{s.get('nome', '-')} - {s.get('duracaoMin', 0)} MIN - {_format_price_brl(s.get('precoBRL', 0))}"
             for s in services[:3]
         ]
-        cta_headline = "RESUMO DE VALOR OPERACIONAL"
+        cta_headline = labels["valueTitle"]
 
     return {
         "hook": hook,
@@ -344,18 +357,20 @@ def _build_copy(config: dict, brand_kit: dict, guardrails: dict, fixture: dict, 
         "flux_badge": flux_badge,
         "flux_headline": flux_headline,
         "flux_rows": rows,
-        "route_lines": _campaign_routes(guardrails, fixture),
+        "route_lines": _campaign_routes(guardrails, fixture, labels),
         "value_lines": value_lines,
         "pratica_items": pratica_items,
         "cta_headline": cta_headline,
         "is_multitrack": is_multitrack,
+        "labels": labels,
+        "title_color": title_color,
     }
 
 
 # ---------------------------------------------------------------------------
 # Especificacoes de laminas (textos para auditoria + render)
 # ---------------------------------------------------------------------------
-def _story_01_spec(brand_kit: dict, copy: dict, route_label: str | None) -> dict:
+def _story_01_spec(brand_kit: dict, copy: dict, route_label: str | None, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
     texts = [
         ("story-01 header", str(brand_kit.get("headerOverlay", {}).get("label", ""))),
@@ -365,7 +380,7 @@ def _story_01_spec(brand_kit: dict, copy: dict, route_label: str | None) -> dict
         ("story-01 narracao", copy["narration_first"]),
         ("story-01 dominio", copy["domain"]),
         ("story-01 sequencia", "1/3"),
-        ("story-01 rodape", "CONTEUDO ESTATICO - VERTICAL 9:16 - SEM AUDIO"),
+        ("story-01 rodape", f"{copy['labels']['staticFooter']} - VERTICAL 9:16"),
     ]
     if route_label:
         texts.append(("story-01 rota", route_label))
@@ -380,7 +395,7 @@ def _story_01_spec(brand_kit: dict, copy: dict, route_label: str | None) -> dict
         _, ph = _draw_pill(canvas, width, height, 56, header_h + 70, copy["badge"], 3, secondary, text_pri)
         ly = header_h + 70 + ph + 34
         for line in _wrap_text(copy["hook"], width - 190, 6):
-            _draw_text(canvas, width, height, 102, ly, line, 6, text_pri)
+            _draw_text(canvas, width, height, 102, ly, line, 6, copy["title_color"])
             ly += carousel_layout.char_height(6) + 26
         _draw_text(canvas, width, height, 102, ly + 24, copy["subline"], 4, accent)
         ly += 24
@@ -389,13 +404,16 @@ def _story_01_spec(brand_kit: dict, copy: dict, route_label: str | None) -> dict
             for line in _wrap_text(copy["narration_first"], width - 190, 3):
                 _draw_text(canvas, width, height, 102, ly, line, 3, text_mut)
                 ly += carousel_layout.char_height(3) + 10
-        _draw_text(canvas, width, height, 102, height - 200, copy["domain"], 5, accent)
-        _draw_text(canvas, width, height, 102, height - 140, "CONTEUDO ESTATICO - VERTICAL 9:16 - SEM AUDIO", 2, text_mut)
+        effective_framing = framing or preset_runner.resolve_framing(brand_kit, "9:16")
+        bottom_y = height - int(effective_framing["bottomSafePx"])
+        _draw_text(canvas, width, height, 102, bottom_y - 60, copy["domain"], 5, accent)
+        _draw_text(canvas, width, height, 102, bottom_y,
+                   f"{copy['labels']['staticFooter']} - VERTICAL 9:16", 2, text_mut)
 
     return {"kit": "stories", "name": "story-01-hook.png", "texts": texts, "render": render}
 
 
-def _story_02_spec(brand_kit: dict, copy: dict) -> dict:
+def _story_02_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
     texts = [
         ("story-02 badge", copy["flux_badge"]),
@@ -434,16 +452,19 @@ def _story_02_spec(brand_kit: dict, copy: dict) -> dict:
         for line in copy["route_lines"]:
             _draw_text(canvas, width, height, 84, ry, line, 3, text_mut)
             ry += carousel_layout.char_height(3) + 14
-        _fill_rect(canvas, width, height, 102, height - 120, 300, height - 112, accent)
-        _draw_text(canvas, width, height, 102, height - 100, "AGENDAMENTO NO FLUXO PUBLICO", 3, text_pri)
+        effective_framing = framing or preset_runner.resolve_framing(brand_kit, "9:16")
+        bottom_y = height - int(effective_framing["bottomSafePx"])
+        _fill_rect(canvas, width, height, 102, bottom_y - 20, 300, bottom_y - 12, accent)
+        _draw_text(canvas, width, height, 102, bottom_y,
+                   copy["labels"]["publicFlowCaption"], 3, text_pri)
 
     return {"kit": "stories", "name": "story-02-fluxo.png", "texts": texts, "render": render}
 
 
-def _story_03_spec(brand_kit: dict, copy: dict) -> dict:
+def _story_03_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
     texts = [
-        ("story-03 badge", "CHAMADA PARA A ACAO"),
+        ("story-03 badge", copy["labels"]["ctaBadge"]),
         ("story-03 headline", copy["cta_headline"]),
     ]
     for line in copy["value_lines"]:
@@ -460,7 +481,7 @@ def _story_03_spec(brand_kit: dict, copy: dict) -> dict:
         text_mut = _pal(palette, "textMuted")
         accent = _pal(palette, "primaryAccent")
 
-        _, ph = _draw_pill(canvas, width, height, 56, header_h + 80, "CHAMADA PARA A ACAO", 3, secondary, text_pri)
+        _, ph = _draw_pill(canvas, width, height, 56, header_h + 80, copy["labels"]["ctaBadge"], 3, secondary, text_pri)
         ly = header_h + 80 + ph + 34
         _draw_text(canvas, width, height, 102, ly, copy["cta_headline"], 5, text_pri)
         ly += carousel_layout.char_height(5) + 40
@@ -471,20 +492,24 @@ def _story_03_spec(brand_kit: dict, copy: dict) -> dict:
         tw = _text_width(copy["cta"], 7)
         _draw_text(canvas, width, height, (width - tw) // 2, cy, copy["cta"], 7, accent)
         _draw_text(canvas, width, height, 102, cy + 70, copy["domain"], 5, accent)
-        _fill_rect(canvas, width, height, 56, height - 130, width - 56, height - 122, secondary)
+        effective_framing = framing or preset_runner.resolve_framing(brand_kit, "9:16")
+        bottom_y = height - int(effective_framing["bottomSafePx"])
+        _fill_rect(canvas, width, height, 56, bottom_y - 30, width - 56, bottom_y - 22, secondary)
 
     return {"kit": "stories", "name": "story-03-cta.png", "texts": texts, "render": render}
 
 
-def _carousel_01_spec(brand_kit: dict, copy: dict) -> dict:
+def _carousel_01_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
-    title = copy["hook"] or f"GUIA PRATICO {str(brand_kit.get('brandName', ''))}"
+    labels = copy["labels"]
+    title = copy["hook"] or f"{labels['guideBadge']} {str(brand_kit.get('brandName', ''))}"
+    badge = f"{labels['guideBadge']} | 1/4"
     texts = [
-        ("carousel-01 badge", "GUIA PRATICO | 1/4"),
+        ("carousel-01 badge", badge),
         ("carousel-01 titulo", title),
         ("carousel-01 subline", str(brand_kit.get("tagline", ""))),
         ("carousel-01 dominio", copy["domain"]),
-        ("carousel-01 rodape", "CARROSSEL RETRATO - 1080x1350 - 4:5"),
+        ("carousel-01 rodape", f"{labels['carouselFooter']} - 1080x1350 - 4:5"),
     ]
 
     def render(canvas, width, height):
@@ -494,24 +519,30 @@ def _carousel_01_spec(brand_kit: dict, copy: dict) -> dict:
         text_mut = _pal(palette, "textMuted")
         accent = _pal(palette, "primaryAccent")
 
-        _, ph = _draw_pill(canvas, width, height, 56, header_h + 60, "GUIA PRATICO | 1/4", 4, secondary, text_pri)
+        _, ph = _draw_pill(canvas, width, height, 56, header_h + 60, badge, 4, secondary, text_pri)
         ly = header_h + 60 + ph + 34
         for line in _wrap_text(title, width - 190, 7):
-            _draw_text(canvas, width, height, 56, ly, line, 7, text_pri)
+            _draw_text(canvas, width, height, 56, ly, line, 7, copy["title_color"])
             ly += carousel_layout.char_height(7) + 24
         _draw_text(canvas, width, height, 56, ly + 20, str(brand_kit.get("tagline", "")), 3, text_mut)
-        _draw_text(canvas, width, height, 56, height - 110, f"ACESSE: {copy['domain']}", 5, accent)
-        _draw_text(canvas, width, height, 56, height - 60, "CARROSSEL RETRATO - 1080x1350 - 4:5", 2, text_mut)
+        effective_framing = framing or preset_runner.resolve_framing(brand_kit, "4:5")
+        bottom_y = height - int(effective_framing["bottomSafePx"])
+        _draw_text(canvas, width, height, 56, bottom_y - 60,
+                   f"{labels['accessLabel']}: {copy['domain']}", 5, accent)
+        _draw_text(canvas, width, height, 56, bottom_y,
+                   f"{labels['carouselFooter']} - 1080x1350 - 4:5", 2, text_mut)
 
     return {"kit": "carousel", "name": "slide-01-capa.png", "texts": texts, "render": render}
 
 
-def _carousel_02_spec(brand_kit: dict, copy: dict) -> dict:
+def _carousel_02_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
-    problemas = _problema_lines(brand_kit)
+    labels = copy["labels"]
+    problemas = _problema_lines(labels)
+    badge = f"{labels['diagnosticBadge']} | 2/4"
     texts = [
-        ("carousel-02 badge", "DIAGNOSTICO | 2/4"),
-        ("carousel-02 titulo", "DIAGNOSTICO DA ROTINA OPERACIONAL"),
+        ("carousel-02 badge", badge),
+        ("carousel-02 titulo", labels["diagnosticTitle"]),
     ]
     for line in problemas:
         texts.append((f"carousel-02 problema: {line[:20]}", line))
@@ -522,9 +553,9 @@ def _carousel_02_spec(brand_kit: dict, copy: dict) -> dict:
         text_pri = _pal(palette, "textPrimary")
         accent = _pal(palette, "primaryAccent")
 
-        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, "DIAGNOSTICO | 2/4", 4, secondary, text_pri)
+        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, badge, 4, secondary, text_pri)
         ly = header_h + 50 + ph + 34
-        _draw_text(canvas, width, height, 56, ly, "DIAGNOSTICO DA ROTINA OPERACIONAL", 6, accent)
+        _draw_text(canvas, width, height, 56, ly, labels["diagnosticTitle"], 6, accent)
         ly += carousel_layout.char_height(6) + 34
         for line in problemas:
             _draw_text(canvas, width, height, 56, ly, "- " + line, 3, text_pri)
@@ -533,11 +564,14 @@ def _carousel_02_spec(brand_kit: dict, copy: dict) -> dict:
     return {"kit": "carousel", "name": "slide-02-problema.png", "texts": texts, "render": render}
 
 
-def _carousel_03_spec(brand_kit: dict, copy: dict) -> dict:
+def _carousel_03_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
+    labels = copy["labels"]
+    badge = f"{labels['practiceBadge']} | 3/4"
+    title = f"3 {labels['practiceTitle']}"
     texts = [
-        ("carousel-03 badge", "PRATICA | 3/4"),
-        ("carousel-03 titulo", "3 ITENS DA PRATICA"),
+        ("carousel-03 badge", badge),
+        ("carousel-03 titulo", title),
     ]
     for item in copy["pratica_items"]:
         texts.append((f"carousel-03 item: {item[:20]}", item))
@@ -548,9 +582,9 @@ def _carousel_03_spec(brand_kit: dict, copy: dict) -> dict:
         text_pri = _pal(palette, "textPrimary")
         accent = _pal(palette, "primaryAccent")
 
-        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, "PRATICA | 3/4", 4, secondary, text_pri)
+        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, badge, 4, secondary, text_pri)
         ly = header_h + 50 + ph + 34
-        _draw_text(canvas, width, height, 56, ly, "3 ITENS DA PRATICA", 6, accent)
+        _draw_text(canvas, width, height, 56, ly, title, 6, accent)
         ly += carousel_layout.char_height(6) + 34
         for item in copy["pratica_items"]:
             _draw_text(canvas, width, height, 56, ly, "- " + item, 4, text_pri)
@@ -559,22 +593,24 @@ def _carousel_03_spec(brand_kit: dict, copy: dict) -> dict:
     return {"kit": "carousel", "name": "slide-03-pratica.png", "texts": texts, "render": render}
 
 
-def _carousel_04_spec(brand_kit: dict, copy: dict) -> dict:
+def _carousel_04_spec(brand_kit: dict, copy: dict, framing: dict | None = None) -> dict:
     palette = _brand_palette(brand_kit)
+    labels = copy["labels"]
     checklist = [
-        "ESCOLHA O SERVICO OU PROJETO",
-        "CONFIRME O HORARIO OU A COTA",
-        "ACOMPANHE NA AGENDA OU NA GRADE",
+        labels["chooseItemLabel"],
+        labels["confirmStepLabel"],
+        labels["followStepLabel"],
     ]
+    badge = f"{labels['summaryBadge']} | 4/4"
     texts = [
-        ("carousel-04 badge", "RESUMO | 4/4"),
-        ("carousel-04 titulo", "RESUMO E PROXIMO PASSO"),
+        ("carousel-04 badge", badge),
+        ("carousel-04 titulo", labels["summaryCardTitle"]),
     ]
     for item in checklist:
         texts.append((f"carousel-04 checklist: {item[:20]}", item))
     texts.append(("carousel-04 cta", copy["cta"]))
     texts.append(("carousel-04 dominio", copy["domain"]))
-    texts.append(("carousel-04 rodape", "CARROSSEL RETRATO 4:5 - SEM AUDIO"))
+    texts.append(("carousel-04 rodape", f"{copy['labels']['carouselFooter']} - 4:5"))
 
     def render(canvas, width, height):
         header_h = _draw_brand_header(canvas, width, height, brand_kit)
@@ -583,19 +619,22 @@ def _carousel_04_spec(brand_kit: dict, copy: dict) -> dict:
         text_mut = _pal(palette, "textMuted")
         accent = _pal(palette, "primaryAccent")
 
-        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, "RESUMO | 4/4", 4, secondary, text_pri)
+        _, ph = _draw_pill(canvas, width, height, 56, header_h + 50, badge, 4, secondary, text_pri)
         ly = header_h + 50 + ph + 34
-        _draw_text(canvas, width, height, 56, ly, "RESUMO E PROXIMO PASSO", 6, accent)
+        _draw_text(canvas, width, height, 56, ly, labels["summaryCardTitle"], 6, accent)
         ly += carousel_layout.char_height(6) + 34
         for item in checklist:
             _stroke_rect(canvas, width, height, 84, ly, 116, ly + 26, 2, accent)
             _draw_text(canvas, width, height, 132, ly + 4, item, 3, text_pri)
             ly += 52
-        cy = height - 210
+        effective_framing = framing or preset_runner.resolve_framing(brand_kit, "4:5")
+        bottom_y = height - int(effective_framing["bottomSafePx"])
+        cy = bottom_y - 140
         tw = _text_width(copy["cta"], 6)
         _draw_text(canvas, width, height, (width - tw) // 2, cy, copy["cta"], 6, accent)
         _draw_text(canvas, width, height, 84, cy + 52, copy["domain"], 5, accent)
-        _draw_text(canvas, width, height, 84, cy + 92, "CARROSSEL RETRATO 4:5 - SEM AUDIO", 2, text_mut)
+        _draw_text(canvas, width, height, 84, cy + 92,
+                   f"{labels['carouselFooter']} - 4:5", 2, text_mut)
 
     return {"kit": "carousel", "name": "slide-04-resumo-cta.png", "texts": texts, "render": render}
 
@@ -603,15 +642,17 @@ def _carousel_04_spec(brand_kit: dict, copy: dict) -> dict:
 def _blade_specs(brand_kit: dict, copy: dict, kinds: list[str]) -> list[dict]:
     specs: list[dict] = []
     route_label = copy["route_lines"][0] if copy["route_lines"] else None
+    framing_story = preset_runner.resolve_framing(brand_kit, "9:16")
+    framing_carousel = preset_runner.resolve_framing(brand_kit, "4:5")
     if KIT_STORIES in kinds:
-        specs.append(_story_01_spec(brand_kit, copy, route_label))
-        specs.append(_story_02_spec(brand_kit, copy))
-        specs.append(_story_03_spec(brand_kit, copy))
+        specs.append(_story_01_spec(brand_kit, copy, route_label, framing_story))
+        specs.append(_story_02_spec(brand_kit, copy, framing_story))
+        specs.append(_story_03_spec(brand_kit, copy, framing_story))
     if KIT_CAROUSEL in kinds:
-        specs.append(_carousel_01_spec(brand_kit, copy))
-        specs.append(_carousel_02_spec(brand_kit, copy))
-        specs.append(_carousel_03_spec(brand_kit, copy))
-        specs.append(_carousel_04_spec(brand_kit, copy))
+        specs.append(_carousel_01_spec(brand_kit, copy, framing_carousel))
+        specs.append(_carousel_02_spec(brand_kit, copy, framing_carousel))
+        specs.append(_carousel_03_spec(brand_kit, copy, framing_carousel))
+        specs.append(_carousel_04_spec(brand_kit, copy, framing_carousel))
     return specs
 
 

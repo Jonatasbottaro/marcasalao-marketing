@@ -6,6 +6,7 @@
  * sem I/O de rede ou disco, sem variaveis de ambiente e sem dependencias do Temporal.
  */
 
+import type { TenantCompatibilityReport } from './tenant-policy-contract.js'
 import type {
     BeatPlanValidationReport,
     CompositionValidationReport,
@@ -20,6 +21,9 @@ export type ContentPipelineStage =
     | 'output-plan'
     | 'output-compatibility'
     | 'beat-plan'
+    // Etapa 6: rotulo para issues da checagem ExecutionPackage x TenantPolicy,
+    // que e aditiva e NAO entra no DAG de 5 estagios (CONTENT_PIPELINE_STAGES).
+    | 'tenant-policy'
 
 export const CONTENT_PIPELINE_STAGES: readonly ContentPipelineStage[] = Object.freeze([
     'project',
@@ -94,6 +98,12 @@ export interface ContentPipelineValidationReport {
     readonly warnings: readonly ContentPipelineIssue[]
     readonly completedStages: readonly ContentPipelineStage[]
     readonly blockedStages: readonly ContentPipelineStage[]
+    /**
+     * Resultado da checagem opcional ExecutionPackage x TenantPolicy. Presente
+     * somente quando o input traz `executionPackage` e `tenantPolicy`; ausente
+     * para o pipeline classico de 5 estagios (retrocompativel).
+     */
+    readonly tenantCompatibility?: TenantCompatibilityReport
 }
 
 export interface ContentPipelineValidationInput {
@@ -101,6 +111,13 @@ export interface ContentPipelineValidationInput {
     readonly composition: unknown
     readonly outputPlan: unknown
     readonly beatPlan: unknown
+    /**
+     * Entradas opcionais da Etapa 6: quando ambas informadas, dispara a checagem
+     * de compatibilidade ExecutionPackage v1 x TenantPolicyContract v1 (aditiva,
+     * fora do DAG de 5 estagios). Ausentes mantem o comportamento historico.
+     */
+    readonly executionPackage?: unknown
+    readonly tenantPolicy?: unknown
 }
 
 export const PIPELINE_VALID_SUMMARY = 'Content pipeline is valid.'
