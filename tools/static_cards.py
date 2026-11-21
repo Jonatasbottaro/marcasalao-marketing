@@ -98,6 +98,20 @@ def _repo_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _resolve_cli_root(raw_root: str) -> str:
+    """Resolve ``--root`` uma unica vez, independente do diretorio corrente.
+
+    O CLI pode ser chamado de qualquer cwd (por exemplo por um harness de
+    testes ou por subprocesso): o valor relativo e resolvido aqui e todas as
+    saidas e o manifesto usam esse caminho absoluto. Raiz inexistente falha
+    com codigo estavel em vez de produzir diretorios parciais.
+    """
+    root_real = os.path.realpath(os.path.abspath(raw_root))
+    if not os.path.isdir(_fs(root_real)):
+        raise StaticCardsError("RAIZ_INVALIDA", [f"diretorio nao encontrado: {raw_root}"])
+    return root_real
+
+
 def _fs(path: str) -> str:
     """Normaliza separadores nativos antes do prefixo de path longo (Windows).
 
@@ -758,8 +772,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Erro: tipo de kit invalido '{k}' (validos: {list(KIT_SIZES)})", file=sys.stderr)
             return 2
 
-    root_real = os.path.realpath(os.path.abspath(args.root))
     try:
+        root_real = _resolve_cli_root(args.root)
         if args.all:
             summary = generate_all_static_cards(root_real, kinds)
         elif args.tenant:
