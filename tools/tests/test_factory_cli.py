@@ -240,6 +240,77 @@ class FactoryCliTest(unittest.TestCase):
         self.assertGreaterEqual(counts["utmUrls"], counts["calendarSlots"])
         self.assertEqual(set(counts["releaseDomains"].values()), {"ok"})
 
+    def _write_json(self, rel_path: str, doc: dict) -> None:
+        abs_path = self._path(rel_path)
+        os.makedirs(render_local.fs_path(os.path.dirname(abs_path)), exist_ok=True)
+        with open(render_local.fs_path(abs_path), "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(doc, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+
+    def _run_handoff(self, extra_args: list[str]) -> tuple[int, dict]:
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            rc = factory_cli.main(
+                ["handoff", *extra_args, "--root", REPO_ROOT, "--json"]
+            )
+        return rc, json.loads(buf.getvalue())
+
+    def test_07_handoff_json_zero_approved(self) -> None:
+        approvals_rel = ".workspace/tmp/test_factory_cli/handoff-vazio.json"
+        self._write_json(approvals_rel, {"schemaVersion": 2, "campanhas": []})
+        rc, payload = self._run_handoff([
+            "--all-approved",
+            "--approvals-file", approvals_rel,
+            "--output-dir", ".workspace/tmp/test_factory_cli/handoff-zero",
+        ])
+        self.assertEqual(rc, 0)
+        self.assertTrue(payload["ok"])
+        self.assertIs(payload["autoPublish"], False)
+        self.assertEqual(payload["approvalAudit"]["summary"]["aprovadas"], 0)
+        handoff = payload["handoff"]
+        self.assertEqual(handoff["bundledSlots"], 0)
+        self.assertEqual(handoff["reason"], "NENHUMA_CAMPANHA_APROVADA_PELO_TITULAR")
+        self.assertIs(handoff["autoPublish"], False)
+
+    def test_08_handoff_json_with_approved_campaign(self) -> None:
+        approvals_rel = ".workspace/tmp/test_factory_cli/handoff-aprovado.json"
+        self._write_json(
+            approvals_rel,
+            {
+                "schemaVersion": 2,
+                "campanhas": [
+                    {
+                        "tenantId": "marca-salao",
+                        "slug": "camp-saas-demo-ns001-agenda-001",
+                        "campaignId": "SAAS-DEMO-NS001-AGENDA-001",
+                        "preset": "saas-demo",
+                        "decisao": "aprovado",
+                        "locucaoExternaConferida": True,
+                        "observacoes": "",
+                        "hashes": {},
+                        "updatedAt": "2026-11-20T12:00:00Z",
+                    }
+                ],
+            },
+        )
+        rc, payload = self._run_handoff([
+            "--date", "2026-11-23",
+            "--approvals-file", approvals_rel,
+            "--output-dir", ".workspace/tmp/test_factory_cli/handoff-ok",
+        ])
+        self.assertEqual(rc, 0, payload)
+        self.assertTrue(payload["ok"])
+        self.assertIs(payload["autoPublish"], False)
+        self.assertEqual(payload["approvalAudit"]["summary"]["aprovadas"], 1)
+        handoff = payload["handoff"]
+        self.assertGreaterEqual(handoff["bundledSlots"], 1)
+        self.assertEqual(handoff["dates"], ["2026-11-23"])
+        self.assertEqual(handoff["slots"][0]["tenantId"], "marca-salao")
+        self.assertTrue(
+            os.path.isdir(
+                self._path(".workspace/tmp/test_factory_cli/handoff-ok/2026-11-23")
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
