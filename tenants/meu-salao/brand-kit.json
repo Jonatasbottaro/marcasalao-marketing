@@ -49,5 +49,14 @@
     "utm_source": "instagram",
     "utm_medium": "reels",
     "utm_campaign_prefix": "ms"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
+    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
+    "publicRouteFallback": "/booking/[salonId]",
+    "managerRouteFallback": "/gestor/agenda",
+    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO MEU SALAO",
+    "itemUnitLabel": "atendimento",
+    "customerLabel": "Cliente"
   }
 }

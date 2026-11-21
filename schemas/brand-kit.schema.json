@@ -163,6 +163,20 @@
         "utm_medium": { "type": "string", "minLength": 1 },
         "utm_campaign_prefix": { "type": "string", "minLength": 1 }
       }
+    },
+    "uiLabels": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Rotulos de UI parametrizaveis por nicho; ausente => defaults de salao (100% retrocompativel).",
+      "properties": {
+        "teamSectionTitle": { "type": "string", "minLength": 1 },
+        "catalogSectionTitle": { "type": "string", "minLength": 1 },
+        "publicRouteFallback": { "type": "string", "minLength": 1 },
+        "managerRouteFallback": { "type": "string", "minLength": 1 },
+        "journeyBridgeCaption": { "type": "string", "minLength": 1 },
+        "itemUnitLabel": { "type": "string", "minLength": 1 },
+        "customerLabel": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

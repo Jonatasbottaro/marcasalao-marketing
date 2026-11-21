@@ -49,5 +49,14 @@
     "utm_source": "instagram",
     "utm_medium": "reels",
     "utm_campaign_prefix": "cv"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "ESPECIALISTAS DA CLINICA",
+    "catalogSectionTitle": "PROCEDIMENTOS DISPONIVEIS",
+    "publicRouteFallback": "/avaliacao/[clinicId]",
+    "managerRouteFallback": "/gestor/consultas",
+    "journeyBridgeCaption": "DA MARCACAO DO PACIENTE A AGENDA DA CLINICA",
+    "itemUnitLabel": "consulta",
+    "customerLabel": "Paciente"
   }
 }

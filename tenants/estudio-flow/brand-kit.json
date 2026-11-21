@@ -49,5 +49,14 @@
     "utm_source": "instagram",
     "utm_medium": "reels",
     "utm_campaign_prefix": "ef"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "INSTRUTORES DO ESTUDIO",
+    "catalogSectionTitle": "MODALIDADES DISPONIVEIS",
+    "publicRouteFallback": "/aulas/[studioId]",
+    "managerRouteFallback": "/gestor/turmas",
+    "journeyBridgeCaption": "DA RESERVA DA ALUNA A GRADE DO ESTUDIO",
+    "itemUnitLabel": "aula",
+    "customerLabel": "Aluna"
   }
 }
