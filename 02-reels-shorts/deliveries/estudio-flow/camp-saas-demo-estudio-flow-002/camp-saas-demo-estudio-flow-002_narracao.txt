@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-estudio-flow-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Veja a rotina da equipe do Estúdio Flow na grade de turmas.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-grade
+Em /gestor/turmas, a equipe visualiza a grade de turmas do dia.
+
+[00:00:10,000 --> 00:00:15,000] cena-03-filtro
+O filtro por instrutora destaca as aulas da Clara Nogueira.
+
+[00:00:15,000 --> 00:00:20,000] cena-04-status
+A presença e o status são atualizados manualmente pela equipe.
+
+[00:00:20,000 --> 00:00:26,000] cena-05-busca
+A busca pelo nome localiza a aluna na grade do dia.
+
+[00:00:26,000 --> 00:00:30,000] cena-06-cta
+Conheça a organização da grade do Estúdio Flow em estudioflow.com.br.
