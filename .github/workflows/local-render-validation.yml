@@ -14,6 +14,7 @@ on:
       - 'schemas/**'
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
+      - '01-insta-stories/deliveries/**'
       - '04-legendas/pacotes-publicacao/**'
       - '04-legendas/calendario-editorial.*'
       - '04-legendas/matriz-utm-consolidada.csv'
@@ -27,6 +28,7 @@ on:
       - 'schemas/**'
       - 'tenants/**'
       - '02-reels-shorts/deliveries/**'
+      - '01-insta-stories/deliveries/**'
       - '04-legendas/pacotes-publicacao/**'
       - '04-legendas/calendario-editorial.*'
       - '04-legendas/matriz-utm-consolidada.csv'
@@ -95,10 +97,12 @@ jobs:
           npm run build
           test -f dist/src/validate-local-render-input.js
 
-      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3 e 4)
+      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3, 4, 5 e 5B)
         run: |
           python tools/tenant_validator.py --all --json
           python tools/factory_cli.py list --json
+          python tools/factory_cli.py pipeline --all --skip-render --json
+          python tools/utm_simulator.py --json
           python -m unittest \
             tools/tests/test_render_local.py tools/tests/test_render_pipeline.py \
             tools/tests/test_build_video.py tools/tests/test_multi_format.py \
@@ -107,7 +111,9 @@ jobs:
             tools/tests/test_factory_cli.py tools/tests/test_audio_tts.py \
             tools/tests/test_publish_pack.py tools/tests/test_devlog_sync.py \
             tools/tests/test_derivative_formats.py tools/tests/test_review_dashboard.py \
-            tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py -v
+            tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py \
+            tools/tests/test_bootstrap_ffmpeg.py tools/tests/test_static_cards.py \
+            tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py -v
           python tools/release_audit.py --strict --json
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
