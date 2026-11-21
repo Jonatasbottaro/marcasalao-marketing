@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 2,
+  "tenantId": "estudio-flow",
+  "slug": "camp-saas-demo-estudio-flow-002",
+  "preset": "saas-demo",
+  "sourceVideoSha256": "d993c9dcb166bfaa3087b55036551df5d17e3115d3fcf70b5c97a975ab67ca53",
+  "allowAudioTrack": false,
+  "appliedAudioPolicy": "-an",
+  "source": {
+    "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
+    "sha256": "d993c9dcb166bfaa3087b55036551df5d17e3115d3fcf70b5c97a975ab67ca53",
+    "bytes": 461391,
+    "deliveryManifest": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/manifest.json",
+    "deliveryRecordedSha256": "d993c9dcb166bfaa3087b55036551df5d17e3115d3fcf70b5c97a975ab67ca53",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 0,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": null,
+      "audioSampleRate": null,
+      "audioChannels": null
+    }
+  },
+  "derivatives": {
+    "1x1": {
+      "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/derivatives/camp-saas-demo-estudio-flow-002-1x1.mp4",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 367020,
+      "sha256": "ad4e53b7c48c800ed4746376c482afdae82a4ea032861ee30ef12a7d59783a29",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "1x1",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#C86D51",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
+      },
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "16x9": {
+      "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/derivatives/camp-saas-demo-estudio-flow-002-16x9.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 428223,
+      "sha256": "dc673689575e485b8dc37fc2d82fde74f367f250ca4da69c9e9b4b039cb10638",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "16x9",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#C86D51",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
+      },
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/derivatives/camp-saas-demo-estudio-flow-002-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 199473,
+      "sha256": "477f0f49923abfd8549704c6a6052d5744ca1db3904269f9c2616c57cb589248",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#1C1917",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#1C1917",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#C86D51",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/derivatives/camp-saas-demo-estudio-flow-002-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 177266,
+      "sha256": "6f323a327db9aea1d95cbfe7973de60e1fe0e676f0a085fb2dcd5a20c50b9cf5",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-saas-demo-estudio-flow-002/derivatives/camp-saas-demo-estudio-flow-002-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 133415,
+      "sha256": "afe3c7e3d3f4bf843d386a6a22de078becf714d86d7665551881d6d5fea62432",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#1C1917"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/preview-formats.png"
+    }
+  },
+  "command": "python tools/derivative_formats.py --tenant estudio-flow --campaign camp-saas-demo-estudio-flow-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}
