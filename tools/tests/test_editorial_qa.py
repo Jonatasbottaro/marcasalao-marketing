@@ -118,6 +118,20 @@ class EditorialQATests(unittest.TestCase):
             handle.write(text.replace(old, new))
 
     @staticmethod
+    def _set_cue_body(path: str, cue_index: int, body: str) -> None:
+        """Substitui o corpo de um cue preservando indice e timestamp."""
+        with open(path, "r", encoding="utf-8", newline="") as handle:
+            text = handle.read()
+        blocks = text.strip("\n").split("\n\n")
+        lines = blocks[cue_index].split("\n")
+        rebuilt = [lines[0], lines[1]]
+        if body:
+            rebuilt.append(body)
+        blocks[cue_index] = "\n".join(rebuilt)
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write("\n\n".join(blocks) + "\n")
+
+    @staticmethod
     def _wrap_all_srt_lines(root: str) -> None:
         """Reduz todas as linhas de corpo dos SRTs a <= 48 caracteres no sandbox.
 
@@ -176,9 +190,11 @@ class EditorialQATests(unittest.TestCase):
         self.assertEqual(result["summary"]["problems"]["errors"], 0)
         for check_id in STABLE_CHECKS:
             self.assertEqual(self._check(result, check_id)["status"], "ok")
-        # Linhas de SRT acima de 48 caracteres sao avisos conhecidos no acervo;
-        # a lente existe e e aprovada no modo normal, mas reprova no --strict.
-        self.assertEqual(self._check(result, "legibilidade_mobile")["status"], "warn")
+        # Apos o saneamento da Etapa 6 (tools/srt_formatter.py) o acervo nao
+        # tem nenhuma linha acima de 48 caracteres: a lente fica ok tambem no
+        # modo --strict.
+        self.assertEqual(self._check(result, "legibilidade_mobile")["status"], "ok")
+        self.assertEqual(result["summary"]["problems"]["warnings"], 0)
         self.assertTrue(result["ok"])
 
     # ------------------------------------------------------------------
@@ -189,11 +205,7 @@ class EditorialQATests(unittest.TestCase):
         path = self._srt_path(
             sandbox, "marca-salao", "camp-saas-demo-marca-salao-001"
         )
-        self._replace_in_file(
-            path,
-            "Como um horário escolhido pela cliente chega à agenda do salão?",
-            "L" * 60,
-        )
+        self._set_cue_body(path, 0, "L" * 60)
         result = editorial_qa.run_editorial_qa(root=sandbox)
         row = self._check(result, "legibilidade_mobile")
         self.assertIn("SRT_LINHA_LONGA", self._codes(row))
@@ -346,13 +358,7 @@ class EditorialQATests(unittest.TestCase):
         path = self._srt_path(
             sandbox, "marca-salao", "camp-saas-demo-ns001-agenda-001"
         )
-        with open(path, "r", encoding="utf-8", newline="") as handle:
-            text = handle.read()
-        self.assertIn("A equipe acompanha cada atendimento", text)
-        with open(path, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(
-                text.replace("A equipe acompanha cada atendimento e atualiza o status manualmente.", "")
-            )
+        self._set_cue_body(path, 0, "")
         result = editorial_qa.run_editorial_qa(root=sandbox)
         row = self._check(result, "legibilidade_mobile")
         self.assertIn("SRT_BLOCO_VAZIO", self._codes(row))

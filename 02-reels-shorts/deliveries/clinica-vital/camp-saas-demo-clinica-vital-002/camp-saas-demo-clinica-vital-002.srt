@@ -1,23 +1,29 @@
 1
 00:00:00,000 --> 00:00:04,000
-Como a recepção da clínica organiza a agenda de consultas do dia?
+Como a recepção da clínica organiza
+a agenda de consultas do dia?
 
 2
 00:00:04,000 --> 00:00:10,000
-A recepção abre a grade de consultas do dia em /gestor/consultas.
+A recepção abre a grade de consultas
+do dia em /gestor/consultas.
 
 3
 00:00:10,000 --> 00:00:15,000
-O filtro por especialista mostra apenas as consultas da Dra. Camila Ferraz.
+O filtro por especialista mostra apenas
+as consultas da Dra. Camila Ferraz.
 
 4
 00:00:15,000 --> 00:00:20,000
-A recepção altera o status da consulta manualmente, de Aguardando para Confirmado.
+A recepção altera o status da consulta
+manualmente, de Aguardando para Confirmado.
 
 5
 00:00:20,000 --> 00:00:26,000
-A busca por paciente localiza a consulta de Luciana Farias na grade.
+A busca por paciente localiza a
+consulta de Luciana Farias na grade.
 
 6
 00:00:26,000 --> 00:00:30,000
-Conheça a rotina de recepção da Clínica Vital — clinicavital.com.br
+Conheça a rotina de recepção da Clínica Vital —
+clinicavital.com.br
