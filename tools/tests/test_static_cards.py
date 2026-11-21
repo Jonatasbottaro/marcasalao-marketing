@@ -268,11 +268,30 @@ class TestStaticCards(unittest.TestCase):
                 entregas.append((tid, slug))
         self.assertEqual(len(entregas), 8, f"esperadas 8 entregas, achadas {len(entregas)}")
 
+    # --- Teste 12: caminhos OS-nativos e normalizacao de separadores ------
+    def test_caminhos_os_nativos_e_normpath(self):
+        """Regressao Errno 22: '/' em path longo quebra o prefixo estendido.
+
+        Constantes de entrega usam separadores nativos; _fs normaliza com
+        os.path.normpath antes de render_local.fs_path prefixar paths longos.
+        """
+        if os.name == "nt":
+            self.assertNotIn("/", static_cards.DELIVERIES_REL)
+            self.assertNotIn("/", static_cards.NARRATION_REL)
+        misto_longo = "C:\\" + ("z" * 260) + "/arquivo.png"
+        resolvido = static_cards._fs(misto_longo)
+        self.assertIsInstance(resolvido, str)
+        if os.name == "nt":
+            self.assertTrue(resolvido.startswith("\\\\?\\"),
+                            "path longo deveria receber prefixo estendido")
+            self.assertNotIn("/", resolvido[4:],
+                             "prefixo estendido exige separadores nativos")
+
     # --- Testes 10 e 11: CLI ---------------------------------------------
     def test_cli_tenant_campaign_json_exit_zero(self):
         res = subprocess.run([sys.executable, "tools/static_cards.py",
                               "--tenant", "meu-salao", "--campaign", "camp-saas-demo-meu-salao-002",
-                              "--json"],
+                              "--root", ROOT, "--json"],
                              cwd=ROOT, capture_output=True, text=True, timeout=300)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
@@ -281,7 +300,8 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(summary["campaigns"][0]["slug"], "camp-saas-demo-meu-salao-002")
 
     def test_cli_all_json_exit_zero(self):
-        res = subprocess.run([sys.executable, "tools/static_cards.py", "--all", "--json"],
+        res = subprocess.run([sys.executable, "tools/static_cards.py", "--all",
+                              "--root", ROOT, "--json"],
                              cwd=ROOT, capture_output=True, text=True, timeout=600)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)

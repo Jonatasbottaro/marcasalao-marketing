@@ -75,8 +75,10 @@ CAROUSEL_FILES = (
     "slide-04-resumo-cta.png",
 )
 
-DELIVERIES_REL = "01-insta-stories/deliveries"
-NARRATION_REL = "02-reels-shorts/deliveries"
+# Separadores nativos do SO: caminhos com '/' quebram o prefixo de path longo
+# aplicado por render_local.fs_path no Windows (Errno 22 EINVAL).
+DELIVERIES_REL = os.path.join("01-insta-stories", "deliveries")
+NARRATION_REL = os.path.join("02-reels-shorts", "deliveries")
 
 
 class StaticCardsError(Exception):
@@ -96,8 +98,18 @@ def _repo_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _fs(path: str) -> str:
+    """Normaliza separadores nativos antes do prefixo de path longo (Windows).
+
+    os.path.normpath converte '/' em '\\' no Windows. render_local.fs_path
+    prefixa caminhos longos com o prefixo estendido, que so aceita separadores
+    nativos; normalizar aqui evita Errno 22 (EINVAL) com caminhos mistos.
+    """
+    return render_local.fs_path(os.path.normpath(str(path)))
+
+
 def _load_json(path: str) -> dict:
-    with open(render_local.fs_path(path), "r", encoding="utf-8") as handle:
+    with open(_fs(path), "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -116,13 +128,13 @@ def _png_dimensions(png_data: bytes) -> tuple[int, int]:
 
 def _emit_png_file(path: str, width: int, height: int, canvas: bytearray) -> bytes:
     data = _encode_png(width, height, canvas)
-    with open(render_local.fs_path(path), "wb") as handle:
+    with open(_fs(path), "wb") as handle:
         handle.write(data)
     return data
 
 
 def _write_text_lf(path: str, text: str) -> None:
-    with open(render_local.fs_path(path), "w", encoding="utf-8", newline="\n") as handle:
+    with open(_fs(path), "w", encoding="utf-8", newline="\n") as handle:
         handle.write(text)
 
 
@@ -604,8 +616,8 @@ def _generate_one(root: str, tenant_id: str, slug: str, config: dict,
     delivery_dir = os.path.join(root, DELIVERIES_REL, tenant_id, slug)
     narr_path = os.path.join(root, NARRATION_REL, tenant_id, slug, f"{slug}_narracao.txt")
     narration_text = ""
-    if os.path.isfile(render_local.fs_path(narr_path)):
-        with open(render_local.fs_path(narr_path), "r", encoding="utf-8") as handle:
+    if os.path.isfile(_fs(narr_path)):
+        with open(_fs(narr_path), "r", encoding="utf-8") as handle:
             narration_text = handle.read()
 
     copy = _build_copy(config, brand_kit, guardrails, fixture, narration_text)
@@ -630,7 +642,7 @@ def _generate_one(root: str, tenant_id: str, slug: str, config: dict,
         spec["render"](canvas, width, height)
 
         abs_dir = os.path.join(delivery_dir, spec["kit"])
-        os.makedirs(render_local.fs_path(abs_dir), exist_ok=True)
+        os.makedirs(_fs(abs_dir), exist_ok=True)
         abs_path = os.path.join(abs_dir, spec["name"])
         data = _emit_png_file(abs_path, width, height, canvas)
 
@@ -693,7 +705,7 @@ def generate_campaign_static_cards(tenant_id: str, slug: str | None = None,
 
     campaigns_dir = os.path.join(root_real, "tenants", tenant_id, "campaigns")
     targets: list[tuple[str, dict]] = []
-    for fname in sorted(os.listdir(render_local.fs_path(campaigns_dir))):
+    for fname in sorted(os.listdir(_fs(campaigns_dir))):
         if not fname.endswith(".json"):
             continue
         cfg = _load_json(os.path.join(campaigns_dir, fname))
@@ -746,7 +758,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Erro: tipo de kit invalido '{k}' (validos: {list(KIT_SIZES)})", file=sys.stderr)
             return 2
 
-    root_real = os.path.realpath(args.root)
+    root_real = os.path.realpath(os.path.abspath(args.root))
     try:
         if args.all:
             summary = generate_all_static_cards(root_real, kinds)
