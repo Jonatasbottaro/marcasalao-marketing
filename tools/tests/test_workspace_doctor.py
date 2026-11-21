@@ -72,8 +72,11 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self._write_manifest()
         self._write_derivatives()
 
-        for exe in ("ffmpeg.exe", "ffprobe.exe"):
-            (self.tools / exe).write_bytes(b"fake-binary")
+        suffix = ".exe" if os.name == "nt" else ""
+        self.ffmpeg = self.tools / f"ffmpeg{suffix}"
+        self.ffprobe = self.tools / f"ffprobe{suffix}"
+        for executable in (self.ffmpeg, self.ffprobe):
+            executable.write_bytes(b"fake-binary")
 
         self.approvals = self.tmp / "aprovacoes-titular.json"
         self.approvals.write_text('{"versao": 2, "aprovacoes": []}', encoding="utf-8")
@@ -185,7 +188,7 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertFalse(self.disposable_b.exists())
         self.assertEqual(self.approvals.read_text(encoding="utf-8"), before)
         self.assertTrue((self.archives / f"{SLUG}.mp4").exists())
-        self.assertTrue((self.tools / "ffmpeg.exe").exists())
+        self.assertTrue(self.ffmpeg.exists())
         self.assertTrue((self.workspace / "devlogs" / "etapa6-agente6.md").exists())
         self.assertIn("tmp/ffmpeg-bootstrap", result["cleaned"])
         self.assertIn("tmp/egm", result["cleaned"])
@@ -238,7 +241,7 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertTrue(self.approvals.exists())
 
     def test_09_ffmpeg_ausente(self) -> None:
-        (self.tools / "ffmpeg.exe").unlink()
+        self.ffmpeg.unlink()
         result = wd.run_workspace_doctor(self.root)
         self.assertFalse(result["ok"])
         self.assertTrue(self._problems(result, "FFMPEG_AUSENTE"))
