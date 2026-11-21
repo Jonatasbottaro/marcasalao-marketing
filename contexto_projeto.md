@@ -6,13 +6,13 @@
 
 ---
 
-## 1. Estado atual (atualizado em 2026-11-20)
+## 1. Estado atual (atualizado em 2026-11-21)
 
 | Item | Valor |
 |------|-------|
-| Raiz oficial | `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing` |
-| HEAD main (base / integração) | `5059734` (tip da integração da Etapa 6: 5 tenants, 11 campanhas, 8 agentes sincronizados — merges `--no-ff` das 8 branches `codex/etapa6-agente1..8` sobre `8a1b361`, mais o commit de release desta sessão; sem push remoto) |
-| Branch de trabalho ativa | `main` (Etapa 6 consolidada a partir de 8 branches paralelas sobre `8a1b361`: agente1–agente8; sem push remoto) |
+| Raiz oficial | `<RAIZ>`, o checkout principal retornado por `git rev-parse --show-toplevel` |
+| Último commit técnico validado na main | `9a800d1`, com CI verde no Windows e no Ubuntu ([run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554)) |
+| Branch de trabalho ativa | `main`, com a Etapa 6 enviada ao remoto. Release `08555ad` e correções dos gates `2439fb0` e `9a800d1`. |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
 | Fase atual | Etapa 6 concluída — Acabamento Multi-Nicho, SRT Mobile, Aprovação CLI & Analytics Loop (8 agentes) |
 | Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4, Etapa 5 e Etapa 6 (Etapa 5: Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9 + Etapa 6: Agentes 1, 2, 3, 4, 5, 6, 7, 8) concluídas — ver seções 2 e 7 |
@@ -3406,3 +3406,9 @@ exit 1). Correção do print sugerida para o dono do arquivo: usar
 - Suíte funcional consolidada (**12 módulos**, incluindo o novo `test_08`): **86/86 testes aprovados em `111.456s` (`OK`, exit 0)** (`test_tenant_contracts`, `test_preset_runner`, `test_factory_cli`, `test_ns002_pilot`, `test_srt_validate`, `test_build_video`, `test_r002_pilot`, `test_delivery_verify`, `test_campaign_proof`, `test_audio_tts`, `test_publish_pack`, `test_devlog_sync`).
 - **Nota:** o `python -m unittest discover -s tools/tests` (usado no CI com `REQUIRE_RENDER=1`, após build da ponte TypeScript) inclui ainda as suítes de estúdio/e2e (`test_studio_*`, `test_recording_cuts`, `test_multi_format`, `test_video_studio`, `test_campaign_studio_e2e`, `test_studio_astryx_frontend`), mais pesadas (servidor HTTP + render por teste); a suíte funcional de 86 é o gate consolidado "Etapas 2 e 3" do workflow `local-render-validation.yml`.
 - **Frase de encerramento:** Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `D:/MEGA/Marketing/marcasalao-marketing`.
+
+### 21/11/2026 — CI de render da Etapa 6
+
+O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).
+
+O ajuste final tornou as fixtures de FFmpeg e FFprobe do `workspace_doctor` portáveis entre Windows e Ubuntu. As entregas versionadas permaneceram intactas.

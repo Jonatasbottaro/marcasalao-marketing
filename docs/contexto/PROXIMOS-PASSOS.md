@@ -8,6 +8,10 @@ A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é norma
 
 Para as próximas rodadas, o titular prefere agrupar código, integração, testes e documentação de um mesmo resultado em um prompt de entrega. Inclua os pontos de verificação dentro da execução e preserve o escopo de autorização de cada etapa.
 
+## Gate de render da Etapa 6 — concluído em 21/11/2026
+
+O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554). A estabilização dos gates está concluída. Nas próximas alterações que afetem render ou Studio, acompanhe o resultado do workflow no SHA correspondente.
+
 ## 1. Deliberar sobre a próxima fatia de TEMPORAL-02
 
 > Manter o projeto bloqueado ou autorizar uma próxima fatia específica de TEMPORAL-02, com escopo delimitado pelo titular. A ratificação da fatia Workflow foi registrada em 11/11/2026 e não autoriza nenhuma fatia posterior.

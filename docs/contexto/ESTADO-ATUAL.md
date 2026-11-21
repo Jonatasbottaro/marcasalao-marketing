@@ -1,5 +1,11 @@
 # Estado atual do projeto
 
+## Validação da Etapa 6 na main — 21/11/2026
+
+O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).
+
+A Etapa 6 foi consolidada em `08555ad`. O commit `2439fb0` estabilizou os gates de render e isolou a geração dos testes de cards. O commit `9a800d1` corrigiu os nomes dos binários nas fixtures do `workspace_doctor` para as duas plataformas. As entregas versionadas da Etapa 6 foram preservadas.
+
 ## Referência
 
 - Data da atualização: 2026-11-18
