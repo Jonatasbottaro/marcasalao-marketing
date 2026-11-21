@@ -122,7 +122,17 @@ jobs:
       - name: Suite Python com render obrigatorio (sem skips permitidos)
         env:
           REQUIRE_RENDER: '1'
-        run: python -m unittest discover -s tools/tests -v
+        run: |
+          # O aceite de backup roda em um processo novo depois das suites do Studio.
+          batch=()
+          for test_file in tools/tests/test*.py; do
+            if [[ "$test_file" == tools/tests/test_studio_work_backup.py ]]; then
+              python -m unittest -v "${batch[@]}"
+              batch=()
+            fi
+            batch+=("$test_file")
+          done
+          python -m unittest -v "${batch[@]}"
 
       - name: Prova dos dois pacotes versionados (fixtures dentro da raiz)
         run: |

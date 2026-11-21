@@ -115,7 +115,9 @@ def _build_fixture_root(root: str) -> None:
 class PublishPackTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls._tmp = tempfile.TemporaryDirectory(prefix="publish-pack-test-")
+        tmp_root = os.path.join(REPO_ROOT, ".workspace", "tmp")
+        os.makedirs(tmp_root, exist_ok=True)
+        cls._tmp = tempfile.TemporaryDirectory(prefix="publish-pack-test-", dir=tmp_root)
         cls.root = cls._tmp.name
         cls.real_snapshot_before = _snapshot(PUBLICACAO_ROOT)
         _build_fixture_root(cls.root)

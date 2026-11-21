@@ -13,8 +13,7 @@ Requisitos cobertos:
  10. CLI --tenant + --campaign + --json encerra com código 0.
  11. CLI --all --json encerra com código 0.
 
-Executa a geração real (--all) uma vez em setUpModule e valida os
-artefatos produzidos em 01-insta-stories/deliveries/ da worktree.
+Valida as entregas versionadas e executa as novas gerações em uma área temporária.
 """
 
 from __future__ import annotations
@@ -22,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -103,11 +103,6 @@ def _all_deliveries():
     return found
 
 
-def _generate_all():
-    return static_cards.generate_all_static_cards(ROOT,
-                                                  kinds=["stories", "carousel"])
-
-
 def _cli_tmp_parent():
     parent = os.path.join(ROOT, ".workspace", "tmp")
     os.makedirs(render_local.fs_path(parent), exist_ok=True)
@@ -119,7 +114,7 @@ def _run_cli(args, timeout=600):
 
     Regressao: com script relativo ("tools/static_cards.py") a chamada quebra
     quando o harness executa o unittest de um cwd diferente do checkout. O
-    caminho absoluto + --root mantem saidas e manifesto presos a ROOT.
+    caminho absoluto + --root mantem as saidas no sandbox do teste.
     """
     with tempfile.TemporaryDirectory(prefix="static-cli-cwd-", dir=_cli_tmp_parent()) as cwd:
         return subprocess.run(
@@ -132,18 +127,23 @@ def _run_cli(args, timeout=600):
         )
 
 
-def tearDownModule():
-    try:
-        os.rmdir(render_local.fs_path(os.path.join(ROOT, ".workspace", "tmp")))
-    except OSError:
-        pass
-
-
 class TestStaticCards(unittest.TestCase):
 
     @classmethod
-    def setUpModule(cls):
-        _generate_all()
+    def setUpClass(cls):
+        sandbox = tempfile.TemporaryDirectory(prefix="static-cards-", dir=_cli_tmp_parent())
+        cls.addClassCleanup(sandbox.cleanup)
+        cls.generated_root = sandbox.name
+        for directory in ("schemas", "tenants"):
+            shutil.copytree(os.path.join(ROOT, directory), os.path.join(cls.generated_root, directory))
+        for tenant, campaigns in CAMPAIGNS_BY_TENANT.items():
+            for slug in campaigns:
+                rel = os.path.join(static_cards.NARRATION_REL, tenant, slug, f"{slug}_narracao.txt")
+                source = os.path.join(ROOT, rel)
+                if os.path.isfile(render_local.fs_path(source)):
+                    dest = os.path.join(cls.generated_root, rel)
+                    os.makedirs(render_local.fs_path(os.path.dirname(dest)), exist_ok=True)
+                    shutil.copyfile(render_local.fs_path(source), render_local.fs_path(dest))
 
     # --- Testes 1 e 2: dimensoes exatas das botoes -----------------------
     def test_stories_laminas_1080x1920(self):
@@ -196,7 +196,7 @@ class TestStaticCards(unittest.TestCase):
         cfg = {"id": "fake-bloqueio", "scenes": [{"headline": "CHECKOUT AGORA"}]}
         ctx = tenant_validator.load_and_validate_tenant("marca-salao", root=ROOT, strict=True)
         with self.assertRaises(static_cards.StaticCardsError) as ctx_exc:
-            static_cards._generate_one(ROOT, "marca-salao", "fake-bloqueio", cfg,
+            static_cards._generate_one(self.generated_root, "marca-salao", "fake-bloqueio", cfg,
                                        ctx["brandKit"], ctx["guardrails"], ctx["fixture"],
                                        ["stories", "carousel"])
         self.assertEqual(ctx_exc.exception.code, static_cards.GUARDRAIL_VIOLACAO)
@@ -207,7 +207,7 @@ class TestStaticCards(unittest.TestCase):
         cfg = {"id": "fake-bloqueio-2", "scenes": [{"headline": "REDUCAO DE FALTAS GARANTIDA"}]}
         ctx = tenant_validator.load_and_validate_tenant("marca-salao", root=ROOT, strict=True)
         with self.assertRaises(static_cards.StaticCardsError) as ctx_exc:
-            static_cards._generate_one(ROOT, "marca-salao", "fake-bloqueio-2", cfg,
+            static_cards._generate_one(self.generated_root, "marca-salao", "fake-bloqueio-2", cfg,
                                        ctx["brandKit"], ctx["guardrails"], ctx["fixture"],
                                        ["stories", "carousel"])
         self.assertEqual(ctx_exc.exception.code, static_cards.GUARDRAIL_VIOLACAO)
@@ -266,7 +266,7 @@ class TestStaticCards(unittest.TestCase):
     # --- Teste 8: determinismo -------------------------------------------
     def test_determinismo_hashes_identicos(self):
         tid, slug = "marca-salao", "camp-saas-demo-marca-salao-001"
-        ddir = os.path.join(DELIVERIES, tid, slug)
+        ddir = os.path.join(self.generated_root, static_cards.DELIVERIES_REL, tid, slug)
 
         def fingerprints():
             fps = {}
@@ -278,9 +278,9 @@ class TestStaticCards(unittest.TestCase):
                         fps[os.path.join(kit, name)] = _read_bytes(os.path.join(ddir, kit, name))
             return fps
 
+        static_cards.generate_campaign_static_cards(tid, slug, self.generated_root)
         antes = fingerprints()
-        static_cards.generate_campaign_static_cards(tid, slug, ROOT,
-                                                    kinds=["stories", "carousel"])
+        static_cards.generate_campaign_static_cards(tid, slug, self.generated_root)
         depois = fingerprints()
         self.assertEqual(antes, depois, "execucoes repetidas geraram bytes diferentes")
 
@@ -326,7 +326,7 @@ class TestStaticCards(unittest.TestCase):
     # --- Testes 10 e 11: CLI ---------------------------------------------
     def test_cli_tenant_campaign_json_exit_zero(self):
         res = _run_cli(["--tenant", "meu-salao", "--campaign", "camp-saas-demo-meu-salao-002",
-                        "--root", ROOT, "--json"], timeout=300)
+                        "--root", self.generated_root, "--json"], timeout=300)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         self.assertEqual(summary["tenantId"], "meu-salao")
@@ -334,7 +334,7 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(summary["campaigns"][0]["slug"], "camp-saas-demo-meu-salao-002")
 
     def test_cli_all_json_exit_zero(self):
-        res = _run_cli(["--all", "--root", ROOT, "--json"], timeout=600)
+        res = _run_cli(["--all", "--root", self.generated_root, "--json"], timeout=600)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         total = sum(len(t["campaigns"]) for t in summary["tenants"])

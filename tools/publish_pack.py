@@ -96,19 +96,24 @@ def _sha256_file(path: str) -> str:
 
 
 def _main_checkout_root(root: str) -> str | None:
-    """Raiz do checkout principal: pai do ``.git`` comum apontado pela worktree."""
+    """Resolve o checkout principal quando root e a raiz de um checkout Git."""
+    root_real = os.path.realpath(root)
     try:
         res = subprocess.run(
-            ["git", "-C", root, "rev-parse", "--git-common-dir"],
+            ["git", "-C", root_real, "rev-parse", "--show-toplevel", "--git-common-dir"],
             capture_output=True,
             text=True,
             timeout=15,
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    if res.returncode != 0 or not res.stdout.strip():
+    lines = res.stdout.splitlines()
+    if res.returncode != 0 or len(lines) != 2:
         return None
-    git_dir = os.path.normpath(os.path.join(os.path.realpath(root), res.stdout.strip()))
+    top_level, common_dir = lines
+    if os.path.normcase(os.path.realpath(top_level)) != os.path.normcase(root_real):
+        return None
+    git_dir = os.path.realpath(os.path.join(root_real, common_dir))
     main_root = os.path.dirname(git_dir)
     return main_root if os.path.isdir(render_local.fs_path(main_root)) else None
 

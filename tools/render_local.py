@@ -155,7 +155,12 @@ def fs_path(path, force=False):
 
 
 def write_text_lf(path, text, retries=5):
-    """Grava texto UTF-8 com LF, repetindo falhas transitorias do Windows.
+    """Grava texto UTF-8 sem traduzir quebras de linha."""
+    write_bytes(path, text.encode("utf-8"), retries)
+
+
+def write_bytes(path, data, retries=5):
+    """Grava bytes, repetindo falhas transitorias do Windows.
 
     A estacao Windows falha esporadicamente em truncar um arquivo existente
     com Errno 22 (EINVAL) sem winerror, mesmo com caminho valido e curto;
@@ -165,8 +170,8 @@ def write_text_lf(path, text, retries=5):
     target = fs_path(path)
     for attempt in range(retries):
         try:
-            with open(target, "w", encoding="utf-8", newline="\n") as handle:
-                handle.write(text)
+            with open(target, "wb") as handle:
+                handle.write(data)
             return
         except OSError as exc:
             transient = os.name == "nt" and exc.errno in (22, 13)

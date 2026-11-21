@@ -142,14 +142,8 @@ def _png_dimensions(png_data: bytes) -> tuple[int, int]:
 
 def _emit_png_file(path: str, width: int, height: int, canvas: bytearray) -> bytes:
     data = _encode_png(width, height, canvas)
-    with open(_fs(path), "wb") as handle:
-        handle.write(data)
+    render_local.write_bytes(_fs(path), data)
     return data
-
-
-def _write_text_lf(path: str, text: str) -> None:
-    with open(_fs(path), "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
 
 
 # ---------------------------------------------------------------------------
@@ -693,8 +687,9 @@ def _generate_one(root: str, tenant_id: str, slug: str, config: dict,
         },
     }
     manifest_path = os.path.join(delivery_dir, "static-manifest.json")
-    _write_text_lf(manifest_path,
-                   json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    render_local.write_text_lf(
+        _fs(manifest_path), json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    )
 
     return {
         "slug": slug,

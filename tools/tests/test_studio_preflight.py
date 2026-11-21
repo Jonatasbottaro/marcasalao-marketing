@@ -352,21 +352,23 @@ class TestStudioPreflight(unittest.TestCase):
         # 3) Resposta HTTP invalida (nao JSON)
         class BadHandler(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                body = b'not-json'
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
-                self.wfile.write(b'not-json')
+                self.wfile.write(body)
 
             def log_message(self, *args):
                 pass
 
-        bad_port = _free_port()
-        srv = http.server.HTTPServer(('127.0.0.1', bad_port), BadHandler)
+        srv = http.server.HTTPServer(('127.0.0.1', 0), BadHandler)
         t = threading.Thread(target=srv.serve_forever, daemon=True)
         t.start()
         try:
             code_bad, out_bad, err_bad = self._run_cli([
-                '--port', str(bad_port), '--work-id', 'x', '--modality', 'video', '--profile', 'instagram-reels-video', '--json',
+                '--port', str(srv.server_port), '--work-id', 'x', '--modality', 'video', '--profile', 'instagram-reels-video', '--json',
             ])
             self.assertEqual(code_bad, 2)
             self.assertEqual(out_bad, '')

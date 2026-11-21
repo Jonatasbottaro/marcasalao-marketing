@@ -34,6 +34,7 @@ import shutil
 import subprocess
 import sys
 import unittest
+from pathlib import PureWindowsPath
 
 TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
@@ -297,10 +298,17 @@ class DerivativeFormatsTest(unittest.TestCase):
 
             raw = _read_manifest_raw(result["tenantId"], result["slug"])
             self.assertNotIn(b"\r", raw, "manifesto deve usar LF")
-            self.assertNotIn(b":/", raw, "manifesto nao pode vazar caminho absoluto")
-            self.assertNotIn(b":\\", raw, "manifesto nao pode vazar caminho absoluto")
             self.assertNotIn(os.path.realpath(REPO_ROOT).encode(), raw)
             disk = json.loads(raw.decode("utf-8"))
+            paths = [disk["source"]["path"], disk["source"]["deliveryManifest"]]
+            for entry in disk["derivatives"].values():
+                paths.append(entry["path"])
+                if "versionedCopy" in entry:
+                    paths.append(entry["versionedCopy"])
+            for path in paths:
+                parsed = PureWindowsPath(path)
+                self.assertFalse(parsed.anchor, path)
+                self.assertNotIn("..", parsed.parts, path)
             self.assertEqual(disk["schemaVersion"], 2)
             self.assertEqual(disk["allowAudioTrack"], result["allowAudioTrack"])
             self.assertEqual(disk["appliedAudioPolicy"], result["appliedAudioPolicy"])
