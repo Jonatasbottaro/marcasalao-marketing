@@ -25,7 +25,7 @@ A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/RE
 
 ## Fábrica de vídeo multi-tenant (contratos → render → pacotes → release)
 
-Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Estado atual: **4 tenants, 8 campanhas e 16 módulos de testes** no gate do CI. Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard, `manifest.json` com hashes SHA-256 e `derivatives.json` (cover, 1:1, 16:9); o pacote social sai com `autoPublish: false`, o calendário editorial nasce `aguardando_aprovacao_titular` e o portal de revisão é somente leitura. **Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes: a publicação é sempre manual e exige autorização específica do titular.** Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Estado atual: **5 tenants, 10 campanhas e 21 módulos de testes** no gate do CI (incluindo a camada de acabamento das Etapas 5 e 5B). Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard, `manifest.json` com hashes SHA-256 e `derivatives.json` (cover, 1:1, 16:9); o pacote social sai com `autoPublish: false`, o calendário editorial nasce `aguardando_aprovacao_titular` e o portal de revisão é somente leitura. **Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes: a publicação é sempre manual e exige autorização específica do titular.** Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
 
 | Tenant | Marca | Preset | Domínio | Áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ Pipeline programático que transforma contratos JSON versionados em pacotes de v
 | `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitido (opcional) | 3 |
 | `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibido | 2 |
 | `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibido | 1 |
+| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibido | 2 |
 
 Comandos rápidos (a partir da raiz do checkout):
 
@@ -50,10 +51,18 @@ python tools/review_dashboard.py --serve --port 8765    # 7a. revisar no navegad
 python tools/release_audit.py --json                    # 8. auditoria de prontidão (7 domínios; avisos não reprovam)
 python tools/release_audit.py --strict --json           # 9. gate de release (avisos também reprovam)
 python tools/release_audit.py --strict --report-out .workspace/tmp/release-audit.json   # 9a. gravar o relatório
-python tools/devlog_sync.py --json                      # 10. consolidar devlogs no contexto_projeto.md
+python tools/static_cards.py --all --json               # 10. cards estáticos (stories 9:16 + carrossel 4:5)
+python tools/utm_simulator.py --json                    # 11. auditoria de URLs UTM (Etapa 5B)
+python tools/editorial_qa.py --all --json               # 12. auditoria editorial (5 lentes; --strict reprova avisos)
+python tools/bootstrap_ffmpeg.py --check-only --json    # 13. bootstrap portátil de FFmpeg (quando necessário)
+python tools/handoff_bundler.py --all-approved --json   # 14. handoff diário pós-aprovação (nada publica)
+python tools/factory_cli.py pipeline --all --skip-render --json  # 15. pipeline mestre end-to-end
+python tools/devlog_sync.py --json                      # 16. consolidar devlogs no contexto_projeto.md
 ```
 
-Checklist de operação manual: alinhar a estação (`git fetch origin --prune && git pull --ff-only`) → validar contratos → renderizar → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → derivados → pacotes → calendário → portal → auditoria `release_audit` → gate `--strict` → consolidar devlogs.
+**Camada de acabamento (Etapas 5 e 5B):** `static_cards.py` entrega stories e carrossel versionados com `static-manifest.json` auditado; `bootstrap_ffmpeg.py` instala FFmpeg/FFprobe portáteis em `.workspace/tools/` do checkout principal; `handoff_bundler.py` empacota o handoff diário **somente com campanhas aprovadas pelo titular** (`autoPublish: false`); `utm_simulator.py` audita e simula o funil UTM sem cobrança financeira; `editorial_qa.py` cruza duração SRT×manifesto, legibilidade mobile (linhas ≤ 48 caracteres), paridade vídeo/cards/pacote, guardrails e integridade UTF-8; e `factory_cli.py pipeline` encadeia todas as etapas, marcando como `skipped` os módulos ainda ausentes. Nenhum desses módulos publica, agenda ou cria rascunho.
+
+Checklist de operação manual: alinhar a estação (`git fetch origin --prune && git pull --ff-only`) → validar contratos → renderizar → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → derivados → pacotes → calendário → portal → cards estáticos → auditoria UTM → auditoria editorial `editorial_qa` → auditoria `release_audit` → gate `--strict` → (pós-aprovação) handoff diário → consolidar devlogs.
 
 Protocolo de revisão humana e publicação: o portal `05-review-portal/` e o calendário editorial são instrumentos de **revisão e proposta** — o titular aprova, e a publicação nas redes é feita manualmente por ele (ou por ferramenta externa mediante autorização específica). `autoPublish: false` e `statusEditorial: "aguardando_aprovacao_titular"` são verificados pelo gate de release; nada neste repositório publica, agenda ou cria rascunho por conta própria. Novo nicho/tenant: [docs/guia-novo-nicho.md](docs/guia-novo-nicho.md).
 
