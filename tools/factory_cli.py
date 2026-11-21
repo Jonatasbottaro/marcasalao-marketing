@@ -22,6 +22,8 @@ Uso (a partir da raiz do checkout):
         [--weeks 5] [--strict-audit] [--json]
     python tools/factory_cli.py pipeline --tenant <tenantId> [--campaign <slug>]
         [--skip-render] [--json]
+    python tools/factory_cli.py handoff [--date YYYY-MM-DD | --all-approved]
+        [--include-pending] [--approvals-file <path>] [--output-dir <dir>] [--json]
 """
 
 from __future__ import annotations
@@ -821,6 +823,67 @@ def cmd_pipeline(
     }
 
 
+def cmd_handoff(
+    root: str = ".",
+    date: str | None = None,
+    all_approved: bool = False,
+    include_pending: bool = False,
+    approvals_file: str | None = None,
+    output_dir: str | None = None,
+) -> dict[str, Any]:
+    """Audita as aprovacoes e dispara o empacotamento manual de postagem.
+
+    Modulos das etapas paralelas sao importados de forma segura: sem
+    ``approval_cli`` ou ``handoff_bundler`` a operacao falha de forma
+    controlada. ``autoPublish`` nunca e ligado.
+    """
+    root_real = os.path.realpath(root)
+    approval_cli = _optional_module("approval_cli")
+    if approval_cli is None:
+        raise FactoryError("MODULO_AUSENTE: tools/approval_cli.py")
+    bundler = _optional_module("handoff_bundler")
+    if bundler is None:
+        raise FactoryError("MODULO_AUSENTE: tools/handoff_bundler.py")
+
+    audit = approval_cli.cmd_validate(root=root_real, approvals_file=approvals_file)
+    if audit.get("errors"):
+        detail = "; ".join(
+            f"{err.get('code')}: {err.get('detail')}" for err in audit["errors"]
+        )
+        raise FactoryError(f"APROVACOES_INVALIDAS: {detail}")
+
+    try:
+        bundle = bundler.build_handoff_bundle(
+            root=root_real,
+            approvals_file=approvals_file,
+            date=date,
+            all_approved=bool(all_approved),
+            include_pending=bool(include_pending),
+            output_dir=output_dir,
+        )
+    except bundler.HandoffBundlerError as exc:
+        raise FactoryError(f"HANDOFF_FALHOU: {exc}") from exc
+    bundle.setdefault("autoPublish", False)
+
+    return {
+        "schemaVersion": 1,
+        "ok": bool(bundle.get("ok")),
+        "autoPublish": False,
+        "mode": "date" if date else "all-approved",
+        "date": date,
+        "approvalAudit": {
+            "ok": audit.get("ok"),
+            "exists": audit.get("exists"),
+            "total": audit.get("total"),
+            "summary": audit.get("summary"),
+            "staleApprovals": audit.get("staleApprovals"),
+            "warnings": audit.get("warnings"),
+            "approvalsFile": audit.get("approvalsFile"),
+        },
+        "handoff": bundle,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Orquestrador unificado da fabrica multi-tenant")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
@@ -863,6 +926,25 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_pipeline.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_pipeline.add_argument("--json", action="store_true", help="Emite JSON no stdout")
+
+    p_handoff = subparsers.add_parser(
+        "handoff", help="Audita aprovacoes e empacota a postagem manual do dia"
+    )
+    p_handoff.add_argument("--date", default=None, help="Filtra slots por dataSugerida (YYYY-MM-DD)")
+    p_handoff.add_argument(
+        "--all-approved", action="store_true", help="Empacota todas as campanhas aprovadas"
+    )
+    p_handoff.add_argument(
+        "--include-pending",
+        action="store_true",
+        help="Inclui slots nao aprovados com o selo PREVIA_NAO_APROVADA",
+    )
+    p_handoff.add_argument("--approvals-file", default=None, help="JSON de aprovacoes do titular")
+    p_handoff.add_argument(
+        "--output-dir", default=None, help="Diretorio de saida (padrao .workspace/handoff-diario)"
+    )
+    p_handoff.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    p_handoff.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
     args = parser.parse_args(argv)
 
@@ -919,6 +1001,33 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 print(f"Resultado: {'APROVADO' if pipeline_report['ok'] else 'REPROVADO'}")
             return 0 if pipeline_report["ok"] else 1
+
+        if args.subcommand == "handoff":
+            handoff_report = cmd_handoff(
+                root=args.root,
+                date=args.date,
+                all_approved=bool(args.all_approved),
+                include_pending=bool(args.include_pending),
+                approvals_file=args.approvals_file,
+                output_dir=args.output_dir,
+            )
+            if args.json:
+                print(json.dumps(handoff_report, ensure_ascii=False, indent=2))
+            else:
+                audit = handoff_report["approvalAudit"]
+                summary = audit.get("summary") or {}
+                bundle = handoff_report["handoff"]
+                print(
+                    f"Handoff ({handoff_report['mode']}): "
+                    f"aprovadas={summary.get('aprovadas', 0)} "
+                    f"stale={len(audit.get('staleApprovals') or [])} | "
+                    f"slots={bundle.get('bundledSlots', 0)} | autoPublish: false"
+                )
+                if bundle.get("reason"):
+                    print(f"Motivo: {bundle['reason']}")
+                elif bundle.get("outputDir"):
+                    print(f"Saida: {bundle['outputDir']}")
+            return 0 if handoff_report["ok"] else 1
 
         report = cmd_render(
             root=args.root,
