@@ -8,6 +8,15 @@
     "monogram": "EF",
     "domain": "estudioflow.com.br"
   },
+  "uiLabels": {
+    "teamSectionTitle": "INSTRUTORES DO ESTUDIO",
+    "catalogSectionTitle": "MODALIDADES DISPONIVEIS",
+    "publicRouteFallback": "/AULAS/[STUDIOID]",
+    "managerRouteFallback": "/GESTOR/TURMAS",
+    "journeyBridgeCaption": "DA RESERVA DA ALUNA A GRADE DO ESTUDIO",
+    "itemUnitLabel": "AULA",
+    "customerLabel": "ALUNA"
+  },
   "guardrails": {
     "allowAudioTrack": false,
     "requireSrt": true,
@@ -40,8 +49,8 @@
     "video": {
       "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
-      "sha256": "d993c9dcb166bfaa3087b55036551df5d17e3115d3fcf70b5c97a975ab67ca53",
-      "bytes": 461391,
+      "sha256": "9c5f094878986c8f3185e7109ec5342ffb06fb92d8df27dd18ee32380d308141",
+      "bytes": 460194,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -77,8 +86,8 @@
         16.0,
         24.0
       ],
-      "sha256": "fafc9cfdfaeaeadc83f7434154377356f0b0c7184827f8092ff7949b03943775",
-      "bytes": 513615,
+      "sha256": "edbef0c4944f0613e02ce8f6d4cac094839e5bdd5363e2a48029a7b779074c1b",
+      "bytes": 513172,
       "width": 1080,
       "height": 1920,
       "versioned": true

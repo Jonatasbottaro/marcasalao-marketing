@@ -17,8 +17,8 @@
       "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
       "resolvedFrom": "archive",
-      "sha256": "445f30f61af794fa08245c11c7abe23451234a5b95d12e5ecd1f911ff296b261",
-      "bytes": 438108,
+      "sha256": "fe6f1dd2e1b6b85d7befdcc09f6333dee18b6d0b137a3407a8ba00b17e92ae19",
+      "bytes": 438879,
       "sha256_disk_ok": true,
       "presentOnDisk": true
     },
@@ -47,8 +47,8 @@
       "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
       "archivePath": null,
       "resolvedFrom": "delivery",
-      "sha256": "ea0815980f4b9f506ed4cdd5e877f25ea264e96f6ed4370935ffeecc43f28ea6",
-      "bytes": 622070,
+      "sha256": "e389a0d3d0b107fd82cb05f502d5b03883e1007b401df0c3f6f51d7c7e5ac1cd",
+      "bytes": 625675,
       "sha256_disk_ok": true,
       "presentOnDisk": true
     }

@@ -1,16 +1,16 @@
 """Testes automatizados (unittest) para tools/campaign_calendar.py (v2).
 
 Cobre obrigatoriamente:
-  1. Contagem exata de 40 slots (30 Onda 1 + 10 Onda 2), 5 tenants e 10 campanhas.
+  1. Contagem exata de 44 slots (33 Onda 1 + 11 Onda 2), 5 tenants e 11 campanhas.
   2. Anti-colisao: nenhum dia com mais de uma publicacao do mesmo tenant.
   3. Espacamento >= 48h entre publicacoes de canais da mesma campanha na Onda 1.
-  4. Validade sintatica das 40 URLs (urllib.parse.urlparse) + presenca de
+  4. Validade sintatica das 44 URLs (urllib.parse.urlparse) + presenca de
      utm_source/utm_medium/utm_campaign/utm_content.
   5. Unicidade de slotId e da combinacao (slug, canal, onda).
   6. autoPublish false e statusEditorial em 100% dos slots.
   7. Guardrails: hooks A/B (e textos operacionais) de todos os slots sem
      violacoes nos 5 tenants.
-  8. Paridade exata JSON <-> CSV (40 registros, 20 colunas).
+  8. Paridade exata JSON <-> CSV (44 registros, 20 colunas).
   9. Bloqueio quando frase proibida e injetada em hookVarianteB.
  10. CLI --start-date + --json com codigo 0 (e data invalida com codigo 2).
 
@@ -45,6 +45,7 @@ EXPECTED_CAMPAIGNS = {
     ("clinica-vital", "camp-saas-demo-clinica-vital-001"),
     ("clinica-vital", "camp-saas-demo-clinica-vital-002"),
     ("estudio-flow", "camp-saas-demo-estudio-flow-001"),
+    ("estudio-flow", "camp-saas-demo-estudio-flow-002"),
     ("marca-salao", "camp-saas-demo-marca-salao-001"),
     ("marca-salao", "camp-saas-demo-ns001-agenda-001"),
     ("meu-salao", "camp-saas-demo-meu-salao-001"),
@@ -107,15 +108,15 @@ class CampaignCalendarTest(unittest.TestCase):
         )
 
     # ------------------------------------------------------------------
-    # 1. Contagem exata de slots e cobertura das 8 campanhas nos 4 tenants
+    # 1. Contagem exata de slots e cobertura das 11 campanhas nos 5 tenants
     # ------------------------------------------------------------------
     def test_01_slot_counts_and_campaign_coverage(self) -> None:
         slots = self.slots
-        self.assertEqual(len(slots), 40)
-        self.assertEqual(self.calendar["totalSlots"], 40)
-        self.assertEqual(self.calendar["totalCampaigns"], 10)
+        self.assertEqual(len(slots), 44)
+        self.assertEqual(self.calendar["totalSlots"], 44)
+        self.assertEqual(self.calendar["totalCampaigns"], 11)
         self.assertEqual(self.calendar["totalTenants"], 5)
-        self.assertEqual(self.calendar["metrics"]["byOnda"], {"1": 30, "2": 10})
+        self.assertEqual(self.calendar["metrics"]["byOnda"], {"1": 33, "2": 11})
         campaigns = {(s["tenantId"], s["slug"]) for s in slots}
         self.assertEqual(campaigns, EXPECTED_CAMPAIGNS)
         for tenant_id, slug in EXPECTED_CAMPAIGNS:
@@ -223,17 +224,17 @@ class CampaignCalendarTest(unittest.TestCase):
                         campaign_calendar.CHANNEL_UTM_MEDIUM_ONDA2[slot["canal"]],
                     )
                 urls.add(slot["utmUrl"])
-        self.assertEqual(len(urls), 40)
+        self.assertEqual(len(urls), 44)
 
     # ------------------------------------------------------------------
     # 5. Unicidade de slotId e da combinacao (slug, canal, onda)
     # ------------------------------------------------------------------
     def test_05_uniqueness_slotid_and_combos(self) -> None:
         slot_ids = [s["slotId"] for s in self.slots]
-        self.assertEqual(len(set(slot_ids)), 40)
-        self.assertEqual(slot_ids, [f"slot-{i:03d}" for i in range(1, 41)])
+        self.assertEqual(len(set(slot_ids)), 44)
+        self.assertEqual(slot_ids, [f"slot-{i:03d}" for i in range(1, 45)])
         combos = [(s["slug"], s["canal"], s["onda"]) for s in self.slots]
-        self.assertEqual(len(set(combos)), 40)
+        self.assertEqual(len(set(combos)), 44)
 
     # ------------------------------------------------------------------
     # 6. autoPublish false e statusEditorial em 100% dos slots
@@ -285,7 +286,7 @@ class CampaignCalendarTest(unittest.TestCase):
         reader = csv.reader(io_module.StringIO(self.csv_text, newline=""))
         rows = list(reader)
         self.assertEqual(tuple(rows[0]), campaign_calendar.CSV_COLUMNS)
-        self.assertEqual(len(rows), 41)
+        self.assertEqual(len(rows), 45)
         self.assertNotIn("\r", self.csv_text)
         slots_by_id = {slot["slotId"]: slot for slot in self.slots}
         for row in rows[1:]:
@@ -379,7 +380,7 @@ class CampaignCalendarTest(unittest.TestCase):
         slots_per_week: dict[int, int] = {}
         for slot in self.slots:
             slots_per_week[slot["semana"]] = slots_per_week.get(slot["semana"], 0) + 1
-        self.assertEqual(slots_per_week, {1: 12, 2: 12, 3: 6, 4: 6, 5: 4})
+        self.assertEqual(slots_per_week, {1: 12, 2: 12, 3: 9, 4: 6, 5: 5})
         self.assertEqual(self.calendar["onda1Weeks"], 3)
         self.assertEqual(self.calendar["weeks"], 5)
 
@@ -390,7 +391,7 @@ class CampaignCalendarTest(unittest.TestCase):
         o2_slots = sorted(
             (s for s in self.slots if s["onda"] == 2), key=lambda s: s["dataSugerida"]
         )
-        self.assertEqual(len(o2_slots), 10)
+        self.assertEqual(len(o2_slots), 11)
         days = [s["dataSugerida"] for s in o2_slots]
         self.assertEqual(len(days), len(set(days)))
         ordered_slugs = sorted({s["slug"] for s in self.slots})
@@ -403,11 +404,11 @@ class CampaignCalendarTest(unittest.TestCase):
                 self.assertEqual(slot["utmParams"]["utm_content"], utm_content)
                 self.assertEqual(ordered_slugs.index(slot["slug"]), index)
         formats = [s["formatoVideo"] for s in self.slots]
-        self.assertEqual(formats.count("9:16"), 30)
-        self.assertEqual(formats.count("1:1"), 5)
+        self.assertEqual(formats.count("9:16"), 33)
+        self.assertEqual(formats.count("1:1"), 6)
         self.assertEqual(formats.count("16:9"), 5)
         self.assertEqual(
-            self.calendar["metrics"]["byFormatoVideo"], {"9:16": 30, "1:1": 5, "16:9": 5}
+            self.calendar["metrics"]["byFormatoVideo"], {"9:16": 33, "1:1": 6, "16:9": 5}
         )
 
     # ------------------------------------------------------------------
@@ -420,7 +421,7 @@ class CampaignCalendarTest(unittest.TestCase):
         self.assertIn("## 2. Cronograma completo (5 semanas)", self.md)
         self.assertIn("### Semana 1 (2026-11-23 a 2026-11-28)", self.md)
         self.assertIn("### Semana 4 (2026-12-14 a 2026-12-19)", self.md)
-        self.assertIn("### Semana 5 (2026-12-21 a 2026-12-24)", self.md)
+        self.assertIn("### Semana 5 (2026-12-21 a 2026-12-25)", self.md)
         self.assertIn("## 3. Checklist de operação manual pré-publicação", self.md)
         self.assertIn("## 4. Referência rápida de URLs UTM (por campanha)", self.md)
         for tenant_id in (

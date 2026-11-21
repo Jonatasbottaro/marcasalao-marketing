@@ -4,7 +4,7 @@
   "mode": "all",
   "deliveriesRoot": "02-reels-shorts/deliveries",
   "totalTenants": 5,
-  "totalCampaigns": 10,
+  "totalCampaigns": 11,
   "tenants": [
     "clinica-vital",
     "estudio-flow",
@@ -39,12 +39,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.mp4",
-          "sha256": "39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af",
-          "bytes": 492164
+          "sha256": "74596cda29193704687f2682d227451698cb0e6b79c8ca444be9af80254ccd11",
+          "bytes": 498179
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.srt",
-          "sha256": "1d5c579f069b586a5f339a392b7e4ff6493501b8b4723bb681575af9cfdef897",
+          "sha256": "7ead3171cfd5b06365a1ee043caa416191d5d95a09e2886fd3e5182449a743cc",
           "bytes": 606
         },
         "narration": {
@@ -54,8 +54,8 @@
         },
         "storyboard": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/preview-storyboard.png",
-          "sha256": "300a266b2e0e1f43beb84b25aa9285f6c7ea7394b66620bb5d1099ec0aef2084",
-          "bytes": 750438
+          "sha256": "97610db3d36a45e6df3a47279100f8df02e79e74de19cb9a80d2b1c9432e1763",
+          "bytes": 760778
         }
       }
     },
@@ -85,12 +85,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
-          "sha256": "f4c29946494b3fd42cf570c25222f1d88c2d30b180878de714434485e4f68cdd",
-          "bytes": 585335
+          "sha256": "bc35c55121627fb2f35ae2441499ba181b48fcca7858d8baf87d42c21ba36a54",
+          "bytes": 586826
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.srt",
-          "sha256": "e48efb232dd0e0d315e75dadd4190f6e2dbed550824bdb022697b7ae0e62f324",
+          "sha256": "7ddaeecfced5e4abe475018e1af0e13d12ae32ac63591026a2780a9324afa303",
           "bytes": 638
         },
         "narration": {
@@ -100,8 +100,8 @@
         },
         "storyboard": {
           "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/preview-storyboard.png",
-          "sha256": "2a4886e6b15172bbedac71539b8e3218a61dac6167254253f619b37e241171df",
-          "bytes": 705346
+          "sha256": "c14a433bd6b4ccb6d986e70d5b4d2f40a1d495da41b83ac04afd56bc72322362",
+          "bytes": 707261
         }
       }
     },
@@ -131,12 +131,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
-          "sha256": "445f30f61af794fa08245c11c7abe23451234a5b95d12e5ecd1f911ff296b261",
-          "bytes": 438108
+          "sha256": "fe6f1dd2e1b6b85d7befdcc09f6333dee18b6d0b137a3407a8ba00b17e92ae19",
+          "bytes": 438879
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.srt",
-          "sha256": "b2c4024267176f4da912a99396b0a74703fccf49bbfeeb75c4d423e1f2645a4f",
+          "sha256": "771a38c5c77e10cb38e6cb37ddf88592b7303b8e9b5290d4c501d6fed317be1a",
           "bytes": 572
         },
         "narration": {
@@ -146,8 +146,54 @@
         },
         "storyboard": {
           "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
-          "sha256": "ea0815980f4b9f506ed4cdd5e877f25ea264e96f6ed4370935ffeecc43f28ea6",
-          "bytes": 622070
+          "sha256": "e389a0d3d0b107fd82cb05f502d5b03883e1007b401df0c3f6f51d7c7e5ac1cd",
+          "bytes": 625675
+        }
+      }
+    },
+    {
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "monogram": "EF",
+      "campaignSlug": "camp-saas-demo-estudio-flow-002",
+      "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-002",
+      "preset": "saas-demo",
+      "configPath": "tenants/estudio-flow/campaigns/camp-saas-demo-estudio-flow-002.json",
+      "deliveryDir": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002",
+      "manifestPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/manifest.json",
+      "allowAudioTrack": false,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
+          "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
+          "sha256": "9c5f094878986c8f3185e7109ec5342ffb06fb92d8df27dd18ee32380d308141",
+          "bytes": 460194
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.srt",
+          "sha256": "3421fdf8e63322d116f047dcc6af402b596c16ccbe95141144994ac6236e211f",
+          "bytes": 454
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002_narracao.txt",
+          "sha256": "edaf9602a4e65cfe9730dceb7efe032abda2de206708f3a4ad619dfd20843d63",
+          "bytes": 802
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/preview-storyboard.png",
+          "sha256": "edbef0c4944f0613e02ce8f6d4cac094839e5bdd5363e2a48029a7b779074c1b",
+          "bytes": 513172
         }
       }
     },
@@ -177,12 +223,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
-          "sha256": "fa41bb20210ab10848afd42eb734e1ef8e0516eb53b17318a4c29c84994f11ae",
-          "bytes": 445692
+          "sha256": "12a096152dc170b16bdd7d40f4bbb93309a137c9420f065e6f5946d62716a35d",
+          "bytes": 449830
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.srt",
-          "sha256": "2a1e42bcf01294844bc7768e6d4965bf10f7cddd06479c06fa6491a5e433e8f5",
+          "sha256": "14b560ff6667789c892acad515aa6625c7fb0b47e5cbbf1587c2f07bc7710ff8",
           "bytes": 496
         },
         "narration": {
@@ -192,8 +238,8 @@
         },
         "storyboard": {
           "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
-          "sha256": "666a354d0a14c530360f5f218980e86ad84dcefbd38af9d57b9756a4a468a1dc",
-          "bytes": 668932
+          "sha256": "676a58f6040fa2ea0550275d24de8185dd8ca2cb1a60a406cc66ffc076cd44e5",
+          "bytes": 674781
         }
       }
     },
@@ -228,7 +274,7 @@
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt",
-          "sha256": "8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e",
+          "sha256": "85a7ce46d868677c581b2829627cb7f64a80f0f80a47a656c4fc775be91f21e8",
           "bytes": 584
         },
         "narration": {
@@ -269,12 +315,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
-          "sha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
-          "bytes": 418056
+          "sha256": "922e99024680466d841ee68fbc93e2f54943ebba7df8c210bd7651a0dc78b0aa",
+          "bytes": 423205
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.srt",
-          "sha256": "8c59c014218eaf41476d2a76403374bf839f7ace2fc1f07257f1c74d49ed8dcc",
+          "sha256": "bd04bd659a960000565161a8d3368c6802e84641e456bcd3339dd5aaa0685898",
           "bytes": 492
         },
         "narration": {
@@ -284,8 +330,8 @@
         },
         "storyboard": {
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
-          "sha256": "5c6377e12ecff5e4fbe5c7614cd39a8449980dd70415f20edb6cb88dfd1d19a5",
-          "bytes": 644132
+          "sha256": "8447b3f80a7b2d07052908359e7ab5a34a58259cc3fccfbc5ad9039115998bca",
+          "bytes": 649672
         }
       }
     },
@@ -315,12 +361,12 @@
         "video": {
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
           "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
-          "sha256": "aa492529e3ea5ef48110602d1c6c35aec823bd34f3178681c3294cc77456b28a",
-          "bytes": 513566
+          "sha256": "78b2be1358626fa0a099a16ba7ca4f28194375caf3c70b05cf0a88e6ce4cdc66",
+          "bytes": 513906
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.srt",
-          "sha256": "e0e31d4d925c87b21a5bcb2fa6706e7b2f82f50515a79fd22f2ba19ef33d9b49",
+          "sha256": "2c2babf3abc64ed5fb0b4728ddfbf461a0e1c4f4381572a26280fb67730be5f7",
           "bytes": 573
         },
         "narration": {
@@ -366,7 +412,7 @@
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.srt",
-          "sha256": "eb957ce54aefca108d9236405c1a4758cf70a23f68276b39e9605caa83ae6582",
+          "sha256": "88c9f93934efe07ad195c8225fb66b6f48dc407ec1e2b55a8a7ac2e8f76a4582",
           "bytes": 444
         },
         "narration": {
@@ -412,7 +458,7 @@
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.srt",
-          "sha256": "f98de0175ca5a8637936f490670164c37763caa523e09fb9ad5c0533a0b0f5e1",
+          "sha256": "daeb5d71ef29ce8be3a21844ca1a72e6341d935a307a3eed0049b9ba0da58791",
           "bytes": 516
         },
         "narration": {
@@ -458,7 +504,7 @@
         },
         "srt": {
           "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.srt",
-          "sha256": "f424773ffad93413b7dd1d3dd61b6c4f86c77f5b6c6e14b2a5b4e8a327d16c89",
+          "sha256": "901df302c3e8db10ca46387f0047a2d4645d808f9637f4f175ea4ff715a81e93",
           "bytes": 488
         },
         "narration": {

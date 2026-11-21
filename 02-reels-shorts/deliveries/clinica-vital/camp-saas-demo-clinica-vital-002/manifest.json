@@ -8,6 +8,15 @@
     "monogram": "CV",
     "domain": "clinicavital.com.br"
   },
+  "uiLabels": {
+    "teamSectionTitle": "ESPECIALISTAS DA CLINICA",
+    "catalogSectionTitle": "PROCEDIMENTOS DISPONIVEIS",
+    "publicRouteFallback": "/AVALIACAO/[CLINICID]",
+    "managerRouteFallback": "/GESTOR/CONSULTAS",
+    "journeyBridgeCaption": "DA MARCACAO DO PACIENTE A AGENDA DA CLINICA",
+    "itemUnitLabel": "CONSULTA",
+    "customerLabel": "PACIENTE"
+  },
   "guardrails": {
     "allowAudioTrack": false,
     "requireSrt": true,
@@ -40,8 +49,8 @@
     "video": {
       "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
-      "sha256": "f4c29946494b3fd42cf570c25222f1d88c2d30b180878de714434485e4f68cdd",
-      "bytes": 585335,
+      "sha256": "bc35c55121627fb2f35ae2441499ba181b48fcca7858d8baf87d42c21ba36a54",
+      "bytes": 586826,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -77,8 +86,8 @@
         16.0,
         24.0
       ],
-      "sha256": "2a4886e6b15172bbedac71539b8e3218a61dac6167254253f619b37e241171df",
-      "bytes": 705346,
+      "sha256": "c14a433bd6b4ccb6d986e70d5b4d2f40a1d495da41b83ac04afd56bc72322362",
+      "bytes": 707261,
       "width": 1080,
       "height": 1920,
       "versioned": true

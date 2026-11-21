@@ -11,7 +11,7 @@ multi-tenant. Consolidado por `tools/review_dashboard.py` a partir de:
   (`checklist-publicacao.json` e copies por rede)
 
 Estado consolidado nesta geração: **5 tenants**
-(clinica-vital, estudio-flow, marca-salao, meu-salao, multitrack-hub) e **10 campanhas**.
+(clinica-vital, estudio-flow, marca-salao, meu-salao, multitrack-hub) e **11 campanhas**.
 
 ## Gerar
 

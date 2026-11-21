@@ -121,7 +121,7 @@ class ApprovalCliTest(unittest.TestCase):
         )
         self.assertTrue(res["ok"])
         self.assertFalse(res["exists"])
-        self.assertEqual(res["summary"], {"total": 10, "aprovadas": 0, "aguardando": 10, "ajuste": 0})
+        self.assertEqual(res["summary"], {"total": 11, "aprovadas": 0, "aguardando": 11, "ajuste": 0})
         self.assertEqual({row["decision"] for row in res["campaigns"]}, {"aguardando"})
         self.assertIn("marca-salao", res["externalAudioTenants"])
         self.assertNotIn("multitrack-hub", res["externalAudioTenants"])

@@ -8,6 +8,15 @@
     "monogram": "MS",
     "domain": "marcasalao.com.br"
   },
+  "uiLabels": {
+    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
+    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
+    "publicRouteFallback": "/BOOKING/[SALONID]",
+    "managerRouteFallback": "/GESTOR/AGENDA",
+    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO",
+    "itemUnitLabel": "ATENDIMENTO",
+    "customerLabel": "CLIENTE"
+  },
   "guardrails": {
     "allowAudioTrack": false,
     "requireSrt": true,

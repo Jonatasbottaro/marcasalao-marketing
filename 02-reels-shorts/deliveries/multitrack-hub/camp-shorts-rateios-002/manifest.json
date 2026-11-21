@@ -8,6 +8,15 @@
     "monogram": "MH",
     "domain": "multitrackhub.com.br"
   },
+  "uiLabels": {
+    "teamSectionTitle": "CATALOGO DE PROJETOS",
+    "catalogSectionTitle": "FAIXAS E RATEIOS",
+    "publicRouteFallback": "/",
+    "managerRouteFallback": "/RATEIOS",
+    "journeyBridgeCaption": "DA ORGANIZACAO DOS STEMS AOS RATEIOS",
+    "itemUnitLabel": "PROJETO",
+    "customerLabel": "MUSICO"
+  },
   "guardrails": {
     "allowAudioTrack": true,
     "requireSrt": true,

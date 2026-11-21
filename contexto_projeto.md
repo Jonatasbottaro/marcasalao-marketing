@@ -11,11 +11,11 @@
 | Item | Valor |
 |------|-------|
 | Raiz oficial | `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing` |
-| HEAD main (base / integração) | `1ce9e2e` (tip da integração da Etapa 5B: 5 tenants, 10 campanhas, 9 agentes da Etapa 5 sincronizados — merges `--no-ff` das 8 branches paralelas sobre `3f8cb1a`, mais o commit de release desta sessão; sem push remoto) |
-| Branch de trabalho ativa | `main` (Etapa 5B consolidada a partir de 8 branches paralelas sobre `3f8cb1a`: agente1–agente8; sem push remoto) |
+| HEAD main (base / integração) | `5059734` (tip da integração da Etapa 6: 5 tenants, 11 campanhas, 8 agentes sincronizados — merges `--no-ff` das 8 branches `codex/etapa6-agente1..8` sobre `8a1b361`, mais o commit de release desta sessão; sem push remoto) |
+| Branch de trabalho ativa | `main` (Etapa 6 consolidada a partir de 8 branches paralelas sobre `8a1b361`: agente1–agente8; sem push remoto) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 5 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (9 agente(s): 1, 2, 3, 4, 5, 6, 7, 8, 9) |
-| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4 e Etapa 5 (Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9) concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 6 concluída — Acabamento Multi-Nicho, SRT Mobile, Aprovação CLI & Analytics Loop (8 agentes) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4, Etapa 5 e Etapa 6 (Etapa 5: Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9 + Etapa 6: Agentes 1, 2, 3, 4, 5, 6, 7, 8) concluídas — ver seções 2 e 7 |
 ---
 
 ## 2. Fase 1 — Resumo de execução (2026-11-18)
@@ -831,6 +831,837 @@ regravados com os campos novos (diff esperado e restrito a
 > **Branch/worktree:** `codex/etapa5b-agente4` em `.workspace/worktrees/etapa5b-agente4`  
 > **Base integrada:** `main` @ `3f8cb1a` (Etapa 5B consolidada: 5 tenants, 10 campanhas)  
 > **Escopo:** estágio opcional `editorial_qa` no pipeline mestre, cobertura de teste e suíte do CI
+
+### 1. Schema (`schemas/brand-kit.schema.json`)
+<!-- devlog-sync:etapa6-agente1.md -->
+
+Nova propriedade **opcional** `uiLabels` (`type: object`, `additionalProperties: false`)
+com 7 chaves string (`minLength: 1`):
+`teamSectionTitle`, `catalogSectionTitle`, `publicRouteFallback`,
+`managerRouteFallback`, `journeyBridgeCaption`, `itemUnitLabel`, `customerLabel`.
+
+- `additionalProperties: false` garante que o validador
+  (`tenant_validator.validate_against_schema`) rejeite chaves desconhecidas dentro de
+  `uiLabels`.
+- Opcional (fora de `required`) → fixtures/brand-kits sintéticos sem `uiLabels`
+  continuam válidos.
+
+### 2. Brand-kits (5 tenants) — valores de `uiLabels`
+
+| tenant | teamSectionTitle | catalogSectionTitle | publicRouteFallback | managerRouteFallback | journeyBridgeCaption | itemUnitLabel | customerLabel |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| marca-salao | PROFISSIONAIS DO SALAO | SERVICOS DISPONIVEIS | /booking/[salonId] | /gestor/agenda | DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO | atendimento | Cliente |
+| meu-salao | PROFISSIONAIS DO SALAO | SERVICOS DISPONIVEIS | /booking/[salonId] | /gestor/agenda | DO AGENDAMENTO DA CLIENTE A AGENDA DO MEU SALAO | atendimento | Cliente |
+| estudio-flow | INSTRUTORES DO ESTUDIO | MODALIDADES DISPONIVEIS | /aulas/[studioId] | /gestor/turmas | DA RESERVA DA ALUNA A GRADE DO ESTUDIO | aula | Aluna |
+| clinica-vital | ESPECIALISTAS DA CLINICA | PROCEDIMENTOS DISPONIVEIS | /avaliacao/[clinicId] | /gestor/consultas | DA MARCACAO DO PACIENTE A AGENDA DA CLINICA | consulta | Paciente |
+| multitrack-hub | CATALOGO DE PROJETOS | FAIXAS E RATEIOS | / | /rateios | DA ORGANIZACAO DOS STEMS AOS RATEIOS | projeto | Musico |
+
+- `marca-salao` NÃO inclui "Meu Salão" (é `forbiddenClaim`) — verificado.
+- Todos os rótulos passam pelos `guardrails.json` de cada tenant (auditoria abaixo).
+
+### 3. Refatoração (`tools/preset_runner.py`)
+
+- `DEFAULT_UI_LABELS` (valores de salão) + `_resolve_ui_labels(brand_kit)`:
+  mescla defaults com `brand_kit["uiLabels"]`, por chave; chaves ausentes/vazias/tipo
+  inválido caem no padrão de salão → retrocompatibilidade total.
+- `_render_saas_frame` passou a usar os rótulos resolvidos (normalizados via
+  `_norm_text`, compatível com a fonte bitmap 5x7):
+  - `PROFISSIONAIS DO SALAO` → `teamSectionTitle`;
+  - `SERVICOS DISPONIVEIS` → `catalogSectionTitle`;
+  - `/BOOKING`, `/BOOKING/[SALONID]` → `publicRouteFallback`;
+  - `/GESTOR/AGENDA` → `managerRouteFallback`;
+  - ponte `DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO` → `journeyBridgeCaption`;
+  - `CLIENTE` (passos do hook e resumos) → `customerLabel`;
+  - `VALOR ESTIMADO` → `VALOR ESTIMADO POR {itemUnitLabel}` (atendimento/aula/consulta);
+  - fallback da rota em `booking-selection` deixou de ser hardcoded
+    (`"/booking/[salonId]"`) e passou a usar `publicRouteFallback`.
+- **Auditoria de guardrails dos `uiLabels`:** em `run_preset_pipeline`, os rótulos
+  resolvidos entram em `texts_to_audit` (`uiLabels.<chave>`) ANTES de qualquer render,
+  com `validate_text_against_guardrails(..., check_ui_elements=True)`.
+- O manifesto agora registra `"uiLabels"` resolvidos (normalizados) — rastreável e
+  testável.
+
+### 4. Testes (`tools/tests/test_preset_runner.py`)
+
+- Nova classe `UiLabelsTest` com **5 testes** (total do arquivo = 13):
+  1. `test_ui01` fallback sem `uiLabels` == `DEFAULT_UI_LABELS` (retrocompatível).
+  2. `test_ui02` resolução específica de `clinica-vital` e `estudio-flow` (+ fallback parcial por chave).
+  3. `test_ui03` guardrail bloqueia `uiLabel` proibido ("Meu Salão" injetado em marca-salao).
+  4. `test_ui04` schema rejeita chave desconhecida dentro de `uiLabels`.
+  5. `test_ui05` gera frames `saas-demo` reais de clinica-vital e estudio-flow (PNG 1080x1920) e confirma ausência de regressão no marca-salao.
+- Ajuste de ambiente (dentro do território): a injeção de `ffmpeg` no `PATH` do teste
+  agora resolve a **raiz principal** via `git rev-parse --git-common-dir`, achando o
+  ffmpeg compartilhado em `<MAIN_ROOT>/.workspace/tools/ffmpeg` mesmo rodando numa
+  worktree (antes dependia de `<worktree>/.workspace/tools/ffmpeg`, inexistente).
+
+## Resultados
+
+- `python tools/tenant_validator.py --all --json` → `ok: true` nos 5 tenants.
+- `python -m unittest tools.tests.test_preset_runner tools.tests.test_tenant_contracts -v`
+  → **22 testes OK** (8 preset_runner + 5 uiLabels + 9 tenant_contracts), ~88s
+  (inclui renders reais FFmpeg de marca-salao saas-demo e multitrack-hub shorts, com e
+  sem áudio externo).
+- Frames `saas-demo` gerados para `clinica-vital` (`ESPECIALISTAS DA CLINICA`) e
+  `estudio-flow` (`INSTRUTORES DO ESTUDIO`) sem regressão no `marca-salao`.
+- FFmpeg usado: 9.1-essentials em `<MAIN_ROOT>/.workspace/tools/ffmpeg` (compartilhado,
+  fora do versionamento).
+
+## Observações / limitações (fora do escopo deste agente)
+
+- Rótulos singulares no resumo (`PROFISSIONAL:`, `SERVICO:`) NÃO estão entre as 7
+  chaves de `uiLabels`; permanecem como estão e não disparam guardrails. Uma futura
+  extensão poderia adicionar `professionalLabel`/`serviceLabel`.
+- `multitrack-hub` usa preset `shorts-completo`; seus `uiLabels` são preenchidos e
+  auditados, mas o render de shorts não consome essas chaves nesta etapa (shorts tem
+  vocabulário próprio e não vazava salão).
+- `_norm_text` (e `_draw_text`) já aplicam uppercase/transliteração; a normalização é
+  idempotente.
+
+## Conformidade
+
+- Trabalho restrito à worktree `.workspace/worktrees/etapa6-agente1`.
+- `contexto_projeto.md` não editado (sincronização delegada ao consolidador).
+- Working tree da branch limpo ao final; commit na branch `codex/etapa6-agente1`.
+
+### Etapa 6 — Agente 2 — Quebra mobile determinística de SRT (46 avisos → 0)
+<!-- devlog-sync:etapa6-agente2.md -->
+
+**Data:** 2026-11-20
+**Papel:** Engenheiro Sênior de Pós-Produção e Qualidade de Legendas (Agente 2 de 8, paralelo)
+**Branch:** `codex/etapa6-agente2`
+**Worktree:** `.workspace/worktrees/etapa6-agente2` (já existente, base `8a1b361` = `main`)
+**Raiz da estação:** `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+
+> `contexto_projeto.md` não foi tocado; este relatório é a fonte para o
+> `devlog_sync.py` na consolidação. `camp-saas-demo-estudio-flow-002` não foi
+> criado nem alterado (não existe em `02-reels-shorts/deliveries/`).
+
+---
+
+## 1. Problema reproduzido
+
+```
+python tools/editorial_qa.py --all --strict --json   -> exit 1
+ok: false | campanhas: 10 com problemas | 0 erros | 46 avisos
+lente legibilidade_mobile: 46 x SRT_LINHA_LONGA
+```
+
+Linhas entre 49 e 82 caracteres (teto mobile = 48) distribuídas pelas 10
+entregas. Cada `manifest.json` guarda `artifacts.srt.sha256`/`bytes`, então o
+hash e o tamanho precisam acompanhar qualquer reformatação.
+
+## 2. Motor `tools/srt_formatter.py` (novo, 100% stdlib)
+
+API implementada:
+
+- `wrap_srt_cue_text(text, max_chars=48, max_lines=2) -> str`
+  - normaliza espaços, preserva palavras/pontuação/acentos;
+  - corte preferencial depois de pontuação (`, . ; : ! ? — –`), depois antes
+    de conjunção (` e `, ` ou `, ` mas `, ` que `, ` para `, ` com `…), por
+    fim no espaço mais próximo do ponto médio;
+  - entre candidatos válidos (`len <= max_chars` nos dois lados) escolhe o
+    mais equilibrado;
+  - palavra isolada maior que o teto é cortada em pedaços seguros
+    (`_hard_cut`, sem loop);
+  - conteúdo maior que `max_lines * max_chars` é preservado integralmente com
+    mais linhas, sempre `len(linha) <= max_chars`.
+- `format_srt_content(srt_text, max_chars=48, max_lines=2) -> (str, dict)`
+  - copia índices e timestamps literalmente; reúne o corpo de cada cue e
+    re-quebra; valida com `srt_validate` antes de devolver; estatísticas de
+    antes/depois por linha.
+- `format_delivery_srts(root=".", max_chars=48, update_manifests=True,
+  tenant=None, slug=None, dry_run=False) -> dict`
+  - descobre `02-reels-shorts/deliveries/<tenant>/<slug>/<slug>.srt`;
+  - grava sempre em LF puro (`\n`) e atualiza `artifacts.srt.sha256/bytes`
+    (e `files.srt` quando presente), preservando vídeo, narração e storyboard;
+  - `dry_run=True` não grava nada (usado pelo `--check-only`);
+  - filtros por tenant/campanha e contenção de path (regex de slug + realpath
+    sob a raiz).
+- CLI:
+  `python tools/srt_formatter.py [--all | --tenant <id> [--campaign <slug>]]
+  [--max-chars 48] [--check-only] [--root <raiz>] [--json]`
+  - `--check-only`: exit 1 se houver linha acima do teto; nunca grava.
+
+## 3. Resultado por campanha (antes → depois)
+
+`bytes` permaneceu igual porque a quebra troca um espaço (1 byte) por LF
+(1 byte); o formatador recalcula o SHA-256 sempre.
+
+| Tenant | Campanha | Max linha antes | Max linha depois | Bytes | Novo SHA-256 do `.srt` |
+| --- | --- | ---: | ---: | ---: | --- |
+| clinica-vital | camp-saas-demo-clinica-vital-001 | 74 | 47 | 606 | `7ead3171cfd5b06365a1ee043caa416191d5d95a09e2886fd3e5182449a743cc` |
+| clinica-vital | camp-saas-demo-clinica-vital-002 | 82 | 47 | 638 | `7ddaeecfced5e4abe475018e1af0e13d12ae32ac63591026a2780a9324afa303` |
+| estudio-flow | camp-saas-demo-estudio-flow-001 | 73 | 46 | 572 | `771a38c5c77e10cb38e6cb37ddf88592b7303b8e9b5290d4c501d6fed317be1a` |
+| marca-salao | camp-saas-demo-marca-salao-001 | 63 | 47 | 496 | `14b560ff6667789c892acad515aa6625c7fb0b47e5cbbf1587c2f07bc7710ff8` |
+| marca-salao | camp-saas-demo-ns001-agenda-001 | 68 | 44 | 584 | `85a7ce46d868677c581b2829627cb7f64a80f0f80a47a656c4fc775be91f21e8` |
+| meu-salao | camp-saas-demo-meu-salao-001 | 63 | 47 | 492 | `bd04bd659a960000565161a8d3368c6802e84641e456bcd3339dd5aaa0685898` |
+| meu-salao | camp-saas-demo-meu-salao-002 | 70 | 47 | 573 | `2c2babf3abc64ed5fb0b4728ddfbf461a0e1c4f4381572a26280fb67730be5f7` |
+| multitrack-hub | camp-shorts-completo-multitrack-001 | 62 | 47 | 444 | `88c9f93934efe07ad195c8225fb66b6f48dc407ec1e2b55a8a7ac2e8f76a4582` |
+| multitrack-hub | camp-shorts-rateios-002 | 75 | 44 | 516 | `daeb5d71ef29ce8be3a21844ca1a72e6341d935a307a3eed0049b9ba0da58791` |
+| multitrack-hub | camp-shorts-stems-workflow-003 | 71 | 43 | 488 | `901df302c3e8db10ca46387f0047a2d4645d808f9637f4f175ea4ff715a81e93` |
+
+Totais do formatter: **10 campanhas alteradas, 10 manifestos sincronizados,
+46 linhas longas antes, 0 depois**. Segunda execução: `changed: 0`.
+
+## 4. Auditorias finais
+
+```
+python tools/editorial_qa.py --all --strict --json   -> exit 0, ok: true
+  problemas: 0 erros, 0 avisos | checks: 5 ok, 0 warn, 0 fail
+python tools/release_audit.py --strict --json        -> exit 0, ok: true
+  7/7 domínios ok | 0 erros, 0 avisos | 10/10 entregas, 10/10 pacotes
+```
+
+## 5. Testes
+
+`tools/tests/test_srt_formatter.py` (11 testes): quebra equilibrada 48/2,
+preservação de índices/timestamps/acentos, idempotência, `--check-only` sem
+escrita, sync de manifesto (artifacts + files; demais hashes intactos), LF
+puro, 10 campanhas reais (≤48 e hash íntegro), filtros tenant/campanha,
+contenção de path, CLI `--json`, palavra única acima do teto.
+
+```
+python -m unittest tools/tests/test_srt_formatter.py tools/tests/test_srt_validate.py \
+  tools/tests/test_editorial_qa.py tools/tests/test_release_audit.py -v
+-> Ran 56 tests ... OK
+```
+
+## 6. Desvios declarados (necessários para o critério `ok: true`)
+
+1. **`04-legendas/pacotes-publicacao/**/checklist-publicacao.json` (10 arquivos)**
+   — fora do território nominal desta tarefa, mas o `release_audit` cruza
+   `checklist.media[kind=srt].sha256` com o arquivo em disco. Atualizei
+   cirurgicamente **apenas** `sha256` (e `bytes`, quando divergente) da entrada
+   `kind: "srt"`; vídeo, narração e storyboard foram verificados
+   programaticamente como idênticos ao HEAD. Sem isso, `release_audit` fica
+   `pacotes_sociais: HASH_DIVERGENTE` para as 10 campanhas.
+2. **`tools/tests/test_editorial_qa.py`** — também fora do território nominal.
+   Três testes codificavam o baseline antigo de 46 avisos:
+   - `test_01` esperava `legibilidade_mobile: warn`; agora espera `ok` e 0 avisos;
+   - `test_02` substituía uma frase longa que deixou de existir; passou a usar
+     o helper `_set_cue_body` (independente do texto atual);
+   - `test_10` esvaziava um cue por frase literal; passou a esvaziar o cue por
+     índice com o mesmo helper.
+   O restante da suíte não foi alterado.
+3. **`dry_run`** foi adicionado como parâmetro opcional da API (além da
+   assinatura pedida) para implementar `--check-only` sem gravar disco.
+
+## 7. Arquivos alterados
+
+- Novos: `tools/srt_formatter.py`, `tools/tests/test_srt_formatter.py`,
+  `.workspace/devlogs/etapa6-agente2.md`.
+- Modificados: 10 `.srt` + 10 `manifest.json` em `02-reels-shorts/deliveries/`;
+  10 `checklist-publicacao.json`; `tools/tests/test_editorial_qa.py`.
+- `contexto_projeto.md` e `camp-saas-demo-estudio-flow-002` intocados.
+- Commit local na `codex/etapa6-agente2`; sem push.
+
+### Compatibilidade de schema (nuance registrada)
+<!-- devlog-sync:etapa6-agente3.md -->
+
+O `POST /api/approvals` do portal valida estritamente um conjunto de chaves que
+**não inclui `updatedAt`**. O `GET` não valida. Portanto:
+
+- o arquivo gerado pela CLI é lido e exibido pelo portal normalmente;
+- uma reexportação pelo navegador descarta `updatedAt` (sem corromper os demais
+  campos), e a CLI continua operando (o campo é opcional na leitura).
+
+`tools/review_dashboard.py` não foi alterado (fora do território).
+
+## 5. Contratos JSON (exemplos reais)
+
+`python tools/approval_cli.py status --json` (sem store):
+
+```json
+{
+  "ok": true,
+  "autoPublish": false,
+  "exists": false,
+  "approvalsFile": ".workspace/tmp/aprovacoes-titular.json",
+  "summary": {"total": 10, "aprovadas": 0, "aguardando": 10, "ajuste": 0},
+  "externalAudioTenants": ["clinica-vital", "estudio-flow", "marca-salao", "meu-salao"],
+  "locucaoExternaPendente": [],
+  "campaigns": [
+    {"tenantId": "clinica-vital", "slug": "camp-saas-demo-clinica-vital-001",
+     "decision": "aguardando", "externalAudio": true,
+     "locucaoExternaConferida": false, "updatedAt": null}
+  ]
+}
+```
+
+`decide` (trecho da resposta e do arquivo):
+
+```json
+{
+  "ok": true, "autoPublish": false,
+  "tenantId": "marca-salao", "slug": "camp-saas-demo-ns001-agenda-001",
+  "decision": "aprovado", "reviewer": "Titular", "updatedAt": "2026-11-21T01:21:43Z",
+  "campaign": {
+    "tenantId": "marca-salao", "slug": "camp-saas-demo-ns001-agenda-001",
+    "campaignId": "SAAS-DEMO-NS001-AGENDA-001", "preset": "saas-demo",
+    "politicaAudio": "-an", "decisao": "aprovado",
+    "locucaoExternaConferida": true, "observacoes": "",
+    "hashes": {"video": "...", "srt": "...", "narracao": "...", "storyboard": "..."},
+    "updatedAt": "2026-11-21T01:21:43Z"
+  }
+}
+```
+
+Documento gravado: `schemaVersion: 2`, `arquivo: "aprovacoes-titular.json"`,
+`origem: "tools/approval_cli.py"`, `exportadoEm`, `revisor`, `resumo`
+(`totalCampanhas/aprovadas/ajustes/pendentes`) e `campanhas` ordenadas.
+
+`validate`:
+
+```json
+{
+  "ok": true, "exists": true, "total": 1,
+  "summary": {"total": 1, "aprovadas": 1, "aguardando": 0, "ajuste": 0},
+  "errors": [], "warnings": [], "staleApprovals": [],
+  "campaigns": [{"tenantId": "marca-salao", "slug": "camp-saas-demo-ns001-agenda-001",
+                 "decision": "aprovado", "staleApproval": false, "changedHashes": [],
+                 "hashCheck": "ok"}]
+}
+```
+
+`staleApproval`: quando o `manifest.json` muda após a decisão, a campanha sai
+com `staleApproval: true` e `changedHashes` (ex.: `["video"]`), `ok: false`.
+Sem manifesto, `hashCheck: "sem_hashes"` e sem falso positivo. Aviso (não erro):
+`-an` aprovado sem `--external-audio-checked`.
+
+## 6. Subcomando `handoff` no orquestrador
+
+```bash
+python tools/factory_cli.py handoff --date 2026-11-23 \
+  --approvals-file .workspace/tmp/aprovacoes-titular.json \
+  --output-dir .workspace/handoff-diario --json
+```
+
+Fluxo: importa `approval_cli` e `handoff_bundler` via `_optional_module`
+(mesmo padrão dos módulos paralelos), roda `cmd_validate`, aborta com
+`APROVACOES_INVALIDAS` somente em erros de schema/campanha e chama
+`build_handoff_bundle`. Saída unificada:
+
+```json
+{
+  "schemaVersion": 1, "ok": true, "autoPublish": false,
+  "mode": "date", "date": "2026-11-23",
+  "approvalAudit": {"ok": true, "exists": true, "total": 1,
+                    "summary": {"total": 1, "aprovadas": 1, "aguardando": 0, "ajuste": 0},
+                    "staleApprovals": [], "warnings": []},
+  "handoff": {"ok": true, "autoPublish": false, "bundledSlots": 1,
+              "dates": ["2026-11-23"], "reason": null, "slots": ["..."]}
+}
+```
+
+Stale não bloqueia o bundle (o bundler já falha fechado por hash na mídia);
+o relatório expõe `staleApprovals` para decisão humana. `list`, `render` e
+`pipeline` mantêm assinatura, saída e exit codes.
+
+## 7. Testes
+
+```bash
+python -m unittest tools/tests/test_approval_cli.py tools/tests/test_factory_cli.py tools/tests/test_handoff_bundler.py -v
+# Ran 34 tests — OK (skipped=1)
+```
+
+- `test_approval_cli.py` — 14/14: status sem store; decide aprovado/ajuste/
+  aguardando; notes obrigatórias em ajuste; hashes do manifesto; `staleApproval`;
+  validate reprovando schema/campanha; roundtrip `handoff_bundler.load_approvals`;
+  contenção de path; CLI `--json`; escrita atômica sem `.tmp`; migração v1.
+- `test_factory_cli.py` — 8 testes: os 6 anteriores + `handoff` com 0 aprovadas
+  (JSON limpo e `NENHUMA_CAMPANHA_APROVADA_PELO_TITULAR`) e com campanha
+  aprovada em diretório temporário (`bundledSlots >= 1`, `autoPublish: false`).
+  `test_02` (render binário) segue `skipped` porque `ffmpeg` não está no PATH
+  desta estação.
+- `test_handoff_bundler.py` — 12/12, sem regressão.
+
+## 8. Smoke real (dados de produção fictícios versionados)
+
+Sequência executada no checkout com store descartável em
+`.workspace/tmp/etapa6-agente3-smoke/` (removido ao final):
+
+```
+decide  -> ok, aprovado, 2026-11-21T01:21:43Z, hashes: narracao/srt/storyboard/video
+validate -> ok, total 1, stale [], errors [], warnings []
+factory handoff --date 2026-11-23
+  -> ok, autoPublish false, audit.aprovadas 1, bundled 1 (slot-001 marca-salao)
+  -> mediaCopied true, POSTAGEM-MANUAL.md + copy-pronta.txt + cover.png + handoff-manifest.json
+```
+
+Nenhum store permanente foi criado; o arquivo padrão
+`<workspace>/tmp/aprovacoes-titular.json` do checkout principal não foi tocado.
+
+## 9. Limites e pendências para a consolidação
+
+1. `review_dashboard.py` não foi alterado; se o time quiser preservar
+   `updatedAt` numa reexportação pelo navegador, o conjunto de chaves do POST
+   precisa ser estendido pelo dono desse arquivo.
+2. `test_factory_cli.test_02` continua dependente de `ffmpeg`; o CI cobre.
+3. Stale apenas detecta mudança de hash declarado no manifesto; divergência
+   entre arquivo arquivado e manifesto continua sendo bloqueada pelo
+   `handoff_bundler` (fail-closed por hash na cópia).
+
+## 10. Handoff de armazenamento
+
+- Raiz usada: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+- Worktree: `.workspace/worktrees/etapa6-agente3` (existente, preservada).
+- Fixtures de teste e smoke: somente em `.workspace/tmp` (ignorado), removidos.
+- Ferramentas portáteis: nenhuma.
+- Arquivos permanentes do commit: `tools/approval_cli.py`,
+  `tools/tests/test_approval_cli.py`, `tools/factory_cli.py`,
+  `tools/tests/test_factory_cli.py` e este devlog.
+- Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido
+  fora de `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+
+### 3.1 Normalização multi-provedor
+<!-- devlog-sync:etapa6-agente4.md -->
+
+- `auto` pontua cabeçalhos por marcadores distintos (GA4 usa `Session *`;
+  Plausible usa `utm_*` + `visitors`; Umami usa `source/medium/campaign/content` +
+  `views/events`). Empate ou zero marcadores vira erro explícito pedindo `--provider`.
+- Aliases canônicos aceitam variações reais de exportação: GA4
+  `Session manual ad content`/`Session manual content`; Plausible
+  `visitors`/`visits`; Umami `views`, `events`; conversões GA4 também aceitam
+  `Key events`.
+- Números toleram vírgula de milhar e vírgula decimal; linhas inválidas são
+  registradas em `dataQuality.invalidRows` em vez de derrubar a execução.
+
+### 3.2 Cruzamento e atribuição
+
+- Chave de junção: `(utm_source, utm_medium, utm_campaign, utm_content)`.
+- Fonte primária `04-legendas/calendario-editorial.json`; fallback automático para
+  `04-legendas/matriz-utm-consolidada.csv` quando o JSON não existe.
+- Linhas sem par vão para `unmatchedRows` com motivo `UTM_NOT_IN_CALENDAR`; a execução
+  continua com `ok: true`.
+- Chaves duplicadas no calendário são expostas em `dataQuality.duplicateCalendarKeys`.
+
+### 3.3 Hook A/B
+
+- Variante pode vir da coluna `hook_variant_used` do CSV ou de `--hook-log`.
+- O log aceita três formatos: lista em `hooks` com `slot_id`, lista com
+  `utm_campaign`+`utm_content`, ou mapa direto `{"slot-001": "A"}`.
+- Precedência: log manual sobre a coluna do CSV.
+- Comparativo `rankings.byHook` só aparece quando há variante informada.
+
+### 3.4 Rankings e relatório
+
+- `rankings.byTenant`, `byChannel`, `byWave` (rótulos fixos
+  `Onda 1 9:16` e `Onda 2 1:1/16:9`) e `byHook`, ordenados por conversões e sessões.
+- Dimensões são semeadas com todos os valores do calendário (inclusive zero) para
+  evidenciar cobertura.
+- Saídas em `--out-dir`: `utm-performance-report.json` e `utm-performance-report.md`.
+- `financialSimulation: false`; nenhum campo monetário é calculado ou inferido.
+
+### 3.5 Template e contenção
+
+- `--generate-template <csv>` exporta as 40 linhas da matriz com as colunas
+  `sessions`, `engaged_sessions`, `conversions` e `hook_variant_used` vazias.
+- CSV de entrada, hook log, calendário e `--out-dir` precisam ficar dentro da raiz;
+  caminho externo retorna `PATH_OUTSIDE_ROOT` (exit 2).
+
+## 4. Evidências
+
+```
+$ python -m unittest tools/tests/test_utm_report_importer.py tools/tests/test_utm_simulator.py -v
+Ran 28 tests — OK
+# 16 do importador + 12 do simulador
+
+$ smoke end-to-end com o calendário real (CSV GA4 de 7 linhas, 6 casadas)
+provider=ga4 ok=True
+totals: 7 linhas, 6 casadas, 1 não atribuída, 2490 sessões, 139 conversões (5.58%)
+byChannel: youtube 1510/82 (5.43%) · instagram 680/47 (6.91%) · facebook 300/10 (3.33%)
+byWave: Onda 1 9:16 2090/99 · Onda 2 1:1/16:9 400/40 (10.0%)
+byHook: Hook A 1720/88 · Hook B 680/47
+byTenant: marca-salao 2400, clinica-vital 90, demais 0 (semeados)
+unmatched: tiktok/bio/camp-xyz/ghost (reportado, sem falhar)
+```
+
+O smoke também confirmou `utm-performance-report.md` com tabelas de totais, canal,
+onda, tenant, hooks, não atribuídos e qualidade de dados.
+
+## 5. Limitações
+
+- Os aliases cobrem os formatos descritos na tarefa e variações comuns de exportação;
+  exportações com cabeçalhos muito diferentes devem usar `--provider` explícito ou
+  ganhar novo alias.
+- O importador exige arquivos dentro da raiz do projeto (regra de portabilidade);
+  exports baixados devem ser movidos para `.workspace/tmp/` antes de rodar.
+- Nenhuma receita, ROAS ou cobrança é simulada; o relatório é descritivo.
+- `test_srt_formatter.py`, `test_approval_cli.py` e `test_workspace_doctor.py` são de
+  agentes paralelos e podem ainda não existir nesta branch; foram adicionados ao CI
+  conforme o contrato de integração.
+
+## 6. Handoff
+
+- Branch `codex/etapa6-agente4` com commit limpo.
+- Verificação rápida:
+  `python tools/utm_report_importer.py --root . --metrics-csv <csv> --out-dir .workspace/tmp/utm-report/<semana> --json`
+- `contexto_projeto.md` não foi editado; este devlog é a fonte para `devlog_sync.py`
+  na consolidação.
+
+### Novo — `tenants/estudio-flow/campaigns/camp-saas-demo-estudio-flow-002.json`
+<!-- devlog-sync:etapa6-agente5.md -->
+
+`SAAS-DEMO-ESTUDIO-FLOW-002`, `tenantId: "estudio-flow"`, `preset: "saas-demo"`, 6 cenas,
+`format.duration: 30.0` (soma exata das durações), `1080x1920`, 30 fps, `h264`, `yuv420p`.
+
+| # | ID | Tempo | Duração | Superfície / rota | Foco |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `cena-01-hook` | 0–4s | 4.0s | `marca` | abertura da rotina da equipe |
+| 2 | `cena-02-grade` | 4–10s | 6.0s | `manager-agenda` / `/gestor/turmas` | grade do dia (`turma-ef-001`) |
+| 3 | `cena-03-filtro` | 10–15s | 5.0s | `manager-agenda` / `/gestor/turmas` | filtro por instrutora Clara Nogueira (`inst-ef-003`, `turma-ef-003`) |
+| 4 | `cena-04-status` | 15–20s | 5.0s | `manager-agenda` / `/gestor/turmas` | presença/status manual: Aguardando → Confirmado |
+| 5 | `cena-05-busca` | 20–26s | 6.0s | `manager-agenda` / `/gestor/turmas` | busca por aluna: Andréia Silveira (`turma-ef-004`) |
+| 6 | `cena-06-cta` | 26–30s | 4.0s | `marca` | `estudioflow.com.br` |
+
+- **Nenhuma cena de `/aulas`**: não há `surface: "public-booking"`, nenhuma rota
+  `/aulas/[studioId]`, nenhum `bookingCase`, nenhum `booking-selection`/`booking-confirm`/
+  `booking-success` e nenhum `baseCaptureRef` herdado. Rotas presentes: apenas `/gestor/turmas`
+  e o domínio institucional no CTA.
+- `artifacts` segue o padrão da campanha 001 (vídeo, SRT, narração, manifesto, storyboard com
+  timestamps 2/8/16/24s). `subtitleStyle` idêntico ao brand-kit.
+
+### Alterado — `tenants/estudio-flow/campaigns/README.md`
+
+Preservadas as linhas originais da campanha 001; acrescentada a entrada da campanha 002 com as
+superfícies, a instrutora/aluna em destaque, a ausência de `/aulas` e a nota sobre o limite de 48
+caracteres no SRT.
+
+### Entregas — `02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/`
+
+Geradas pelo render: `camp-saas-demo-estudio-flow-002.mp4` (não versionado, arquivado em
+`.workspace/archives/`), `.srt`, `_narracao.txt`, `manifest.json`, `derivatives.json`,
+`preview-storyboard.png`, `cover.png`, `thumb-16x9.png` e `preview-formats.png`.
+
+## 4. Conformidade editorial e limite do SRT
+
+Auditoria pré-render feita com o mesmo pipeline de `preset_runner._audit_texts` e
+`tenant_validator.validate_text_against_guardrails(check_ui_elements=True)` sobre todos os campos
+de texto das cenas, sobre o SRT gerado e sobre a narração: **0 violações**.
+
+- Sem promessa de cura clínica, tratamento médico, emagrecimento ou resultado imediato.
+- Sem WhatsApp, SMS, lembretes, 24h, automação/confirmação automática.
+- Sem redução de faltas, zero faltas ou `no-show`.
+- Sem checkout, pagamento, cobrança ou cartão; nenhuma tela de pagamento em cena.
+- Status e presença sempre descritos como **manuais**.
+
+O `preset_runner.build_srt_text()` usa o campo `caption` literalmente, sem quebra automática —
+por isso todas as captions foram escritas com até 48 caracteres. Verificação no arquivo entregue:
+
+```
+linhas: 6  max: 44  acima_de_48: []
+```
+
+Legendas entregues (comprimentos 40, 41, 44, 44, 43 e 37): grade do dia, filtro da Clara,
+mudança de status, busca da Andréia e CTA. Tempos do SRT conferidos: 0–4, 4–10, 10–15,
+15–20, 20–26 e 26–30s, todos dentro dos 30.0s do vídeo.
+
+## 5. Validação
+
+```bash
+python tools/tenant_validator.py --tenant estudio-flow --json
+```
+
+Resultado: `ok: true`, `errors: []`, com brand-kit, guardrails e fixture localizados em
+`tenants/estudio-flow/`.
+
+Pré-auditoria adicional da campanha (normalizando `start`/`end` como o render faz): 6 cenas,
+soma `30.0s` = `format.duration`, superfícies apenas `manager-agenda` e `marca`, rotas sem
+`/aulas`, `max_len: 44`, `over_48: []`, `guardrail_violations: []`.
+
+## 6. Ambiente ffmpeg, render e derivados
+
+O ffmpeg não está no PATH do shell, mas os binários portáteis 9.1 (gyan.dev) estão em
+`<MAIN_ROOT>/.workspace/tools/ffmpeg/`. Foram expostos **somente no PATH do processo** da
+tarefa (sem `setx`, sem PATH global, sem download e sem arquivo fora de `<RAIZ>`).
+
+```bash
+python tools/factory_cli.py render --tenant estudio-flow \
+  --campaign camp-saas-demo-estudio-flow-002 \
+  --report .workspace/tmp/etapa6-agente5/report.json --json
+```
+
+Resultado: `ok: true`, `mode: filtered`, 1 tenant, 1 campanha. `1080x1920`, `h264`,
+`yuv420p`, 30 fps, `30.0s`, `videoStreams: 1`, `audioStreams: 0`, `allowAudioTrack: false`.
+O relatório foi gravado em `.workspace/tmp/etapa6-agente5/report.json`;
+`02-reels-shorts/deliveries/factory-report.json` **não foi tocado**.
+
+Hashes registrados no manifesto: vídeo `d993c9dcb166bfaa3087b55036551df5d17e3115d3fcf70b5c97a975ab67ca53`,
+SRT `3421fdf8e63322d116f047dcc6af402b596c16ccbe95141144994ac6236e211f`,
+narração `edaf9602a4e65cfe9730dceb7efe032abda2de206708f3a4ad619dfd20843d63`,
+storyboard `fafc9cfdfaeaeadc83f7434154377356f0b0c7184827f8092ff7949b03943775`.
+
+```bash
+python tools/derivative_formats.py --tenant estudio-flow \
+  --campaign camp-saas-demo-estudio-flow-002 --json
+```
+
+Resultado: `ok: true`, `total: 1`, `generated: 1`, `skipped: 0`, `errors: []`. Formatos
+`1x1`, `16x9`, `cover`, `thumb-16x9` e `preview-formats`, todos com `audioStreams: 0` e
+`appliedAudioPolicy: "-an"`.
+
+Verificação explícita com `ffprobe -v error -select_streams a -show_entries stream=index,codec_name`
+sobre o MP4 arquivado: **nenhuma saída**, confirmando zero faixas de áudio. Nenhum áudio foi
+gerado, preservado ou inserido; a narração segue apenas como texto externo em português brasileiro.
+
+## 7. Handoff de armazenamento
+
+- Raiz usada nesta estação: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+  (valor de `git rev-parse --show-toplevel` no checkout principal).
+- Worktree: `<RAIZ>/.workspace/worktrees/etapa6-agente5` (preexistente; não removida).
+- Auxiliares criados: `<RAIZ>/.workspace/tmp/etapa6-agente5/` (relatório de render) e
+  `<RAIZ>/.workspace/worktrees/etapa6-agente5/.workspace/tmp/preset-runner-*/` (cenas e
+  artefatos intermediários) — todos sob `<RAIZ>/.workspace/`, ignorados pelo Git.
+- Arquivos permanentes adicionados ao Git: campanha 002, `README.md` atualizado, pacote de
+  entrega da campanha 002 e este devlog, todos na branch `codex/etapa6-agente5`.
+- Arquivos mantidos somente em `.workspace/`: relatório de render, arquivos temporários do
+  preset runner, MP4 arquivado e derivados MP4 — por política do `.gitignore`, com hashes e
+  metadados preservados nos manifestos versionados.
+- Worktrees criadas: nenhuma. Worktrees removidas: nenhuma. Ferramenta portátil usada:
+  ffmpeg/ffprobe 9.1 (gyan.dev) já presentes em `<MAIN_ROOT>/.workspace/tools/ffmpeg`.
+- Temporários removidos: `tools/__pycache__/` da worktree.
+- `git status --short` final da worktree: limpo após o commit (sem arquivos rastreados pendentes).
+- Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de
+  `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+
+### Agente 6 — `workspace_doctor`: diagnóstico e higiene do `.workspace/` compartilhado
+<!-- devlog-sync:etapa6-agente6.md -->
+
+> **Data:** 2026-11-20  
+> **Branch:** `codex/etapa6-agente6`  
+> **Worktree:** `.workspace/worktrees/etapa6-agente6`  
+> **Base:** `main` @ `8a1b361`  
+> **Escopo:** CLI/API 100% stdlib de higiene do workspace, auditoria de mídia local contra hashes versionados, limpeza segura de `tmp/` e suíte automatizada
+
+## 1. Objetivo
+
+Entregar, no território exclusivo do Agente 6 da Etapa 6, uma ferramenta de confiabilidade local que audite o `.workspace/` do checkout **principal** (compartilhado por todas as worktrees): presença/versão do FFmpeg portátil, integridade das mídias em `.workspace/archives/` contra os SHA-256 declarados nas entregas versionadas, higiene de worktrees/arquivos não rastreados e limpeza restrita de subdiretórios descartáveis de `.workspace/tmp/`. O relatório completo fica neste devlog para ser transferido ao `contexto_projeto.md` pelo `devlog_sync.py` — `contexto_projeto.md` **não** foi editado diretamente.
+
+## 2. Entregas
+
+| Arquivo | Estado | Conteúdo |
+| --- | --- | --- |
+| `tools/workspace_doctor.py` | novo | API `run_workspace_doctor(root=".", clean_tmp=False)` e CLI `python tools/workspace_doctor.py [--check \| --clean-tmp] [--json] [--root DIR]`; 4 seções (ffmpeg, archives, worktrees, tmp), relatório `schemaVersion: 1`, exit codes 0/1/2; somente biblioteca padrão |
+| `tools/tests/test_workspace_doctor.py` | novo | 11 testes em `TemporaryDirectory`, cobrindo auditoria íntegra, hash corrompido, preservação de protegidos no `--clean-tmp`, contenção de caminhos, CLI `--json`/`--clean-tmp`, FFmpeg ausente, higiene de worktrees e avisos de mídia ausente/não declarada |
+| `.workspace/devlogs/etapa6-agente6.md` | novo | este relatório completo |
+
+## 3. Desenho e decisões
+
+- **Raiz principal por Git:** `_resolve_main_root()` usa `git rev-parse --git-common-dir` (o mesmo mecanismo de `bootstrap_ffmpeg.py`), de modo que, mesmo executado dentro de uma worktree, o doutro aponte para o `.workspace/` compartilhado. Sem Git, cai para o diretório informado.
+- **Separação `source_root` × `resolution_root` (correção encontrada na validação real):** os manifestos `manifest.json`/`derivatives.json` são **versionados** e podem ser lidos de uma worktree, mas as mídias declaradas vivem em `.workspace/archives/` da **raiz principal**. Os caminhos `.workspace/archives/...` são resolvidos contra `MAIN_ROOT`, e as chaves de comparação são relativas a `MAIN_ROOT`. Sem essa separação, a primeira execução real acusava 70 erros falsos de `PATH_OUTSIDE_ARCHIVES`.
+- **Cruzamento de hashes:** `manifest.json → artifacts.video.archivePath` e `derivatives.json → source.path` alimentam a categoria `9:16`; `derivatives.json → derivatives.{1x1,16x9,cover,thumb-16x9,preview-formats}` alimentam as demais. Caminhos declarados fora de `archives/` são recusados (`PATH_OUTSIDE_ARCHIVES`); hashes conflitantes para o mesmo arquivo geram `DECLARACAO_CONFLITANTE`.
+- **Severidades:** divergência de SHA-256, FFmpeg ausente/inválido e worktree registrada sem diretório são `error`. Mídia declarada mas ausente (política do projeto: mídia local não é versionada), mídia não declarada, arquivos não rastreados e worktree órfã são `warning` — `ok` depende somente de `error`.
+- **`--clean-tmp` restrito:** percorre apenas filhos diretos de `<MAIN_ROOT>/.workspace/tmp/`, remove somente diretórios, nunca arquivos soltos. `aprovacoes-titular.json` está em `PROTECTED_TMP_NAMES`; links/junções e alvos cujo `realpath` saia de `tmp/` são ignorados. `archives/`, `tools/` e `devlogs/` são irmãos de `tmp/`, estruturalmente inalcançáveis.
+- **Isolamento dos testes:** `TemporaryDirectory(dir=<RAIZ>/.workspace/tmp/etapa6-agente6-doctor-tests/)` mantém todos os artefatos sob a raiz; `_resolve_main_root` e `_probe_version` são substituídos por `mock.patch.object` em `setUp` para que nenhum teste toque o `.workspace/` real ou execute binários.
+
+## 4. Evidências de validação (nesta estação)
+
+```
+$ python -m unittest tools/tests/test_workspace_doctor.py -v
+Ran 11 tests — OK   (PYTHON_EXIT_CODE=0)
+  test_01_auditoria_integra_e_formatos ........................ ok
+  test_02_detecta_hash_corrompido_em_archive .................. ok
+  test_03_clean_tmp_preserva_protegidos ....................... ok
+  test_04_clean_tmp_preserva_arquivos_soltos .................. ok
+  test_05_declaracao_fora_de_archives_e_recusada .............. ok
+  test_06_contenção_de_alvos_do_clean_tmp ..................... ok
+  test_07_cli_json ............................................ ok
+  test_08_cli_clean_tmp_json ................................... ok
+  test_09_ffmpeg_ausente ....................................... ok
+  test_10_worktrees_e_nao_rastreados ........................... ok
+  test_11_midia_nao_declarada_e_midia_ausente_sao_avisos ....... ok
+
+Execução real somente leitura (python tools/workspace_doctor.py --root . --json,
+a partir da worktree, após a correção source_root/resolution_root):
+  exit=1, ok=False, errors=1, warnings=1
+  ffmpeg: ffmpeg.exe e ffprobe.exe presentes, versão 9.1-essentials_build-www.gyan.dev
+  archives: 60 declarados, 60 presentes, 59 verificados, 1 divergente, 0 ausentes
+  por formato: 9:16=10, 1x1=10, 16x9=10 (cover/thumb/preview também 10 cada)
+  worktrees: 9 registradas, 0 órfãs, 4 arquivos não rastreados
+  único error: ARCHIVE_HASH_DIVERGENTE em
+    .workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4
+    (declarado em multitrack-hub/camp-shorts-completo-multitrack-001:derivatives.source)
+```
+
+O `ARCHIVE_HASH_DIVERGENTE` é um achado legítimo do auditor sobre mídia local não versionada desta estação (os derivados do Multitrack Hub foram regenerados em rodadas anteriores); **não** foi alterado — `.workspace/archives/` está fora do território do Agente 6. O `ARQUIVOS_NAO_RASTREADOS` são os próprios arquivos desta entrega antes do commit (`tools/workspace_doctor.py`, `tools/tests/test_workspace_doctor.py` e dois `__pycache__`, removidos antes de commitar).
+
+## 5. Incidente registrado (transparência)
+
+Na **primeira** execução da suíte, antes do `mock.patch.object(wd, "_resolve_main_root", ...)` em `setUp`, os testes de `--clean-tmp` rodaram com `workspace_root` apontando para a raiz principal real e removeram os **subdiretórios** então presentes em `<RAIZ>/.workspace/tmp/` (diretório hoje vazio). Eram artefatos locais ignorados pelo Git — pertencentes a rodadas anteriores (por exemplo simulações UTM, sandbox editorial-qa e staging de bootstrap) — e nenhum arquivo versionado foi afetado. Não há como restaurá-los; o isolamento foi corrigido imediatamente e a suíte foi reexecutada com 11/11 OK sem novo acesso ao `.workspace/` real. Sinalizo o fato para que outras estações/agentes saibam que evidências locais ali depositadas podem ter sido perdidas nesta sessão.
+
+## 6. Limitações
+
+- Não foi necessário baixar ferramentas portáteis: o FFmpeg já existe em `<RAIZ>/.workspace/tools/ffmpeg/` e foi apenas inspecionado.
+- A auditoria compara hash dos arquivos **presentes**; encoded characteristics (fps/codec/dimensões) e `-an` continuam sendo verificados pelo `release_audit.py`. Mídia ausente permanece como aviso, conforme a política do projeto.
+- Suíte roda em Windows (py 3.15 nesta estação) com nomes `ffmpeg.exe`/`ffprobe.exe`; em outras plataformas a ferramenta procura os nomes sem extensão.
+- `contexto_projeto.md` não foi tocado; a consolidação deve ser feita por `python tools/devlog_sync.py --devlogs-dir .workspace/devlogs --target contexto_projeto.md --pattern "etapa6-agente*.md"`.
+
+## 7. Arquivos não tocados
+
+`contexto_projeto.md`, `tenants/`, `02-reels-shorts/deliveries/`, `.workspace/archives/`, `.workspace/tools/`, a worktree principal e as worktrees dos outros agentes não foram alterados por esta entrega (com a exceção transitória registrada na Seção 5, já contida). Nenhum post, campanha, calendário ou portal foi publicado ou editado.
+
+## 8. Handoff
+
+- Branch pronta para merge: `codex/etapa6-agente6` (commit com os 3 arquivos do território).
+- Verificação rápida: `python -m unittest tools/tests/test_workspace_doctor.py -v`.
+- Diagnóstico local: `python tools/workspace_doctor.py --check --json` (somente leitura).
+- Limpeza segura: `python tools/workspace_doctor.py --clean-tmp --json`.
+- A divergência de hash do Multitrack Hub detectada na estação deve ser tratada pelo responsável de mídia, não por este agente.
+
+### Etapa 6 — Agente 7: coerência de hooks A/B e aderência de uiLabels
+<!-- devlog-sync:etapa6-agente7.md -->
+
+- **Data:** 2026-11-20
+- **Papel:** Engenheiro Sênior de Qualidade Editorial (Agente 7 de 8, Etapa 6, em paralelo).
+- **Branch isolada:** `codex/etapa6-agente7`
+- **Worktree:** `<RAIZ>/.workspace/worktrees/etapa6-agente7` (já existia; reutilizada, não recriada, conforme regra 1 do pedido).
+- **Base:** `main` @ `8a1b361cfda236ed9cdb553bdd81201b146f9bca` (release da Etapa 5B).
+- **Território exclusivo:** `tools/editorial_qa.py`, `tools/tests/test_editorial_qa.py` e `.workspace/devlogs/etapa6-agente7.md`.
+- **Protocolo `contexto_projeto.md`:** não editado. Este devlog é a fonte completa para o `devlog_sync.py` na consolidação.
+
+## 1. Partida
+
+O `tools/editorial_qa.py` existente (Etapa 5B, Agente 8) já tinha cinco lentes e a API pública
+`run_editorial_qa(root=".", strict=False, tenant=None)`. Antes de alterar, foi confirmado que
+os 10 hooks A/B do calendário real são distintos, não vazios e limpos quanto aos guardrails
+(30 pares avaliados, zero violações), e que nenhum `brand-kit.json` define `uiLabels` hoje —
+portanto as duas novas lentes são no-op no acervo atual e não alteram o resultado das 13
+verificações originais.
+
+A API pública foi preservada integralmente: mesma assinatura, mesmo `schemaVersion: 1`, mesmos
+códigos de saída (`0` aprovado, `1` reprovado, `2` erro). `CHECK_IDS` passou de 5 para 7 entradas
+e `CHECK_NAMES` ganhou os dois rótulos correspondentes; nenhum campo existente foi removido ou
+renomeado.
+
+## 2. Novas verificações
+
+### 2.1 `coerencia_hooks_calendario` (lente 6)
+
+Só executa quando `04-legendas/calendario-editorial.json` existe e é legível. Para cada slot com
+`tenantId` e `slug`, avalia `hookVarianteA` e `hookVarianteB`:
+
+| Código | Severidade | Condição |
+| --- | --- | --- |
+| `HOOK_VARIANTE_AUSENTE` | erro | campo ausente, não string ou vazio após `strip()` |
+| `HOOK_GUARDRAIL_VIOLACAO` | erro | `validate_text_against_guardrails(texto, guardrails, check_ui_elements=True)` retorna violação |
+| `HOOK_VARIANTES_IDENTICAS` | aviso | A e B iguais após `strip()` + `casefold()` |
+| `TENANT_INVALIDO` | erro | brand-kit/guardrails do tenant ilegíveis |
+| `CALENDARIO_ILEGIVEL` | erro | calendário presente mas inválido |
+
+Os problemas são deduplicados por `(tenant/slug, código, mensagem)` para evitar repetição nas
+várias superfícies da mesma campanha, e respeitam o filtro `tenant`. Guardrails são carregados
+com cache por execução via `tenant_validator.load_and_validate_tenant(..., strict=False)`.
+
+### 2.2 `aderencia_ui_labels` (lente 7)
+
+Para cada tenant em `tenants/*` com `brand-kit.json` que **defina** `uiLabels`, percorre
+recursivamente objetos e listas e valida cada valor textual:
+
+| Código | Severidade | Condição |
+| --- | --- | --- |
+| `UI_LABELS_TIPO_INVALIDO` | erro | `uiLabels` não é objeto |
+| `UI_LABEL_TIPO_INVALIDO` | erro | valor folha não é string |
+| `UI_LABEL_VAZIA` | erro | string vazia após `strip()` |
+| `UI_LABEL_GUARDRAIL_VIOLACAO` | erro | violação de `forbiddenClaims`/`forbiddenUiElements` |
+| `TENANT_INVALIDO` | erro | guardrails do tenant ilegíveis |
+
+Quando `uiLabels` não existe, a lente é aprovada sem problemas. O filtro `tenant` também se
+aplica. `validate_brand_kit` sinaliza `uiLabels` como propriedade adicional (schema `additionalProperties: false`),
+mas `editorial_qa` usa `strict=False` e consome somente os guardrails, sem reprovar o tenant por isso.
+
+## 3. Arquivos alterados
+
+| Arquivo | Mudança |
+| --- | --- |
+| `tools/editorial_qa.py` | Docstring atualizada (7 lentes), constantes `CALENDAR_REL`, dois IDs/nomes em `CHECK_IDS`/`CHECK_NAMES`, helpers `_tenant_guardrails`, `_check_calendar_hooks` e `_check_ui_labels`, chamadas das duas lentes em `run_editorial_qa`, descrição da CLI atualizada. |
+| `tools/tests/test_editorial_qa.py` | Helpers `_write_json`, `_sandbox_with_calendar`, `_mutate_hooks`, `_add_ui_labels` e 6 novos testes (12 a 17). |
+| `.workspace/devlogs/etapa6-agente7.md` | Este relatório completo para consolidação via `devlog_sync.py`. |
+
+## 4. Testes adicionados (6)
+
+1. `test_12_hooks_identicos_sao_aviso` — A == B gera aviso; modo normal aprovado, `--strict` reprova.
+2. `test_13_hook_com_termo_proibido_e_erro` — hook com `whatsapp` gera erro e o filtro de tenant isola o problema.
+3. `test_14_hook_vazio_e_erro` — `hookVarianteA` em branco gera erro.
+4. `test_15_ui_labels_invalidos_sao_erro` — valor vazio, termo proibido e valor não string.
+5. `test_16_ui_labels_validos_sao_aprovados` — rótulos válidos, incluindo objeto aninhado.
+6. `test_17_acervo_real_novas_lentes_aprovadas` — calendário e brand-kits reais sem problemas nas duas lentes.
+
+Os testes de defeito usam sandbox somente-leitura copiado para `<RAIZ>/.workspace/tmp/editorial-qa/`,
+fora do Git; o calendário real é copiado para o sandbox somente nos testes de hooks.
+
+## 5. Evidências
+
+```text
+python -m unittest tools/tests/test_editorial_qa.py -v
+Ran 19 tests in 21.346s — OK
+(13 testes anteriores + 6 novos)
+
+python tools/editorial_qa.py --json
+schemaVersion=1; ok=True; checks=7
+checkIds=duracao_srt_manifest, legibilidade_mobile, paridade_entregas,
+         guardrails_cruzados, integridade_utf8,
+         coerencia_hooks_calendario, aderencia_ui_labels
+errors=0; warnings=46 (avisos conhecidos de linha longa de SRT)
+coerencia_hooks_calendario: status=ok, 0 problemas
+aderencia_ui_labels: status=ok, 0 problemas
+```
+
+## 6. Limites e governança
+
+- Ferramenta permanece somente leitura: não publica, não agenda, não grava artefatos de campanha.
+- Não edita `contexto_projeto.md`, `rastreio-utm.md`, calendário, brand-kits nem matriz UTM.
+- Não gera áudio, TTS, música nem faixa sonora (política de vídeo sem áudio).
+- Não altera as cinco lentes existentes nem muda a semântica de `strict`/`--tenant`.
+- O calendário e os brand-kits reais seguem como estão; nenhum hook ou rótulo foi "corrigido".
+
+## 7. Handoff
+
+Commit realizado apenas nesta branch; consolidação/merge na `main` fica a cargo do titular.
+A worktree permanece registrada (remoção exige autorização). Nenhum arquivo relacionado ao
+projeto foi criado fora de `<RAIZ>`.
+
+### Devlog — Etapa 6, Agente 8 de 8 (Arquitetura de Documentação e Operações)
+<!-- devlog-sync:etapa6-agente8.md -->
+
+- **Data:** 2026-11-20
+- **Agente:** Agente 8 de 8 — Arquiteto de Documentação e Operações
+- **Branch:** `codex/etapa6-agente8`
+- **Worktree:** `<RAIZ>/.workspace/worktrees/etapa6-agente8` (já existia; criada a partir de `main`)
+- **<RAIZ> nesta estação:** `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+- **Base:** `main` em `8a1b361` (conclusão da Etapa 5B), atualizada com `git fetch origin --prune && git pull --ff-only` no início.
+
+## Escopo executado
+
+| Arquivo | Ação |
+| --- | --- |
+| `docs/guia-operacional-titular.md` | **Criado.** Manual prático da rotina diária e semanal: (1) revisão no portal `review_dashboard.py --serve` com decisões `aguardando`/`aprovado`/`ajuste`, locução externa conferida para tenants `-an`, exportação de aprovações e alternativa `approval_cli.py status`/`decide`; (2) geração do pacote diário com `factory_cli.py handoff --all-approved`, conteúdo do handoff, lembrete de locução externa e regras de publicação manual por rede (`autoPublish: false`); (3) fechamento semanal com `utm_report_importer.py` + `workspace_doctor.py --check` e rotina do playbook de UTM. Inclui checklist copiável e referências internas. |
+| `docs/arquitetura-fabrica.md` | Atualizado para Etapas 2–6: diagrama com a camada da Etapa 6, subcomando `handoff` em 2.6, nova seção 2.18 (tabela com `srt_formatter.py`, `approval_cli.py`, `factory_cli.py handoff`, `utm_report_importer.py`, `workspace_doctor.py`, `uiLabels` no brand-kit e o guia), fluxo operacional com passos 17–20, correção de "4 tenants" para 5, novas referências e nota sobre consolidação das suítes da Etapa 6. |
+| `README.md` | Link para o guia no início, comandos 17–20 da Etapa 6 nos comandos rápidos, parágrafo "Operação do titular (Etapa 6)" e checklist ampliado com revisão/aprovação → handoff → publicação manual → importação UTM + doctor. |
+| `.workspace/devlogs/etapa6-agente8.md` | Este relatório, para ser transferido ao `contexto_projeto.md` por `devlog_sync.py` na consolidação. `contexto_projeto.md` **não** foi editado diretamente. |
+
+## Verificações exigidas
+
+Script temporário executado de `<RAIZ>/.workspace/tmp/etapa6-agente8/validate_docs.py` sobre os três documentos versionados:
+
+- **Encoding UTF-8:** 3/3 arquivos decodificam estritamente como UTF-8, sem BOM e sem `\ufffd`/mojibake.
+- **Links internos:** todos os links relativos dos três arquivos resolvem para arquivos existentes (incluindo os links novos para `guia-operacional-titular.md`, `analytics-utm-playbook.md` e `05-review-portal/README.md`). URLs externas e âncoras foram ignoradas.
+- **Caminhos absolutos de usuário:** nenhuma ocorrência de `C:\...`, `/home/`, `/Users/` ou similar. Os únicos `/tmp/` encontrados são parte de `.workspace/tmp/...`, que é caminho relativo portátil; o validador foi ajustado com lookbehind para não gerar falso positivo. Resultado final: **0 problemas**.
+- Temporários removidos ao final; nenhum `__pycache__` deixado na worktree.
+
+## Achado importante para a consolidação
+
+No commit-base `8a1b361`, **os módulos da Etapa 6 ainda não existiam na `main` nem nas worktrees irmãs**: não havia `tools/srt_formatter.py`, `tools/approval_cli.py`, `tools/utm_report_importer.py`, `tools/workspace_doctor.py`, nem chave `uiLabels` nos brand-kits/schema, e `factory_cli.py` só registrava os subcomandos `list`, `render` e `pipeline`. Portanto:
+
+- A documentação foi escrita a partir das **interfaces explicitadas no pedido** e das convenções já consolidadas das Etapas 4/5B (portal, aprovações v2, handoff_bundler e playbook UTM).
+- Onde uma opção opcional não foi especificada, o guia manda conferir `--help` — não foi inventada nenhuma bandeira como fato verificado.
+- As seções 2.18 do Guia e da Arquitetura registram explicitamente esse estado de consolidação. **Ação para o integrador:** ao mergear as branches dos agentes da Etapa 6, reconferir cada assinatura de CLI e atualizar o guia se algum nome/opção divergir.
+
+## Segurança e escopo
+
+- Nenhuma ferramenta de publicação foi executada; nada foi publicado, agendado ou rascunhado.
+- Nenhum áudio, TTS ou trilha foi gerado; a regra de vídeo sem áudio e a locução externa foram reforçadas no manual.
+- Nenhum contrato, SRT, manifesto ou pacote social foi alterado; nenhum caminho absoluto de estação foi gravado em documento versionado.
+- Território respeitado: apenas os quatro arquivos acima.
 
 ## 1. Contexto
 

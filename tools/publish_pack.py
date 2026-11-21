@@ -406,8 +406,7 @@ def generate_pack(tenant_id: str, slug: str, root: str = ".") -> dict:
     written: dict[str, dict] = {}
     for filename, texto in conteudos.items():
         abs_path = os.path.join(out_dir, filename)
-        with open(render_local.fs_path(abs_path), "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(texto)
+        render_local.write_text_lf(abs_path, texto)
         written[filename] = {
             "path": render_local.rel(root_real, abs_path),
             "sha256": _sha256_file(abs_path),
@@ -420,9 +419,9 @@ def generate_pack(tenant_id: str, slug: str, root: str = ".") -> dict:
         manifest, brand, guardrails, slug, root_real, resolve_workspace_root(root_real)
     )
     checklist_path = os.path.join(out_dir, "checklist-publicacao.json")
-    with open(render_local.fs_path(checklist_path), "w", encoding="utf-8", newline="\n") as handle:
-        json.dump(checklist, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
+    render_local.write_text_lf(
+        checklist_path, json.dumps(checklist, ensure_ascii=False, indent=2) + "\n"
+    )
     written["checklist-publicacao.json"] = {
         "path": render_local.rel(root_real, checklist_path),
         "sha256": _sha256_file(checklist_path),

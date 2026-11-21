@@ -1,0 +1,58 @@
+{
+  "slug": "camp-saas-demo-estudio-flow-002",
+  "tenantId": "estudio-flow",
+  "preset": "saas-demo",
+  "allowAudioTrack": false,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok",
+    "srt_violations": [],
+    "narration_violations": []
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.mp4",
+      "resolvedFrom": "archive",
+      "sha256": "9c5f094878986c8f3185e7109ec5342ffb06fb92d8df27dd18ee32380d308141",
+      "bytes": 460194,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002.srt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "3421fdf8e63322d116f047dcc6af402b596c16ccbe95141144994ac6236e211f",
+      "bytes": 454,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/camp-saas-demo-estudio-flow-002_narracao.txt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "edaf9602a4e65cfe9730dceb7efe032abda2de206708f3a4ad619dfd20843d63",
+      "bytes": 802,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-002/preview-storyboard.png",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "edbef0c4944f0613e02ce8f6d4cac094839e5bdd5363e2a48029a7b779074c1b",
+      "bytes": 513172,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}

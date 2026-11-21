@@ -286,6 +286,45 @@ def _update_manifest_srt(manifest_path: str, slug: str, sha256: str, size: int) 
     return changed
 
 
+def _sync_factory_report(root_real: str, rows: list[dict]) -> bool:
+    """Atualiza o SRT no relatorio agregado do render, quando presente.
+
+    O render grava ``02-reels-shorts/deliveries/factory-report.json`` com os
+    hashes de cada artefato; ao reformatar o SRT, o relatorio ficaria com o
+    hash antigo. Sincroniza apenas ``artifacts.srt`` das entregas alteradas.
+    """
+    report_path = os.path.join(root_real, *DELIVERIES_REL, "factory-report.json")
+    if not os.path.isfile(_fs(report_path)):
+        return False
+    try:
+        with open(_fs(report_path), "r", encoding="utf-8") as handle:
+            report = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return False
+    by_key = {(row["tenant"], row["slug"]): row for row in rows}
+    changed = False
+    for delivery in report.get("deliveries", []):
+        if not isinstance(delivery, dict):
+            continue
+        row = by_key.get((delivery.get("tenantId"), delivery.get("campaignSlug")))
+        if row is None:
+            continue
+        artifact = (delivery.get("artifacts") or {}).get("srt")
+        if not isinstance(artifact, dict):
+            continue
+        if artifact.get("sha256") != row["afterSha256"]:
+            artifact["sha256"] = row["afterSha256"]
+            changed = True
+        if artifact.get("bytes") != row["bytes"]:
+            artifact["bytes"] = row["bytes"]
+            changed = True
+    if changed:
+        render_local.write_text_lf(
+            report_path, json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+        )
+    return changed
+
+
 def _discover(root_real: str, tenant: str | None, slug: str | None) -> list[tuple[str, str, str]]:
     deliveries = os.path.join(root_real, *DELIVERIES_REL)
     if not os.path.isdir(_fs(deliveries)):
@@ -401,6 +440,11 @@ def format_delivery_srts(root: str = ".", max_chars: int = DEFAULT_MAX_CHARS,
             }
         )
 
+    report_updated = False
+    if not dry_run:
+        report_updated = _sync_factory_report(root_real, rows)
+        totals["reportsUpdated"] = int(report_updated)
+
     if dry_run:
         ok = not errors and totals["longLinesBefore"] == 0
     else:
@@ -414,6 +458,7 @@ def format_delivery_srts(root: str = ".", max_chars: int = DEFAULT_MAX_CHARS,
         "tenantFilter": tenant,
         "campaignFilter": slug,
         "dryRun": dry_run,
+        "factoryReportUpdated": report_updated,
         "totals": totals,
         "campaigns": rows,
         "errors": errors,

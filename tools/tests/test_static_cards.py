@@ -42,7 +42,8 @@ TENANTS = ["clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitr
 CAMPAIGNS_BY_TENANT = {
     "clinica-vital": ["camp-saas-demo-clinica-vital-001",
                       "camp-saas-demo-clinica-vital-002"],
-    "estudio-flow": ["camp-saas-demo-estudio-flow-001"],
+    "estudio-flow": ["camp-saas-demo-estudio-flow-001",
+                     "camp-saas-demo-estudio-flow-002"],
     "marca-salao": ["camp-saas-demo-marca-salao-001", "camp-saas-demo-ns001-agenda-001"],
     "meu-salao": ["camp-saas-demo-meu-salao-001", "camp-saas-demo-meu-salao-002"],
     "multitrack-hub": ["camp-shorts-completo-multitrack-001",
@@ -301,7 +302,7 @@ class TestStaticCards(unittest.TestCase):
                 self.assertEqual(set(static_cards.STORY_FILES), nomes_stories)
                 self.assertEqual(set(static_cards.CAROUSEL_FILES), nomes_carousel)
                 entregas.append((tid, slug))
-        self.assertEqual(len(entregas), 10, f"esperadas 10 entregas, achadas {len(entregas)}")
+        self.assertEqual(len(entregas), 11, f"esperadas 11 entregas, achadas {len(entregas)}")
 
     # --- Teste 12: caminhos OS-nativos e normalizacao de separadores ------
     def test_caminhos_os_nativos_e_normpath(self):
@@ -337,7 +338,7 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         total = sum(len(t["campaigns"]) for t in summary["tenants"])
-        self.assertEqual(total, 10, f"esperadas 10 campanhas no --all, achadas {total}")
+        self.assertEqual(total, 11, f"esperadas 11 campanhas no --all, achadas {total}")
 
 
 if __name__ == "__main__":

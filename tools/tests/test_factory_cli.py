@@ -292,8 +292,17 @@ class FactoryCliTest(unittest.TestCase):
                 ],
             },
         )
+        with open(
+            self._path("04-legendas/calendario-editorial.json"), "r", encoding="utf-8"
+        ) as handle:
+            calendar = json.load(handle)
+        slot_date = next(
+            slot["dataSugerida"]
+            for slot in calendar["slots"]
+            if slot["slug"] == "camp-saas-demo-ns001-agenda-001" and slot["onda"] == 1
+        )
         rc, payload = self._run_handoff([
-            "--date", "2026-11-23",
+            "--date", slot_date,
             "--approvals-file", approvals_rel,
             "--output-dir", ".workspace/tmp/test_factory_cli/handoff-ok",
         ])
@@ -303,11 +312,11 @@ class FactoryCliTest(unittest.TestCase):
         self.assertEqual(payload["approvalAudit"]["summary"]["aprovadas"], 1)
         handoff = payload["handoff"]
         self.assertGreaterEqual(handoff["bundledSlots"], 1)
-        self.assertEqual(handoff["dates"], ["2026-11-23"])
+        self.assertEqual(handoff["dates"], [slot_date])
         self.assertEqual(handoff["slots"][0]["tenantId"], "marca-salao")
         self.assertTrue(
             os.path.isdir(
-                self._path(".workspace/tmp/test_factory_cli/handoff-ok/2026-11-23")
+                self._path(f".workspace/tmp/test_factory_cli/handoff-ok/{slot_date}")
             )
         )
 

@@ -173,6 +173,10 @@ HOOK_VARIANTE_B = {
         "Veja o passo a passo para reservar uma aula experimental e conferir "
         "a grade de turmas do estúdio."
     ),
+    "camp-saas-demo-estudio-flow-002": (
+        "Veja a grade de turmas por horário e acompanhe as matrículas "
+        "confirmadas em uma tela só."
+    ),
     "camp-saas-demo-marca-salao-001": (
         "Acompanhe o caminho do horário escolhido pela cliente até a agenda "
         "do salão, passo a passo."

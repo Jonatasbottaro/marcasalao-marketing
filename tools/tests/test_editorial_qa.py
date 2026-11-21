@@ -185,7 +185,7 @@ class EditorialQATests(unittest.TestCase):
             result["summary"]["campaigns"]["total"],
             len(editorial_qa.discover_campaigns(REPO_ROOT)),
         )
-        self.assertEqual(result["summary"]["campaigns"]["total"], 10)
+        self.assertEqual(result["summary"]["campaigns"]["total"], 11)
         self.assertEqual([row["id"] for row in result["checks"]], CHECK_IDS)
         self.assertEqual(result["summary"]["problems"]["errors"], 0)
         for check_id in STABLE_CHECKS:
@@ -300,7 +300,7 @@ class EditorialQATests(unittest.TestCase):
         self.assertEqual(code, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["schemaVersion"], 1)
-        self.assertEqual(payload["summary"]["campaigns"]["total"], 10)
+        self.assertEqual(payload["summary"]["campaigns"]["total"], 11)
         self.assertEqual([c["id"] for c in payload["checks"]], CHECK_IDS)
 
         path = self._srt_path(sandbox, "meu-salao", "camp-saas-demo-meu-salao-001")
@@ -318,7 +318,7 @@ class EditorialQATests(unittest.TestCase):
             code = editorial_qa.main(["--tenant", "estudio-flow", "--root", sandbox])
         self.assertEqual(code, 0)
         text = stdout.getvalue()
-        self.assertIn("Campanhas: 1", text)
+        self.assertIn("Campanhas: 2", text)
         self.assertIn("APROVADO", text)
         self.assertIn("paridade_entregas", text)
 

@@ -8,6 +8,15 @@
     "monogram": "MS",
     "domain": "meusalao.com.br"
   },
+  "uiLabels": {
+    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
+    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
+    "publicRouteFallback": "/BOOKING/[SALONID]",
+    "managerRouteFallback": "/GESTOR/AGENDA",
+    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO MEU SALAO",
+    "itemUnitLabel": "ATENDIMENTO",
+    "customerLabel": "CLIENTE"
+  },
   "guardrails": {
     "allowAudioTrack": false,
     "requireSrt": true,
@@ -40,8 +49,8 @@
     "video": {
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
-      "sha256": "aa492529e3ea5ef48110602d1c6c35aec823bd34f3178681c3294cc77456b28a",
-      "bytes": 513566,
+      "sha256": "78b2be1358626fa0a099a16ba7ca4f28194375caf3c70b05cf0a88e6ce4cdc66",
+      "bytes": 513906,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
