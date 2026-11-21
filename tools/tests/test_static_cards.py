@@ -25,6 +25,7 @@ import os
 import struct
 import subprocess
 import sys
+import tempfile
 import unittest
 import zlib
 
@@ -36,6 +37,7 @@ import render_local
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DELIVERIES = os.path.join(ROOT, "01-insta-stories", "deliveries")
+SCRIPT = os.path.join(ROOT, "tools", "static_cards.py")
 TENANTS = ["clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"]
 CAMPAIGNS_BY_TENANT = {
     "clinica-vital": ["camp-saas-demo-clinica-vital-001",
@@ -103,6 +105,37 @@ def _all_deliveries():
 def _generate_all():
     return static_cards.generate_all_static_cards(ROOT,
                                                   kinds=["stories", "carousel"])
+
+
+def _cli_tmp_parent():
+    parent = os.path.join(ROOT, ".workspace", "tmp")
+    os.makedirs(render_local.fs_path(parent), exist_ok=True)
+    return parent
+
+
+def _run_cli(args, timeout=600):
+    """Executa o CLI por caminho absoluto a partir de um cwd neutro.
+
+    Regressao: com script relativo ("tools/static_cards.py") a chamada quebra
+    quando o harness executa o unittest de um cwd diferente do checkout. O
+    caminho absoluto + --root mantem saidas e manifesto presos a ROOT.
+    """
+    with tempfile.TemporaryDirectory(prefix="static-cli-cwd-", dir=_cli_tmp_parent()) as cwd:
+        return subprocess.run(
+            [sys.executable, SCRIPT, *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=timeout,
+        )
+
+
+def tearDownModule():
+    try:
+        os.rmdir(render_local.fs_path(os.path.join(ROOT, ".workspace", "tmp")))
+    except OSError:
+        pass
 
 
 class TestStaticCards(unittest.TestCase):
@@ -291,10 +324,8 @@ class TestStaticCards(unittest.TestCase):
 
     # --- Testes 10 e 11: CLI ---------------------------------------------
     def test_cli_tenant_campaign_json_exit_zero(self):
-        res = subprocess.run([sys.executable, "tools/static_cards.py",
-                              "--tenant", "meu-salao", "--campaign", "camp-saas-demo-meu-salao-002",
-                              "--root", ROOT, "--json"],
-                             cwd=ROOT, capture_output=True, text=True, timeout=300)
+        res = _run_cli(["--tenant", "meu-salao", "--campaign", "camp-saas-demo-meu-salao-002",
+                        "--root", ROOT, "--json"], timeout=300)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         self.assertEqual(summary["tenantId"], "meu-salao")
@@ -302,9 +333,7 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(summary["campaigns"][0]["slug"], "camp-saas-demo-meu-salao-002")
 
     def test_cli_all_json_exit_zero(self):
-        res = subprocess.run([sys.executable, "tools/static_cards.py", "--all",
-                              "--root", ROOT, "--json"],
-                             cwd=ROOT, capture_output=True, text=True, timeout=600)
+        res = _run_cli(["--all", "--root", ROOT, "--json"], timeout=600)
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         total = sum(len(t["campaigns"]) for t in summary["tenants"])
