@@ -1,0 +1,58 @@
+{
+  "slug": "camp-meu-salao-002",
+  "tenantId": "meu-salao",
+  "preset": "saas-demo",
+  "allowAudioTrack": false,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok",
+    "srt_violations": [],
+    "narration_violations": []
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.mp4",
+      "archivePath": ".workspace/archives/camp-meu-salao-002/camp-meu-salao-002.mp4",
+      "resolvedFrom": "archive",
+      "sha256": "9a0bd3acc0a8939b2dd9d316bd6475dc59d0f07be59816018c2abab93d89171d",
+      "bytes": 432075,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.srt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "7755e7a7379e6cd3205ac46340f69d8490a3d30b4a1a8a891cef43abd5388f4b",
+      "bytes": 499,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002_narracao.txt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "39b9b74f4f35b4101bb07de2036ad6a3ad65522c443f2ef044093155382f78db",
+      "bytes": 885,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/preview-storyboard.png",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "bdb4049324ae76fd060cf407a97f4cee9e27bbc374bf3f3f1117f14b63ec2c48",
+      "bytes": 613390,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}

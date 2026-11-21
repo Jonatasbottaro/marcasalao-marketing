@@ -1,0 +1,22 @@
+1
+00:00:00,000 --> 00:00:06,000
+Cada sessão reúne stems
+e entregas técnicas organizadas.
+
+2
+00:00:06,000 --> 00:00:15,000
+Horizonte Vivo: 124 BPM e nove stems separados.
+
+3
+00:00:15,000 --> 00:00:21,000
+As entregas técnicas mantêm WAV 48 kHz
+e 24 bits.
+
+4
+00:00:21,000 --> 00:00:27,000
+Em /rateios,
+veja faixas inclusas e vagas do pacote.
+
+5
+00:00:27,000 --> 00:00:30,000
+Conheça os projetos em multitrackhub.com.br.

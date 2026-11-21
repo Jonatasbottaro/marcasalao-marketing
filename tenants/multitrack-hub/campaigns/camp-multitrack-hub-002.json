@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-multitrack-hub-002",
+  "campaignId": "MULTITRACK-HUB-002",
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "autoPublish": false,
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-multitrack-hub-002.mp4",
+    "packageSrtName": "camp-multitrack-hub-002.srt",
+    "packageNarrationName": "camp-multitrack-hub-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "shorts-hook",
+      "start": 0.0,
+      "duration": 6.0,
+      "route": "/",
+      "badge": "SESSOES ORGANIZADAS",
+      "headline": "SESSOES E STEMS POR PROJETO",
+      "subline": "MULTITRACKHUB.COM.BR",
+      "caption": "Cada sessão reúne stems e entregas técnicas organizadas.",
+      "narrationText": "Cada sessão do Multitrack Hub reúne stems e entregas técnicas organizadas."
+    },
+    {
+      "id": "cena-02-projetos",
+      "kind": "shorts-catalogo",
+      "start": 6.0,
+      "duration": 9.0,
+      "route": "/",
+      "badge": "PROJETOS DA BIBLIOTECA",
+      "headline": "HORIZONTE VIVO E SINAIS DA MANHA",
+      "caption": "Horizonte Vivo: 124 BPM e nove stems separados.",
+      "narrationText": "Horizonte Vivo traz 124 BPM e nove stems separados por instrumento."
+    },
+    {
+      "id": "cena-03-entregas",
+      "kind": "shorts-metricas",
+      "start": 15.0,
+      "duration": 6.0,
+      "route": "/",
+      "badge": "ENTREGAS TECNICAS",
+      "headline": "WAV 48KHZ E 24 BITS",
+      "caption": "As entregas técnicas mantêm WAV 48 kHz e 24 bits.",
+      "narrationText": "As entregas técnicas mantêm o padrão WAV 48 kHz e 24 bits."
+    },
+    {
+      "id": "cena-04-rateios",
+      "kind": "shorts-catalogo",
+      "start": 21.0,
+      "duration": 6.0,
+      "route": "/rateios",
+      "badge": "RATEIOS /RATEIOS",
+      "headline": "FAIXAS INCLUSAS E VAGAS",
+      "caption": "Em /rateios, veja faixas inclusas e vagas do pacote.",
+      "narrationText": "Na rota /rateios, confira as faixas inclusas e as vagas do pacote."
+    },
+    {
+      "id": "cena-05-cta",
+      "kind": "shorts-cta",
+      "start": 27.0,
+      "duration": 3.0,
+      "route": "/",
+      "badge": "MULTITRACK HUB",
+      "headline": "ORGANIZE SUAS SESSOES",
+      "subline": "MULTITRACKHUB.COM.BR",
+      "caption": "Conheça os projetos em multitrackhub.com.br.",
+      "narrationText": "Conheça os projetos e as entregas técnicas em multitrackhub.com.br."
+    }
+  ]
+}

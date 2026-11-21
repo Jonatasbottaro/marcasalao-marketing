@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 15431,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/carousel/slide-01-capa.png",
+          "sha256": "9fa1fbe2bbdefe99558dd61a77111a3136990c1e9a7ed566fc057af2b1272966",
+          "width": 1080
+        },
+        {
+          "bytes": 14761,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/carousel/slide-02-problema.png",
+          "sha256": "9fc1876fda35e11836eb3df636f1b42a6395a9bcd1811dd70591f3aa3d56784d",
+          "width": 1080
+        },
+        {
+          "bytes": 15400,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/carousel/slide-03-pratica.png",
+          "sha256": "182a421f94b3c1ae1f1524eeca8733f6732786b3ef67b27fd4e315b143d824a4",
+          "width": 1080
+        },
+        {
+          "bytes": 14187,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/carousel/slide-04-resumo-cta.png",
+          "sha256": "73b255ad7b092edd1fa6c7e83c1bfeb8a2763781fe9b3d190a2ac0913c7b7da1",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 21425,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/stories/story-01-hook.png",
+          "sha256": "17e2cc76b05eac81eb6e4a1f54d2a1a69012ff33e1818e0722f5a6ae16ff3dbb",
+          "width": 1080
+        },
+        {
+          "bytes": 20905,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/stories/story-02-fluxo.png",
+          "sha256": "e3275595d3dfb770c13708e666ffffd7254d16a8e5382f634e6a8029c285403e",
+          "width": 1080
+        },
+        {
+          "bytes": 18479,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/meu-salao/camp-meu-salao-002/stories/story-03-cta.png",
+          "sha256": "d319f6ec79b80f05bd8bff0531200a040efd2d45772f36e534f6f1217b6174cb",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-meu-salao-002",
+  "tenantId": "meu-salao"
+}

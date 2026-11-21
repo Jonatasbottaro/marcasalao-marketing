@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-clinica-vital-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Veja como a Clínica Vital organiza o retorno de pacientes na agenda.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-procedimento
+Na rota pública /avaliacao, a paciente escolhe o procedimento e a especialista.
+
+[00:00:10,000 --> 00:00:16,000] cena-03-horario
+Os horários livres aparecem na rota pública e a paciente confirma a escolha.
+
+[00:00:16,000 --> 00:00:21,000] cena-04-registro
+O retorno da paciente fica registrado com horário definido.
+
+[00:00:21,000 --> 00:00:26,000] cena-05-recepcao
+Na visão /gestor/consultas, a recepção acompanha o retorno e atualiza o status manualmente.
+
+[00:00:26,000 --> 00:00:30,000] cena-06-cta
+Conheça a organização da agenda da Clínica Vital em clinicavital.com.br.

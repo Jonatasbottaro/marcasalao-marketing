@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-meu-salao-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Veja a diferença entre a vitrine pública de horários e a rotina interna da equipe.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-vitrine-escolha
+Na vitrine pública /booking, a cliente escolhe o serviço e o profissional.
+
+[00:00:10,000 --> 00:00:16,000] cena-03-vitrine-confirma
+A cliente confirma o horário escolhido na vitrine pública.
+
+[00:00:16,000 --> 00:00:22,000] cena-04-interna-abertura
+Na rota /gestor/agenda, a equipe acompanha os atendimentos do dia em uma tela.
+
+[00:00:22,000 --> 00:00:27,000] cena-05-interna-status
+A equipe atualiza o status de cada atendimento manualmente em /gestor/agenda.
+
+[00:00:27,000 --> 00:00:30,000] cena-06-cta
+Conheça a agenda do Meu Salão em meusalao.com.br.

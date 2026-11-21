@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "meu-salao",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "meu-salao",
+    "brandName": "Meu Salão",
+    "monogram": "MS",
+    "domain": "meusalao.com.br"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
+    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
+    "publicRouteFallback": "/BOOKING/[SALONID]",
+    "managerRouteFallback": "/GESTOR/AGENDA",
+    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO MEU SALAO",
+    "itemUnitLabel": "ATENDIMENTO",
+    "customerLabel": "CLIENTE",
+    "teamMemberLabel": "RESPONSAVEL",
+    "managerSectionLabel": "PAINEL DO GESTOR",
+    "selectedLabel": "SELECIONADO",
+    "availableLabel": "DISPONIVEL",
+    "selectedSlotLabel": "ESCOLHIDO",
+    "availableSlotLabel": "LIVRE",
+    "summaryTitle": "RESUMO DA CONFIRMACAO",
+    "statusLabel": "STATUS",
+    "confirmedLabel": "CONFIRMADO",
+    "successTitle": "REGISTRO",
+    "successHighlight": "REALIZADO!",
+    "visibleInPanelLabel": "VISIVEL NO PAINEL",
+    "dateLabel": "DATA",
+    "atLabel": "AS",
+    "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+    "estimatedValueLabel": "VALOR ESTIMADO POR",
+    "ctaConfirmLabel": "CONFIRMAR",
+    "stepChooseTemplate": "{CUSTOMER} ESCOLHE",
+    "stepConfirmLabel": "CONFIRMA OS DADOS",
+    "stepAppearLabel": "ACOMPANHE O STATUS",
+    "managerCaption": "VISAO E STATUS",
+    "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+    "liveDataBadge": "DADOS REAIS",
+    "projectsLabel": "PROJETOS",
+    "stemsLabel": "STEMS",
+    "sharesLabel": "COTAS",
+    "tracksLabel": "FAIXAS",
+    "shareUnitLabel": "COTA",
+    "remainingSlotsLabel": "VAGAS RESTANTES",
+    "routeLabel": "ROTA",
+    "referenceLabel": "REFERENCIA",
+    "priceLabel": "PRECO",
+    "specialtyLabel": "ESPECIALIDADE",
+    "bpmLabel": "BPM",
+    "keyLabel": "TOM",
+    "scheduleLabel": "AGENDA",
+    "agendaSummaryLabel": "REGISTROS",
+    "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+    "sharesFromLabel": "COTAS A PARTIR DE",
+    "processingCaption": "PROCESSAMENTO EM NUVEM",
+    "guideBadge": "GUIA PRATICO",
+    "diagnosticBadge": "DIAGNOSTICO",
+    "practiceBadge": "PRATICA",
+    "summaryBadge": "RESUMO",
+    "ctaBadge": "CHAMADA PARA A ACAO",
+    "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+    "practiceTitle": "ITENS DA PRATICA",
+    "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+    "valueTitle": "RESUMO DE VALOR",
+    "chooseItemLabel": "ESCOLHA O ITEM",
+    "confirmStepLabel": "CONFIRME OS DADOS",
+    "followStepLabel": "ACOMPANHE O STATUS",
+    "accessLabel": "ACESSE",
+    "publicFlowCaption": "NO FLUXO PUBLICO",
+    "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+    "carouselFooter": "CARROSSEL - SEM AUDIO",
+    "publicRouteWord": "PUBLICA",
+    "ctaLinkBio": "LINK NA BIO",
+    "ctaLinkDescription": "LINK NA DESCRICAO"
+  },
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "meu-salao-9x16",
+    "title": {
+      "textColor": "#F8FAFC",
+      "outlineColor": "#0F172A",
+      "fontSize": 42,
+      "marginTop": 160,
+      "marginHorizontal": 56
+    }
+  },
+  "framing": {
+    "width": 1080,
+    "height": 1920,
+    "topSafePx": 160,
+    "bottomSafePx": 200,
+    "sideSafePx": 56,
+    "titleFontSize": 42,
+    "derivativeTopInsetPx": 0,
+    "derivativeBottomInsetPx": 0,
+    "profile": "9:16"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true
+  },
+  "config": "tenants/meu-salao/campaigns/camp-meu-salao-002.json",
+  "fixture": {
+    "path": "tenants/meu-salao/fixtures/fixture-editorial-meu-salao.json",
+    "sha256": "7ead01b8a85d47cbeb1f6f016b13fece2e32e1764affcf49a1e32b53fe611fbb"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": false,
+    "audioStream": 0,
+    "source": "none"
+  },
+  "command": "python tools/preset_runner.py --tenant meu-salao --config tenants/meu-salao/campaigns/camp-meu-salao-002.json --output-dir 02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.mp4",
+      "archivePath": ".workspace/archives/camp-meu-salao-002/camp-meu-salao-002.mp4",
+      "sha256": "9a0bd3acc0a8939b2dd9d316bd6475dc59d0f07be59816018c2abab93d89171d",
+      "bytes": 432075,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.srt",
+      "sourcePath": null,
+      "sha256": "7755e7a7379e6cd3205ac46340f69d8490a3d30b4a1a8a891cef43abd5388f4b",
+      "bytes": 499,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002_narracao.txt",
+      "sha256": "39b9b74f4f35b4101bb07de2036ad6a3ad65522c443f2ef044093155382f78db",
+      "bytes": 885,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "bdb4049324ae76fd060cf407a97f4cee9e27bbc374bf3f3f1117f14b63ec2c48",
+      "bytes": 613390,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

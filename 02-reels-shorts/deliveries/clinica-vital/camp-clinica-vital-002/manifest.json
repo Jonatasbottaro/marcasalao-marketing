@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "clinica-vital",
+    "brandName": "Clínica Vital",
+    "monogram": "CV",
+    "domain": "clinicavital.com.br"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "ESPECIALISTAS DA CLINICA",
+    "catalogSectionTitle": "PROCEDIMENTOS DISPONIVEIS",
+    "publicRouteFallback": "/AVALIACAO/[CLINICID]",
+    "managerRouteFallback": "/GESTOR/CONSULTAS",
+    "journeyBridgeCaption": "DA MARCACAO DO PACIENTE A AGENDA DA CLINICA",
+    "itemUnitLabel": "CONSULTA",
+    "customerLabel": "PACIENTE",
+    "teamMemberLabel": "RESPONSAVEL",
+    "managerSectionLabel": "PAINEL DO GESTOR",
+    "selectedLabel": "SELECIONADO",
+    "availableLabel": "DISPONIVEL",
+    "selectedSlotLabel": "ESCOLHIDO",
+    "availableSlotLabel": "LIVRE",
+    "summaryTitle": "RESUMO DA CONFIRMACAO",
+    "statusLabel": "STATUS",
+    "confirmedLabel": "CONFIRMADO",
+    "successTitle": "REGISTRO",
+    "successHighlight": "REALIZADO!",
+    "visibleInPanelLabel": "VISIVEL NO PAINEL",
+    "dateLabel": "DATA",
+    "atLabel": "AS",
+    "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+    "estimatedValueLabel": "VALOR ESTIMADO POR",
+    "ctaConfirmLabel": "CONFIRMAR",
+    "stepChooseTemplate": "{CUSTOMER} ESCOLHE",
+    "stepConfirmLabel": "CONFIRMA OS DADOS",
+    "stepAppearLabel": "ACOMPANHE O STATUS",
+    "managerCaption": "VISAO E STATUS",
+    "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+    "liveDataBadge": "DADOS REAIS",
+    "projectsLabel": "PROJETOS",
+    "stemsLabel": "STEMS",
+    "sharesLabel": "COTAS",
+    "tracksLabel": "FAIXAS",
+    "shareUnitLabel": "COTA",
+    "remainingSlotsLabel": "VAGAS RESTANTES",
+    "routeLabel": "ROTA",
+    "referenceLabel": "REFERENCIA",
+    "priceLabel": "PRECO",
+    "specialtyLabel": "ESPECIALIDADE",
+    "bpmLabel": "BPM",
+    "keyLabel": "TOM",
+    "scheduleLabel": "AGENDA",
+    "agendaSummaryLabel": "REGISTROS",
+    "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+    "sharesFromLabel": "COTAS A PARTIR DE",
+    "processingCaption": "PROCESSAMENTO EM NUVEM",
+    "guideBadge": "GUIA PRATICO",
+    "diagnosticBadge": "DIAGNOSTICO",
+    "practiceBadge": "PRATICA",
+    "summaryBadge": "RESUMO",
+    "ctaBadge": "CHAMADA PARA A ACAO",
+    "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+    "practiceTitle": "ITENS DA PRATICA",
+    "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+    "valueTitle": "RESUMO DE VALOR",
+    "chooseItemLabel": "ESCOLHA O ITEM",
+    "confirmStepLabel": "CONFIRME OS DADOS",
+    "followStepLabel": "ACOMPANHE O STATUS",
+    "accessLabel": "ACESSE",
+    "publicFlowCaption": "NO FLUXO PUBLICO",
+    "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+    "carouselFooter": "CARROSSEL - SEM AUDIO",
+    "publicRouteWord": "PUBLICA",
+    "ctaLinkBio": "LINK NA BIO",
+    "ctaLinkDescription": "LINK NA DESCRICAO"
+  },
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "clinica-vital-9x16",
+    "title": {
+      "textColor": "#F1F5F9",
+      "outlineColor": "#0B1324",
+      "fontSize": 42,
+      "marginTop": 160,
+      "marginHorizontal": 56
+    }
+  },
+  "framing": {
+    "width": 1080,
+    "height": 1920,
+    "topSafePx": 160,
+    "bottomSafePx": 200,
+    "sideSafePx": 56,
+    "titleFontSize": 42,
+    "derivativeTopInsetPx": 0,
+    "derivativeBottomInsetPx": 0,
+    "profile": "9:16"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true
+  },
+  "config": "tenants/clinica-vital/campaigns/camp-clinica-vital-002.json",
+  "fixture": {
+    "path": "tenants/clinica-vital/fixtures/fixture-editorial-clinica-vital.json",
+    "sha256": "d9157117e68f3a00ebdc0b0e8c4b221df28a98b46069a14dee5ce48dcca74b02"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": false,
+    "audioStream": 0,
+    "source": "none"
+  },
+  "command": "python tools/preset_runner.py --tenant clinica-vital --config tenants/clinica-vital/campaigns/camp-clinica-vital-002.json --output-dir 02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+      "archivePath": ".workspace/archives/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+      "sha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+      "bytes": 473376,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.srt",
+      "sourcePath": null,
+      "sha256": "41ee28cf56d86835fe6d1eee99ee1c51d1ab2da032704d9735677e97045b35cd",
+      "bytes": 504,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002_narracao.txt",
+      "sha256": "1fc36ab2743d12d33bcd2370fe6cd9212fc58b40cb74111b3b536f8e89fa0a98",
+      "bytes": 893,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "bf4e8afda57b5429e526a22cf131e72be692d347974f6ff703d1b9799ea467b2",
+      "bytes": 618904,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

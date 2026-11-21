@@ -1,0 +1,25 @@
+1
+00:00:00,000 --> 00:00:04,000
+Como organizar o retorno de pacientes na agenda?
+
+2
+00:00:04,000 --> 00:00:10,000
+A paciente escolhe o procedimento
+e a especialista.
+
+3
+00:00:10,000 --> 00:00:16,000
+O horário livre é escolhido na rota pública.
+
+4
+00:00:16,000 --> 00:00:21,000
+O retorno fica registrado com horário definido.
+
+5
+00:00:21,000 --> 00:00:26,000
+A recepção vê o retorno em /gestor/consultas.
+
+6
+00:00:26,000 --> 00:00:30,000
+Conheça a agenda da Clínica Vital —
+clinicavital.com.br

@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 2,
+  "tenantId": "multitrack-hub",
+  "slug": "camp-multitrack-hub-002",
+  "preset": "shorts-completo",
+  "sourceVideoSha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+  "allowAudioTrack": true,
+  "appliedAudioPolicy": "aac-44100-stereo",
+  "source": {
+    "path": ".workspace/archives/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+    "sha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+    "bytes": 424520,
+    "deliveryManifest": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/manifest.json",
+    "deliveryRecordedSha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 1,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": "aac",
+      "audioSampleRate": 44100,
+      "audioChannels": 2
+    }
+  },
+  "derivatives": {
+    "1x1": {
+      "path": ".workspace/archives/camp-multitrack-hub-002/derivatives/camp-multitrack-hub-002-1x1.mp4",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 371064,
+      "sha256": "1cfec650caa0a3c8319130b4844ef04a62915e62fb853a10ee89e003e73988d8",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "kind": "1x1",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
+      },
+      "visualStyle": {
+        "schemaVersion": 1,
+        "id": "multitrack-hub-1x1",
+        "title": {
+          "textColor": "#F1F5F9",
+          "outlineColor": "#090D16",
+          "fontSize": 32,
+          "marginTop": 96,
+          "marginHorizontal": 56
+        }
+      },
+      "framing": {
+        "width": 1080,
+        "height": 1080,
+        "topSafePx": 96,
+        "bottomSafePx": 112,
+        "sideSafePx": 56,
+        "titleFontSize": 32,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "1:1"
+      },
+      "framingPreservedFullFrame": true,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "16x9": {
+      "path": ".workspace/archives/camp-multitrack-hub-002/derivatives/camp-multitrack-hub-002-16x9.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 1,
+      "audioCodec": "aac",
+      "bytes": 413130,
+      "sha256": "511a1e03c9adf555ef1de8b18693294516d9cdaec0ee8c3e0938409b7ca6e234",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac",
+        "audioSampleRate": 44100,
+        "audioChannels": 2
+      },
+      "kind": "16x9",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#06B6D4",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
+      },
+      "visualStyle": {
+        "schemaVersion": 1,
+        "id": "multitrack-hub-16x9",
+        "title": {
+          "textColor": "#F1F5F9",
+          "outlineColor": "#090D16",
+          "fontSize": 24,
+          "marginTop": 48,
+          "marginHorizontal": 64
+        }
+      },
+      "framing": {
+        "width": 1920,
+        "height": 1080,
+        "topSafePx": 48,
+        "bottomSafePx": 64,
+        "sideSafePx": 64,
+        "titleFontSize": 24,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "16:9"
+      },
+      "framingPreservedFullFrame": true,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-multitrack-hub-002/derivatives/camp-multitrack-hub-002-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 227533,
+      "sha256": "8a0b45df647e19029d1a000b9b89d3e8022f9cf7c91b1337c88d779e80347b34",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#090D16",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#06B6D4",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-multitrack-hub-002/derivatives/camp-multitrack-hub-002-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 174506,
+      "sha256": "1006ba6a24ab58cf40f5a2f028eba22c7fd62c6f34b317784b1d275c518c1324",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-multitrack-hub-002/derivatives/camp-multitrack-hub-002-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 129101,
+      "sha256": "af06d4e859d59a51ef98c49f3328637e809e2dac670cca6537abc4656de66866",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#090D16"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/preview-formats.png"
+    }
+  },
+  "visualTokens": {
+    "schemaVersion": 1,
+    "visualStyle": {
+      "schemaVersion": 1,
+      "id": "multitrack-hub-1x1",
+      "title": {
+        "textColor": "#F1F5F9",
+        "outlineColor": "#090D16",
+        "fontSize": 32,
+        "marginTop": 96,
+        "marginHorizontal": 56
+      }
+    },
+    "uiLabels": {
+      "teamSectionTitle": "CATALOGO DE PROJETOS",
+      "catalogSectionTitle": "FAIXAS E RATEIOS",
+      "publicRouteFallback": "/",
+      "managerRouteFallback": "/rateios",
+      "journeyBridgeCaption": "DA ORGANIZACAO DOS STEMS AOS RATEIOS",
+      "itemUnitLabel": "projeto",
+      "customerLabel": "Musico",
+      "teamMemberLabel": "RESPONSAVEL",
+      "managerSectionLabel": "PAINEL DO GESTOR",
+      "selectedLabel": "SELECIONADO",
+      "availableLabel": "DISPONIVEL",
+      "selectedSlotLabel": "ESCOLHIDO",
+      "availableSlotLabel": "LIVRE",
+      "summaryTitle": "RESUMO DA CONFIRMACAO",
+      "statusLabel": "STATUS",
+      "confirmedLabel": "CONFIRMADO",
+      "successTitle": "REGISTRO",
+      "successHighlight": "REALIZADO!",
+      "visibleInPanelLabel": "VISIVEL NO PAINEL",
+      "dateLabel": "DATA",
+      "atLabel": "AS",
+      "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+      "estimatedValueLabel": "VALOR ESTIMADO POR",
+      "ctaConfirmLabel": "CONFIRMAR",
+      "stepChooseTemplate": "{customer} ESCOLHE",
+      "stepConfirmLabel": "CONFIRMA OS DADOS",
+      "stepAppearLabel": "ACOMPANHE O STATUS",
+      "managerCaption": "VISAO E STATUS",
+      "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+      "liveDataBadge": "DADOS REAIS",
+      "projectsLabel": "PROJETOS",
+      "stemsLabel": "STEMS",
+      "sharesLabel": "COTAS",
+      "tracksLabel": "FAIXAS",
+      "shareUnitLabel": "COTA",
+      "remainingSlotsLabel": "VAGAS RESTANTES",
+      "routeLabel": "ROTA",
+      "referenceLabel": "REFERENCIA",
+      "priceLabel": "PRECO",
+      "specialtyLabel": "ESPECIALIDADE",
+      "bpmLabel": "BPM",
+      "keyLabel": "TOM",
+      "scheduleLabel": "AGENDA",
+      "agendaSummaryLabel": "REGISTROS",
+      "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+      "sharesFromLabel": "COTAS A PARTIR DE",
+      "processingCaption": "PROCESSAMENTO EM NUVEM",
+      "guideBadge": "GUIA PRATICO",
+      "diagnosticBadge": "DIAGNOSTICO",
+      "practiceBadge": "PRATICA",
+      "summaryBadge": "RESUMO",
+      "ctaBadge": "CHAMADA PARA A ACAO",
+      "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+      "practiceTitle": "ITENS DA PRATICA",
+      "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+      "valueTitle": "RESUMO DE VALOR",
+      "chooseItemLabel": "ESCOLHA O ITEM",
+      "confirmStepLabel": "CONFIRME OS DADOS",
+      "followStepLabel": "ACOMPANHE O STATUS",
+      "accessLabel": "ACESSE",
+      "publicFlowCaption": "NO FLUXO PUBLICO",
+      "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+      "carouselFooter": "CARROSSEL - SEM AUDIO",
+      "publicRouteWord": "PUBLICA",
+      "ctaLinkBio": "LINK NA BIO",
+      "ctaLinkDescription": "LINK NA DESCRICAO"
+    },
+    "framing": {
+      "1:1": {
+        "width": 1080,
+        "height": 1080,
+        "topSafePx": 96,
+        "bottomSafePx": 112,
+        "sideSafePx": 56,
+        "titleFontSize": 32,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "1:1"
+      },
+      "16:9": {
+        "width": 1920,
+        "height": 1080,
+        "topSafePx": 48,
+        "bottomSafePx": 64,
+        "sideSafePx": 64,
+        "titleFontSize": 24,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "16:9"
+      }
+    },
+    "framingPreservedFullFrame": true
+  },
+  "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-multitrack-hub-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}

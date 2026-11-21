@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 2,
+  "tenantId": "clinica-vital",
+  "slug": "camp-clinica-vital-002",
+  "preset": "saas-demo",
+  "sourceVideoSha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+  "allowAudioTrack": false,
+  "appliedAudioPolicy": "-an",
+  "source": {
+    "path": ".workspace/archives/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+    "sha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+    "bytes": 473376,
+    "deliveryManifest": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/manifest.json",
+    "deliveryRecordedSha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 0,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": null,
+      "audioSampleRate": null,
+      "audioChannels": null
+    }
+  },
+  "derivatives": {
+    "1x1": {
+      "path": ".workspace/archives/camp-clinica-vital-002/derivatives/camp-clinica-vital-002-1x1.mp4",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 398279,
+      "sha256": "e41716ac441a9c66e9dd4c09442eafb6810be488f00f5aff5fc40d52dbf87d9c",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "1x1",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#0EA5E9",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
+      },
+      "visualStyle": {
+        "schemaVersion": 1,
+        "id": "clinica-vital-1x1",
+        "title": {
+          "textColor": "#F1F5F9",
+          "outlineColor": "#0B1324",
+          "fontSize": 32,
+          "marginTop": 96,
+          "marginHorizontal": 56
+        }
+      },
+      "framing": {
+        "width": 1080,
+        "height": 1080,
+        "topSafePx": 96,
+        "bottomSafePx": 112,
+        "sideSafePx": 56,
+        "titleFontSize": 32,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "1:1"
+      },
+      "framingPreservedFullFrame": true,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "16x9": {
+      "path": ".workspace/archives/camp-clinica-vital-002/derivatives/camp-clinica-vital-002-16x9.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 465338,
+      "sha256": "18d29e4fb4144f820bcf558d3ff0b63765a4ba44706d7691529db6e6ea1038e4",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "16x9",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#0EA5E9",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
+      },
+      "visualStyle": {
+        "schemaVersion": 1,
+        "id": "clinica-vital-16x9",
+        "title": {
+          "textColor": "#F1F5F9",
+          "outlineColor": "#0B1324",
+          "fontSize": 24,
+          "marginTop": 48,
+          "marginHorizontal": 64
+        }
+      },
+      "framing": {
+        "width": 1920,
+        "height": 1080,
+        "topSafePx": 48,
+        "bottomSafePx": 64,
+        "sideSafePx": 64,
+        "titleFontSize": 24,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "16:9"
+      },
+      "framingPreservedFullFrame": true,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-clinica-vital-002/derivatives/camp-clinica-vital-002-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 247719,
+      "sha256": "79e6b08ac101a8bf7bdcda9dc90883033d76e01d747a84717a01a76864cb8209",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#0B1324",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#0B1324",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#0EA5E9",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-clinica-vital-002/derivatives/camp-clinica-vital-002-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 207533,
+      "sha256": "cefaa4c2577728f9c9ae9c9d8a70be9a0b6739a0833ad7d02568873827e62847",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-clinica-vital-002/derivatives/camp-clinica-vital-002-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 161097,
+      "sha256": "abe3122f05e3d254c04afe82b70fb9d7a2dd65ca864e253759e4b9f901a252ff",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#0B1324"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-formats.png"
+    }
+  },
+  "visualTokens": {
+    "schemaVersion": 1,
+    "visualStyle": {
+      "schemaVersion": 1,
+      "id": "clinica-vital-1x1",
+      "title": {
+        "textColor": "#F1F5F9",
+        "outlineColor": "#0B1324",
+        "fontSize": 32,
+        "marginTop": 96,
+        "marginHorizontal": 56
+      }
+    },
+    "uiLabels": {
+      "teamSectionTitle": "ESPECIALISTAS DA CLINICA",
+      "catalogSectionTitle": "PROCEDIMENTOS DISPONIVEIS",
+      "publicRouteFallback": "/avaliacao/[clinicId]",
+      "managerRouteFallback": "/gestor/consultas",
+      "journeyBridgeCaption": "DA MARCACAO DO PACIENTE A AGENDA DA CLINICA",
+      "itemUnitLabel": "consulta",
+      "customerLabel": "Paciente",
+      "teamMemberLabel": "RESPONSAVEL",
+      "managerSectionLabel": "PAINEL DO GESTOR",
+      "selectedLabel": "SELECIONADO",
+      "availableLabel": "DISPONIVEL",
+      "selectedSlotLabel": "ESCOLHIDO",
+      "availableSlotLabel": "LIVRE",
+      "summaryTitle": "RESUMO DA CONFIRMACAO",
+      "statusLabel": "STATUS",
+      "confirmedLabel": "CONFIRMADO",
+      "successTitle": "REGISTRO",
+      "successHighlight": "REALIZADO!",
+      "visibleInPanelLabel": "VISIVEL NO PAINEL",
+      "dateLabel": "DATA",
+      "atLabel": "AS",
+      "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+      "estimatedValueLabel": "VALOR ESTIMADO POR",
+      "ctaConfirmLabel": "CONFIRMAR",
+      "stepChooseTemplate": "{customer} ESCOLHE",
+      "stepConfirmLabel": "CONFIRMA OS DADOS",
+      "stepAppearLabel": "ACOMPANHE O STATUS",
+      "managerCaption": "VISAO E STATUS",
+      "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+      "liveDataBadge": "DADOS REAIS",
+      "projectsLabel": "PROJETOS",
+      "stemsLabel": "STEMS",
+      "sharesLabel": "COTAS",
+      "tracksLabel": "FAIXAS",
+      "shareUnitLabel": "COTA",
+      "remainingSlotsLabel": "VAGAS RESTANTES",
+      "routeLabel": "ROTA",
+      "referenceLabel": "REFERENCIA",
+      "priceLabel": "PRECO",
+      "specialtyLabel": "ESPECIALIDADE",
+      "bpmLabel": "BPM",
+      "keyLabel": "TOM",
+      "scheduleLabel": "AGENDA",
+      "agendaSummaryLabel": "REGISTROS",
+      "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+      "sharesFromLabel": "COTAS A PARTIR DE",
+      "processingCaption": "PROCESSAMENTO EM NUVEM",
+      "guideBadge": "GUIA PRATICO",
+      "diagnosticBadge": "DIAGNOSTICO",
+      "practiceBadge": "PRATICA",
+      "summaryBadge": "RESUMO",
+      "ctaBadge": "CHAMADA PARA A ACAO",
+      "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+      "practiceTitle": "ITENS DA PRATICA",
+      "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+      "valueTitle": "RESUMO DE VALOR",
+      "chooseItemLabel": "ESCOLHA O ITEM",
+      "confirmStepLabel": "CONFIRME OS DADOS",
+      "followStepLabel": "ACOMPANHE O STATUS",
+      "accessLabel": "ACESSE",
+      "publicFlowCaption": "NO FLUXO PUBLICO",
+      "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+      "carouselFooter": "CARROSSEL - SEM AUDIO",
+      "publicRouteWord": "PUBLICA",
+      "ctaLinkBio": "LINK NA BIO",
+      "ctaLinkDescription": "LINK NA DESCRICAO"
+    },
+    "framing": {
+      "1:1": {
+        "width": 1080,
+        "height": 1080,
+        "topSafePx": 96,
+        "bottomSafePx": 112,
+        "sideSafePx": 56,
+        "titleFontSize": 32,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "1:1"
+      },
+      "16:9": {
+        "width": 1920,
+        "height": 1080,
+        "topSafePx": 48,
+        "bottomSafePx": 64,
+        "sideSafePx": 64,
+        "titleFontSize": 24,
+        "derivativeTopInsetPx": 0,
+        "derivativeBottomInsetPx": 0,
+        "profile": "16:9"
+      }
+    },
+    "framingPreservedFullFrame": true
+  },
+  "command": "python tools/derivative_formats.py --tenant clinica-vital --campaign camp-clinica-vital-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}

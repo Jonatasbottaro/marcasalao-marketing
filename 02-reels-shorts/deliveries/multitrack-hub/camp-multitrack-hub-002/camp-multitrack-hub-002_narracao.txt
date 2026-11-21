@@ -1,0 +1,17 @@
+Roteiro de narracao - camp-multitrack-hub-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:06,000] cena-01-hook
+Cada sessão do Multitrack Hub reúne stems e entregas técnicas organizadas.
+
+[00:00:06,000 --> 00:00:15,000] cena-02-projetos
+Horizonte Vivo traz 124 BPM e nove stems separados por instrumento.
+
+[00:00:15,000 --> 00:00:21,000] cena-03-entregas
+As entregas técnicas mantêm o padrão WAV 48 kHz e 24 bits.
+
+[00:00:21,000 --> 00:00:27,000] cena-04-rateios
+Na rota /rateios, confira as faixas inclusas e as vagas do pacote.
+
+[00:00:27,000 --> 00:00:30,000] cena-05-cta
+Conheça os projetos e as entregas técnicas em multitrackhub.com.br.

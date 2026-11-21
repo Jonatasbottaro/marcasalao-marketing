@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "generatedBy": "tools/campaign_calendar.py",
   "startDate": "2026-11-23",
-  "endDate": "2026-12-25",
-  "weeks": 5,
-  "onda1Weeks": 3,
+  "endDate": "2027-01-05",
+  "weeks": 7,
+  "onda1Weeks": 4,
   "campaignsPerDay": 2,
   "channels": [
     "instagram",
@@ -19,8 +19,8 @@
     "multitrack-hub"
   ],
   "totalTenants": 5,
-  "totalCampaigns": 11,
-  "totalSlots": 44,
+  "totalCampaigns": 14,
+  "totalSlots": 56,
   "statusEditorial": "aguardando_aprovacao_titular",
   "autoPublish": false,
   "rules": {
@@ -61,14 +61,14 @@
   "metrics": {
     "byTenant": {
       "clinica-vital": {
-        "campaigns": 2,
-        "slots": 8,
-        "onda1": 6,
-        "onda2": 2,
+        "campaigns": 3,
+        "slots": 12,
+        "onda1": 9,
+        "onda2": 3,
         "byChannel": {
-          "youtube": 3,
-          "instagram": 3,
-          "facebook": 2
+          "youtube": 4,
+          "instagram": 5,
+          "facebook": 3
         }
       },
       "estudio-flow": {
@@ -94,53 +94,53 @@
         }
       },
       "meu-salao": {
-        "campaigns": 2,
-        "slots": 8,
-        "onda1": 6,
-        "onda2": 2,
-        "byChannel": {
-          "youtube": 3,
-          "instagram": 3,
-          "facebook": 2
-        }
-      },
-      "multitrack-hub": {
         "campaigns": 3,
         "slots": 12,
         "onda1": 9,
         "onda2": 3,
         "byChannel": {
-          "youtube": 4,
-          "instagram": 5,
+          "youtube": 5,
+          "instagram": 4,
           "facebook": 3
+        }
+      },
+      "multitrack-hub": {
+        "campaigns": 4,
+        "slots": 16,
+        "onda1": 12,
+        "onda2": 4,
+        "byChannel": {
+          "youtube": 6,
+          "instagram": 6,
+          "facebook": 4
         }
       }
     },
     "byChannel": {
       "instagram": {
-        "onda1": 11,
-        "onda2": 6,
-        "total": 17
+        "onda1": 14,
+        "onda2": 7,
+        "total": 21
       },
       "youtube": {
-        "onda1": 11,
-        "onda2": 5,
-        "total": 16
+        "onda1": 14,
+        "onda2": 7,
+        "total": 21
       },
       "facebook": {
-        "onda1": 11,
+        "onda1": 14,
         "onda2": 0,
-        "total": 11
+        "total": 14
       }
     },
     "byOnda": {
-      "1": 33,
-      "2": 11
+      "1": 42,
+      "2": 14
     },
     "byFormatoVideo": {
-      "9:16": 33,
-      "1:1": 6,
-      "16:9": 5
+      "9:16": 42,
+      "1:1": 7,
+      "16:9": 7
     }
   },
   "slots": [
@@ -150,6 +150,559 @@
       "semana": 1,
       "dataSugerida": "2026-11-23",
       "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
+      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-meu-salao-001",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-002",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-23",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-multitrack-hub-002",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "hookVarianteB": "Organize sessões por projeto, confira os stems separados e acompanhe cada entrega técnica.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-multitrack-hub-002",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-003",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-24",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
+      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-004",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-24",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-005",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-25",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Meu Salão",
+      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-meu-salao-001",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-006",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-25",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-multitrack-hub-002",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Multitrack Hub",
+      "hookVarianteB": "Organize sessões por projeto, confira os stems separados e acompanhe cada entrega técnica.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-multitrack-hub-002",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-007",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-26",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Meu Salão",
+      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-008",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-26",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Multitrack Hub",
+      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-009",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-27",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Meu Salão",
+      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-meu-salao-001",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-010",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-27",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-multitrack-hub-002",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Multitrack Hub",
+      "hookVarianteB": "Organize sessões por projeto, confira os stems separados e acompanhe cada entrega técnica.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-multitrack-hub-002",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-multitrack-hub-002&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-011",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-28",
+      "diaSemana": "sábado",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Meu Salão",
+      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_content": "meu-salao"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-012",
+      "onda": 1,
+      "semana": 1,
+      "dataSugerida": "2026-11-28",
+      "diaSemana": "sábado",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-completo-multitrack-001",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Multitrack Hub",
+      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-013",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-11-30",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
+      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-estudio-flow-001",
+        "utm_content": "estudio-flow"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-014",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-11-30",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-shorts-rateios-002",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "hookVarianteB": "Compare os rateios por faixas, cotas e vagas antes de escolher o seu.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-shorts-rateios-002",
+        "utm_content": "multitrack-hub"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-015",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-12-01",
+      "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
@@ -185,15 +738,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-002",
+      "slotId": "slot-016",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-23",
-      "diaSemana": "segunda-feira",
+      "semana": 2,
+      "dataSugerida": "2026-12-01",
+      "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-completo-multitrack-001",
+      "slug": "camp-shorts-stems-workflow-003",
       "preset": "shorts-completo",
       "audioPolicy": {
         "allowAudioTrack": true,
@@ -203,14 +756,14 @@
       "canal": "youtube",
       "formatoVideo": "9:16",
       "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
-      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
       "utmParams": {
         "utm_source": "youtube",
         "utm_medium": "shorts",
-        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_campaign": "camp-shorts-stems-workflow-003",
         "utm_content": "multitrack-hub"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
@@ -224,15 +777,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-003",
+      "slotId": "slot-017",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-24",
-      "diaSemana": "terça-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-marca-salao-001",
+      "semana": 2,
+      "dataSugerida": "2026-12-02",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -240,36 +793,36 @@
         "requireSrt": true,
         "ffmpegFlag": "-an"
       },
-      "canal": "youtube",
+      "canal": "instagram",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
-      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "hookVarianteA": "Conheca o Estúdio Flow",
+      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
       "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-marca-salao-001",
-        "utm_content": "marca-salao"
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-estudio-flow-001",
+        "utm_content": "estudio-flow"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-004",
+      "slotId": "slot-018",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-24",
-      "diaSemana": "terça-feira",
-      "janelaHorarioBrt": "12:00-13:00",
+      "semana": 2,
+      "dataSugerida": "2026-12-02",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
       "slug": "camp-shorts-rateios-002",
@@ -279,22 +832,22 @@
         "requireExternalNarration": false,
         "requireSrt": true
       },
-      "canal": "youtube",
+      "canal": "instagram",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "hookVarianteA": "Conheca o Multitrack Hub",
       "hookVarianteB": "Compare os rateios por faixas, cotas e vagas antes de escolher o seu.",
       "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
+        "utm_source": "instagram",
+        "utm_medium": "reels",
         "utm_campaign": "camp-shorts-rateios-002",
         "utm_content": "multitrack-hub"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
@@ -303,11 +856,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-005",
+      "slotId": "slot-019",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-25",
-      "diaSemana": "quarta-feira",
+      "semana": 2,
+      "dataSugerida": "2026-12-03",
+      "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
@@ -343,15 +896,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-006",
+      "slotId": "slot-020",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-25",
-      "diaSemana": "quarta-feira",
+      "semana": 2,
+      "dataSugerida": "2026-12-03",
+      "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-completo-multitrack-001",
+      "slug": "camp-shorts-stems-workflow-003",
       "preset": "shorts-completo",
       "audioPolicy": {
         "allowAudioTrack": true,
@@ -361,14 +914,14 @@
       "canal": "instagram",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Multitrack Hub",
-      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
       "utmParams": {
         "utm_source": "instagram",
         "utm_medium": "reels",
-        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_campaign": "camp-shorts-stems-workflow-003",
         "utm_content": "multitrack-hub"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
@@ -382,15 +935,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-007",
+      "slotId": "slot-021",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-26",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-marca-salao-001",
+      "semana": 2,
+      "dataSugerida": "2026-12-04",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -398,36 +951,36 @@
         "requireSrt": true,
         "ffmpegFlag": "-an"
       },
-      "canal": "instagram",
+      "canal": "facebook",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Marca Salão",
-      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "hookVarianteA": "Conheca o Estúdio Flow",
+      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
       "utmParams": {
-        "utm_source": "instagram",
+        "utm_source": "facebook",
         "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-marca-salao-001",
-        "utm_content": "marca-salao"
+        "utm_campaign": "camp-saas-demo-estudio-flow-001",
+        "utm_content": "estudio-flow"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-008",
+      "slotId": "slot-022",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-26",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
+      "semana": 2,
+      "dataSugerida": "2026-12-04",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
       "slug": "camp-shorts-rateios-002",
@@ -437,22 +990,22 @@
         "requireExternalNarration": false,
         "requireSrt": true
       },
-      "canal": "instagram",
+      "canal": "facebook",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Multitrack Hub",
       "hookVarianteB": "Compare os rateios por faixas, cotas e vagas antes de escolher o seu.",
       "utmParams": {
-        "utm_source": "instagram",
+        "utm_source": "facebook",
         "utm_medium": "reels",
         "utm_campaign": "camp-shorts-rateios-002",
         "utm_content": "multitrack-hub"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
@@ -461,11 +1014,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-009",
+      "slotId": "slot-023",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-27",
-      "diaSemana": "sexta-feira",
+      "semana": 2,
+      "dataSugerida": "2026-12-05",
+      "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
@@ -501,15 +1054,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-010",
+      "slotId": "slot-024",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-27",
-      "diaSemana": "sexta-feira",
+      "semana": 2,
+      "dataSugerida": "2026-12-05",
+      "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-completo-multitrack-001",
+      "slug": "camp-shorts-stems-workflow-003",
       "preset": "shorts-completo",
       "audioPolicy": {
         "allowAudioTrack": true,
@@ -519,14 +1072,14 @@
       "canal": "facebook",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Multitrack Hub",
-      "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
+      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
       "utmParams": {
         "utm_source": "facebook",
         "utm_medium": "reels",
-        "utm_campaign": "camp-shorts-completo-multitrack-001",
+        "utm_campaign": "camp-shorts-stems-workflow-003",
         "utm_content": "multitrack-hub"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=multitrack-hub",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
@@ -540,12 +1093,52 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-011",
+      "slotId": "slot-025",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-28",
-      "diaSemana": "sábado",
-      "janelaHorarioBrt": "20:00-21:00",
+      "semana": 3,
+      "dataSugerida": "2026-12-07",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-clinica-vital-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
+      "hookVarianteB": "Acompanhe o retorno de pacientes na agenda da clínica e veja o status atualizado pela recepção.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-clinica-vital-002",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-026",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-07",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
       "slug": "camp-saas-demo-marca-salao-001",
@@ -556,22 +1149,22 @@
         "requireSrt": true,
         "ffmpegFlag": "-an"
       },
-      "canal": "facebook",
+      "canal": "youtube",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
       "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
       "utmParams": {
-        "utm_source": "facebook",
-        "utm_medium": "reels",
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
         "utm_campaign": "camp-saas-demo-marca-salao-001",
         "utm_content": "marca-salao"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
@@ -580,128 +1173,10 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-012",
+      "slotId": "slot-027",
       "onda": 1,
-      "semana": 1,
-      "dataSugerida": "2026-11-28",
-      "diaSemana": "sábado",
-      "janelaHorarioBrt": "20:00-21:00",
-      "tenantId": "multitrack-hub",
-      "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-rateios-002",
-      "preset": "shorts-completo",
-      "audioPolicy": {
-        "allowAudioTrack": true,
-        "requireExternalNarration": false,
-        "requireSrt": true
-      },
-      "canal": "facebook",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Multitrack Hub",
-      "hookVarianteB": "Compare os rateios por faixas, cotas e vagas antes de escolher o seu.",
-      "utmParams": {
-        "utm_source": "facebook",
-        "utm_medium": "reels",
-        "utm_campaign": "camp-shorts-rateios-002",
-        "utm_content": "multitrack-hub"
-      },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-rateios-002&utm_content=multitrack-hub",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-013",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-11-30",
-      "diaSemana": "segunda-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-ns001-agenda-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
-      "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-ns001-agenda-001",
-        "utm_content": "marca-salao"
-      },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-ns001-agenda-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-014",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-11-30",
-      "diaSemana": "segunda-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "multitrack-hub",
-      "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-stems-workflow-003",
-      "preset": "shorts-completo",
-      "audioPolicy": {
-        "allowAudioTrack": true,
-        "requireExternalNarration": false,
-        "requireSrt": true
-      },
-      "canal": "youtube",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
-      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-shorts-stems-workflow-003",
-        "utm_content": "multitrack-hub"
-      },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-015",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-01",
+      "semana": 3,
+      "dataSugerida": "2026-12-08",
       "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "clinica-vital",
@@ -738,52 +1213,12 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-016",
+      "slotId": "slot-028",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-01",
+      "semana": 3,
+      "dataSugerida": "2026-12-08",
       "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "meu-salao",
-      "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
-      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-meu-salao-001",
-        "utm_content": "meu-salao"
-      },
-      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-017",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-02",
-      "diaSemana": "quarta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
       "slug": "camp-saas-demo-ns001-agenda-001",
@@ -794,22 +1229,22 @@
         "requireSrt": true,
         "ffmpegFlag": "-an"
       },
-      "canal": "instagram",
+      "canal": "youtube",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
       "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
       "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "reels",
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
         "utm_campaign": "camp-saas-demo-ns001-agenda-001",
         "utm_content": "marca-salao"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-ns001-agenda-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
@@ -818,49 +1253,90 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-018",
+      "slotId": "slot-029",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-02",
+      "semana": 3,
+      "dataSugerida": "2026-12-09",
       "diaSemana": "quarta-feira",
       "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "multitrack-hub",
-      "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-stems-workflow-003",
-      "preset": "shorts-completo",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-clinica-vital-002",
+      "preset": "saas-demo",
       "audioPolicy": {
-        "allowAudioTrack": true,
-        "requireExternalNarration": false,
-        "requireSrt": true
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
       },
       "canal": "instagram",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Multitrack Hub",
-      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Acompanhe o retorno de pacientes na agenda da clínica e veja o status atualizado pela recepção.",
       "utmParams": {
         "utm_source": "instagram",
         "utm_medium": "reels",
-        "utm_campaign": "camp-shorts-stems-workflow-003",
-        "utm_content": "multitrack-hub"
+        "utm_campaign": "camp-clinica-vital-002",
+        "utm_content": "clinica-vital"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-019",
+      "slotId": "slot-030",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-03",
+      "semana": 3,
+      "dataSugerida": "2026-12-09",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-marca-salao-001",
+        "utm_content": "marca-salao"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-031",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-10",
       "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "clinica-vital",
@@ -897,52 +1373,12 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-020",
+      "slotId": "slot-032",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-03",
+      "semana": 3,
+      "dataSugerida": "2026-12-10",
       "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "meu-salao",
-      "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "instagram",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Meu Salão",
-      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
-      "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-meu-salao-001",
-        "utm_content": "meu-salao"
-      },
-      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-021",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-04",
-      "diaSemana": "sexta-feira",
-      "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
       "slug": "camp-saas-demo-ns001-agenda-001",
@@ -953,22 +1389,22 @@
         "requireSrt": true,
         "ffmpegFlag": "-an"
       },
-      "canal": "facebook",
+      "canal": "instagram",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Marca Salão",
       "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
       "utmParams": {
-        "utm_source": "facebook",
+        "utm_source": "instagram",
         "utm_medium": "reels",
         "utm_campaign": "camp-saas-demo-ns001-agenda-001",
         "utm_content": "marca-salao"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-ns001-agenda-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
@@ -977,49 +1413,90 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-022",
+      "slotId": "slot-033",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-04",
+      "semana": 3,
+      "dataSugerida": "2026-12-11",
       "diaSemana": "sexta-feira",
       "janelaHorarioBrt": "20:00-21:00",
-      "tenantId": "multitrack-hub",
-      "brandName": "Multitrack Hub",
-      "slug": "camp-shorts-stems-workflow-003",
-      "preset": "shorts-completo",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-clinica-vital-002",
+      "preset": "saas-demo",
       "audioPolicy": {
-        "allowAudioTrack": true,
-        "requireExternalNarration": false,
-        "requireSrt": true
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
       },
       "canal": "facebook",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Multitrack Hub",
-      "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Acompanhe o retorno de pacientes na agenda da clínica e veja o status atualizado pela recepção.",
       "utmParams": {
         "utm_source": "facebook",
         "utm_medium": "reels",
-        "utm_campaign": "camp-shorts-stems-workflow-003",
-        "utm_content": "multitrack-hub"
+        "utm_campaign": "camp-clinica-vital-002",
+        "utm_content": "clinica-vital"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-shorts-stems-workflow-003&utm_content=multitrack-hub",
+      "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-clinica-vital-002&utm_content=clinica-vital",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-023",
+      "slotId": "slot-034",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-05",
+      "semana": 3,
+      "dataSugerida": "2026-12-11",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-marca-salao-001",
+        "utm_content": "marca-salao"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-035",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-12",
       "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "clinica-vital",
@@ -1056,15 +1533,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-024",
+      "slotId": "slot-036",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-05",
+      "semana": 3,
+      "dataSugerida": "2026-12-12",
       "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
-      "tenantId": "meu-salao",
-      "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-001",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-ns001-agenda-001",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1074,32 +1551,32 @@
       },
       "canal": "facebook",
       "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Meu Salão",
-      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
       "utmParams": {
         "utm_source": "facebook",
         "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-meu-salao-001",
-        "utm_content": "meu-salao"
+        "utm_campaign": "camp-saas-demo-ns001-agenda-001",
+        "utm_content": "marca-salao"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=meu-salao",
+      "utmUrl": "https://marcasalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=marca-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-ns001-agenda-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-025",
+      "slotId": "slot-037",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-07",
+      "semana": 4,
+      "dataSugerida": "2026-12-14",
       "diaSemana": "segunda-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "clinica-vital",
@@ -1136,15 +1613,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-026",
+      "slotId": "slot-038",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-07",
-      "diaSemana": "segunda-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-15",
+      "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-002",
+      "slug": "camp-meu-salao-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1155,71 +1632,31 @@
       "canal": "youtube",
       "formatoVideo": "9:16",
       "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
-      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "hookVarianteB": "Compare a vitrine pública de horários com a rotina interna da equipe na agenda do salão.",
       "utmParams": {
         "utm_source": "youtube",
         "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_campaign": "camp-meu-salao-002",
         "utm_content": "meu-salao"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-meu-salao-002&utm_content=meu-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-027",
+      "slotId": "slot-039",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-08",
-      "diaSemana": "terça-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "estudio-flow",
-      "brandName": "Estúdio Flow",
-      "slug": "camp-saas-demo-estudio-flow-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
-      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-estudio-flow-001",
-        "utm_content": "estudio-flow"
-      },
-      "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-028",
-      "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-09",
+      "semana": 4,
+      "dataSugerida": "2026-12-16",
       "diaSemana": "quarta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "clinica-vital",
@@ -1256,15 +1693,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-029",
+      "slotId": "slot-040",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-09",
-      "diaSemana": "quarta-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-17",
+      "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-002",
+      "slug": "camp-meu-salao-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1275,71 +1712,31 @@
       "canal": "instagram",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Meu Salão",
-      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "hookVarianteB": "Compare a vitrine pública de horários com a rotina interna da equipe na agenda do salão.",
       "utmParams": {
         "utm_source": "instagram",
         "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_campaign": "camp-meu-salao-002",
         "utm_content": "meu-salao"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-030",
+      "slotId": "slot-041",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-10",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "estudio-flow",
-      "brandName": "Estúdio Flow",
-      "slug": "camp-saas-demo-estudio-flow-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "instagram",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Estúdio Flow",
-      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
-      "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-estudio-flow-001",
-        "utm_content": "estudio-flow"
-      },
-      "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-031",
-      "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-11",
+      "semana": 4,
+      "dataSugerida": "2026-12-18",
       "diaSemana": "sexta-feira",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "clinica-vital",
@@ -1376,15 +1773,15 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-032",
+      "slotId": "slot-042",
       "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-11",
-      "diaSemana": "sexta-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-19",
+      "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-002",
+      "slug": "camp-meu-salao-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1395,76 +1792,36 @@
       "canal": "facebook",
       "formatoVideo": "9:16",
       "hookVarianteA": "Conheca o Meu Salão",
-      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "hookVarianteB": "Compare a vitrine pública de horários com a rotina interna da equipe na agenda do salão.",
       "utmParams": {
         "utm_source": "facebook",
         "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_campaign": "camp-meu-salao-002",
         "utm_content": "meu-salao"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=meu-salao",
+      "utmUrl": "https://meusalao.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-meu-salao-002&utm_content=meu-salao",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Locução externa opcional: gravar fora do editor a partir de camp-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-033",
-      "onda": 1,
-      "semana": 3,
-      "dataSugerida": "2026-12-12",
-      "diaSemana": "sábado",
-      "janelaHorarioBrt": "20:00-21:00",
-      "tenantId": "estudio-flow",
-      "brandName": "Estúdio Flow",
-      "slug": "camp-saas-demo-estudio-flow-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "facebook",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Estúdio Flow",
-      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
-      "utmParams": {
-        "utm_source": "facebook",
-        "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-estudio-flow-001",
-        "utm_content": "estudio-flow"
-      },
-      "utmUrl": "https://estudioflow.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=estudio-flow",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-034",
+      "slotId": "slot-043",
       "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-14",
+      "semana": 5,
+      "dataSugerida": "2026-12-21",
       "diaSemana": "segunda-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "clinica-vital",
       "brandName": "Clínica Vital",
-      "slug": "camp-saas-demo-clinica-vital-001",
+      "slug": "camp-clinica-vital-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1475,196 +1832,36 @@
       "canal": "instagram",
       "formatoVideo": "1:1",
       "hookVarianteA": "Conheca o Clínica Vital",
-      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "hookVarianteB": "Acompanhe o retorno de pacientes na agenda da clínica e veja o status atualizado pela recepção.",
       "utmParams": {
         "utm_source": "instagram",
         "utm_medium": "feed",
-        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_campaign": "camp-clinica-vital-002",
         "utm_content": "repurpose-1x1"
       },
-      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=repurpose-1x1",
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-clinica-vital-002&utm_content=repurpose-1x1",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-saas-demo-clinica-vital-001-1x1.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Anexar o derivado 1:1 camp-clinica-vital-002-1x1.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-035",
+      "slotId": "slot-044",
       "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-15",
+      "semana": 5,
+      "dataSugerida": "2026-12-22",
       "diaSemana": "terça-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "clinica-vital",
-      "brandName": "Clínica Vital",
-      "slug": "camp-saas-demo-clinica-vital-002",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "16:9",
-      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
-      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "video",
-        "utm_campaign": "camp-saas-demo-clinica-vital-002",
-        "utm_content": "repurpose-16x9"
-      },
-      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=repurpose-16x9",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 16:9 camp-saas-demo-clinica-vital-002-16x9.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-036",
-      "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-16",
-      "diaSemana": "quarta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "estudio-flow",
-      "brandName": "Estúdio Flow",
-      "slug": "camp-saas-demo-estudio-flow-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "instagram",
-      "formatoVideo": "1:1",
-      "hookVarianteA": "Conheca o Estúdio Flow",
-      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
-      "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "feed",
-        "utm_campaign": "camp-saas-demo-estudio-flow-001",
-        "utm_content": "repurpose-1x1"
-      },
-      "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=repurpose-1x1",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-saas-demo-estudio-flow-001-1x1.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-037",
-      "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-17",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "estudio-flow",
-      "brandName": "Estúdio Flow",
-      "slug": "camp-saas-demo-estudio-flow-002",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "16:9",
-      "hookVarianteA": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
-      "hookVarianteB": "Veja a grade de turmas por horário e acompanhe as matrículas confirmadas em uma tela só.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "video",
-        "utm_campaign": "camp-saas-demo-estudio-flow-002",
-        "utm_content": "repurpose-16x9"
-      },
-      "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-estudio-flow-002&utm_content=repurpose-16x9",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 16:9 camp-saas-demo-estudio-flow-002-16x9.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-038",
-      "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-18",
-      "diaSemana": "sexta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-marca-salao-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "instagram",
-      "formatoVideo": "1:1",
-      "hookVarianteA": "Conheca o Marca Salão",
-      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
-      "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "feed",
-        "utm_campaign": "camp-saas-demo-marca-salao-001",
-        "utm_content": "repurpose-1x1"
-      },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=repurpose-1x1",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-saas-demo-marca-salao-001-1x1.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-039",
-      "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-19",
-      "diaSemana": "sábado",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-001",
+      "slug": "camp-meu-salao-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1675,36 +1872,115 @@
       "canal": "youtube",
       "formatoVideo": "16:9",
       "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
-      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "hookVarianteB": "Compare a vitrine pública de horários com a rotina interna da equipe na agenda do salão.",
       "utmParams": {
         "utm_source": "youtube",
         "utm_medium": "video",
-        "utm_campaign": "camp-saas-demo-meu-salao-001",
+        "utm_campaign": "camp-meu-salao-002",
         "utm_content": "repurpose-16x9"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=repurpose-16x9",
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-meu-salao-002&utm_content=repurpose-16x9",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 16:9 camp-saas-demo-meu-salao-001-16x9.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Anexar o derivado 16:9 camp-meu-salao-002-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-040",
+      "slotId": "slot-045",
       "onda": 2,
       "semana": 5,
-      "dataSugerida": "2026-12-21",
-      "diaSemana": "segunda-feira",
+      "dataSugerida": "2026-12-23",
+      "diaSemana": "quarta-feira",
       "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "meu-salao",
-      "brandName": "Meu Salão",
-      "slug": "camp-saas-demo-meu-salao-002",
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "slug": "camp-multitrack-hub-002",
+      "preset": "shorts-completo",
+      "audioPolicy": {
+        "allowAudioTrack": true,
+        "requireExternalNarration": false,
+        "requireSrt": true
+      },
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Multitrack Hub",
+      "hookVarianteB": "Organize sessões por projeto, confira os stems separados e acompanhe cada entrega técnica.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "feed",
+        "utm_campaign": "camp-multitrack-hub-002",
+        "utm_content": "repurpose-1x1"
+      },
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-multitrack-hub-002&utm_content=repurpose-1x1",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-multitrack-hub-002-1x1.mp4 da entrega (ver derivatives.json).",
+        "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-046",
+      "onda": 2,
+      "semana": 5,
+      "dataSugerida": "2026-12-24",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
+      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "video",
+        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_content": "repurpose-16x9"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=repurpose-16x9",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-saas-demo-clinica-vital-001-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-047",
+      "onda": 2,
+      "semana": 5,
+      "dataSugerida": "2026-12-25",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1714,37 +1990,117 @@
       },
       "canal": "instagram",
       "formatoVideo": "1:1",
-      "hookVarianteA": "Conheca o Meu Salão",
-      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
       "utmParams": {
         "utm_source": "instagram",
         "utm_medium": "feed",
-        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_campaign": "camp-saas-demo-clinica-vital-002",
         "utm_content": "repurpose-1x1"
       },
-      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=repurpose-1x1",
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=repurpose-1x1",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-saas-demo-meu-salao-002-1x1.mp4 da entrega (ver derivatives.json).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Anexar o derivado 1:1 camp-saas-demo-clinica-vital-002-1x1.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false
     },
     {
-      "slotId": "slot-041",
+      "slotId": "slot-048",
       "onda": 2,
       "semana": 5,
-      "dataSugerida": "2026-12-22",
+      "dataSugerida": "2026-12-26",
+      "diaSemana": "sábado",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Estúdio Flow — PILATES E BEM-ESTAR COM HORARIOS ORGANIZADOS",
+      "hookVarianteB": "Veja o passo a passo para reservar uma aula experimental e conferir a grade de turmas do estúdio.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "video",
+        "utm_campaign": "camp-saas-demo-estudio-flow-001",
+        "utm_content": "repurpose-16x9"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-estudio-flow-001&utm_content=repurpose-16x9",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-saas-demo-estudio-flow-001-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-049",
+      "onda": 2,
+      "semana": 6,
+      "dataSugerida": "2026-12-28",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "estudio-flow",
+      "brandName": "Estúdio Flow",
+      "slug": "camp-saas-demo-estudio-flow-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Estúdio Flow",
+      "hookVarianteB": "Veja a grade de turmas por horário e acompanhe as matrículas confirmadas em uma tela só.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "feed",
+        "utm_campaign": "camp-saas-demo-estudio-flow-002",
+        "utm_content": "repurpose-1x1"
+      },
+      "utmUrl": "https://estudioflow.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-estudio-flow-002&utm_content=repurpose-1x1",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-saas-demo-estudio-flow-002-1x1.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-050",
+      "onda": 2,
+      "semana": 6,
+      "dataSugerida": "2026-12-29",
       "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-ns001-agenda-001",
+      "slug": "camp-saas-demo-marca-salao-001",
       "preset": "saas-demo",
       "audioPolicy": {
         "allowAudioTrack": false,
@@ -1755,20 +2111,140 @@
       "canal": "youtube",
       "formatoVideo": "16:9",
       "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
-      "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
+      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
       "utmParams": {
         "utm_source": "youtube",
         "utm_medium": "video",
-        "utm_campaign": "camp-saas-demo-ns001-agenda-001",
+        "utm_campaign": "camp-saas-demo-marca-salao-001",
         "utm_content": "repurpose-16x9"
       },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=repurpose-16x9",
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=repurpose-16x9",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
         "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 16:9 camp-saas-demo-ns001-agenda-001-16x9.mp4 da entrega (ver derivatives.json).",
+        "Anexar o derivado 16:9 camp-saas-demo-marca-salao-001-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-051",
+      "onda": 2,
+      "semana": 6,
+      "dataSugerida": "2026-12-30",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Meu Salão",
+      "hookVarianteB": "Mostre o link de agendamento para a cliente e veja o horário reservado chegar na agenda da equipe.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "feed",
+        "utm_campaign": "camp-saas-demo-meu-salao-001",
+        "utm_content": "repurpose-1x1"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-meu-salao-001&utm_content=repurpose-1x1",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-saas-demo-meu-salao-001-1x1.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-052",
+      "onda": 2,
+      "semana": 6,
+      "dataSugerida": "2026-12-31",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "slug": "camp-saas-demo-meu-salao-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Meu Salão — GESTAO DE AGENDA E ATENDIMENTOS",
+      "hookVarianteB": "A equipe acompanha os atendimentos do dia em uma lista só, com o status de cada cliente.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "video",
+        "utm_campaign": "camp-saas-demo-meu-salao-002",
+        "utm_content": "repurpose-16x9"
+      },
+      "utmUrl": "https://meusalao.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-meu-salao-002&utm_content=repurpose-16x9",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-saas-demo-meu-salao-002-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-meu-salao-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-053",
+      "onda": 2,
+      "semana": 6,
+      "dataSugerida": "2027-01-01",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-ns001-agenda-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteB": "Visualize os agendamentos do salão por profissional e por status, em uma tela só.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "feed",
+        "utm_campaign": "camp-saas-demo-ns001-agenda-001",
+        "utm_content": "repurpose-1x1"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-ns001-agenda-001&utm_content=repurpose-1x1",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-saas-demo-ns001-agenda-001-1x1.mp4 da entrega (ver derivatives.json).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-ns001-agenda-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
@@ -1776,12 +2252,12 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-042",
+      "slotId": "slot-054",
       "onda": 2,
-      "semana": 5,
-      "dataSugerida": "2026-12-23",
-      "diaSemana": "quarta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
+      "semana": 6,
+      "dataSugerida": "2027-01-02",
+      "diaSemana": "sábado",
+      "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
       "slug": "camp-shorts-completo-multitrack-001",
@@ -1791,23 +2267,23 @@
         "requireExternalNarration": false,
         "requireSrt": true
       },
-      "canal": "instagram",
-      "formatoVideo": "1:1",
-      "hookVarianteA": "Conheca o Multitrack Hub",
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
       "hookVarianteB": "Encontre multitracks por tom e BPM, veja os stems separados e escolha o rateio certo para o seu projeto.",
       "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "feed",
+        "utm_source": "youtube",
+        "utm_medium": "video",
         "utm_campaign": "camp-shorts-completo-multitrack-001",
-        "utm_content": "repurpose-1x1"
+        "utm_content": "repurpose-16x9"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=repurpose-1x1",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-completo-multitrack-001&utm_content=repurpose-16x9",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-shorts-completo-multitrack-001-1x1.mp4 da entrega (ver derivatives.json).",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-shorts-completo-multitrack-001-16x9.mp4 da entrega (ver derivatives.json).",
         "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
@@ -1815,12 +2291,12 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-043",
+      "slotId": "slot-055",
       "onda": 2,
-      "semana": 5,
-      "dataSugerida": "2026-12-24",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "12:00-13:00",
+      "semana": 7,
+      "dataSugerida": "2027-01-04",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
       "slug": "camp-shorts-rateios-002",
@@ -1830,23 +2306,23 @@
         "requireExternalNarration": false,
         "requireSrt": true
       },
-      "canal": "youtube",
-      "formatoVideo": "16:9",
-      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Multitrack Hub",
       "hookVarianteB": "Compare os rateios por faixas, cotas e vagas antes de escolher o seu.",
       "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "video",
+        "utm_source": "instagram",
+        "utm_medium": "feed",
         "utm_campaign": "camp-shorts-rateios-002",
-        "utm_content": "repurpose-16x9"
+        "utm_content": "repurpose-1x1"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-rateios-002&utm_content=repurpose-16x9",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-shorts-rateios-002&utm_content=repurpose-1x1",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 16:9 camp-shorts-rateios-002-16x9.mp4 da entrega (ver derivatives.json).",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-shorts-rateios-002-1x1.mp4 da entrega (ver derivatives.json).",
         "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
@@ -1854,12 +2330,12 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-044",
+      "slotId": "slot-056",
       "onda": 2,
-      "semana": 5,
-      "dataSugerida": "2026-12-25",
-      "diaSemana": "sexta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
+      "semana": 7,
+      "dataSugerida": "2027-01-05",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
       "slug": "camp-shorts-stems-workflow-003",
@@ -1869,23 +2345,23 @@
         "requireExternalNarration": false,
         "requireSrt": true
       },
-      "canal": "instagram",
-      "formatoVideo": "1:1",
-      "hookVarianteA": "Conheca o Multitrack Hub",
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Multitrack Hub — CATALOGO, STEMS E RATEIOS ORGANIZADOS",
       "hookVarianteB": "Trabalhe com os stems Click, Guide e banda separados por instrumento, na ordem certa do seu workflow.",
       "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "feed",
+        "utm_source": "youtube",
+        "utm_medium": "video",
         "utm_campaign": "camp-shorts-stems-workflow-003",
-        "utm_content": "repurpose-1x1"
+        "utm_content": "repurpose-16x9"
       },
-      "utmUrl": "https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-shorts-stems-workflow-003&utm_content=repurpose-1x1",
+      "utmUrl": "https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-stems-workflow-003&utm_content=repurpose-16x9",
       "checklistPrePublicacao": [
         "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
         "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
         "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o derivado 1:1 camp-shorts-stems-workflow-003-1x1.mp4 da entrega (ver derivatives.json).",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-shorts-stems-workflow-003-16x9.mp4 da entrega (ver derivatives.json).",
         "Vídeo já sai com a faixa de áudio permitida pelo guardrail do tenant.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],

@@ -1,0 +1,26 @@
+1
+00:00:00,000 --> 00:00:04,000
+Veja a vitrine pública
+e a rotina interna do salão.
+
+2
+00:00:04,000 --> 00:00:10,000
+Na vitrine pública, a cliente escolhe o serviço.
+
+3
+00:00:10,000 --> 00:00:16,000
+A cliente confirma o horário
+escolhido na vitrine.
+
+4
+00:00:16,000 --> 00:00:22,000
+Na agenda interna,
+a equipe vê o dia em uma tela.
+
+5
+00:00:22,000 --> 00:00:27,000
+O status de cada atendimento é atualizado à mão.
+
+6
+00:00:27,000 --> 00:00:30,000
+Conheça o Meu Salão — meusalao.com.br

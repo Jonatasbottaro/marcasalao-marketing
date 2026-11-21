@@ -212,6 +212,18 @@ HOOK_VARIANTE_B = {
         "Veja a agenda de consultas do dia organizada por especialista e por "
         "status, em uma tela só."
     ),
+    "camp-clinica-vital-002": (
+        "Acompanhe o retorno de pacientes na agenda da clínica e veja o status "
+        "atualizado pela recepção."
+    ),
+    "camp-multitrack-hub-002": (
+        "Organize sessões por projeto, confira os stems separados e acompanhe "
+        "cada entrega técnica."
+    ),
+    "camp-meu-salao-002": (
+        "Compare a vitrine pública de horários com a rotina interna da equipe "
+        "na agenda do salão."
+    ),
 }
 
 

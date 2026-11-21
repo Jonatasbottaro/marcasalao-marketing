@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-meu-salao-002",
+  "campaignId": "MEU-SALAO-002",
+  "tenantId": "meu-salao",
+  "preset": "saas-demo",
+  "autoPublish": false,
+  "bookingCase": {
+    "cliente": "Renata Siqueira",
+    "servicoId": "serv-ms-003",
+    "profissionalId": "prof-ms-003",
+    "data": "2026-11-18",
+    "horario": "14:00"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-meu-salao-002.mp4",
+    "packageSrtName": "camp-meu-salao-002.srt",
+    "packageNarrationName": "camp-meu-salao-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "VITRINE E ROTINA",
+      "headline": "HORARIOS PUBLICOS E AGENDA INTERNA",
+      "subline": "DUAS VISÕES, UMA AGENDA",
+      "caption": "Veja a vitrine pública e a rotina interna do salão.",
+      "narrationText": "Veja a diferença entre a vitrine pública de horários e a rotina interna da equipe."
+    },
+    {
+      "id": "cena-02-vitrine-escolha",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/booking/meu-salao-modelo",
+      "badge": "VITRINE /BOOKING",
+      "headline": "A CLIENTE ESCOLHE SERVICO E PROFISSIONAL",
+      "caption": "Na vitrine pública, a cliente escolhe o serviço.",
+      "narrationText": "Na vitrine pública /booking, a cliente escolhe o serviço e o profissional."
+    },
+    {
+      "id": "cena-03-vitrine-confirma",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/booking/meu-salao-modelo",
+      "badge": "HORARIOS LIVRES /BOOKING",
+      "headline": "ESCOLHA DO HORARIO NA VITRINE",
+      "availableSlots": ["09:00", "11:30", "14:00", "16:30"],
+      "selectedSlot": "14:00",
+      "ctaLabel": "CONFIRMAR HORARIO",
+      "caption": "A cliente confirma o horário escolhido na vitrine.",
+      "narrationText": "A cliente confirma o horário escolhido na vitrine pública."
+    },
+    {
+      "id": "cena-04-interna-abertura",
+      "kind": "manager-agenda",
+      "start": 16.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "ROTINA INTERNA /GESTOR/AGENDA",
+      "headline": "A EQUIPE VÊ O DIA EM UMA TELA",
+      "highlightId": "atend-ms-002",
+      "caption": "Na agenda interna, a equipe vê o dia em uma tela.",
+      "narrationText": "Na rota /gestor/agenda, a equipe acompanha os atendimentos do dia em uma tela."
+    },
+    {
+      "id": "cena-05-interna-status",
+      "kind": "manager-agenda",
+      "start": 22.0,
+      "duration": 5.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/agenda",
+      "badge": "STATUS MANUAL /GESTOR/AGENDA",
+      "headline": "O STATUS É ATUALIZADO PELA EQUIPE",
+      "highlightId": "atend-ms-003",
+      "caption": "O status de cada atendimento é atualizado à mão.",
+      "narrationText": "A equipe atualiza o status de cada atendimento manualmente em /gestor/agenda."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 27.0,
+      "duration": 3.0,
+      "surface": "marca",
+      "route": "meusalao.com.br",
+      "badge": "MEU SALAO",
+      "headline": "CONHECA A AGENDA DO MEU SALAO",
+      "subline": "MEUSALAO.COM.BR",
+      "caption": "Conheça o Meu Salão — meusalao.com.br",
+      "narrationText": "Conheça a agenda do Meu Salão em meusalao.com.br."
+    }
+  ]
+}

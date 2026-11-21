@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "multitrack-hub",
+  "preset": "shorts-completo",
+  "brand": {
+    "tenantId": "multitrack-hub",
+    "brandName": "Multitrack Hub",
+    "monogram": "MH",
+    "domain": "multitrackhub.com.br"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "CATALOGO DE PROJETOS",
+    "catalogSectionTitle": "FAIXAS E RATEIOS",
+    "publicRouteFallback": "/",
+    "managerRouteFallback": "/RATEIOS",
+    "journeyBridgeCaption": "DA ORGANIZACAO DOS STEMS AOS RATEIOS",
+    "itemUnitLabel": "PROJETO",
+    "customerLabel": "MUSICO",
+    "teamMemberLabel": "RESPONSAVEL",
+    "managerSectionLabel": "PAINEL DO GESTOR",
+    "selectedLabel": "SELECIONADO",
+    "availableLabel": "DISPONIVEL",
+    "selectedSlotLabel": "ESCOLHIDO",
+    "availableSlotLabel": "LIVRE",
+    "summaryTitle": "RESUMO DA CONFIRMACAO",
+    "statusLabel": "STATUS",
+    "confirmedLabel": "CONFIRMADO",
+    "successTitle": "REGISTRO",
+    "successHighlight": "REALIZADO!",
+    "visibleInPanelLabel": "VISIVEL NO PAINEL",
+    "dateLabel": "DATA",
+    "atLabel": "AS",
+    "availabilityCaption": "HORARIOS DISPONIVEIS EM",
+    "estimatedValueLabel": "VALOR ESTIMADO POR",
+    "ctaConfirmLabel": "CONFIRMAR",
+    "stepChooseTemplate": "{CUSTOMER} ESCOLHE",
+    "stepConfirmLabel": "CONFIRMA OS DADOS",
+    "stepAppearLabel": "ACOMPANHE O STATUS",
+    "managerCaption": "VISAO E STATUS",
+    "linkCtaLabel": "ACESSE O LINK DA BIO OU DA DESCRICAO",
+    "liveDataBadge": "DADOS REAIS",
+    "projectsLabel": "PROJETOS",
+    "stemsLabel": "STEMS",
+    "sharesLabel": "COTAS",
+    "tracksLabel": "FAIXAS",
+    "shareUnitLabel": "COTA",
+    "remainingSlotsLabel": "VAGAS RESTANTES",
+    "routeLabel": "ROTA",
+    "referenceLabel": "REFERENCIA",
+    "priceLabel": "PRECO",
+    "specialtyLabel": "ESPECIALIDADE",
+    "bpmLabel": "BPM",
+    "keyLabel": "TOM",
+    "scheduleLabel": "AGENDA",
+    "agendaSummaryLabel": "REGISTROS",
+    "stemsCaption": "FAIXAS SEPARADAS POR INSTRUMENTO",
+    "sharesFromLabel": "COTAS A PARTIR DE",
+    "processingCaption": "PROCESSAMENTO EM NUVEM",
+    "guideBadge": "GUIA PRATICO",
+    "diagnosticBadge": "DIAGNOSTICO",
+    "practiceBadge": "PRATICA",
+    "summaryBadge": "RESUMO",
+    "ctaBadge": "CHAMADA PARA A ACAO",
+    "diagnosticTitle": "DIAGNOSTICO DA OPERACAO",
+    "practiceTitle": "ITENS DA PRATICA",
+    "summaryCardTitle": "RESUMO E PROXIMO PASSO",
+    "valueTitle": "RESUMO DE VALOR",
+    "chooseItemLabel": "ESCOLHA O ITEM",
+    "confirmStepLabel": "CONFIRME OS DADOS",
+    "followStepLabel": "ACOMPANHE O STATUS",
+    "accessLabel": "ACESSE",
+    "publicFlowCaption": "NO FLUXO PUBLICO",
+    "staticFooter": "CONTEUDO ESTATICO - SEM AUDIO",
+    "carouselFooter": "CARROSSEL - SEM AUDIO",
+    "publicRouteWord": "PUBLICA",
+    "ctaLinkBio": "LINK NA BIO",
+    "ctaLinkDescription": "LINK NA DESCRICAO"
+  },
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "multitrack-hub-9x16",
+    "title": {
+      "textColor": "#F1F5F9",
+      "outlineColor": "#090D16",
+      "fontSize": 42,
+      "marginTop": 160,
+      "marginHorizontal": 56
+    }
+  },
+  "framing": {
+    "width": 1080,
+    "height": 1920,
+    "topSafePx": 160,
+    "bottomSafePx": 200,
+    "sideSafePx": 56,
+    "titleFontSize": 42,
+    "derivativeTopInsetPx": 0,
+    "derivativeBottomInsetPx": 0,
+    "profile": "9:16"
+  },
+  "guardrails": {
+    "allowAudioTrack": true,
+    "requireSrt": true,
+    "requireExternalNarration": false
+  },
+  "config": "tenants/multitrack-hub/campaigns/camp-multitrack-hub-002.json",
+  "fixture": {
+    "path": "tenants/multitrack-hub/fixtures/fixture-editorial-multitrack-hub.json",
+    "sha256": "de117707fd9cda64d562c864eef062fff43a8c741cd4d125e5256c3148a65495"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": true,
+    "audioStream": 1,
+    "source": "anullsrc"
+  },
+  "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-multitrack-hub-002.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+      "archivePath": ".workspace/archives/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+      "sha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+      "bytes": 424520,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002.srt",
+      "sourcePath": null,
+      "sha256": "78f2338f792ac83410f434bc12d1efae869c650fe567003cb5fbefc890172fa1",
+      "bytes": 423,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002_narracao.txt",
+      "sha256": "4d3f8032c927998c8d83ad54e3ae0d271b36cdc1e34ff3db803f8455543f54bd",
+      "bytes": 722,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "d9a00dbbd4a8dd0da11d8878a28d5eaf52f03542e9bf52fd3c097806e71f5d32",
+      "bytes": 535728,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

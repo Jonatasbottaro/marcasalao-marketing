@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-clinica-vital-002",
+  "campaignId": "CLINICA-VITAL-002",
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "autoPublish": false,
+  "bookingCase": {
+    "cliente": "Luciana Farias",
+    "servicoId": "srv-cv-004",
+    "profissionalId": "prof-cv-004",
+    "data": "2026-11-18",
+    "horario": "13:30"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-clinica-vital-002.mp4",
+    "packageSrtName": "camp-clinica-vital-002.srt",
+    "packageNarrationName": "camp-clinica-vital-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "RETORNO DE PACIENTES",
+      "headline": "COMO ORGANIZAR O RETORNO DE PACIENTES?",
+      "subline": "ROTINA DA RECEPCAO / CLINICA VITAL",
+      "caption": "Como organizar o retorno de pacientes na agenda?",
+      "narrationText": "Veja como a Clínica Vital organiza o retorno de pacientes na agenda."
+    },
+    {
+      "id": "cena-02-procedimento",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "FLUXO PUBLICO /AVALIACAO",
+      "headline": "ESCOLHA DO PROCEDIMENTO E DA ESPECIALISTA",
+      "caption": "A paciente escolhe o procedimento e a especialista.",
+      "narrationText": "Na rota pública /avaliacao, a paciente escolhe o procedimento e a especialista."
+    },
+    {
+      "id": "cena-03-horario",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "HORARIOS LIVRES /AVALIACAO",
+      "headline": "SELECIONE O HORARIO DISPONIVEL",
+      "availableSlots": ["08:30", "10:00", "13:30", "16:00"],
+      "selectedSlot": "13:30",
+      "ctaLabel": "CONFIRMAR AVALIACAO",
+      "caption": "O horário livre é escolhido na rota pública.",
+      "narrationText": "Os horários livres aparecem na rota pública e a paciente confirma a escolha."
+    },
+    {
+      "id": "cena-04-registro",
+      "kind": "booking-success",
+      "start": 16.0,
+      "duration": 5.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "AVALIACAO AGENDADA",
+      "headline": "RETORNO REGISTRADO",
+      "subline": "HORARIO DEFINIDO",
+      "caption": "O retorno fica registrado com horário definido.",
+      "narrationText": "O retorno da paciente fica registrado com horário definido."
+    },
+    {
+      "id": "cena-05-recepcao",
+      "kind": "manager-agenda",
+      "start": 21.0,
+      "duration": 5.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "RETORNO /GESTOR/CONSULTAS",
+      "headline": "RECEPCAO ACOMPANHA O RETORNO",
+      "highlightId": "cons-cv-004",
+      "caption": "A recepção vê o retorno em /gestor/consultas.",
+      "narrationText": "Na visão /gestor/consultas, a recepção acompanha o retorno e atualiza o status manualmente."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "clinicavital.com.br",
+      "badge": "CLINICA VITAL",
+      "headline": "AGENDA CLINICA COM CLAREZA",
+      "subline": "CLINICAVITAL.COM.BR",
+      "caption": "Conheça a agenda da Clínica Vital — clinicavital.com.br",
+      "narrationText": "Conheça a organização da agenda da Clínica Vital em clinicavital.com.br."
+    }
+  ]
+}

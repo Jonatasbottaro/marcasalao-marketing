@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 17073,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/carousel/slide-01-capa.png",
+          "sha256": "4c3453418c3ee547ff276c46d73d70d87f8ed7a141b779e55b9a72a2583dfa2b",
+          "width": 1080
+        },
+        {
+          "bytes": 15390,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/carousel/slide-02-problema.png",
+          "sha256": "f2c72b6a97bba579b27305e58bd74e16e720278dbaea41563e331680c5d1fc31",
+          "width": 1080
+        },
+        {
+          "bytes": 15972,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/carousel/slide-03-pratica.png",
+          "sha256": "13772ba36f99026c1b04b625868121219585a55971c49233db1384699e294b12",
+          "width": 1080
+        },
+        {
+          "bytes": 14913,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/carousel/slide-04-resumo-cta.png",
+          "sha256": "d2f63332eddbd69469193a6d3001f01ce05afae3730b3ca7b92cab2c0621f82c",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 22594,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/stories/story-01-hook.png",
+          "sha256": "cf0b469ca9ce00ea80f6e8f6b68bd9abb827015a79f66f25fc17711ad91cd8d7",
+          "width": 1080
+        },
+        {
+          "bytes": 22547,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/stories/story-02-fluxo.png",
+          "sha256": "e42696e08285beac1d00417d00e19f2de7622f46cc56cd663b7772bc666be3d8",
+          "width": 1080
+        },
+        {
+          "bytes": 19256,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-clinica-vital-002/stories/story-03-cta.png",
+          "sha256": "1a23d908aa008d3141a5e85fbec8b890b8f315b71118e006e0bf3b4251af2232",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-clinica-vital-002",
+  "tenantId": "clinica-vital"
+}

@@ -1,0 +1,58 @@
+{
+  "slug": "camp-clinica-vital-002",
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "allowAudioTrack": false,
+  "requireSrt": true,
+  "guardrailsAudited": true,
+  "guardrailStatus": {
+    "srt": "ok",
+    "narration": "ok",
+    "srt_violations": [],
+    "narration_violations": []
+  },
+  "media": [
+    {
+      "kind": "video",
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+      "archivePath": ".workspace/archives/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+      "resolvedFrom": "archive",
+      "sha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+      "bytes": 473376,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "srt",
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.srt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "41ee28cf56d86835fe6d1eee99ee1c51d1ab2da032704d9735677e97045b35cd",
+      "bytes": 504,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "narration",
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002_narracao.txt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "1fc36ab2743d12d33bcd2370fe6cd9212fc58b40cb74111b3b536f8e89fa0a98",
+      "bytes": 893,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    },
+    {
+      "kind": "storyboard",
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-storyboard.png",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
+      "sha256": "bf4e8afda57b5429e526a22cf131e72be692d347974f6ff703d1b9799ea467b2",
+      "bytes": 618904,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
+    }
+  ],
+  "autoPublish": false,
+  "generatedBy": "tools/publish_pack.py"
+}

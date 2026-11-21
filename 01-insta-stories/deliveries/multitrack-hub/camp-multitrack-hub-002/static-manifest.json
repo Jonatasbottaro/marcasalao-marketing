@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 15550,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/carousel/slide-01-capa.png",
+          "sha256": "e2464d1f196ffc1c89c17eee96eb830758cde550b028d079deb8e8496ca3b02f",
+          "width": 1080
+        },
+        {
+          "bytes": 15002,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/carousel/slide-02-problema.png",
+          "sha256": "ab37029ebb82625cd819784b3a99422fa0a560e308cdedf88a391a7ff3c6320b",
+          "width": 1080
+        },
+        {
+          "bytes": 14670,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/carousel/slide-03-pratica.png",
+          "sha256": "da9765d276d0863b2267f2439a04bf77d4a1f1492aea96a1256e1411ea720b24",
+          "width": 1080
+        },
+        {
+          "bytes": 15514,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/carousel/slide-04-resumo-cta.png",
+          "sha256": "2358af6b70afc041d155b7b7cd86cc3ecf71603c07559164b3ee73e9781ee0ee",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 20998,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/stories/story-01-hook.png",
+          "sha256": "166c528193be149a23105a2c2eab2328d4faaee005dfd690671d961ab1af2390",
+          "width": 1080
+        },
+        {
+          "bytes": 21180,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/stories/story-02-fluxo.png",
+          "sha256": "d2edd0b69ba73c82ed146fb6b48be6b904a994eec64366d1a56afd794625c9d2",
+          "width": 1080
+        },
+        {
+          "bytes": 19430,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/multitrack-hub/camp-multitrack-hub-002/stories/story-03-cta.png",
+          "sha256": "08691f66ada39dc45c2ebc2f79bc92104e86d718db74f3638798eefca4b53c57",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-multitrack-hub-002",
+  "tenantId": "multitrack-hub"
+}
