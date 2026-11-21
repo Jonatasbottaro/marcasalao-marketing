@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "clinica-vital",
+  "brandName": "Clínica Vital",
+  "displayTitle": "CLINICA VITAL",
+  "monogram": "CV",
+  "domain": "clinicavital.com.br",
+  "url": "https://clinicavital.com.br",
+  "tagline": "Organizacao de consultas e agenda clinica com clareza",
+  "palette": {
+    "primary": "#0EA5E9",
+    "secondary": "#14B8A6",
+    "accent": "#F59E0B",
+    "background": "#0B1324",
+    "surface": "#12203A",
+    "textPrimary": "#F1F5F9",
+    "textMuted": "#94A3B8",
+    "rgb": {
+      "backgroundTop": [11, 19, 36],
+      "backgroundBottom": [18, 32, 58],
+      "headerBg": [7, 12, 24],
+      "cardBg": [18, 32, 58],
+      "cardHighlight": [28, 46, 78],
+      "primaryAccent": [14, 165, 233],
+      "secondaryAccent": [20, 184, 166],
+      "statusConfirmed": [20, 184, 166],
+      "statusWaiting": [245, 158, 11],
+      "statusDone": [148, 163, 184],
+      "textPrimary": [241, 245, 249],
+      "textMuted": [148, 163, 184]
+    }
+  },
+  "typography": {
+    "fontFamily": "Arial",
+    "titleWeight": "bold",
+    "bodyWeight": "regular"
+  },
+  "headerOverlay": {
+    "enabled": true,
+    "label": "CLINICA VITAL",
+    "badgeText": "CONSULTAS & AGENDA",
+    "bgColor": "#070C18",
+    "textColor": "#F1F5F9",
+    "height": 170
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "defaultPreset": "saas-demo",
+  "utmDefaults": {
+    "utm_source": "instagram",
+    "utm_medium": "reels",
+    "utm_campaign_prefix": "cv"
+  }
+}

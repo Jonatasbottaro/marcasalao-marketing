@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-clinica-vital-001",
+  "campaignId": "SAAS-DEMO-CLINICA-VITAL-001",
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "bookingCase": {
+    "cliente": "Patricia Monteiro",
+    "servicoId": "srv-cv-001",
+    "profissionalId": "prof-cv-001",
+    "data": "2026-11-18",
+    "horario": "10:00"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-clinica-vital-001.mp4",
+    "packageSrtName": "camp-saas-demo-clinica-vital-001.srt",
+    "packageNarrationName": "camp-saas-demo-clinica-vital-001_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "AGENDA CLINICA",
+      "headline": "COMO ORGANIZAR AVALIACOES SEM TROCAR MENSAGENS?",
+      "subline": "CONHECA O FLUXO DA CLINICA VITAL",
+      "caption": "Como organizar avaliações da clínica sem depender de troca de mensagens?",
+      "narrationText": "Conheça o fluxo da Clínica Vital, da marcação da avaliação até a agenda da recepção."
+    },
+    {
+      "id": "cena-02-escolha",
+      "kind": "booking-selection",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "FLUXO PUBLICO /AVALIACAO",
+      "headline": "ESCOLHA DO PROCEDIMENTO E DA ESPECIALISTA",
+      "caption": "A paciente escolhe o procedimento e a especialista disponível.",
+      "narrationText": "Na rota pública /avaliacao, a paciente escolhe o procedimento e a especialista."
+    },
+    {
+      "id": "cena-03-confirma",
+      "kind": "booking-confirm",
+      "start": 10.0,
+      "duration": 7.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "HORARIOS LIVRES /AVALIACAO",
+      "headline": "SELECIONE O HORARIO DISPONIVEL",
+      "availableSlots": ["08:30", "10:00", "14:30", "16:00"],
+      "selectedSlot": "10:00",
+      "ctaLabel": "CONFIRMAR AVALIACAO",
+      "caption": "Seleciona o horário livre para a avaliação e confirma o agendamento.",
+      "narrationText": "Os horários livres de avaliação aparecem na rota pública e a marcação é confirmada."
+    },
+    {
+      "id": "cena-04-sucesso",
+      "kind": "booking-success",
+      "start": 17.0,
+      "duration": 3.0,
+      "surface": "public-booking",
+      "route": "/avaliacao/clinica-vital-centro",
+      "badge": "AVALIACAO AGENDADA",
+      "headline": "AVALIACAO CONFIRMADA",
+      "subline": "VISIVEL NA RECEPCAO",
+      "caption": "A avaliação fica agendada com horário definido.",
+      "narrationText": "A marcação da avaliação é registrada e aparece na agenda da recepção."
+    },
+    {
+      "id": "cena-05-recepcao",
+      "kind": "manager-agenda",
+      "start": 20.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "VISAO DA RECEPCAO /GESTOR/CONSULTAS",
+      "headline": "AGENDA DE CONSULTAS - STATUS MANUAL",
+      "highlightId": "cons-cv-002",
+      "caption": "A recepção acompanha a consulta de Patricia Monteiro em /gestor/consultas.",
+      "narrationText": "Na visão /gestor/consultas, a recepção vê a grade do dia e atualiza o status manualmente."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "clinicavital.com.br",
+      "badge": "CLINICA VITAL",
+      "headline": "ORGANIZE SUA AGENDA CLINICA COM CLAREZA",
+      "subline": "CLINICAVITAL.COM.BR",
+      "caption": "Conheça a agenda clínica da Clínica Vital — clinicavital.com.br",
+      "narrationText": "Conheça a organização de consultas da Clínica Vital em clinicavital.com.br."
+    }
+  ]
+}

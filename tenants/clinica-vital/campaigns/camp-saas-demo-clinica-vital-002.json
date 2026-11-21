@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "id": "camp-saas-demo-clinica-vital-002",
+  "campaignId": "SAAS-DEMO-CLINICA-VITAL-002",
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p",
+    "preset": "veryfast"
+  },
+  "subtitleStyle": "Fontname=Arial,Fontsize=12,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,Shadow=0,Alignment=2,MarginV=34",
+  "artifacts": {
+    "videoName": "camp-saas-demo-clinica-vital-002.mp4",
+    "packageSrtName": "camp-saas-demo-clinica-vital-002.srt",
+    "packageNarrationName": "camp-saas-demo-clinica-vital-002_narracao.txt",
+    "manifestName": "manifest.json",
+    "storyboardName": "preview-storyboard.png",
+    "storyboardTimestamps": [2.0, 8.0, 16.0, 24.0]
+  },
+  "scenes": [
+    {
+      "id": "cena-01-hook",
+      "kind": "hook-card",
+      "start": 0.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "badge": "ROTINA DA RECEPCAO",
+      "headline": "COMO A RECEPCAO ORGANIZA A AGENDA DO DIA?",
+      "subline": "FILTROS, STATUS MANUAL E BUSCA POR PACIENTE",
+      "caption": "Como a recepção da clínica organiza a agenda de consultas do dia?",
+      "narrationText": "Veja a rotina da recepção da Clínica Vital na agenda de consultas."
+    },
+    {
+      "id": "cena-02-grade",
+      "kind": "manager-agenda",
+      "start": 4.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "AGENDA DO DIA /GESTOR/CONSULTAS",
+      "headline": "GRADE DE CONSULTAS DA RECEPCAO",
+      "highlightId": "cons-cv-002",
+      "caption": "A recepção abre a grade de consultas do dia em /gestor/consultas.",
+      "narrationText": "Em /gestor/consultas, a recepção visualiza a grade de consultas do dia."
+    },
+    {
+      "id": "cena-03-filtro",
+      "kind": "manager-agenda",
+      "start": 10.0,
+      "duration": 5.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "FILTRO POR ESPECIALISTA",
+      "headline": "DRA. CAMILA FERRAZ - ORTODONTIA",
+      "highlightId": "cons-cv-003",
+      "caption": "O filtro por especialista mostra apenas as consultas da Dra. Camila Ferraz.",
+      "narrationText": "A recepção filtra a grade por especialista para acompanhar cada profissional."
+    },
+    {
+      "id": "cena-04-status",
+      "kind": "manager-agenda",
+      "start": 15.0,
+      "duration": 5.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "STATUS MANUAL",
+      "headline": "ATUALIZACAO MANUAL DO STATUS",
+      "highlightId": "cons-cv-005",
+      "caption": "A recepção altera o status da consulta manualmente, de Aguardando para Confirmado.",
+      "narrationText": "O status é atualizado manualmente pela recepção, sem automação de envio."
+    },
+    {
+      "id": "cena-05-busca",
+      "kind": "manager-agenda",
+      "start": 20.0,
+      "duration": 6.0,
+      "surface": "manager-agenda",
+      "route": "/gestor/consultas",
+      "badge": "BUSCA POR PACIENTE",
+      "headline": "ENCONTRE A CONSULTA PELO NOME",
+      "highlightId": "cons-cv-004",
+      "caption": "A busca por paciente localiza a consulta de Luciana Farias na grade.",
+      "narrationText": "A recepção busca pelo nome da paciente e encontra a consulta na hora."
+    },
+    {
+      "id": "cena-06-cta",
+      "kind": "cta-card",
+      "start": 26.0,
+      "duration": 4.0,
+      "surface": "marca",
+      "route": "clinicavital.com.br",
+      "badge": "CLINICA VITAL",
+      "headline": "UMA ROTINA DE RECEPCAO MAIS CLARA",
+      "subline": "CLINICAVITAL.COM.BR",
+      "caption": "Conheça a rotina de recepção da Clínica Vital — clinicavital.com.br",
+      "narrationText": "Conheça a organização da recepção da Clínica Vital em clinicavital.com.br."
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-editorial-clinica-vital-v1",
+  "tenantId": "clinica-vital",
+  "descricao": "Fixture editorial dedicada ao 5o nicho (Clínica Vital — saúde e clínicas). Dados integralmente fictícios. NÃO usar em testes técnicos E2E ou produção.",
+  "data": "2026-11-18",
+  "guardrails": [
+    "Proibido prometer cura, resultado estético garantido ou tratamento sem dor garantido",
+    "Proibido diagnóstico médico ou odontológico online, receita digital e prontuário sensível exposto",
+    "Proibido exibir fotos de antes e depois",
+    "Proibido prometer envio automático de mensagens ou lembretes de 24h por WhatsApp, SMS ou e-mail",
+    "Proibido prometer redução de faltas, zero absenteísmo ou aumento de faturamento",
+    "Sem fluxo de checkout, pagamento ou cobrança simulado",
+    "Separação estrita entre /avaliacao/[clinicId] (marcação pública de avaliação) e /gestor/consultas (recepção e status manual)"
+  ],
+  "estabelecimento": {
+    "nome": "Clínica Vital — Saúde e Especialidades",
+    "nomeInterno": "clinica-vital-centro",
+    "endereco": "Av. Paulista, 1780 — Bela Vista, São Paulo, SP",
+    "telefone": "(11) 3522-7410",
+    "site": "https://clinicavital.com.br",
+    "horarioFuncionamento": "Segunda a Sexta, 08h às 19h; Sábado, 08h às 13h"
+  },
+  "especialistas": [
+    {
+      "id": "prof-cv-001",
+      "nome": "Dra. Helena Vasconcelos",
+      "especialidade": "Clínica Geral e Avaliação Inicial",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-002",
+      "nome": "Dr. Rodrigo Nogueira",
+      "especialidade": "Odontologia Preventiva",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-003",
+      "nome": "Dra. Camila Ferraz",
+      "especialidade": "Ortodontia e Estética Facial",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-004",
+      "nome": "Dr. Thiago Prado",
+      "especialidade": "Check-up e Medicina Preventiva",
+      "ativo": true
+    }
+  ],
+  "profissionais": [
+    {
+      "id": "prof-cv-001",
+      "nome": "Dra. Helena Vasconcelos",
+      "especialidade": "Clínica Geral e Avaliação Inicial",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-002",
+      "nome": "Dr. Rodrigo Nogueira",
+      "especialidade": "Odontologia Preventiva",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-003",
+      "nome": "Dra. Camila Ferraz",
+      "especialidade": "Ortodontia e Estética Facial",
+      "ativo": true
+    },
+    {
+      "id": "prof-cv-004",
+      "nome": "Dr. Thiago Prado",
+      "especialidade": "Check-up e Medicina Preventiva",
+      "ativo": true
+    }
+  ],
+  "procedimentos": [
+    {
+      "id": "srv-cv-001",
+      "nome": "Avaliação Clínica Inicial",
+      "duracaoMin": 30,
+      "precoBRL": 250.00,
+      "categoria": "avaliacao"
+    },
+    {
+      "id": "srv-cv-002",
+      "nome": "Limpeza e Profilaxia",
+      "duracaoMin": 45,
+      "precoBRL": 320.00,
+      "categoria": "prevencao"
+    },
+    {
+      "id": "srv-cv-003",
+      "nome": "Consulta Ortodôntica",
+      "duracaoMin": 40,
+      "precoBRL": 280.00,
+      "categoria": "ortodontia"
+    },
+    {
+      "id": "srv-cv-004",
+      "nome": "Check-up Preventivo",
+      "duracaoMin": 30,
+      "precoBRL": 290.00,
+      "categoria": "prevencao"
+    },
+    {
+      "id": "srv-cv-005",
+      "nome": "Avaliação Estética Facial",
+      "duracaoMin": 50,
+      "precoBRL": 350.00,
+      "categoria": "estetica"
+    }
+  ],
+  "servicos": [
+    {
+      "id": "srv-cv-001",
+      "nome": "Avaliação Clínica Inicial",
+      "duracaoMin": 30,
+      "precoBRL": 250.00,
+      "categoria": "avaliacao"
+    },
+    {
+      "id": "srv-cv-002",
+      "nome": "Limpeza e Profilaxia",
+      "duracaoMin": 45,
+      "precoBRL": 320.00,
+      "categoria": "prevencao"
+    },
+    {
+      "id": "srv-cv-003",
+      "nome": "Consulta Ortodôntica",
+      "duracaoMin": 40,
+      "precoBRL": 280.00,
+      "categoria": "ortodontia"
+    },
+    {
+      "id": "srv-cv-004",
+      "nome": "Check-up Preventivo",
+      "duracaoMin": 30,
+      "precoBRL": 290.00,
+      "categoria": "prevencao"
+    },
+    {
+      "id": "srv-cv-005",
+      "nome": "Avaliação Estética Facial",
+      "duracaoMin": 50,
+      "precoBRL": 350.00,
+      "categoria": "estetica"
+    }
+  ],
+  "gradeDiaria": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Quarta-feira",
+    "visaoRota": "/gestor/consultas",
+    "nota": "Visualização da grade de consultas, filtros e alteração manual de status apenas. Horários livres de avaliação pertencem à rota /avaliacao/[clinicId].",
+    "consultas": [
+      {
+        "id": "cons-cv-001",
+        "horario": "08:30",
+        "duracaoMin": 45,
+        "paciente": "Renata Siqueira",
+        "profissional": "prof-cv-002",
+        "procedimento": "srv-cv-002",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-002",
+        "horario": "10:00",
+        "duracaoMin": 30,
+        "paciente": "Patricia Monteiro",
+        "profissional": "prof-cv-001",
+        "procedimento": "srv-cv-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-003",
+        "horario": "11:00",
+        "duracaoMin": 40,
+        "paciente": "Eduardo Bastos",
+        "profissional": "prof-cv-003",
+        "procedimento": "srv-cv-003",
+        "status": "Aguardando"
+      },
+      {
+        "id": "cons-cv-004",
+        "horario": "13:30",
+        "duracaoMin": 30,
+        "paciente": "Luciana Farias",
+        "profissional": "prof-cv-004",
+        "procedimento": "srv-cv-004",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-005",
+        "horario": "15:00",
+        "duracaoMin": 50,
+        "paciente": "Marcelo Antunes",
+        "profissional": "prof-cv-003",
+        "procedimento": "srv-cv-005",
+        "status": "Aguardando"
+      },
+      {
+        "id": "cons-cv-006",
+        "horario": "17:00",
+        "duracaoMin": 30,
+        "paciente": "Sofia Ribeiro",
+        "profissional": "prof-cv-001",
+        "procedimento": "srv-cv-001",
+        "status": "Concluído"
+      }
+    ]
+  },
+  "agenda": {
+    "data": "2026-11-18",
+    "diaDaSemana": "Quarta-feira",
+    "visaoRota": "/gestor/consultas",
+    "nota": "Visualização da grade de consultas, filtros e alteração manual de status apenas. Horários livres de avaliação pertencem à rota /avaliacao/[clinicId].",
+    "atendimentos": [
+      {
+        "id": "cons-cv-001",
+        "horario": "08:30",
+        "duracaoMin": 45,
+        "cliente": "Renata Siqueira",
+        "profissional": "prof-cv-002",
+        "servico": "srv-cv-002",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-002",
+        "horario": "10:00",
+        "duracaoMin": 30,
+        "cliente": "Patricia Monteiro",
+        "profissional": "prof-cv-001",
+        "servico": "srv-cv-001",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-003",
+        "horario": "11:00",
+        "duracaoMin": 40,
+        "cliente": "Eduardo Bastos",
+        "profissional": "prof-cv-003",
+        "servico": "srv-cv-003",
+        "status": "Aguardando"
+      },
+      {
+        "id": "cons-cv-004",
+        "horario": "13:30",
+        "duracaoMin": 30,
+        "cliente": "Luciana Farias",
+        "profissional": "prof-cv-004",
+        "servico": "srv-cv-004",
+        "status": "Confirmado"
+      },
+      {
+        "id": "cons-cv-005",
+        "horario": "15:00",
+        "duracaoMin": 50,
+        "cliente": "Marcelo Antunes",
+        "profissional": "prof-cv-003",
+        "servico": "srv-cv-005",
+        "status": "Aguardando"
+      },
+      {
+        "id": "cons-cv-006",
+        "horario": "17:00",
+        "duracaoMin": 30,
+        "cliente": "Sofia Ribeiro",
+        "profissional": "prof-cv-001",
+        "servico": "srv-cv-001",
+        "status": "Concluído"
+      }
+    ]
+  },
+  "booking": {
+    "rota": "/avaliacao/clinica-vital-centro",
+    "servicosDisponiveis": ["srv-cv-001", "srv-cv-002", "srv-cv-003", "srv-cv-004", "srv-cv-005"],
+    "horariosLivresExemplo": ["08:30", "10:00", "14:30", "16:00"]
+  }
+}
