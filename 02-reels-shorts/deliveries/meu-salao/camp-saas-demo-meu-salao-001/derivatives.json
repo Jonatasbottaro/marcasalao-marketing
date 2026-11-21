@@ -3,15 +3,15 @@
   "tenantId": "meu-salao",
   "slug": "camp-saas-demo-meu-salao-001",
   "preset": "saas-demo",
-  "sourceVideoSha256": "76b3eb2ced368de65bd1df51c202dfa9e5215bf250ff4f93a30e595cd84fca3f",
+  "sourceVideoSha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
   "allowAudioTrack": false,
   "appliedAudioPolicy": "-an",
   "source": {
     "path": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
-    "sha256": "76b3eb2ced368de65bd1df51c202dfa9e5215bf250ff4f93a30e595cd84fca3f",
-    "bytes": 418055,
+    "sha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
+    "bytes": 418056,
     "deliveryManifest": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/manifest.json",
-    "deliveryRecordedSha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
+    "deliveryRecordedSha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
     "ffprobe": {
       "videoStreams": 1,
       "audioStreams": 0,
@@ -35,8 +35,8 @@
       "codec": "h264",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 374639,
-      "sha256": "40202ef5620716cbc60974e4bc68a8b9870f0ec376b2bb8c4b26eddf4471ec51",
+      "bytes": 374648,
+      "sha256": "a450701c5c041c206df99fd489ef43eb07c5ba6cd53e1dedabb0b245338cff90",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -75,8 +75,8 @@
       "codec": "h264",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 438156,
-      "sha256": "1caad008800d81a0a76e0fbdd9d4a65f0eca9b4a29d1f65cc1409b3e3433d682",
+      "bytes": 441136,
+      "sha256": "3db19da7078ab9d79643f048aca4345213e302984dd949c31dcc28a5696db025",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -115,8 +115,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 274991,
-      "sha256": "abda6e3051111e898f646abe3377dbd4f0ec57fde65acda894c228ef031c3f73",
+      "bytes": 293060,
+      "sha256": "b872ea20b55f1c77d8a79ed4fd55de9fff33265619d628f730f8a2069b5c0b83",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -159,8 +159,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 222018,
-      "sha256": "8811842a48914f1c1ceb48c63b01b8480b42e8f771f95e33bb8cab02646dca74",
+      "bytes": 241082,
+      "sha256": "6f99d027f7a988debfa3bda41440e5adcaaa08a90913ddd52619c3e9bff104d7",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -186,8 +186,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 167232,
-      "sha256": "5e8203fe53ec43b0e6448b8ad22a99950ab9b382bbb180a7f817ea8f90e7e3d2",
+      "bytes": 187578,
+      "sha256": "f37e95bef0810f2a823592d06d190d52b7be2c64f74e56e4785e9132030a6ae4",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -217,7 +217,7 @@
   },
   "command": "python tools/derivative_formats.py --tenant meu-salao --campaign camp-saas-demo-meu-salao-001",
   "tools": {
-    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   }
 }

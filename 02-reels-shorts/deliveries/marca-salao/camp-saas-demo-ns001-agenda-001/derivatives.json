@@ -3,15 +3,15 @@
   "tenantId": "marca-salao",
   "slug": "camp-saas-demo-ns001-agenda-001",
   "preset": "saas-demo",
-  "sourceVideoSha256": "45166ac75e7ce7163f54b05bb1d2401c9a6babcab778ac922f35518bf8d8dedd",
+  "sourceVideoSha256": "af5e9c5952b52575810971598947fd6be0415b1dd64d48342998637468189a2d",
   "allowAudioTrack": false,
   "appliedAudioPolicy": "-an",
   "source": {
     "path": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
-    "sha256": "45166ac75e7ce7163f54b05bb1d2401c9a6babcab778ac922f35518bf8d8dedd",
-    "bytes": 585050,
+    "sha256": "af5e9c5952b52575810971598947fd6be0415b1dd64d48342998637468189a2d",
+    "bytes": 585051,
     "deliveryManifest": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/manifest.json",
-    "deliveryRecordedSha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
+    "deliveryRecordedSha256": "af5e9c5952b52575810971598947fd6be0415b1dd64d48342998637468189a2d",
     "ffprobe": {
       "videoStreams": 1,
       "audioStreams": 0,
@@ -35,8 +35,8 @@
       "codec": "h264",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 526512,
-      "sha256": "d47ddf83365b9e83e31ceb585caee1e3e070525ab99c6177ded7e5208987063f",
+      "bytes": 528193,
+      "sha256": "e63a3e27cb97562c197cbe7dc6a24bb57481e0ddae4ecc2729ff6ae89d7fbd49",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -75,8 +75,8 @@
       "codec": "h264",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 655890,
-      "sha256": "2b2d8099ac20926cb1f61f2f45665d97325eabed064d2681d8b838cbb7d70167",
+      "bytes": 655604,
+      "sha256": "49159fbead9e857cdfcbef88aef8b3c7f6b65b95a561065ca3cf3b71fb1bd436",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -115,8 +115,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 293486,
-      "sha256": "064fe6914ce95045e44dad0c3744c271c3c5161880ae0a07fbdaba809a261c2f",
+      "bytes": 311220,
+      "sha256": "74ec7611a1e88eb7c10cecb89859bb416e8272162edff078c52121081abc1ff2",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -159,8 +159,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 245350,
-      "sha256": "d94c940ff1ba984486a62c04fb7f57df559361a02dd8e31d649269de878a342c",
+      "bytes": 263372,
+      "sha256": "47e8a714d11051376e64f22c376bdebe3052ff2f2f16095d0d29fc23fe0f873e",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -186,8 +186,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 181993,
-      "sha256": "e38df77e053499753c90d2702238dde2ae1e63f0acc1acfbd50e5e56e170c891",
+      "bytes": 202162,
+      "sha256": "88732e10b1071f779b41385dd34a61098eadfec159679e676b8d453ce969382c",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -217,7 +217,7 @@
   },
   "command": "python tools/derivative_formats.py --tenant marca-salao --campaign camp-saas-demo-ns001-agenda-001",
   "tools": {
-    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   }
 }

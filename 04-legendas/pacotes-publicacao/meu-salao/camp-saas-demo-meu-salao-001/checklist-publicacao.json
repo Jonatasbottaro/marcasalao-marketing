@@ -17,10 +17,10 @@
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
       "resolvedFrom": "archive",
-      "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
-      "bytes": 418019,
-      "sha256_disk_ok": false,
-      "presentOnDisk": false
+      "sha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
+      "bytes": 418056,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "srt",
@@ -47,8 +47,8 @@
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
       "archivePath": null,
       "resolvedFrom": "delivery",
-      "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87",
-      "bytes": 620208,
+      "sha256": "5c6377e12ecff5e4fbe5c7614cd39a8449980dd70415f20edb6cb88dfd1d19a5",
+      "bytes": 644132,
       "sha256_disk_ok": true,
       "presentOnDisk": true
     }

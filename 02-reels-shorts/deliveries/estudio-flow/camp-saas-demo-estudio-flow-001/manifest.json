@@ -33,15 +33,15 @@
   },
   "command": "python tools/preset_runner.py --tenant estudio-flow --config tenants/estudio-flow/campaigns/camp-saas-demo-estudio-flow-001.json --output-dir 02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001",
   "tools": {
-    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   },
   "artifacts": {
     "video": {
       "path": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
-      "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
-      "bytes": 438290,
+      "sha256": "445f30f61af794fa08245c11c7abe23451234a5b95d12e5ecd1f911ff296b261",
+      "bytes": 438108,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -77,8 +77,8 @@
         16.0,
         24.0
       ],
-      "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a",
-      "bytes": 591280,
+      "sha256": "ea0815980f4b9f506ed4cdd5e877f25ea264e96f6ed4370935ffeecc43f28ea6",
+      "bytes": 622070,
       "width": 1080,
       "height": 1920,
       "versioned": true

@@ -29,3 +29,10 @@ tenants/**/*.json text eol=lf
 02-reels-shorts/deliveries/**/*.html text eol=lf
 docs/**/*.md text eol=lf
 docs/**/*.json text eol=lf
+# Etapa 5B: qualquer entrega multi-tenant (01/02/03) — LF incondicional.
+**/deliveries/**/*.json text eol=lf
+**/deliveries/**/*.md text eol=lf
+**/deliveries/**/*.csv text eol=lf
+**/deliveries/**/*.srt text eol=lf
+**/deliveries/**/*.html text eol=lf
+.workspace/devlogs/**/*.md text eol=lf

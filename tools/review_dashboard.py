@@ -574,8 +574,7 @@ def build_portal(root: str = ".", output_dir: str | None = None) -> dict:
     files: dict[str, dict] = {}
     for filename, conteudo in conteudos.items():
         abs_path = os.path.join(out_abs, filename)
-        with open(render_local.fs_path(abs_path), "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(conteudo)
+        render_local.write_text_lf(abs_path, conteudo)
         files[filename] = {
             "path": _rel(root_real, abs_path),
             "sha256": _sha256_file(abs_path),
@@ -1739,9 +1738,9 @@ class _PortalHandler(http.server.BaseHTTPRequestHandler):
             return
         store = self.server.approvals_store
         os.makedirs(render_local.fs_path(os.path.dirname(store)), exist_ok=True)
-        with open(render_local.fs_path(store), "w", encoding="utf-8", newline="\n") as handle:
-            json.dump(doc, handle, ensure_ascii=False, indent=2)
-            handle.write("\n")
+        render_local.write_text_lf(
+            store, json.dumps(doc, ensure_ascii=False, indent=2) + "\n"
+        )
         self._responder_json(
             200,
             {

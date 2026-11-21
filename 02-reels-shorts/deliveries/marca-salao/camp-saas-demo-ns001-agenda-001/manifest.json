@@ -33,15 +33,15 @@
   },
   "command": "python tools/preset_runner.py --tenant marca-salao --config tenants/marca-salao/campaigns/camp-saas-demo-ns001-agenda-001.json --output-dir 02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001",
   "tools": {
-    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   },
   "artifacts": {
     "video": {
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
-      "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
-      "bytes": 585286,
+      "sha256": "af5e9c5952b52575810971598947fd6be0415b1dd64d48342998637468189a2d",
+      "bytes": 585051,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -77,8 +77,8 @@
         16.0,
         24.0
       ],
-      "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c",
-      "bytes": 703861,
+      "sha256": "837c7f251c4c96616d2611045b5437686533e6da29d96d2cb6a6a677d466e8aa",
+      "bytes": 731518,
       "width": 1080,
       "height": 1920,
       "versioned": true

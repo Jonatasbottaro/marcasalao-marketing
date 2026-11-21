@@ -33,15 +33,15 @@
   },
   "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-rateios-002.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002",
   "tools": {
-    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   },
   "artifacts": {
     "video": {
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
       "archivePath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
-      "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
-      "bytes": 353932,
+      "sha256": "f364e281cb5729061c1343fdf958fdd6829c4e559493e7d32f5258c681eb1109",
+      "bytes": 354015,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -77,8 +77,8 @@
         16.0,
         24.0
       ],
-      "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02",
-      "bytes": 479669,
+      "sha256": "54364d28640bccdc225ebf2bacd4c4cc3793f654ce8c974f8108816fb867675f",
+      "bytes": 510322,
       "width": 1080,
       "height": 1920,
       "versioned": true

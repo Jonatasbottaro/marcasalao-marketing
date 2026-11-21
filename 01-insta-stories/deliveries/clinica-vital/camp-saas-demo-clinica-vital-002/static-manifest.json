@@ -1,0 +1,76 @@
+{
+  "guardrailsAudited": true,
+  "kits": {
+    "carousel": {
+      "count": 4,
+      "items": [
+        {
+          "bytes": 16851,
+          "height": 1350,
+          "name": "slide-01-capa.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/carousel/slide-01-capa.png",
+          "sha256": "dc84e7e00c3d3ec699113d20d3e9b195efce8a1b3e9e33cb5d04d0fe9263be95",
+          "width": 1080
+        },
+        {
+          "bytes": 16876,
+          "height": 1350,
+          "name": "slide-02-problema.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/carousel/slide-02-problema.png",
+          "sha256": "a5812be03222889bfab2c9f5c662fa9510d415817513f63c96adaa859e82eb7f",
+          "width": 1080
+        },
+        {
+          "bytes": 15972,
+          "height": 1350,
+          "name": "slide-03-pratica.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/carousel/slide-03-pratica.png",
+          "sha256": "13772ba36f99026c1b04b625868121219585a55971c49233db1384699e294b12",
+          "width": 1080
+        },
+        {
+          "bytes": 16089,
+          "height": 1350,
+          "name": "slide-04-resumo-cta.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/carousel/slide-04-resumo-cta.png",
+          "sha256": "f0981e12558d22f265389c7898563c3bf7f2337a89ffdcbee2e2390c3024d401",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1350"
+    },
+    "stories": {
+      "count": 3,
+      "items": [
+        {
+          "bytes": 22785,
+          "height": 1920,
+          "name": "story-01-hook.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/stories/story-01-hook.png",
+          "sha256": "be1f34f9dc1265665c8e78a4eff5e69284b60d4d204ab5b347ff632491dd7a4a",
+          "width": 1080
+        },
+        {
+          "bytes": 23939,
+          "height": 1920,
+          "name": "story-02-fluxo.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/stories/story-02-fluxo.png",
+          "sha256": "ac3a9ecfdc199ec739bd906de1ef8f986ee0e04dd90da3ed0e687a054873fffe",
+          "width": 1080
+        },
+        {
+          "bytes": 20966,
+          "height": 1920,
+          "name": "story-03-cta.png",
+          "path": "01-insta-stories/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/stories/story-03-cta.png",
+          "sha256": "83e7e5a1cc1d09620314ccb0c1e7ba68ae75aa1e1789e436345badd079917407",
+          "width": 1080
+        }
+      ],
+      "size": "1080x1920"
+    }
+  },
+  "schemaVersion": 1,
+  "slug": "camp-saas-demo-clinica-vital-002",
+  "tenantId": "clinica-vital"
+}

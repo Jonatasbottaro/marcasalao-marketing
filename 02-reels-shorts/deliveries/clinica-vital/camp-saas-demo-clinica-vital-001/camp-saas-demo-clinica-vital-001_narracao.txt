@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-clinica-vital-001
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Conheça o fluxo da Clínica Vital, da marcação da avaliação até a agenda da recepção.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-escolha
+Na rota pública /avaliacao, a paciente escolhe o procedimento e a especialista.
+
+[00:00:10,000 --> 00:00:17,000] cena-03-confirma
+Os horários livres de avaliação aparecem na rota pública e a marcação é confirmada.
+
+[00:00:17,000 --> 00:00:20,000] cena-04-sucesso
+A marcação da avaliação é registrada e aparece na agenda da recepção.
+
+[00:00:20,000 --> 00:00:26,000] cena-05-recepcao
+Na visão /gestor/consultas, a recepção vê a grade do dia e atualiza o status manualmente.
+
+[00:00:26,000 --> 00:00:30,000] cena-06-cta
+Conheça a organização de consultas da Clínica Vital em clinicavital.com.br.

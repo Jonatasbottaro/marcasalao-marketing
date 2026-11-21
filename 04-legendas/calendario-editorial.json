@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "generatedBy": "tools/campaign_calendar.py",
   "startDate": "2026-11-23",
-  "endDate": "2026-12-15",
-  "weeks": 4,
-  "onda1Weeks": 2,
+  "endDate": "2026-12-24",
+  "weeks": 5,
+  "onda1Weeks": 3,
   "campaignsPerDay": 2,
   "channels": [
     "instagram",
@@ -12,14 +12,15 @@
     "facebook"
   ],
   "tenants": [
+    "clinica-vital",
     "estudio-flow",
     "marca-salao",
     "meu-salao",
     "multitrack-hub"
   ],
-  "totalTenants": 4,
-  "totalCampaigns": 8,
-  "totalSlots": 32,
+  "totalTenants": 5,
+  "totalCampaigns": 10,
+  "totalSlots": 40,
   "statusEditorial": "aguardando_aprovacao_titular",
   "autoPublish": false,
   "rules": {
@@ -59,6 +60,17 @@
   "guardrailViolations": [],
   "metrics": {
     "byTenant": {
+      "clinica-vital": {
+        "campaigns": 2,
+        "slots": 8,
+        "onda1": 6,
+        "onda2": 2,
+        "byChannel": {
+          "youtube": 3,
+          "instagram": 3,
+          "facebook": 2
+        }
+      },
       "estudio-flow": {
         "campaigns": 1,
         "slots": 4,
@@ -106,29 +118,29 @@
     },
     "byChannel": {
       "instagram": {
-        "onda1": 8,
-        "onda2": 4,
-        "total": 12
+        "onda1": 10,
+        "onda2": 5,
+        "total": 15
       },
       "youtube": {
-        "onda1": 8,
-        "onda2": 4,
-        "total": 12
+        "onda1": 10,
+        "onda2": 5,
+        "total": 15
       },
       "facebook": {
-        "onda1": 8,
+        "onda1": 10,
         "onda2": 0,
-        "total": 8
+        "total": 10
       }
     },
     "byOnda": {
-      "1": 24,
-      "2": 8
+      "1": 30,
+      "2": 10
     },
     "byFormatoVideo": {
-      "9:16": 24,
-      "1:1": 4,
-      "16:9": 4
+      "9:16": 30,
+      "1:1": 5,
+      "16:9": 5
     }
   },
   "slots": [
@@ -692,6 +704,46 @@
       "dataSugerida": "2026-12-01",
       "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
+      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-016",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-12-01",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
       "slug": "camp-saas-demo-estudio-flow-001",
@@ -720,46 +772,6 @@
         "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-016",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-01",
-      "diaSemana": "terça-feira",
-      "janelaHorarioBrt": "12:00-13:00",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-marca-salao-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "youtube",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
-      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
-      "utmParams": {
-        "utm_source": "youtube",
-        "utm_medium": "shorts",
-        "utm_campaign": "camp-saas-demo-marca-salao-001",
-        "utm_content": "marca-salao"
-      },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
@@ -851,6 +863,46 @@
       "dataSugerida": "2026-12-03",
       "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-020",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-12-03",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
       "slug": "camp-saas-demo-estudio-flow-001",
@@ -879,46 +931,6 @@
         "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
         "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
         "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-estudio-flow-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
-        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
-      ],
-      "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
-    },
-    {
-      "slotId": "slot-020",
-      "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-03",
-      "diaSemana": "quinta-feira",
-      "janelaHorarioBrt": "18:30-19:30",
-      "tenantId": "marca-salao",
-      "brandName": "Marca Salão",
-      "slug": "camp-saas-demo-marca-salao-001",
-      "preset": "saas-demo",
-      "audioPolicy": {
-        "allowAudioTrack": false,
-        "requireExternalNarration": true,
-        "requireSrt": true,
-        "ffmpegFlag": "-an"
-      },
-      "canal": "instagram",
-      "formatoVideo": "9:16",
-      "hookVarianteA": "Conheca o Marca Salão",
-      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
-      "utmParams": {
-        "utm_source": "instagram",
-        "utm_medium": "reels",
-        "utm_campaign": "camp-saas-demo-marca-salao-001",
-        "utm_content": "marca-salao"
-      },
-      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
-      "checklistPrePublicacao": [
-        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
-        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
-        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
-        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
-        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
-        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
@@ -1010,6 +1022,46 @@
       "dataSugerida": "2026-12-05",
       "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-024",
+      "onda": 1,
+      "semana": 2,
+      "dataSugerida": "2026-12-05",
+      "diaSemana": "sábado",
+      "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
       "slug": "camp-saas-demo-estudio-flow-001",
@@ -1044,10 +1096,210 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-024",
+      "slotId": "slot-025",
       "onda": 1,
-      "semana": 2,
-      "dataSugerida": "2026-12-05",
+      "semana": 3,
+      "dataSugerida": "2026-12-07",
+      "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
+      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-clinica-vital-002",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-026",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-08",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Marca Salão — AGENDAMENTO ONLINE E AGENDA DO SALAO",
+      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "shorts",
+        "utm_campaign": "camp-saas-demo-marca-salao-001",
+        "utm_content": "marca-salao"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-027",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-09",
+      "diaSemana": "quarta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-clinica-vital-002",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-028",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-10",
+      "diaSemana": "quinta-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "marca-salao",
+      "brandName": "Marca Salão",
+      "slug": "camp-saas-demo-marca-salao-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Marca Salão",
+      "hookVarianteB": "Acompanhe o caminho do horário escolhido pela cliente até a agenda do salão, passo a passo.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-marca-salao-001",
+        "utm_content": "marca-salao"
+      },
+      "utmUrl": "https://marcasalao.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-marca-salao-001&utm_content=marca-salao",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-marca-salao-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-029",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-11",
+      "diaSemana": "sexta-feira",
+      "janelaHorarioBrt": "20:00-21:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "facebook",
+      "formatoVideo": "9:16",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
+      "utmParams": {
+        "utm_source": "facebook",
+        "utm_medium": "reels",
+        "utm_campaign": "camp-saas-demo-clinica-vital-002",
+        "utm_content": "clinica-vital"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (facebook-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o vídeo 9:16 da entrega (conferir o hash no manifesto).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-030",
+      "onda": 1,
+      "semana": 3,
+      "dataSugerida": "2026-12-12",
       "diaSemana": "sábado",
       "janelaHorarioBrt": "20:00-21:00",
       "tenantId": "marca-salao",
@@ -1084,11 +1336,91 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-025",
+      "slotId": "slot-031",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-07",
+      "semana": 4,
+      "dataSugerida": "2026-12-14",
       "diaSemana": "segunda-feira",
+      "janelaHorarioBrt": "18:30-19:30",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "instagram",
+      "formatoVideo": "1:1",
+      "hookVarianteA": "Conheca o Clínica Vital",
+      "hookVarianteB": "Acompanhe o caminho da avaliação marcada pela paciente até a agenda da recepção, passo a passo.",
+      "utmParams": {
+        "utm_source": "instagram",
+        "utm_medium": "feed",
+        "utm_campaign": "camp-saas-demo-clinica-vital-001",
+        "utm_content": "repurpose-1x1"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=repurpose-1x1",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (instagram-reels.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 1:1 camp-saas-demo-clinica-vital-001-1x1.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-001_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-032",
+      "onda": 2,
+      "semana": 4,
+      "dataSugerida": "2026-12-15",
+      "diaSemana": "terça-feira",
+      "janelaHorarioBrt": "12:00-13:00",
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
+      "preset": "saas-demo",
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "requireExternalNarration": true,
+        "requireSrt": true,
+        "ffmpegFlag": "-an"
+      },
+      "canal": "youtube",
+      "formatoVideo": "16:9",
+      "hookVarianteA": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza",
+      "hookVarianteB": "Veja a agenda de consultas do dia organizada por especialista e por status, em uma tela só.",
+      "utmParams": {
+        "utm_source": "youtube",
+        "utm_medium": "video",
+        "utm_campaign": "camp-saas-demo-clinica-vital-002",
+        "utm_content": "repurpose-16x9"
+      },
+      "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=repurpose-16x9",
+      "checklistPrePublicacao": [
+        "Aprovação expressa do titular antes de publicar (status editorial: aguardando_aprovacao_titular).",
+        "Publicação manual: nenhuma ferramenta publica ou agenda sozinha (autoPublish: false).",
+        "Conferir os hashes SHA-256 no checklist-publicacao.json do pacote antes de anexar a mídia.",
+        "Usar a legenda do canal no pacote (youtube-shorts.md), incluindo a URL UTM exatamente como gerada.",
+        "Anexar o derivado 16:9 camp-saas-demo-clinica-vital-002-16x9.mp4 da entrega (ver derivatives.json).",
+        "Locução externa opcional: gravar fora do editor a partir de camp-saas-demo-clinica-vital-002_narracao.txt; não é requisito para publicar o vídeo legendado.",
+        "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
+      ],
+      "statusEditorial": "aguardando_aprovacao_titular",
+      "autoPublish": false
+    },
+    {
+      "slotId": "slot-033",
+      "onda": 2,
+      "semana": 4,
+      "dataSugerida": "2026-12-16",
+      "diaSemana": "quarta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
@@ -1124,11 +1456,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-026",
+      "slotId": "slot-034",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-08",
-      "diaSemana": "terça-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-17",
+      "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
@@ -1164,11 +1496,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-027",
+      "slotId": "slot-035",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-09",
-      "diaSemana": "quarta-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-18",
+      "diaSemana": "sexta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
@@ -1204,11 +1536,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-028",
+      "slotId": "slot-036",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-10",
-      "diaSemana": "quinta-feira",
+      "semana": 4,
+      "dataSugerida": "2026-12-19",
+      "diaSemana": "sábado",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
@@ -1244,11 +1576,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-029",
+      "slotId": "slot-037",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-11",
-      "diaSemana": "sexta-feira",
+      "semana": 5,
+      "dataSugerida": "2026-12-21",
+      "diaSemana": "segunda-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "marca-salao",
       "brandName": "Marca Salão",
@@ -1284,11 +1616,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-030",
+      "slotId": "slot-038",
       "onda": 2,
-      "semana": 3,
-      "dataSugerida": "2026-12-12",
-      "diaSemana": "sábado",
+      "semana": 5,
+      "dataSugerida": "2026-12-22",
+      "diaSemana": "terça-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
@@ -1323,11 +1655,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-031",
+      "slotId": "slot-039",
       "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-14",
-      "diaSemana": "segunda-feira",
+      "semana": 5,
+      "dataSugerida": "2026-12-23",
+      "diaSemana": "quarta-feira",
       "janelaHorarioBrt": "18:30-19:30",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",
@@ -1362,11 +1694,11 @@
       "autoPublish": false
     },
     {
-      "slotId": "slot-032",
+      "slotId": "slot-040",
       "onda": 2,
-      "semana": 4,
-      "dataSugerida": "2026-12-15",
-      "diaSemana": "terça-feira",
+      "semana": 5,
+      "dataSugerida": "2026-12-24",
+      "diaSemana": "quinta-feira",
       "janelaHorarioBrt": "12:00-13:00",
       "tenantId": "multitrack-hub",
       "brandName": "Multitrack Hub",

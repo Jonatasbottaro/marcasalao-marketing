@@ -43,6 +43,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -151,6 +152,27 @@ def fs_path(path, force=False):
     if abs_path.startswith('\\\\'):
         return '\\\\?\\UNC\\' + abs_path.lstrip('\\')
     return '\\\\?\\' + abs_path
+
+
+def write_text_lf(path, text, retries=5):
+    """Grava texto UTF-8 com LF, repetindo falhas transitorias do Windows.
+
+    A estacao Windows falha esporadicamente em truncar um arquivo existente
+    com Errno 22 (EINVAL) sem winerror, mesmo com caminho valido e curto;
+    a repeticao curta resolve sem mascarar erros permanentes (apos retries
+    o OSError original e propagado).
+    """
+    target = fs_path(path)
+    for attempt in range(retries):
+        try:
+            with open(target, "w", encoding="utf-8", newline="\n") as handle:
+                handle.write(text)
+            return
+        except OSError as exc:
+            transient = os.name == "nt" and exc.errno in (22, 13)
+            if not transient or attempt == retries - 1:
+                raise
+            time.sleep(0.05 * (attempt + 1))
 
 
 def contained(root, path):

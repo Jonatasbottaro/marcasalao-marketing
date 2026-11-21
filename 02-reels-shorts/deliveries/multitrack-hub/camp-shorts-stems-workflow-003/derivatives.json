@@ -3,15 +3,15 @@
   "tenantId": "multitrack-hub",
   "slug": "camp-shorts-stems-workflow-003",
   "preset": "shorts-completo",
-  "sourceVideoSha256": "50b0a0fcfa8f5e6a2e3f594e96b6886ee1ec49101b33116bf64f5d20f9d7e686",
+  "sourceVideoSha256": "155eb9fe8fb08d46bdf66d66611b98d828d7104834471c3d1b5666b3246575b4",
   "allowAudioTrack": true,
   "appliedAudioPolicy": "aac-44100-stereo",
   "source": {
     "path": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
-    "sha256": "50b0a0fcfa8f5e6a2e3f594e96b6886ee1ec49101b33116bf64f5d20f9d7e686",
-    "bytes": 918078,
+    "sha256": "155eb9fe8fb08d46bdf66d66611b98d828d7104834471c3d1b5666b3246575b4",
+    "bytes": 446175,
     "deliveryManifest": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/manifest.json",
-    "deliveryRecordedSha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
+    "deliveryRecordedSha256": "155eb9fe8fb08d46bdf66d66611b98d828d7104834471c3d1b5666b3246575b4",
     "ffprobe": {
       "videoStreams": 1,
       "audioStreams": 1,
@@ -35,8 +35,8 @@
       "codec": "h264",
       "audioStreams": 1,
       "audioCodec": "aac",
-      "bytes": 854461,
-      "sha256": "9a5d949f1bf7558cd1acb0ebca4f7cc5b49e0fa732f2470b3b034954708513e0",
+      "bytes": 383287,
+      "sha256": "dda2b9afb177fe0ceb981b3b6770dd798043cf35d1c58bf5bbaf87169d6f0885",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -75,8 +75,8 @@
       "codec": "h264",
       "audioStreams": 1,
       "audioCodec": "aac",
-      "bytes": 893391,
-      "sha256": "dec1784fcce67081dc2f7937ff7c9fb229928bf69e6bce15604353d2598e6175",
+      "bytes": 421761,
+      "sha256": "51d585fc07b52612b892280906b3491d04fb0a11da111d3923e9c22b2e4ed772",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -115,8 +115,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 220651,
-      "sha256": "9fb74cbb11ff62210515c496794252390433b23a5cf41aeef7b96b86b9235a2c",
+      "bytes": 240727,
+      "sha256": "3a5f80da46334cbdd4c7c30986824b623e47a6a7b5e93f978f357d887d480e86",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -159,8 +159,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 156702,
-      "sha256": "243e0d42d2d2c47e378373088d6148b8d9d99c1ca57e03bef0cdea9b0449eed2",
+      "bytes": 181293,
+      "sha256": "ee23e629fb002997153332401735a13660bfd2fa21c664c333a6e004efbd8567",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -186,8 +186,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 109604,
-      "sha256": "90ee5ead70fdb9f24139742f6f232e9822374bae2c72164a7e66ed97b63d925a",
+      "bytes": 134705,
+      "sha256": "6ce7d31fba91506d054578ada877e03b7e5ce91169ef20bcdb5e2e7bd060a233",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -217,7 +217,7 @@
   },
   "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-stems-workflow-003",
   "tools": {
-    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   }
 }

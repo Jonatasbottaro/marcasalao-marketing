@@ -10,8 +10,8 @@ multi-tenant. Consolidado por `tools/review_dashboard.py` a partir de:
 - `04-legendas/pacotes-publicacao/<tenant>/<slug>/`
   (`checklist-publicacao.json` e copies por rede)
 
-Estado consolidado nesta geração: **4 tenants**
-(estudio-flow, marca-salao, meu-salao, multitrack-hub) e **8 campanhas**.
+Estado consolidado nesta geração: **5 tenants**
+(clinica-vital, estudio-flow, marca-salao, meu-salao, multitrack-hub) e **10 campanhas**.
 
 ## Gerar
 

@@ -128,11 +128,11 @@ class FactoryCliTest(unittest.TestCase):
             tid = d["tenantId"]
             slug = d["campaignSlug"]
             label = f"{tid}/{slug}"
-            if tid in ("estudio-flow", "marca-salao", "meu-salao"):
-                self.assertEqual(d["ffprobe"]["audioStreams"], 0, label)
-            else:
+            if d["allowAudioTrack"]:
                 self.assertEqual(d["ffprobe"]["audioStreams"], 1, label)
                 self.assertEqual(d["ffprobe"]["audioCodec"], "aac", label)
+            else:
+                self.assertEqual(d["ffprobe"]["audioStreams"], 0, label)
 
             manifest_abs = self._path(d["manifestPath"])
             self.assertTrue(os.path.isfile(manifest_abs), f"{label}: manifest ausente")

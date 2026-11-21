@@ -14,8 +14,8 @@
 | HEAD main (base / integração) | `af1e15f` (consolidação da Etapa 3 na `main`: 4 tenants, 8 campanhas, pacotes sociais, `devlog_sync` e suíte de CI), linear após `ad95adc → d55b291 → a77efe5 → d70dd93`, sem push remoto |
 | Branch de trabalho ativa | `main` (Etapa 3 consolidada a partir dos 4 agentes paralelos: `ad95adc` agente1 → `d55b291` agente2 → `a77efe5` agente3 → `d70dd93` agente4 → `af1e15f` consolidação; sem push remoto) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 5 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (1 agente(s): 1) |
-| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4 e Etapa 5 (Agentes 1) concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 5 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (4 agente(s): 1, 2, 3, 4) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4 e Etapa 5 (Agentes 1, 2, 3, 4) concluídas — ver seções 2 e 7 |
 ---
 
 ## 2. Fase 1 — Resumo de execução (2026-11-18)
@@ -784,6 +784,447 @@ se aplica diretamente a cards estáticos, mas o motor não gera nem referencia �
 O índice da worktrave travou (`index.lock` imutável por restrição do sandbox); o commit foi feito via
 plumbing (`hash-object -w`, `mktree`, `commit-tree`, `update-ref`) sobre a árvore de `HEAD`,
 adicionando somente os arquivos listados acima, sem alterar histórico nem outros agentes.
+
+### Problema
+<!-- devlog-sync:etapa5-agente2.md -->
+
+O checklist calculava `sha256_disk_ok` da mídia abrindo o caminho relativo da
+entrega. Os MP4s não são versionados: em qualquer worktree o arquivo não
+existe ali, e a auditoria de vídeo caía sempre em `false`.
+
+### Mudança
+
+- `resolve_workspace_root(root)` implementado com o padrão de
+  `derivative_formats.py` / `review_dashboard.py`: prefere
+  `<raiz>/.workspace/archives`; em worktree resolve o checkout principal via
+  `git rev-parse --git-common-dir` e usa o `.workspace/` de lá. Raiz sem
+  checkout git cai no próprio `<raiz>/.workspace`.
+- `_main_checkout_root(root)` isola a chamada git (timeout de 15s, falha
+  silenciosa → fallback).
+- `_resolve_artifact_path(root, workspace_root, entry)` resolve
+  `archivePath` (`.workspace/archives/...`) contra o workspace principal e
+  confina o resultado (`render_local.contained`). Artefatos versionados (SRT,
+  narração, storyboard) continuam relativos à raiz do checkout.
+- `_build_checklist(...)` passou a receber `root_real` + `workspace_root`, em
+  vez de inferir três níveis acima do pacote. Cada item de mídia agora traz
+  `archivePath`, `resolvedFrom` (`archive`/`delivery`/`fora_da_raiz`),
+  `presentOnDisk` e `sha256_disk_ok`. `guardrailStatus` sempre inclui
+  `srt_violations` e `narration_violations` (lista vazia quando ok).
+
+### Execução obrigatória
+
+```
+python tools/publish_pack.py --all --json
+```
+
+Resultado: **8 pacotes / 4 tenants**, **0 violações de guardrails**,
+`autoPublish: false` em todos. Os 8 `checklist-publicacao.json` foram
+regravados com os campos novos (diff esperado e restrito a
+`04-legendas/pacotes-publicacao/**`).
+
+---
+
+## 2. Testes de `tools/publish_pack.py` refatorados
+
+`tools/tests/test_publish_pack.py` não usa mais a raiz do repositório para
+escrever: `setUpClass` monta uma raiz em `tempfile.TemporaryDirectory` com
+cópia de `tenants/`, `schemas/`, das entregas (manifest.json, `.srt`,
+`_narracao.txt`) e de `.workspace/archives/` sintéticos com hash coerente com
+o manifesto. Contagens são dinâmicas (`>= 4` tenants, `>= 8` campanhas).
+
+Casos (10): geração por tenant, hashes dos arquivos gravados, UTM por canal,
+CTA de Instagram, bloqueio de `forbiddenClaims`, `_audit` abortando,
+integridade do checklist, `resolve_workspace_root` (raiz temporária, raiz
+falsa e raiz real com archives), hash do vídeo conferido em `archives/` e
+snapshot provando que `04-legendas/pacotes-publicacao/` versionado não é
+alterado pela suíte.
+
+---
+
+## 3. `tools/handoff_bundler.py` (novo)
+
+CLI:
+
+```
+python tools/handoff_bundler.py [--approvals-file <json>]
+    [--date YYYY-MM-DD | --all-approved] [--include-pending]
+    [--output-dir .workspace/handoff-diario] [--root <raiz>] [--json]
+```
+
+API: `build_handoff_bundle(root=..., approvals_file=None, date=None,
+all_approved=False, include_pending=False, output_dir=None)`.
+
+### Entradas
+
+- Aprovações do titular: default `<workspace>/tmp/aprovacoes-titular.json`
+  (workspace resolvido, inclusive o do checkout principal a partir de
+  worktree). Schema **v1** (`aprovada: true`) e **v2**
+  (`decisao: "aprovado"`) normalizados por `_decision`.
+- `04-legendas/calendario-editorial.json` (slots).
+- Pacotes sociais (`04-legendas/pacotes-publicacao/<tenant>/<slug>/`) e
+  `derivatives.json` das entregas.
+
+### Travas de segurança
+
+- Sem `--include-pending`, só campanhas **explicitamente aprovadas** entram.
+  Sem nenhuma aprovada, retorna exatamente:
+  `{"ok": true, "bundledSlots": 0, "reason": "NENHUMA_CAMPANHA_APROVADA_PELO_TITULAR"}`.
+- Decisão `ajuste` nunca entra, nem com `--include-pending` (registrada em
+  `skipped` como `AJUSTE_SOLICITADO`).
+- `autoPublish` é sempre `false` (manifesto, índice e JSON de retorno).
+- Todo caminho é resolvido e confinado (raiz do projeto para saída e
+  pacotes; workspace resolvido para aprovacoes e archives). Nomes de slot,
+  tenant, campanha e canal passam por regex estrita.
+- A copy final (após substituição da URL UTM do slot) é reauditada com
+  `tenant_validator.validate_text_against_guardrails`; violação aborta o slot.
+- Mídia copiada é verificada por SHA-256; hash divergente remove o arquivo e
+  marca `mediaCopied: false` + `error: HASH_DIVERGENTE` (nunca entrega mídia
+  inconsistente).
+
+### Saída por slot
+
+`.workspace/handoff-diario/<dataSugerida>/<slotId>-<tenantId>-<canal>/`:
+
+- `POSTAGEM-MANUAL.md` — status de aprovação/selo `PREVIA_NAO_APROVADA`,
+  data e janela BRT, conta/marca, canal, formato (`9:16` / `1:1` / `16:9`),
+  mídia esperada e disponibilidade local, `autoPublish: false`, alerta
+  explícito de locução externa em tenants `-an`, copy pronta, URL UTM
+  completa e checklist numerado de 5 passos.
+- `copy-pronta.txt` — copy do canal com a URL UTM do slot (na Onda 2 troca
+  `utm_content` para `repurpose-1x1` / `repurpose-16x9`).
+- `handoff-manifest.json` — metadados, `approvalStatus`, `audioPolicy`,
+  `sha256Expected`/`sha256Copied`/`hashVerified`, `mediaCopied`, bloco de
+  `cover`, `guardrailsAudited` e `autoPublish: false`.
+- `<slug>.mp4` (Onda 1), `<slug>-1x1.mp4` ou `<slug>-16x9.mp4` (Onda 2) e
+  `cover.png`, copiados de `<workspace>/archives/` quando existem.
+
+Índice consolidado em `.workspace/handoff-diario/INDICE-OPERACIONAL.md` e
+`indice-operacional.json` (tabela por data/slot/canal, status e mídia local).
+
+### Comportamento nesta estação
+
+`.workspace/archives/` está vazia nesta estação (só `test-deriv-ms`). Com as
+aprovações reais ausentes, a execução padrão devolve o JSON limpo de "nenhuma
+campanha aprovada". Em smoke test com aprovações sintéticas, os 4 slots da
+campanha `marca-salao/camp-saas-demo-marca-salao-001` foram empacotados com
+`mediaCopied: false` e `error: MIDIA_AUSENTE_NESTA_ESTACAO`, que é o
+diagnóstico correto — o handoff continua utilizável e a ficha aponta a
+estação onde copiar o MP4.
+
+---
+
+## 4. Suíte `tools/tests/test_handoff_bundler.py` (12 testes)
+
+Raiz temporária própria com `tenants/`, `schemas/`, calendário de 6 slots
+(4 tenants, Ondas 1 e 2), pacotes copiados e `.workspace/archives/` com
+mídias sintéticas + hashes atualizados. Casos:
+
+1. Sem aprovações → JSON limpo (`bundledSlots == 0`, reason exata).
+2. Schema v1 (`aprovada: true`).
+3. Schema v2 (`decisao: "aprovado"`).
+4. Filtragem seletiva: apenas a campanha aprovada (3 slots), nada de outro tenant.
+5. Roteamento de mídia: 9:16 (`<slug>.mp4`), 1:1 (`-1x1.mp4`), 16:9 (`-16x9.mp4`) + `cover.png`, `mediaCopied`/`hashVerified` verdadeiros.
+6. `--include-pending` com selo `PREVIA_NAO_APROVADA` e exclusão de `ajuste`.
+7. Filtro `--date` (1 slot) e data sem aprovado (`NENHUM_SLOT_APROVADO_NA_DATA`).
+8. Documentos do slot, 5 passos (sem passo 6), URL UTM `repurpose-16x9` na copy, `autoPublish: false`, `manualOnly: true`.
+9. Alerta de locução externa só em `-an`; `multitrack-hub` sem alerta e `externalNarrationAlert: false`.
+10. Contenção de path: output `../`, aprovacoes `../../` e slotId `../escape` bloqueados.
+11. CLI `--json` via subprocess: exit 0 e JSON válido.
+12. Índice `INDICE-OPERACIONAL.md` + `indice-operacional.json`.
+
+Comando final:
+
+```
+python -m unittest tools/tests/test_publish_pack.py tools/tests/test_handoff_bundler.py -v
+```
+
+Resultado: **22 testes, OK** (rodado também com `-W error::ResourceWarning`).
+
+---
+
+## 5. Estado do worktree e limpeza
+
+- Scratch removido: `.workspace/tmp/`, `.workspace/handoff-diario/` (smoke),
+  `.workspace/tmp-publish.*`, `tools/__pycache__`, `tools/tests/__pycache__`.
+- Alterações permanentes: `tools/publish_pack.py`,
+  `tools/tests/test_publish_pack.py`, `tools/handoff_bundler.py`,
+  `tools/tests/test_handoff_bundler.py`, os 8 `checklist-publicacao.json` e
+  este devlog.
+- Nenhum arquivo de `04-legendas/pacotes-publicacao/` foi sujado pela suíte
+  (provado por snapshot no teste 10 do publish_pack); a regravação existente
+  vem apenas do comando `--all` exigido, com os campos novos do checklist.
+- Commit local na branch `codex/etapa5b-agente2-handoff-aprovacoes`; sem push.
+
+## 6. Próximos passos sugeridos para integração
+
+1. Revisar o diff dos 8 checklists (apenas campos novos: `archivePath`,
+   `resolvedFrom`, `presentOnDisk`, listas de violações).
+2. No merge, manter `resolve_workspace_root` alinhado ao padrão já existente
+   em `derivative_formats.py`/`review_dashboard.py`.
+3. Quando o titular aprovar campanhas no portal
+   (`review_dashboard.py --serve`), rodar
+   `python tools/handoff_bundler.py --all-approved --json` na estação que
+   possui `.workspace/archives/` para empacotar com mídia.
+
+### Novos — `tenants/clinica-vital/`
+<!-- devlog-sync:etapa5-agente3.md -->
+
+- `brand-kit.json`
+  - `tenantId: "clinica-vital"`, `brandName: "Clínica Vital"`, `displayTitle: "CLINICA VITAL"`, `monogram: "CV"`, `domain: "clinicavital.com.br"`, `url: "https://clinicavital.com.br"`.
+  - `tagline: "Organizacao de consultas e agenda clinica com clareza"` (literal do pedido).
+  - Paleta clínico-moderna distinta dos 4 tenants anteriores: primary `#0EA5E9`, secondary `#14B8A6`, accent `#F59E0B`, background `#0B1324`, surface `#12203A`, textPrimary `#F1F5F9`, textMuted `#94A3B8`, com bloco `palette.rgb` completo (12 chaves exigidas quando presente).
+  - `headerOverlay`: `enabled: true`, `label: "CLINICA VITAL"`, `badgeText: "CONSULTAS & AGENDA"`, `bgColor: "#070C18"`, `textColor: "#F1F5F9"`, `height: 170`.
+  - `defaultPreset: "saas-demo"`; `utmDefaults`: `instagram` / `reels` / `cv`.
+- `guardrails.json`
+  - `forbiddenClaims`: cura e promessa de cura, resultado/resultado estético garantido, tratamento garantido, tratamento sem dor garantido, diagnóstico médico/odontológico online, antes e depois, fotos antes e depois, mensagens automáticas/automatizadas, WhatsApp, SMS, e-mail/email, lembretes automáticos, 24h/24 horas, redução de faltas, zero faltas, zero absenteísmo, aumento de faturamento, faturamento/lucro garantido.
+  - `forbiddenUiElements`: checkout, pagamento, cobrança, a pagar, cartão de crédito, prontuário, receita digital, receita médica, fotos antes e depois, antes e depois, "Meu Salão", `E2E`, `Lorem ipsum`.
+  - `routeRules`: `/avaliacao/[clinicId]` (`public-booking`) × `/gestor/consultas` (`manager-agenda`), com responsabilidades permitidas e vetadas por superfície (inclui `busca-paciente` e `alteracao-manual-status` na recepção; veta `diagnostico-online`, `exposicao-prontuario` e `promessa-cura` no público).
+  - `audioPolicy`: `allowAudioTrack: false`, `requireSrt: true`, `requireExternalNarration: true`, `ffmpegFlag: "-an"`.
+- `fixtures/fixture-editorial-clinica-vital.json`
+  - 4 especialistas fictícios: Dra. Helena Vasconcelos, Dr. Rodrigo Nogueira, Dra. Camila Ferraz, Dr. Thiago Prado.
+  - 5 procedimentos com duração e valor BRL: Avaliação Clínica Inicial (30 min, R$ 250,00), Limpeza e Profilaxia (45 min, R$ 320,00), Consulta Ortodôntica (40 min, R$ 280,00), Check-up Preventivo (30 min, R$ 290,00), Avaliação Estética Facial (50 min, R$ 350,00).
+  - Grade diária de 6 consultas em 2026-11-18 com status `Confirmado` / `Aguardando` / `Concluído`, incluindo Patricia Monteiro às 10:00.
+  - Chaves de compatibilidade com o motor: `profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota = "/avaliacao/clinica-vital-centro"`; duplicatas do nicho: `especialistas`, `procedimentos`, `gradeDiaria.consultas`, `agenda.visaoRota = "/gestor/consultas"`.
+- `campaigns/README.md`: descreve as duas campanhas, superfícies e notas de conformidade do nicho.
+- `campaigns/camp-saas-demo-clinica-vital-001.json` — `SAAS-DEMO-CLINICA-VITAL-001`, 6 cenas, `30.0s`, `saas-demo`.
+  - hook (4s) → booking-selection em `/avaliacao/clinica-vital-centro` (6s) → booking-confirm com slots `08:30/10:00/14:30/16:00` e seleção 10:00 (7s) → booking-success (3s) → manager-agenda em `/gestor/consultas` com `highlightId: cons-cv-002` (Patricia Monteiro, 6s) → CTA (4s).
+  - `bookingCase`: Patricia Monteiro / `srv-cv-001` / `prof-cv-001` / 10:00.
+- `campaigns/camp-saas-demo-clinica-vital-002.json` — `SAAS-DEMO-CLINICA-VITAL-002`, 6 cenas, `30.0s`, `saas-demo`.
+  - Foco exclusivo na recepção: hook (4s) + 4 cenas `manager-agenda` (grade do dia, filtro por Dra. Camila Ferraz, atualização manual de status de Aguardando → Confirmado, busca por paciente Luciana Farias) + CTA (4s). Nenhuma rota `/avaliacao` e nenhuma superfície `public-booking`.
+
+### Alterados
+
+- `docs/guia-novo-nicho.md`: nova seção "Nicho regulado (saúde/clínicas) — exemplo `clinica-vital`" com estrutura, identidade/preset, tabela de superfícies, guardrails obrigatórios, compatibilidade de fixture, descrição das campanhas, comandos de validação/render e nota de consolidação sobre `test_factory_cli.py`.
+- `tools/tests/test_tenant_contracts.py`:
+  - `test_01`: inclui `clinica-vital` na descoberta e valida brand-kit/guardrails do tenant.
+  - `test_07`: contagem de tenants passa de `== 4` para `>= 5`, com `clinica-vital` presente.
+  - `test_08` (novo): bloqueio de promessas clínicas, elementos de UI proibidos, texto neutro permitido, `routeRules` por superfície.
+  - `test_09` (novo): fixture (4 profissionais, 5 serviços, 6 atendimentos, status e Patricia Monteiro), campanhas (6 cenas, soma 30.0s, preset, tenantId), auditoria de todos os textos contra guardrails, rotas do público × recepção e contagem de superfícies.
+- `.workspace/devlogs/etapa5-agente3.md`: este relatório.
+
+## 4. Decisões de adaptação (e por quê)
+
+1. **`utmDefaults` no formato do schema:** o pedido trouxe a forma curta `{"source","medium","campaignPrefix"}`, mas `schemas/brand-kit.schema.json` exige `utm_source`/`utm_medium`/`utm_campaign_prefix` e proíbe propriedades adicionais. Foi usado o formato do schema, idêntico aos 4 tenants e ao exemplo do guia. Valores preservados: instagram / reels / cv.
+2. **`headerOverlay` completo:** o schema exige `badgeText`, `bgColor` e `textColor` além de `enabled`/`label`. Preenchidos no padrão dos demais tenants, preservando `enabled: true` e `label: "CLINICA VITAL"`.
+3. **`baseCaptureRef` omitido:** a campanha 001 não herda captura de tela legada; sem o campo, o motor usa o gradiente neutro do brand-kit em `manager-agenda` (fallback nativo de `_load_neutral_capture_backdrop` para caminho ausente/nulo). Evita apontar para ativo inexistente.
+4. **Sem tela de pagamento/checkout em nenhuma cena:** conforme `forbiddenUiElements`, e coerente com a superfície pública de avaliação.
+5. **Rótulos internos do motor não alterados:** `tools/preset_runner.py` desenha textos fixos de engenharia (`PROFISSIONAIS DO SALAO`, `/BOOKING/[SALONID]`, `DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO`, pill de superfície `/GESTOR/AGENDA`) fora da auditoria de guardrails e fora do território deste agente. Não foram tocados; ficam registrados como ajuste cosmético pendente para a consolidação (ver §7).
+
+## 5. Validação de contratos
+
+Comando executado na worktree:
+
+```bash
+python tools/tenant_validator.py --tenant clinica-vital --json
+```
+
+Resultado literal: `ok: true`, `errors: []` (brand-kit, guardrails e fixture localizados e válidos).
+
+```bash
+python tools/tenant_validator.py --all --json
+```
+
+Resultado: `ok: true` para os 5 tenants, todos com 0 erros:
+
+| tenant | ok | erros |
+| --- | --- | --- |
+| clinica-vital | true | 0 |
+| estudio-flow | true | 0 |
+| marca-salao | true | 0 |
+| meu-salao | true | 0 |
+| multitrack-hub | true | 0 |
+
+Descoberta da fábrica (`python tools/factory_cli.py list --tenant clinica-vital --json`): `ok: true`, `totalCampaigns: 2`, as duas campanhas com `scenesCount: 6` e `durationSeconds: 30.0`, `allowAudioTrack: false`.
+
+Auditoria pré-render dos textos (mesmo pipeline de `preset_runner._audit_texts`, com `check_ui_elements=True`): **0 violações** em ambas as campanhas; soma de cenas `30.0s` = `format.duration` nas duas.
+
+## 6. Renderização — bloqueio controlado por ausência de ffmpeg
+
+Verificação do ambiente: `which ffmpeg` e `which ffprobe` não encontram binários; não existe `.workspace/tools/ffmpeg` (nem na raiz nem na worktree); `build_video.get_ffmpeg()` falha com:
+
+```text
+DeliveryError: ffmpeg nao encontrado no PATH; instale ou exponha o binario antes de exportar
+```
+
+Tentativa explícita, sem gravar artefatos:
+
+```bash
+python tools/factory_cli.py render --tenant clinica-vital --report .workspace/tmp/etapa5b-agente3/report.json --json
+# Erro: ffmpeg/ffprobe nao encontrados; exponha no PATH ou em .workspace/tools/ffmpeg
+# exit 1
+```
+
+Derivados (sem entrega renderizada):
+
+```bash
+python tools/derivative_formats.py --tenant clinica-vital --json
+# nenhuma entrega vigente para tenant=clinica-vital
+# exit 2
+```
+
+Conclusão: nada foi gravado em `02-reels-shorts/deliveries/clinica-vital/`; nenhum MP4/SRT/narração/storyboard/derivado foi produzido nesta estação. **Contratos e campanhas do `clinica-vital` estão validados e prontos para `factory_cli.py render --all` na consolidação pós-bootstrap**, quando houver `ffmpeg`/`ffprobe`. A auditoria de `0` streams de áudio (`-an`) via `ffprobe` também fica pendente da mesma consolidação.
+
+## 7. Pendências para a consolidação (fora do território deste agente)
+
+1. **`tools/tests/test_factory_cli.py`**: mantém `totalTenants == 4` (`test_01`) e `totalTenants == 4` / `totalCampaigns == 8` / `len(deliveries) == 8` (`test_03`). Com o 5º tenant e as 2 novas campanhas, esses testes falharão até serem atualizados para 5/10 (ou `>=`). Arquivo não editado por não estar no território autorizado.
+2. **Render e derivados**: executar `python tools/factory_cli.py render --all --json` (ou `--tenant clinica-vital --report .workspace/tmp/...`), conferir `audioStreams == 0` via ffprobe e rodar `python tools/derivative_formats.py --tenant clinica-vital --json` após o bootstrap do ffmpeg pelo Agente 1.
+3. **`02-reels-shorts/deliveries/factory-report.json`**: regenerar na consolidação; não foi tocado por este agente.
+4. **Rótulos internos do motor** (cosmético, opcional): `preset_runner.py` desenha "SALAO"/"/BOOKING/[SALONID]"/"/GESTOR/AGENDA" fixos; para nicho clínico, uma futura generalização por brand-kit seria mais adequada. Não é violação de guardrails (texto de engenharia, fora da auditoria).
+5. **`contexto_projeto.md`**: permanece com `Raiz oficial: D:/MEGA/Marketing/marcasalao-marketing` (literal de outra estação). Não editado por escopo; a raiz efetiva desta sessão é `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`. Correção portável fica para o consolidador.
+
+## 8. Testes
+
+```bash
+python -m unittest tools/tests/test_tenant_contracts.py -v
+```
+
+Resultado: `Ran 9 tests ... OK` (9/9), incluindo os novos `test_08` e `test_09`.
+
+## 9. Handoff de armazenamento
+
+- Raiz usada nesta estação: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+- Worktree: `<RAIZ>/.workspace/worktrees/etapa5b-agente3` (isolada; será removida pelo consolidador após merge, mediante autorização).
+- Temporários: `<RAIZ>/.workspace/worktrees/etapa5b-agente3/.workspace/tmp/etapa5b-agente3/` (evidência do `validator --all`), ignorados pelo Git.
+- Nenhum arquivo permanente ficou apenas em `.workspace/tmp/`; os arquivos versionados estão em `tenants/clinica-vital/`, `docs/guia-novo-nicho.md`, `tools/tests/test_tenant_contracts.py` e `.workspace/devlogs/etapa5-agente3.md`.
+- Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+
+### Devlog — Etapa 5B / Agente 4 (orquestrador end-to-end e analytics)
+<!-- devlog-sync:etapa5-agente4.md -->
+
+> **Data:** 2026-11-20  
+> **Branch:** `codex/etapa5b-agente4-orquestrador-e2e-analytics`  
+> **Worktree:** `.workspace/worktrees/etapa5b-agente4`  
+> **Base:** `main` @ `edd56e8`  
+> **Escopo:** orquestrador unificado, auditor/simulador UTM, playbook de analytics, testes e CI
+
+## 1. Objetivo
+
+Fechar a Etapa 5B no território do Agente 4: transformar o `factory_cli.py` em um
+orquestrador mestre determinístico (contratos → render → derivados → cards →
+pacotes → calendário → portal → UTM → release gate), entregar a auditoria UTM com
+simulação sintética das duas ondas e documentar o mapa de eventos por nicho com
+receitas de GA4, Plausible e Umami.
+
+## 2. Entregas
+
+| Arquivo | Estado | Conteúdo |
+| --- | --- | --- |
+| `tools/factory_cli.py` | evoluído | subcomando `pipeline` com 9 estágios, imports opcionais, JSON por estágio com `durationMs`, contagens consolidadas |
+| `tools/utm_simulator.py` | novo | auditoria de 100% das URLs UTM + simulação determinística de tráfego (`--simulate-traffic`) |
+| `tools/tests/test_factory_cli.py` | atualizado | contagens dinâmicas (`>= 4` tenants, `>= 8` campanhas), testes de `pipeline` filtrado e `--all` |
+| `tools/tests/test_utm_simulator.py` | novo | 11 testes: domínio, parâmetros, padronização, colisão, derivação, simulação, CLI e contenção de caminho |
+| `docs/analytics-utm-playbook.md` | novo | eventos por nicho (5, incluindo `clinica-vital`), receitas GA4/Plausible/Umami, validação e rotina semanal |
+| `.github/workflows/local-render-validation.yml` | atualizado | trigger `01-insta-stories/deliveries/**`, 4 novas suites no CI, smoke de `pipeline --all --skip-render` |
+| `.workspace/devlogs/etapa5-agente4.md` | novo | este relatório |
+
+## 3. Desenho do `pipeline`
+
+Ordem fixa dos estágios (sempre os 9 no relatório, mesmo quando pulados):
+
+1. `contratos` → `tenant_validator.load_and_validate_tenant(..., strict=True)`.
+2. `render` → `preset_runner.run_preset_pipeline`; com `--skip-render`, verifica
+   `02-reels-shorts/deliveries/<tenant>/<slug>/manifest.json` e registra o preset
+   e `audioStreams` declarados.
+3. `derivados` → `derivative_formats.generate_campaign_derivatives` (produção) ou
+   verificação de `derivatives.json` + hashes quando o arquivo existe no disco.
+4. `cards-estaticos` → `static_cards.generate_campaign_static_cards` ou verificação
+   de `01-insta-stories/deliveries/<tenant>/<slug>/static-manifest.json`.
+5. `pacotes` → `publish_pack.generate_pack` ou verificação de
+   `checklist-publicacao.json` + 3 legendas, exigindo `autoPublish=false` e
+   `guardrailsAudited=true`.
+6. `calendario` (só `--all`) → `campaign_calendar.build_editorial_calendar` em
+   memória, usando `--start-date`/`--weeks` ou os valores do calendário versionado.
+7. `portal` (só `--all`) → `review_dashboard.build_portal` (produção) ou
+   verificação de `05-review-portal/`.
+8. `utm` → `utm_simulator.audit_and_simulate_utm`.
+9. `release-gate` → `release_audit.run_release_audit(root, strict=args.strict_audit)`.
+
+Decisões:
+
+- **Importação opcional real:** módulos das etapas paralelas são importados via
+  `importlib`; se ausentes, o estágio vira `skipped` com motivo e o pipeline segue.
+  O Release Gate é fail-closed: ausência do módulo reprova.
+- **`--skip-render` é modo de verificação**, não de omissão: todo artefato versionado
+  é conferido (manifesto, derivados, cards, pacote, portal). Hashes só são exigidos
+  quando o binário local existe, alinhado à política do `release_audit` para mídia
+  não rastreada.
+- **Compatibilidade total:** `list` e `render` mantêm assinatura, saída e exit codes.
+- **Falha por estágio:** `StageFailure` preserva detalhes estruturados (ex.: domínios
+  do release gate, códigos UTM) mesmo quando o estágio reprova.
+
+## 4. Auditoria e simulação UTM
+
+- Fonte primária: `04-legendas/calendario-editorial.json` (32 slots, 4 tenants).
+- URL derivada para campanha ainda não agendada: `https://<domain>/?utm_source=
+  <utmDefaults.utm_source>&utm_medium=<utmDefaults.utm_medium>&utm_campaign=<slug>
+  &utm_content=<tenantId>`, marcada com `origin=derived`.
+- Regras de erro: HTTPS, domínio do brand-kit, 4 parâmetros obrigatórios, alfabeto
+  `[a-z0-9._-]`, `utm_campaign == slug`, ausência de duplicidade e de colisão entre
+  tenants (campanha isolada e par campanha+conteúdo).
+- Simulação: RNG semeado por `sha256(seed + slug + canal + midia + url)`; cobre
+  Reels, Shorts, Feed 1:1 (`repurpose-1x1`) e Vídeo 16:9 (`repurpose-16x9`).
+  Saída em `utm_sessions_sample.json` + `utm_attribution_summary.md`.
+  `financialSimulation: false` e `revenueBRL: null` em 100% das sessões.
+- Catálogo de eventos por nicho inclui `clinica-vital` (nicho em onboarding), mesmo
+  sem tenant ativo, sem gerar URL antes de existir brand-kit.
+
+## 5. Evidências de validação (nesta estação)
+
+```
+$ python tools/factory_cli.py pipeline --tenant marca-salao \
+    --campaign camp-saas-demo-marca-salao-001 --skip-render --json
+ok=True (287–405 ms)
+estágios: contratos ok, render ok, derivados ok, cards-estaticos ok, pacotes ok,
+          calendario skipped, portal skipped, utm ok, release-gate ok
+counts: 1 tenant, 1 campanha, 7 cards, 32 URLs UTM, 7/7 domínios ok
+
+$ python tools/factory_cli.py pipeline --all --skip-render --json
+ok=True (~1,1 s)
+counts: 4 tenants, 8 campanhas, 8 entregas, 8 derivados, 56 cards, 8 pacotes,
+        32 slots de calendário, 8 campanhas no portal, 32 URLs UTM, 7/7 domínios ok
+
+$ python tools/utm_simulator.py --json
+ok=True, 32/32 URLs, 0 derivadas, 0 erros, 0 avisos
+
+$ python tools/utm_simulator.py --simulate-traffic --out-dir .workspace/tmp/utm-sim --json
+472 sessões, 52 conversões, ondas 400/72, pegadas instagram/reels,
+youtube/shorts, instagram/feed, youtube/video, facebook/reels
+
+$ python -m unittest tools.tests.test_utm_simulator -v
+Ran 11 tests — OK
+
+$ python -m unittest (test_factory_cli 01,03,04,05,06)
+Ran 5 tests — OK
+
+$ python tools/release_audit.py --strict --json
+7/7 domínios ok, 0 erros, 0 avisos
+```
+
+## 6. Limitações desta estação
+
+- `ffmpeg`/`ffprobe` continuam ausentes nesta máquina; por isso o modo de produção
+  real (sem `--skip-render`) e a geração de derivados não foram executados aqui.
+  O caminho de produção é exercitado no CI, que instala FFmpeg via ação oficial.
+- Os testes `test_bootstrap_ffmpeg.py` e `test_handoff_bundler.py` ainda não existem
+  nesta branch: pertencem aos Agentes 1 e 2. Foram adicionados à suíte do workflow
+  conforme o contrato de integração; a execução completa ocorre na branch integrada.
+- Divergência intencional entre ramos: estágios de módulos paralelos ficam `skipped`
+  até que os arquivos correspondentes estejam presentes na branch final.
+
+## 7. Arquivos não tocados
+
+`contexto_projeto.md` não foi editado, conforme território exclusivo. Nenhuma
+worktree de outro agente foi acessada. Nenhum post, tenant, campanha, calendário ou
+portal foi publicado/alterado.
+
+## 8. Handoff
+
+- Branch pronta para merge: `codex/etapa5b-agente4-orquestrador-e2e-analytics`.
+- Comando de verificação rápida: `python tools/factory_cli.py pipeline --all
+  --skip-render --json`.
+- Próximo agente/integrador: rodar a suíte completa no CI, onde FFmpeg está
+  disponível, e confirmar `pipeline --all` no modo de produção após o merge dos
+  Agentes 1–3.
 
 ## 2. Execução nas 8 campanhas
 

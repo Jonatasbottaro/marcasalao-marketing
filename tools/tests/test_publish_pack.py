@@ -176,6 +176,7 @@ class PublishPackTest(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_03_utm_parameters_per_channel(self) -> None:
         expected = {
+            "clinica-vital": "clinicavital.com.br",
             "estudio-flow": "estudioflow.com.br",
             "marca-salao": "marcasalao.com.br",
             "meu-salao": "meusalao.com.br",

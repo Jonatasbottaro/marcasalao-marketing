@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 2,
+  "tenantId": "clinica-vital",
+  "slug": "camp-saas-demo-clinica-vital-001",
+  "preset": "saas-demo",
+  "sourceVideoSha256": "39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af",
+  "allowAudioTrack": false,
+  "appliedAudioPolicy": "-an",
+  "source": {
+    "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.mp4",
+    "sha256": "39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af",
+    "bytes": 492164,
+    "deliveryManifest": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/manifest.json",
+    "deliveryRecordedSha256": "39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af",
+    "ffprobe": {
+      "videoStreams": 1,
+      "audioStreams": 0,
+      "codec": "h264",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "pixFmt": "yuv420p",
+      "duration": 30.0,
+      "audioCodec": null,
+      "audioSampleRate": null,
+      "audioChannels": null
+    }
+  },
+  "derivatives": {
+    "1x1": {
+      "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/derivatives/camp-saas-demo-clinica-vital-001-1x1.mp4",
+      "width": 1080,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 435311,
+      "sha256": "9411f075b197d8b90087525f66dba3d0b422eeb75911a0779520c7514d62b679",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "1x1",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#0EA5E9",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=24:4,eq=brightness=-0.18:saturation=0.85"
+      },
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "16x9": {
+      "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/derivatives/camp-saas-demo-clinica-vital-001-16x9.mp4",
+      "width": 1920,
+      "height": 1080,
+      "fps": 30.0,
+      "codec": "h264",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 496735,
+      "sha256": "7e79cc730e4936c03a5e6baeb23e72f9bc054756f67cb0bfca2e3f3a9d381b60",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "16x9",
+      "pixFmt": "yuv420p",
+      "foreground": {
+        "width": 608,
+        "height": 1080,
+        "padWidth": 616,
+        "padEdge": 4,
+        "padColor": "#0EA5E9",
+        "position": "center-full-height",
+        "scaler": "lanczos"
+      },
+      "background": {
+        "source": "self",
+        "filters": "boxblur=28:5,eq=brightness=-0.22:saturation=0.80"
+      },
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; o manifesto versionado preserva hash, ffprobe e comando reproduzivel"
+    },
+    "cover": {
+      "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/derivatives/camp-saas-demo-clinica-vital-001-cover.png",
+      "width": 1080,
+      "height": 1920,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 315623,
+      "sha256": "ebdfa49d1348589c88c45276d34b48147d129babce9b582b698c53a971acedad",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1080,
+        "height": 1920,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "cover-png",
+      "timestampSeconds": 2.5,
+      "bars": {
+        "top": {
+          "height": 200,
+          "color": "#0B1324",
+          "alpha": 0.55
+        },
+        "bottom": {
+          "height": 280,
+          "color": "#0B1324",
+          "alpha": 0.55
+        },
+        "accent": {
+          "thickness": 8,
+          "color": "#0EA5E9",
+          "alpha": 0.95
+        }
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/cover.png"
+    },
+    "thumb-16x9": {
+      "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/derivatives/camp-saas-demo-clinica-vital-001-thumb-16x9.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 247254,
+      "sha256": "7630537343e2085d942d0ae3b1efeaa9d970c109344e8e1b04c4c665cd6c4ec2",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "thumb-16x9-png",
+      "timestampSeconds": 2.5,
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/thumb-16x9.png"
+    },
+    "preview-formats": {
+      "path": ".workspace/archives/camp-saas-demo-clinica-vital-001/derivatives/camp-saas-demo-clinica-vital-001-preview-grid.png",
+      "width": 1920,
+      "height": 1080,
+      "fps": null,
+      "codec": "png",
+      "audioStreams": 0,
+      "audioCodec": null,
+      "bytes": 186871,
+      "sha256": "3487b45447f388ac8ec62d1c0b54f11cee8f084ee604885e68b047c8594407f2",
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "png",
+        "width": 1920,
+        "height": 1080,
+        "fps": 25.0,
+        "pixFmt": "rgb24",
+        "duration": 0.0,
+        "audioCodec": null,
+        "audioSampleRate": null,
+        "audioChannels": null
+      },
+      "kind": "preview-grid-png",
+      "timestampSeconds": 2.5,
+      "panels": {
+        "height": 540,
+        "order": [
+          "9:16",
+          "1:1",
+          "16:9"
+        ],
+        "background": "#0B1324"
+      },
+      "versionedCopy": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/preview-formats.png"
+    }
+  },
+  "command": "python tools/derivative_formats.py --tenant clinica-vital --campaign camp-saas-demo-clinica-vital-001",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  }
+}

@@ -110,10 +110,147 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
   "pacotesRoot": "04-legendas/pacotes-publicacao",
   "archivesRoot": ".workspace/archives",
   "totals": {
-    "tenants": 4,
-    "campaigns": 8
+    "tenants": 5,
+    "campaigns": 10
   },
   "tenants": [
+    {
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "displayTitle": "CLINICA VITAL",
+      "monogram": "CV",
+      "domain": "clinicavital.com.br",
+      "tagline": "Organizacao de consultas e agenda clinica com clareza",
+      "palette": {
+        "primary": "#0EA5E9",
+        "secondary": "#14B8A6",
+        "accent": "#F59E0B",
+        "background": "#0B1324",
+        "surface": "#12203A",
+        "textPrimary": "#F1F5F9",
+        "textMuted": "#94A3B8"
+      },
+      "audioPolicy": {
+        "allowAudioTrack": false,
+        "ffmpegFlag": "-an",
+        "requireSrt": true,
+        "requireExternalNarration": true
+      },
+      "routeRules": {
+        "/avaliacao/[clinicId]": {
+          "surface": "public-booking",
+          "allowedResponsibilities": [
+            "identificacao-paciente-ficticia",
+            "escolha-procedimento",
+            "escolha-especialista",
+            "selecao-horario-avaliacao",
+            "confirmacao-avaliacao"
+          ],
+          "forbiddenResponsibilities": [
+            "tela-pagamento",
+            "cobranca-simulada",
+            "diagnostico-online",
+            "exposicao-prontuario",
+            "promessa-cura",
+            "envio-automatico-mensagem"
+          ]
+        },
+        "/gestor/consultas": {
+          "surface": "manager-agenda",
+          "allowedResponsibilities": [
+            "visualizacao-grade-consultas",
+            "filtro-especialista",
+            "filtro-status",
+            "busca-paciente",
+            "alteracao-manual-status"
+          ],
+          "forbiddenResponsibilities": [
+            "calculo-horarios-livres",
+            "exibicao-slots-disponiveis",
+            "tela-pagamento",
+            "prontuario-sensivel",
+            "namespace-e2e"
+          ]
+        }
+      },
+      "forbiddenClaims": [
+        "cura",
+        "cura clínica",
+        "cura clinica",
+        "cura garantida",
+        "promessa de cura",
+        "tratamento garantido",
+        "resultado garantido",
+        "resultado estético garantido",
+        "resultado estetico garantido",
+        "resultado imediato",
+        "tratamento sem dor garantido",
+        "sem dor garantida",
+        "diagnóstico online",
+        "diagnostico online",
+        "diagnóstico médico",
+        "diagnostico medico",
+        "diagnóstico odontológico",
+        "diagnostico odontologico",
+        "diagnóstico por mensagem",
+        "diagnostico por mensagem",
+        "antes e depois",
+        "fotos antes e depois",
+        "mensagem automática",
+        "mensagem automatica",
+        "mensagens automáticas",
+        "mensagens automaticas",
+        "mensagem automatizada",
+        "mensagens automatizadas",
+        "envio automático",
+        "envio automatico",
+        "confirmação automática",
+        "confirmacao automatica",
+        "whatsapp",
+        "sms",
+        "e-mail",
+        "email",
+        "lembrete automático",
+        "lembrete automatico",
+        "lembretes automáticos",
+        "lembretes automaticos",
+        "lembrete de 24 horas",
+        "lembrete 24h",
+        "24 horas",
+        "24h",
+        "redução de faltas",
+        "reducao de faltas",
+        "zero faltas",
+        "zero absenteísmo",
+        "zero absenteismo",
+        "absenteísmo zero",
+        "absenteismo zero",
+        "aumento de faturamento",
+        "aumento do faturamento",
+        "faturamento garantido",
+        "lucro garantido"
+      ],
+      "forbiddenUiElements": [
+        "checkout",
+        "pagamento",
+        "cobrança",
+        "cobranca",
+        "a pagar",
+        "cartão de crédito",
+        "cartao de credito",
+        "prontuário",
+        "prontuario",
+        "receita digital",
+        "receita médica",
+        "receita medica",
+        "fotos antes e depois",
+        "antes e depois",
+        "meu salão",
+        "meu salao",
+        "e2e",
+        "lorem ipsum"
+      ]
+    },
     {
       "tenantId": "estudio-flow",
       "brandName": "Estúdio Flow",
@@ -450,6 +587,212 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
   ],
   "campaigns": [
     {
+      "tenantId": "clinica-vital",
+      "slug": "camp-saas-demo-clinica-vital-001",
+      "campaignId": "SAAS-DEMO-CLINICA-VITAL-001",
+      "titulo": "Conheca o Clínica Vital",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.mp4",
+        "sha256": "39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af",
+        "bytes": 492164,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16",
+          "1x1",
+          "16x9"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001.srt",
+        "sha256": "1d5c579f069b586a5f339a392b7e4ff6493501b8b4723bb681575af9cfdef897",
+        "bytes": 606,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo organizar avaliações da clínica sem depender de troca de mensagens?\n\n2\n00:00:04,000 --> 00:00:10,000\nA paciente escolhe o procedimento e a especialista disponível.\n\n3\n00:00:10,000 --> 00:00:17,000\nSeleciona o horário livre para a avaliação e confirma o agendamento.\n\n4\n00:00:17,000 --> 00:00:20,000\nA avaliação fica agendada com horário definido.\n\n5\n00:00:20,000 --> 00:00:26,000\nA recepção acompanha a consulta de Patricia Monteiro em /gestor/consultas.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a agenda clínica da Clínica Vital — clinicavital.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/camp-saas-demo-clinica-vital-001_narracao.txt",
+        "sha256": "f43449c4e67c87196158e349c91e336112e7426a43a3f72721e1305762554deb",
+        "bytes": 952,
+        "text": "Roteiro de narracao - camp-saas-demo-clinica-vital-001\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nConheça o fluxo da Clínica Vital, da marcação da avaliação até a agenda da recepção.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-escolha\nNa rota pública /avaliacao, a paciente escolhe o procedimento e a especialista.\n\n[00:00:10,000 --> 00:00:17,000] cena-03-confirma\nOs horários livres de avaliação aparecem na rota pública e a marcação é confirmada.\n\n[00:00:17,000 --> 00:00:20,000] cena-04-sucesso\nA marcação da avaliação é registrada e aparece na agenda da recepção.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-recepcao\nNa visão /gestor/consultas, a recepção vê a grade do dia e atualiza o status manualmente.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização de consultas da Clínica Vital em clinicavital.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/preview-storyboard.png",
+        "sha256": "300a266b2e0e1f43beb84b25aa9285f6c7ea7394b66620bb5d1099ec0aef2084",
+        "bytes": 750438,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/cover.png",
+        "sha256": "ebdfa49d1348589c88c45276d34b48147d129babce9b582b698c53a971acedad",
+        "bytes": 315623
+      },
+      "formats": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-001/preview-formats.png",
+        "sha256": "3487b45447f388ac8ec62d1c0b54f11cee8f084ee604885e68b047c8594407f2",
+        "bytes": 186871
+      },
+      "derivatives": [
+        {
+          "variant": "1x1",
+          "path": "derivatives/camp-saas-demo-clinica-vital-001-1x1.mp4",
+          "sha256": "9411f075b197d8b90087525f66dba3d0b422eeb75911a0779520c7514d62b679",
+          "bytes": 435311
+        },
+        {
+          "variant": "16x9",
+          "path": "derivatives/camp-saas-demo-clinica-vital-001-16x9.mp4",
+          "sha256": "7e79cc730e4936c03a5e6baeb23e72f9bc054756f67cb0bfca2e3f3a9d381b60",
+          "bytes": 496735
+        }
+      ],
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-001/instagram-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-001/youtube-shorts.md",
+          "text": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como organizar avaliações da clínica sem depender de troca de mensagens?\n- 00:00:04,000 — A paciente escolhe o procedimento e a especialista disponível.\n- 00:00:10,000 — Seleciona o horário livre para a avaliação e confirma o agendamento.\n- 00:00:17,000 — A avaliação fica agendada com horário definido.\n- 00:00:20,000 — A recepção acompanha a consulta de Patricia Monteiro em /gestor/consultas.\n\nhttps://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-001/facebook-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-001&utm_content=clinica-vital"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-001/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
+        },
+        "autoPublish": false
+      }
+    },
+    {
+      "tenantId": "clinica-vital",
+      "slug": "camp-saas-demo-clinica-vital-002",
+      "campaignId": "SAAS-DEMO-CLINICA-VITAL-002",
+      "titulo": "Conheca o Clínica Vital",
+      "preset": "saas-demo",
+      "politicaAudio": "-an",
+      "audioStreams": 0,
+      "format": {
+        "width": 1080,
+        "height": 1920,
+        "fps": 30,
+        "duration": 30.0
+      },
+      "scenes": 6,
+      "video": {
+        "archiveRelPath": ".workspace/archives/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
+        "sha256": "f4c29946494b3fd42cf570c25222f1d88c2d30b180878de714434485e4f68cdd",
+        "bytes": 585335,
+        "audioStreams": 0,
+        "audioCodec": null,
+        "variants": [
+          "9x16",
+          "1x1",
+          "16x9"
+        ]
+      },
+      "srt": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.srt",
+        "sha256": "e48efb232dd0e0d315e75dadd4190f6e2dbed550824bdb022697b7ae0e62f324",
+        "bytes": 638,
+        "text": "1\n00:00:00,000 --> 00:00:04,000\nComo a recepção da clínica organiza a agenda de consultas do dia?\n\n2\n00:00:04,000 --> 00:00:10,000\nA recepção abre a grade de consultas do dia em /gestor/consultas.\n\n3\n00:00:10,000 --> 00:00:15,000\nO filtro por especialista mostra apenas as consultas da Dra. Camila Ferraz.\n\n4\n00:00:15,000 --> 00:00:20,000\nA recepção altera o status da consulta manualmente, de Aguardando para Confirmado.\n\n5\n00:00:20,000 --> 00:00:26,000\nA busca por paciente localiza a consulta de Luciana Farias na grade.\n\n6\n00:00:26,000 --> 00:00:30,000\nConheça a rotina de recepção da Clínica Vital — clinicavital.com.br\n"
+      },
+      "narracao": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002_narracao.txt",
+        "sha256": "fdd487dd19a0efd621b396b824d08668af92cc11cce23495ca5fc6099de71491",
+        "bytes": 882,
+        "text": "Roteiro de narracao - camp-saas-demo-clinica-vital-002\nVideo com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.\n\n[00:00:00,000 --> 00:00:04,000] cena-01-hook\nVeja a rotina da recepção da Clínica Vital na agenda de consultas.\n\n[00:00:04,000 --> 00:00:10,000] cena-02-grade\nEm /gestor/consultas, a recepção visualiza a grade de consultas do dia.\n\n[00:00:10,000 --> 00:00:15,000] cena-03-filtro\nA recepção filtra a grade por especialista para acompanhar cada profissional.\n\n[00:00:15,000 --> 00:00:20,000] cena-04-status\nO status é atualizado manualmente pela recepção, sem automação de envio.\n\n[00:00:20,000 --> 00:00:26,000] cena-05-busca\nA recepção busca pelo nome da paciente e encontra a consulta na hora.\n\n[00:00:26,000 --> 00:00:30,000] cena-06-cta\nConheça a organização da recepção da Clínica Vital em clinicavital.com.br.\n"
+      },
+      "storyboard": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/preview-storyboard.png",
+        "sha256": "2a4886e6b15172bbedac71539b8e3218a61dac6167254253f619b37e241171df",
+        "bytes": 705346,
+        "timestampsSeconds": [
+          2.0,
+          8.0,
+          16.0,
+          24.0
+        ]
+      },
+      "cover": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/cover.png",
+        "sha256": "8861409216dc017733add4143185027e9ab8566bd96c172e95a95d73671bec37",
+        "bytes": 299794
+      },
+      "formats": {
+        "relPath": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/preview-formats.png",
+        "sha256": "1a1c1651841c9304e6d879abba3340fe1c12766e30dc0fa73ae1f9109d9a79a8",
+        "bytes": 178105
+      },
+      "derivatives": [
+        {
+          "variant": "1x1",
+          "path": "derivatives/camp-saas-demo-clinica-vital-002-1x1.mp4",
+          "sha256": "6bd505bdebea97a4f197b851c8a18c072e2a5fbae4808fc0118cf3642b1164bb",
+          "bytes": 501984
+        },
+        {
+          "variant": "16x9",
+          "path": "derivatives/camp-saas-demo-clinica-vital-002-16x9.mp4",
+          "sha256": "c89c7bd98708b69dc052a78ea4b19542498be27c925e3efb90f00e38a7c08b0c",
+          "bytes": 622209
+        }
+      ],
+      "copies": {
+        "instagram": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-002/instagram-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgendamento online, agenda do salao e profissionais a poucos toques.\n\nhttps://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital\n\nConheca o sistema — link na bio\n\n#MarcaSalao #AgendamentoOnline #AgendaDoSalao",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=instagram&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital"
+        },
+        "youtube": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-002/youtube-shorts.md",
+          "text": "Clínica Vital — Organizacao de consultas e agenda clinica com clareza\n\nDescubra como organizar a agenda do seu salao em poucos minutos.\n\nCapitulos:\n- 00:00:00,000 — Como a recepção da clínica organiza a agenda de consultas do dia?\n- 00:00:04,000 — A recepção abre a grade de consultas do dia em /gestor/consultas.\n- 00:00:10,000 — O filtro por especialista mostra apenas as consultas da Dra. Camila Ferraz.\n- 00:00:15,000 — A recepção altera o status da consulta manualmente, de Aguardando para Confirmado.\n- 00:00:20,000 — A busca por paciente localiza a consulta de Luciana Farias na grade.\n\nhttps://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital\n\nAssista ate o fim e acesse o link na descricao\n\n#MarcaSalao #AgendamentoOnline #Shorts",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=youtube&utm_medium=shorts&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital"
+        },
+        "facebook": {
+          "relPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-002/facebook-reels.md",
+          "text": "Conheca o Clínica Vital\n\nOrganizacao de consultas e agenda clinica com clareza\n\nAgende cortes, escovas, hidratacoes e muito mais direto pela agenda online.\n\nhttps://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital\n\nAcesse pelo link da descricao\n\n#MarcaSalao #AgendamentoOnline #Reels",
+          "utmUrl": "https://clinicavital.com.br/?utm_source=facebook&utm_medium=reels&utm_campaign=camp-saas-demo-clinica-vital-002&utm_content=clinica-vital"
+        }
+      },
+      "pacote": {
+        "checklistRelPath": "04-legendas/pacotes-publicacao/clinica-vital/camp-saas-demo-clinica-vital-002/checklist-publicacao.json",
+        "guardrailsAudited": true,
+        "guardrailStatus": {
+          "srt": "ok",
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
+        },
+        "autoPublish": false
+      }
+    },
+    {
       "tenantId": "estudio-flow",
       "slug": "camp-saas-demo-estudio-flow-001",
       "campaignId": "SAAS-DEMO-ESTUDIO-FLOW-001",
@@ -466,8 +809,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 6,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-saas-demo-estudio-flow-001/camp-saas-demo-estudio-flow-001.mp4",
-        "sha256": "b21504d50e63d044ee71ed0a0f1d58f365c49769ceeca4ae54a6f60e0a835a19",
-        "bytes": 438290,
+        "sha256": "445f30f61af794fa08245c11c7abe23451234a5b95d12e5ecd1f911ff296b261",
+        "bytes": 438108,
         "audioStreams": 0,
         "audioCodec": null,
         "variants": [
@@ -490,8 +833,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-storyboard.png",
-        "sha256": "d50ca37f53a2445a224d68c9492bdd5ec4a128686469245dc2fcd19603ea828a",
-        "bytes": 591280,
+        "sha256": "ea0815980f4b9f506ed4cdd5e877f25ea264e96f6ed4370935ffeecc43f28ea6",
+        "bytes": 622070,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -501,26 +844,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/cover.png",
-        "sha256": "b8d1a5326c6f726b5c6725bf4b89db5eaa2e7066a4aa71549d617228cbf323ff",
-        "bytes": 253636
+        "sha256": "6bad8c2e0819ac1e82ffbfadcf70ab9089eade9fce1c68db26ff3bf899409d3d",
+        "bytes": 271876
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/estudio-flow/camp-saas-demo-estudio-flow-001/preview-formats.png",
-        "sha256": "736fa583b004336038b073fde4129e88dbf69bac5f352f495e205d2163750f52",
-        "bytes": 141380
+        "sha256": "8042e325fa16336b6022812439245494a81774954ea75ad5b9d9d4808adc8f99",
+        "bytes": 163932
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-saas-demo-estudio-flow-001-1x1.mp4",
-          "sha256": "3e19313171dc25b9f48f77c49be619eea14941b6b0ee70d2ad32b650d0be3f44",
-          "bytes": 385392
+          "sha256": "aa68dfbbf299fd3bae932a4a59d82f8a18de1a2215c727ed91d61f613956950c",
+          "bytes": 385458
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-saas-demo-estudio-flow-001-16x9.mp4",
-          "sha256": "d69956a99265819b723c39d071acb81cfb30db2c488d1411af7e2e46d8d9961a",
-          "bytes": 444470
+          "sha256": "c3a26d718a04555a4686378dc255b782edcbca996863565f7018cf60f9dcdca7",
+          "bytes": 444823
         }
       ],
       "copies": {
@@ -545,7 +888,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -567,8 +912,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 6,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-saas-demo-marca-salao-001/camp-saas-demo-marca-salao-001.mp4",
-        "sha256": "fb4dd43f3cf5f7d30a3a68b6d4c8874ec12d7cc825b7bef05f6e6b1e6c065791",
-        "bytes": 445686,
+        "sha256": "fa41bb20210ab10848afd42eb734e1ef8e0516eb53b17318a4c29c84994f11ae",
+        "bytes": 445692,
         "audioStreams": 0,
         "audioCodec": null,
         "variants": [
@@ -591,8 +936,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-storyboard.png",
-        "sha256": "b79ca9193951aacc5820b6810896e7706b5cc9b337e966a8144eef6b002ee537",
-        "bytes": 643164,
+        "sha256": "666a354d0a14c530360f5f218980e86ad84dcefbd38af9d57b9756a4a468a1dc",
+        "bytes": 668932,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -602,26 +947,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/cover.png",
-        "sha256": "b1b2c7ad44ce56e0ba6818082967df27d090c5da4f0dd3c304b9207eb2cf2938",
-        "bytes": 283608
+        "sha256": "d2636e4e61f7a8a6d49235096539fd64c7b5d09df1cd6e63cd27ead2c9a94983",
+        "bytes": 301174
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-marca-salao-001/preview-formats.png",
-        "sha256": "74ccc468c93ad0e2904860f83ca0f69c1a5a152dbe9c1fa475f7ca79288bfb37",
-        "bytes": 177635
+        "sha256": "499186a8a6c4d4e4cd8a0b7c11f9b2248a2737c454e462430480667148964122",
+        "bytes": 198084
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-saas-demo-marca-salao-001-1x1.mp4",
-          "sha256": "88509bea624e1ffbc09f727521d3476f45ae0cdb083dfaad0d97426e39c1cb8c",
-          "bytes": 406960
+          "sha256": "a47632752f5e4f3c2693106eab9a282e13b51eed551b60ef7abfa2804d115df9",
+          "bytes": 407209
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-saas-demo-marca-salao-001-16x9.mp4",
-          "sha256": "26e94cdf20bf673d1a68a966c23fbf4f61b219468ef07a5dab0382e6eb43eff1",
-          "bytes": 479859
+          "sha256": "a44bf7d478d4c1a32f11a606a3aaacddce02d7a48d25405ee48b07ecee9cbc03",
+          "bytes": 478341
         }
       ],
       "copies": {
@@ -646,7 +991,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -668,8 +1015,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 6,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
-        "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
-        "bytes": 585286,
+        "sha256": "af5e9c5952b52575810971598947fd6be0415b1dd64d48342998637468189a2d",
+        "bytes": 585051,
         "audioStreams": 0,
         "audioCodec": null,
         "variants": [
@@ -692,8 +1039,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-storyboard.png",
-        "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c",
-        "bytes": 703861,
+        "sha256": "837c7f251c4c96616d2611045b5437686533e6da29d96d2cb6a6a677d466e8aa",
+        "bytes": 731518,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -703,26 +1050,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/cover.png",
-        "sha256": "064fe6914ce95045e44dad0c3744c271c3c5161880ae0a07fbdaba809a261c2f",
-        "bytes": 293486
+        "sha256": "74ec7611a1e88eb7c10cecb89859bb416e8272162edff078c52121081abc1ff2",
+        "bytes": 311220
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-formats.png",
-        "sha256": "e38df77e053499753c90d2702238dde2ae1e63f0acc1acfbd50e5e56e170c891",
-        "bytes": 181993
+        "sha256": "88732e10b1071f779b41385dd34a61098eadfec159679e676b8d453ce969382c",
+        "bytes": 202162
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-saas-demo-ns001-agenda-001-1x1.mp4",
-          "sha256": "d47ddf83365b9e83e31ceb585caee1e3e070525ab99c6177ded7e5208987063f",
-          "bytes": 526512
+          "sha256": "e63a3e27cb97562c197cbe7dc6a24bb57481e0ddae4ecc2729ff6ae89d7fbd49",
+          "bytes": 528193
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-saas-demo-ns001-agenda-001-16x9.mp4",
-          "sha256": "2b2d8099ac20926cb1f61f2f45665d97325eabed064d2681d8b838cbb7d70167",
-          "bytes": 655890
+          "sha256": "49159fbead9e857cdfcbef88aef8b3c7f6b65b95a561065ca3cf3b71fb1bd436",
+          "bytes": 655604
         }
       ],
       "copies": {
@@ -747,7 +1094,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -769,8 +1118,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 6,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-001/camp-saas-demo-meu-salao-001.mp4",
-        "sha256": "634e8e3d57d98931d6fc32e094ecaf7754fb6b4931df746325bf6c74fb207ca3",
-        "bytes": 418019,
+        "sha256": "60b61676894212749f27500604b17414503e79f8dbd513b83c81a294c67ceaf2",
+        "bytes": 418056,
         "audioStreams": 0,
         "audioCodec": null,
         "variants": [
@@ -793,8 +1142,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-storyboard.png",
-        "sha256": "dcbda5440c0d9023655697feb525b64dee92f2eeea231dd0388c63cd9aab1a87",
-        "bytes": 620208,
+        "sha256": "5c6377e12ecff5e4fbe5c7614cd39a8449980dd70415f20edb6cb88dfd1d19a5",
+        "bytes": 644132,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -804,26 +1153,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/cover.png",
-        "sha256": "abda6e3051111e898f646abe3377dbd4f0ec57fde65acda894c228ef031c3f73",
-        "bytes": 274991
+        "sha256": "b872ea20b55f1c77d8a79ed4fd55de9fff33265619d628f730f8a2069b5c0b83",
+        "bytes": 293060
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-001/preview-formats.png",
-        "sha256": "5e8203fe53ec43b0e6448b8ad22a99950ab9b382bbb180a7f817ea8f90e7e3d2",
-        "bytes": 167232
+        "sha256": "f37e95bef0810f2a823592d06d190d52b7be2c64f74e56e4785e9132030a6ae4",
+        "bytes": 187578
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-saas-demo-meu-salao-001-1x1.mp4",
-          "sha256": "40202ef5620716cbc60974e4bc68a8b9870f0ec376b2bb8c4b26eddf4471ec51",
-          "bytes": 374639
+          "sha256": "a450701c5c041c206df99fd489ef43eb07c5ba6cd53e1dedabb0b245338cff90",
+          "bytes": 374648
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-saas-demo-meu-salao-001-16x9.mp4",
-          "sha256": "1caad008800d81a0a76e0fbdd9d4a65f0eca9b4a29d1f65cc1409b3e3433d682",
-          "bytes": 438156
+          "sha256": "3db19da7078ab9d79643f048aca4345213e302984dd949c31dcc28a5696db025",
+          "bytes": 441136
         }
       ],
       "copies": {
@@ -848,7 +1197,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -870,8 +1221,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 6,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
-        "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
-        "bytes": 513587,
+        "sha256": "aa492529e3ea5ef48110602d1c6c35aec823bd34f3178681c3294cc77456b28a",
+        "bytes": 513566,
         "audioStreams": 0,
         "audioCodec": null,
         "variants": [
@@ -894,8 +1245,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
-        "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
-        "bytes": 645948,
+        "sha256": "8cc577e1cf1c662f82cefb40f5020afd536bcbb9be219e18677147b7e7e1b244",
+        "bytes": 674337,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -905,26 +1256,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/cover.png",
-        "sha256": "05e5c0ab5e08df94de069db280fa71e75958255c56e34d665ad54ce761c833db",
-        "bytes": 264657
+        "sha256": "3b69337c68df9670defa7b4c7e08aada1491e81d05d080342ea6e217058efcab",
+        "bytes": 283264
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-formats.png",
-        "sha256": "a25e0010af34bd9e67eaeaa0fb250ffe636e3714687fb680ee359612a216a0c0",
-        "bytes": 156284
+        "sha256": "c9bf40cbfd8db112b0e26510a29a7c8a4340e611cfd874c8acffc3b1b4cdf683",
+        "bytes": 176561
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-saas-demo-meu-salao-002-1x1.mp4",
-          "sha256": "2d7ab532ecaf402087b1f979b1a6825cda2b87ab50e9cefc20f7aad3f51fec0c",
-          "bytes": 459584
+          "sha256": "cebc987062e6a3adf68d3b1e65e9861d7dabb9daee90c748b32913cf4b9dc7f6",
+          "bytes": 459549
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-saas-demo-meu-salao-002-16x9.mp4",
-          "sha256": "4f7f5cbf97b6fca9ed0f3117f595b80774b3a06f163706ea6758d4291e7daa53",
-          "bytes": 543428
+          "sha256": "5850358f781211c4b4d8f54f25e2f39ced5d73b6fcd5de74f227ba5b8203a633",
+          "bytes": 545542
         }
       ],
       "copies": {
@@ -949,7 +1300,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -971,8 +1324,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 5,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
-        "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
-        "bytes": 352348,
+        "sha256": "5b5d44a0b208f35d632744d0e95d6eb1cbd2063b0c003f44f297f6f647b87d8f",
+        "bytes": 352456,
         "audioStreams": 1,
         "audioCodec": "aac",
         "variants": [
@@ -995,8 +1348,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
-        "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
-        "bytes": 479092,
+        "sha256": "67319770f306773e738a72f90d532c293a6a25d35e7527e8bd7271039dbe0700",
+        "bytes": 506984,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -1006,26 +1359,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/cover.png",
-        "sha256": "631dc53b3cb40ea404f2644577b0b3e172732b590de9fd2fc5469fe5682b3ea5",
-        "bytes": 194970
+        "sha256": "0c78ac098b06dc5df7080607d7db8fd207d4d29b693f59f989dcc68923d5b742",
+        "bytes": 214732
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-formats.png",
-        "sha256": "5f849c00ce3a261d49fa6b83097d17e8e4209ddf30e46a52568a5b54889f81ff",
-        "bytes": 104475
+        "sha256": "f597fe825dfec00925d31ca979e00c6b22fb06381a286171d88eacde726df54b",
+        "bytes": 128999
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-shorts-completo-multitrack-001-1x1.mp4",
-          "sha256": "a1ad8e3e91bacef0ecbcdeb307298fb4789e0d6900a0364aa4bb08f0724f53ee",
-          "bytes": 774024
+          "sha256": "75e3a396c7673ec7a57c97276e44ab7f39d5261ace8bd524d9d4ffb3a7eb946b",
+          "bytes": 301340
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-shorts-completo-multitrack-001-16x9.mp4",
-          "sha256": "5744688f821c913f77f54e1be689eb19d0293eb969ebf8bcc12c8ebef2efcfca",
-          "bytes": 795798
+          "sha256": "cd0cde3f3f112eb73d71ed9fdaaae3c11efef290ca5a7402ab681091f02fe292",
+          "bytes": 322913
         }
       ],
       "copies": {
@@ -1050,7 +1403,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -1072,8 +1427,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 5,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-shorts-rateios-002/camp-shorts-rateios-002.mp4",
-        "sha256": "0463f515fe0b94a83e3e3ad5617806a5d5350f49e17201535bb9746926fd13b0",
-        "bytes": 353932,
+        "sha256": "f364e281cb5729061c1343fdf958fdd6829c4e559493e7d32f5258c681eb1109",
+        "bytes": 354015,
         "audioStreams": 1,
         "audioCodec": "aac",
         "variants": [
@@ -1096,8 +1451,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-storyboard.png",
-        "sha256": "8b4d0e2eb821bafaa2a7a3ec5242b88b8f8c645c6c73d9b3828b76c888774b02",
-        "bytes": 479669,
+        "sha256": "54364d28640bccdc225ebf2bacd4c4cc3793f654ce8c974f8108816fb867675f",
+        "bytes": 510322,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -1107,26 +1462,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/cover.png",
-        "sha256": "66bc14a85a01598043386820351918887baeb40b0d9de543fa00e5f47b3ce5bf",
-        "bytes": 212180
+        "sha256": "7d234c1d472d7fddc264520a1d2513bfc816d76cce0fdb2a942061cd8d83b078",
+        "bytes": 231801
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-rateios-002/preview-formats.png",
-        "sha256": "e2af7197ed6668628fb1c7829fe89433f9f719256ff680ef3f2d2621ebf2dc4c",
-        "bytes": 111159
+        "sha256": "3cd154b34b71a755e94f35ebe32e11abf9d60dd45745dda2efd22773c95192ad",
+        "bytes": 135932
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-shorts-rateios-002-1x1.mp4",
-          "sha256": "f29466c9fea623708bad3acc5c83d1c9417a17e1594a39b0e398d420e352a305",
-          "bytes": 775708
+          "sha256": "551c8527c481bfddda414edbc73f6734299e4bd9db21a9750c1f758fe3a9f9d1",
+          "bytes": 303954
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-shorts-rateios-002-16x9.mp4",
-          "sha256": "f4e1fc34a22c012e57875cd3919243ad5f898ba475bd92ecffb24f6b56984229",
-          "bytes": 782859
+          "sha256": "95ac82b9bf027c0252a1bc8fcf9f38c7a2aaa1594c15cf7f7d83bb8bf7df324c",
+          "bytes": 311185
         }
       ],
       "copies": {
@@ -1151,7 +1506,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }
@@ -1173,8 +1530,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       "scenes": 5,
       "video": {
         "archiveRelPath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
-        "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
-        "bytes": 446684,
+        "sha256": "155eb9fe8fb08d46bdf66d66611b98d828d7104834471c3d1b5666b3246575b4",
+        "bytes": 446175,
         "audioStreams": 1,
         "audioCodec": "aac",
         "variants": [
@@ -1197,8 +1554,8 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "storyboard": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-storyboard.png",
-        "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
-        "bytes": 537892,
+        "sha256": "8d2b9777d0f36f42ef5cc06c4ffbfb193e8f0d4a5e99a1176e01fbd9baa87a55",
+        "bytes": 570636,
         "timestampsSeconds": [
           2.0,
           8.0,
@@ -1208,26 +1565,26 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
       },
       "cover": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/cover.png",
-        "sha256": "9fb74cbb11ff62210515c496794252390433b23a5cf41aeef7b96b86b9235a2c",
-        "bytes": 220651
+        "sha256": "3a5f80da46334cbdd4c7c30986824b623e47a6a7b5e93f978f357d887d480e86",
+        "bytes": 240727
       },
       "formats": {
         "relPath": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/preview-formats.png",
-        "sha256": "90ee5ead70fdb9f24139742f6f232e9822374bae2c72164a7e66ed97b63d925a",
-        "bytes": 109604
+        "sha256": "6ce7d31fba91506d054578ada877e03b7e5ce91169ef20bcdb5e2e7bd060a233",
+        "bytes": 134705
       },
       "derivatives": [
         {
           "variant": "1x1",
           "path": "derivatives/camp-shorts-stems-workflow-003-1x1.mp4",
-          "sha256": "9a5d949f1bf7558cd1acb0ebca4f7cc5b49e0fa732f2470b3b034954708513e0",
-          "bytes": 854461
+          "sha256": "dda2b9afb177fe0ceb981b3b6770dd798043cf35d1c58bf5bbaf87169d6f0885",
+          "bytes": 383287
         },
         {
           "variant": "16x9",
           "path": "derivatives/camp-shorts-stems-workflow-003-16x9.mp4",
-          "sha256": "dec1784fcce67081dc2f7937ff7c9fb229928bf69e6bce15604353d2598e6175",
-          "bytes": 893391
+          "sha256": "51d585fc07b52612b892280906b3491d04fb0a11da111d3923e9c22b2e4ed772",
+          "bytes": 421761
         }
       ],
       "copies": {
@@ -1252,7 +1609,9 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "guardrailsAudited": true,
         "guardrailStatus": {
           "srt": "ok",
-          "narration": "ok"
+          "narration": "ok",
+          "srt_violations": [],
+          "narration_violations": []
         },
         "autoPublish": false
       }

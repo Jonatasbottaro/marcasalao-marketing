@@ -17,10 +17,10 @@
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
       "archivePath": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
       "resolvedFrom": "archive",
-      "sha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
-      "bytes": 352348,
-      "sha256_disk_ok": false,
-      "presentOnDisk": false
+      "sha256": "5b5d44a0b208f35d632744d0e95d6eb1cbd2063b0c003f44f297f6f647b87d8f",
+      "bytes": 352456,
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "srt",
@@ -47,8 +47,8 @@
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/preview-storyboard.png",
       "archivePath": null,
       "resolvedFrom": "delivery",
-      "sha256": "82fcc1cfa9178d52f7ccfaff82caddf0e69fae60c0ed02a72bf13e6988ef4dbf",
-      "bytes": 479092,
+      "sha256": "67319770f306773e738a72f90d532c293a6a25d35e7527e8bd7271039dbe0700",
+      "bytes": 506984,
       "sha256_disk_ok": true,
       "presentOnDisk": true
     }

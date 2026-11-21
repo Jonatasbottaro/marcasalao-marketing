@@ -1,0 +1,20 @@
+Roteiro de narracao - camp-saas-demo-clinica-vital-002
+Video com suporte a legendas; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:04,000] cena-01-hook
+Veja a rotina da recepção da Clínica Vital na agenda de consultas.
+
+[00:00:04,000 --> 00:00:10,000] cena-02-grade
+Em /gestor/consultas, a recepção visualiza a grade de consultas do dia.
+
+[00:00:10,000 --> 00:00:15,000] cena-03-filtro
+A recepção filtra a grade por especialista para acompanhar cada profissional.
+
+[00:00:15,000 --> 00:00:20,000] cena-04-status
+O status é atualizado manualmente pela recepção, sem automação de envio.
+
+[00:00:20,000 --> 00:00:26,000] cena-05-busca
+A recepção busca pelo nome da paciente e encontra a consulta na hora.
+
+[00:00:26,000 --> 00:00:30,000] cena-06-cta
+Conheça a organização da recepção da Clínica Vital em clinicavital.com.br.

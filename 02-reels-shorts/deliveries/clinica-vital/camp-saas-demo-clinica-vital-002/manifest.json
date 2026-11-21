@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tenantId": "clinica-vital",
+  "preset": "saas-demo",
+  "brand": {
+    "tenantId": "clinica-vital",
+    "brandName": "Clínica Vital",
+    "monogram": "CV",
+    "domain": "clinicavital.com.br"
+  },
+  "guardrails": {
+    "allowAudioTrack": false,
+    "requireSrt": true,
+    "requireExternalNarration": true
+  },
+  "config": "tenants/clinica-vital/campaigns/camp-saas-demo-clinica-vital-002.json",
+  "fixture": {
+    "path": "tenants/clinica-vital/fixtures/fixture-editorial-clinica-vital.json",
+    "sha256": "d9157117e68f3a00ebdc0b0e8c4b221df28a98b46069a14dee5ce48dcca74b02"
+  },
+  "format": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration": 30.0,
+    "codec": "h264",
+    "pixFmt": "yuv420p"
+  },
+  "audio": {
+    "allowAudioTrack": false,
+    "audioStream": 0,
+    "source": "none"
+  },
+  "command": "python tools/preset_runner.py --tenant clinica-vital --config tenants/clinica-vital/campaigns/camp-saas-demo-clinica-vital-002.json --output-dir 02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002",
+  "tools": {
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "artifacts": {
+    "video": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.mp4",
+      "sha256": "f4c29946494b3fd42cf570c25222f1d88c2d30b180878de714434485e4f68cdd",
+      "bytes": 585335,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "versioned": false,
+      "reasonNotVersioned": ".gitignore versionado ignora *.mp4; manifesto preserva hash, ffprobe e comando reproduzivel"
+    },
+    "srt": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002.srt",
+      "sourcePath": null,
+      "sha256": "e48efb232dd0e0d315e75dadd4190f6e2dbed550824bdb022697b7ae0e62f324",
+      "bytes": 638,
+      "versioned": true
+    },
+    "narration": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/camp-saas-demo-clinica-vital-002_narracao.txt",
+      "sha256": "fdd487dd19a0efd621b396b824d08668af92cc11cce23495ca5fc6099de71491",
+      "bytes": 882,
+      "versioned": true
+    },
+    "storyboard": {
+      "path": "02-reels-shorts/deliveries/clinica-vital/camp-saas-demo-clinica-vital-002/preview-storyboard.png",
+      "timestampsSeconds": [
+        2.0,
+        8.0,
+        16.0,
+        24.0
+      ],
+      "sha256": "2a4886e6b15172bbedac71539b8e3218a61dac6167254253f619b37e241171df",
+      "bytes": 705346,
+      "width": 1080,
+      "height": 1920,
+      "versioned": true
+    }
+  }
+}

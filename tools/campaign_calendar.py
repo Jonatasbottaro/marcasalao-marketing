@@ -200,6 +200,14 @@ HOOK_VARIANTE_B = {
         "Trabalhe com os stems Click, Guide e banda separados por "
         "instrumento, na ordem certa do seu workflow."
     ),
+    "camp-saas-demo-clinica-vital-001": (
+        "Acompanhe o caminho da avaliação marcada pela paciente até a agenda "
+        "da recepção, passo a passo."
+    ),
+    "camp-saas-demo-clinica-vital-002": (
+        "Veja a agenda de consultas do dia organizada por especialista e por "
+        "status, em uma tela só."
+    ),
 }
 
 
@@ -639,7 +647,9 @@ def _render_md(calendar: dict) -> str:
     audio_tenants = sorted(t for t, allow in audio_by_tenant.items() if allow)
 
     lines: list[str] = []
-    lines.append("# Calendário Editorial — Content Factory Multi-Tenant (4 semanas)")
+    lines.append(
+        f"# Calendário Editorial — Content Factory Multi-Tenant ({calendar['weeks']} semanas)"
+    )
     lines.append("")
     lines.append(
         f"> Gerado por `tools/campaign_calendar.py --start-date {calendar['startDate']} "
@@ -698,7 +708,7 @@ def _render_md(calendar: dict) -> str:
         )
     lines.append("")
 
-    lines.append("## 2. Cronograma completo (4 semanas)")
+    lines.append(f"## 2. Cronograma completo ({calendar['weeks']} semanas)")
     lines.append("")
     for week in range(1, calendar["weeks"] + 1):
         week_slots = [slot for slot in slots if slot["semana"] == week]
@@ -860,8 +870,7 @@ def write_calendar(calendar: dict, root: str = ".") -> dict:
         if not render_local.contained(root_real, abs_path):
             raise CampaignCalendarError(f"SAIDA_FORA_DA_RAIZ: {rel_path}")
         os.makedirs(render_local.fs_path(os.path.dirname(abs_path)), exist_ok=True)
-        with open(render_local.fs_path(abs_path), "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(content)
+        render_local.write_text_lf(abs_path, content)
         outputs[kind] = {
             "path": render_local.rel(root_real, abs_path),
             "sha256": _sha256_file(abs_path),

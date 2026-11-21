@@ -33,15 +33,15 @@
   },
   "command": "python tools/preset_runner.py --tenant multitrack-hub --config tenants/multitrack-hub/campaigns/camp-shorts-stems-workflow-003.json --output-dir 02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003",
   "tools": {
-    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   },
   "artifacts": {
     "video": {
       "path": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
       "archivePath": ".workspace/archives/camp-shorts-stems-workflow-003/camp-shorts-stems-workflow-003.mp4",
-      "sha256": "8a9a717c214005fdba00ecd72e0024221a556d626e50bb68da1b40db52f347b9",
-      "bytes": 446684,
+      "sha256": "155eb9fe8fb08d46bdf66d66611b98d828d7104834471c3d1b5666b3246575b4",
+      "bytes": 446175,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -77,8 +77,8 @@
         16.0,
         24.0
       ],
-      "sha256": "a10890fb83dcb8116f0e763699d35986e2e9bf900a434fb2cb697a1a15187015",
-      "bytes": 537892,
+      "sha256": "8d2b9777d0f36f42ef5cc06c4ffbfb193e8f0d4a5e99a1176e01fbd9baa87a55",
+      "bytes": 570636,
       "width": 1080,
       "height": 1920,
       "versioned": true

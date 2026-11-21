@@ -33,15 +33,15 @@
   },
   "command": "python tools/preset_runner.py --tenant meu-salao --config tenants/meu-salao/campaigns/camp-saas-demo-meu-salao-002.json --output-dir 02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002",
   "tools": {
-    "ffmpeg": "ffmpeg version N-129000-g64f6bcffaf-20261117 Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version N-129000-g64f6bcffaf-20261117 Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   },
   "artifacts": {
     "video": {
       "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
       "archivePath": ".workspace/archives/camp-saas-demo-meu-salao-002/camp-saas-demo-meu-salao-002.mp4",
-      "sha256": "82702ce609891c83d2ec4196c3b7fdb91a4c0262a5fe6407c81cf1988e669c35",
-      "bytes": 513587,
+      "sha256": "aa492529e3ea5ef48110602d1c6c35aec823bd34f3178681c3294cc77456b28a",
+      "bytes": 513566,
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -77,8 +77,8 @@
         16.0,
         24.0
       ],
-      "sha256": "4b36f0c24b207a58deb04e08cdd0902f54aa9b19ca3623c12a7be61176e6f563",
-      "bytes": 645948,
+      "sha256": "8cc577e1cf1c662f82cefb40f5020afd536bcbb9be219e18677147b7e7e1b244",
+      "bytes": 674337,
       "width": 1080,
       "height": 1920,
       "versioned": true

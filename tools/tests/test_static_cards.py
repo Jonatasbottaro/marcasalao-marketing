@@ -36,8 +36,10 @@ import render_local
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DELIVERIES = os.path.join(ROOT, "01-insta-stories", "deliveries")
-TENANTS = ["estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"]
+TENANTS = ["clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"]
 CAMPAIGNS_BY_TENANT = {
+    "clinica-vital": ["camp-saas-demo-clinica-vital-001",
+                      "camp-saas-demo-clinica-vital-002"],
     "estudio-flow": ["camp-saas-demo-estudio-flow-001"],
     "marca-salao": ["camp-saas-demo-marca-salao-001", "camp-saas-demo-ns001-agenda-001"],
     "meu-salao": ["camp-saas-demo-meu-salao-001", "camp-saas-demo-meu-salao-002"],
@@ -249,7 +251,7 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(antes, depois, "execucoes repetidas geraram bytes diferentes")
 
     # --- Teste 9: validacao consolidada das 8 entregas reais --------------
-    def test_oito_entregas_reais_consolidadas(self):
+    def test_dez_entregas_reais_consolidadas(self):
         entregas = []
         for tid in TENANTS:
             tenant_dir = os.path.join(DELIVERIES, tid)
@@ -266,7 +268,7 @@ class TestStaticCards(unittest.TestCase):
                 self.assertEqual(set(static_cards.STORY_FILES), nomes_stories)
                 self.assertEqual(set(static_cards.CAROUSEL_FILES), nomes_carousel)
                 entregas.append((tid, slug))
-        self.assertEqual(len(entregas), 8, f"esperadas 8 entregas, achadas {len(entregas)}")
+        self.assertEqual(len(entregas), 10, f"esperadas 10 entregas, achadas {len(entregas)}")
 
     # --- Teste 12: caminhos OS-nativos e normalizacao de separadores ------
     def test_caminhos_os_nativos_e_normpath(self):
@@ -306,7 +308,7 @@ class TestStaticCards(unittest.TestCase):
         self.assertEqual(res.returncode, 0, f"stderr: {res.stderr}")
         summary = json.loads(res.stdout)
         total = sum(len(t["campaigns"]) for t in summary["tenants"])
-        self.assertEqual(total, 8, f"esperadas 8 campanhas no --all, achadas {total}")
+        self.assertEqual(total, 10, f"esperadas 10 campanhas no --all, achadas {total}")
 
 
 if __name__ == "__main__":

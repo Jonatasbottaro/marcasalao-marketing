@@ -3,15 +3,15 @@
   "tenantId": "multitrack-hub",
   "slug": "camp-shorts-completo-multitrack-001",
   "preset": "shorts-completo",
-  "sourceVideoSha256": "2a909fbb4b80104a1dde4dd8a97bc1b3d521f8e2c22d9b11fb92d067317a3bb4",
+  "sourceVideoSha256": "5b5d44a0b208f35d632744d0e95d6eb1cbd2063b0c003f44f297f6f647b87d8f",
   "allowAudioTrack": true,
   "appliedAudioPolicy": "aac-44100-stereo",
   "source": {
     "path": ".workspace/archives/camp-shorts-completo-multitrack-001/camp-shorts-completo-multitrack-001.mp4",
-    "sha256": "2a909fbb4b80104a1dde4dd8a97bc1b3d521f8e2c22d9b11fb92d067317a3bb4",
-    "bytes": 824359,
+    "sha256": "5b5d44a0b208f35d632744d0e95d6eb1cbd2063b0c003f44f297f6f647b87d8f",
+    "bytes": 352456,
     "deliveryManifest": "02-reels-shorts/deliveries/multitrack-hub/camp-shorts-completo-multitrack-001/manifest.json",
-    "deliveryRecordedSha256": "39392faa1d92a7b42fe933c9344184af00f3d226e1d86af2555d2bac148b1197",
+    "deliveryRecordedSha256": "5b5d44a0b208f35d632744d0e95d6eb1cbd2063b0c003f44f297f6f647b87d8f",
     "ffprobe": {
       "videoStreams": 1,
       "audioStreams": 1,
@@ -35,8 +35,8 @@
       "codec": "h264",
       "audioStreams": 1,
       "audioCodec": "aac",
-      "bytes": 774024,
-      "sha256": "a1ad8e3e91bacef0ecbcdeb307298fb4789e0d6900a0364aa4bb08f0724f53ee",
+      "bytes": 301340,
+      "sha256": "75e3a396c7673ec7a57c97276e44ab7f39d5261ace8bd524d9d4ffb3a7eb946b",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -75,8 +75,8 @@
       "codec": "h264",
       "audioStreams": 1,
       "audioCodec": "aac",
-      "bytes": 795798,
-      "sha256": "5744688f821c913f77f54e1be689eb19d0293eb969ebf8bcc12c8ebef2efcfca",
+      "bytes": 322913,
+      "sha256": "cd0cde3f3f112eb73d71ed9fdaaae3c11efef290ca5a7402ab681091f02fe292",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 1,
@@ -115,8 +115,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 194970,
-      "sha256": "631dc53b3cb40ea404f2644577b0b3e172732b590de9fd2fc5469fe5682b3ea5",
+      "bytes": 214732,
+      "sha256": "0c78ac098b06dc5df7080607d7db8fd207d4d29b693f59f989dcc68923d5b742",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -159,8 +159,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 151562,
-      "sha256": "f5e50cc70d0adf8c139869630935e6a98d1dfd584d4a5364a2fcca35688e4625",
+      "bytes": 175838,
+      "sha256": "cf8c4c6c61789dd5055ad3c3a618109a7b1b71a934c82db0a526c10018060f64",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -186,8 +186,8 @@
       "codec": "png",
       "audioStreams": 0,
       "audioCodec": null,
-      "bytes": 104475,
-      "sha256": "5f849c00ce3a261d49fa6b83097d17e8e4209ddf30e46a52568a5b54889f81ff",
+      "bytes": 128999,
+      "sha256": "f597fe825dfec00925d31ca979e00c6b22fb06381a286171d88eacde726df54b",
       "ffprobe": {
         "videoStreams": 1,
         "audioStreams": 0,
@@ -217,7 +217,7 @@
   },
   "command": "python tools/derivative_formats.py --tenant multitrack-hub --campaign camp-shorts-completo-multitrack-001",
   "tools": {
-    "ffmpeg": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
-    "ffprobe": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
+    "ffmpeg": "ffmpeg version 9.1-essentials_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.1-essentials_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers"
   }
 }
