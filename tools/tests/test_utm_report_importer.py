@@ -692,5 +692,194 @@ class HookSignificanceTest(unittest.TestCase):
         self.assertTrue(tenant_row["significant"])
 
 
+class HookFatigueAndTenantBenchmarkTest(unittest.TestCase):
+    """Etapa 9: detecao temporal de fadiga de hook e benchmarks isolados por tenant."""
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if os.path.isdir(TEST_TMP_ROOT):
+            shutil.rmtree(TEST_TMP_ROOT, ignore_errors=True)
+
+    # ------------------------------------------------------------------
+    # fixtures
+    # ------------------------------------------------------------------
+    def _root(self, name: str) -> Path:
+        root = Path(TEST_TMP_ROOT) / name
+        shutil.rmtree(root, ignore_errors=True)
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+
+    def _write_json(self, root: Path, rel_path: str, payload: dict) -> Path:
+        target = root / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        return target
+
+    def _write_csv(self, root: Path, rel_path: str, header: list[str], rows: list[list[str]]) -> Path:
+        target = root / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(header)
+            writer.writerows(rows)
+        return target
+
+    # ------------------------------------------------------------------
+    # _detect_hook_fatigue
+    # ------------------------------------------------------------------
+    def test_01_fadiga_detectada_quando_cvr_cai_estatisticamente(self) -> None:
+        resultado = utm_report_importer._detect_hook_fatigue(
+            conversions_w1=100, sessions_w1=1000,
+            conversions_w2=30, sessions_w2=1000,
+        )
+        self.assertEqual(resultado["fatigueStatus"], "fadiga_detectada")
+        self.assertTrue(resultado["fatigueDetected"])
+        self.assertIsNotNone(resultado["fatigueZScore"])
+        self.assertIsNotNone(resultado["fatiguePValue"])
+        self.assertGreaterEqual(resultado["fatigueZScore"], utm_report_importer.DEFAULT_Z_THRESHOLD)
+        self.assertLess(resultado["fatiguePValue"], utm_report_importer.SIGNIFICANCE_ALPHA)
+        self.assertIn("Fadiga de hook detectada", resultado["fatigueReason"])
+
+    def test_02_estavel_quando_nao_houve_queda_estatistica(self) -> None:
+        resultado = utm_report_importer._detect_hook_fatigue(
+            conversions_w1=100, sessions_w1=1000,
+            conversions_w2=90, sessions_w2=1000,
+        )
+        self.assertEqual(resultado["fatigueStatus"], "estavel")
+        self.assertFalse(resultado["fatigueDetected"])
+        self.assertIsNotNone(resultado["fatigueZScore"])
+        self.assertIsNotNone(resultado["fatiguePValue"])
+        self.assertIn("Hook estavel", resultado["fatigueReason"])
+
+    def test_03_amostra_insuficiente_quando_poucas_conversoes(self) -> None:
+        resultado = utm_report_importer._detect_hook_fatigue(
+            conversions_w1=3, sessions_w1=1000,
+            conversions_w2=1, sessions_w2=1000,
+        )
+        self.assertEqual(resultado["fatigueStatus"], "amostra_insuficiente")
+        self.assertFalse(resultado["fatigueDetected"])
+        self.assertIsNone(resultado["fatigueZScore"])
+        self.assertIsNone(resultado["fatiguePValue"])
+        self.assertIn("minimo de 5 conversoes por janela", resultado["fatigueReason"])
+
+    def test_04_amostra_insuficiente_quando_zero_sessoes_em_uma_janela(self) -> None:
+        resultado = utm_report_importer._detect_hook_fatigue(
+            conversions_w1=10, sessions_w1=1000,
+            conversions_w2=5, sessions_w2=0,
+        )
+        self.assertEqual(resultado["fatigueStatus"], "amostra_insuficiente")
+        self.assertFalse(resultado["fatigueDetected"])
+        self.assertIsNone(resultado["fatigueZScore"])
+        self.assertIsNone(resultado["fatiguePValue"])
+
+    # ------------------------------------------------------------------
+    # _tenant_benchmarks (via analyze_performance)
+    # ------------------------------------------------------------------
+    def _fatigue_project(self, name: str, rows: list[list[str]], calendar_slots: list[dict]) -> Path:
+        root = self._root(name)
+        self._write_json(
+            root,
+            "04-legendas/calendario-editorial.json",
+            {"schemaVersion": 2, "autoPublish": False, "slots": calendar_slots},
+        )
+        header = GA4_HEADER + ["hook_variant_used"]
+        self._write_csv(root, "metrics.csv", header, rows)
+        return root
+
+    def test_05_tenant_benchmarks_isolados_por_tenant(self) -> None:
+        root = self._fatigue_project(
+            "bench-isolados",
+            [
+                ["youtube", "shorts", "camp-marca", "marca-salao", "1000", "600", "50", "A"],
+                ["instagram", "reels", "camp-marca-02", "marca-salao", "500", "250", "40", "B"],
+                ["youtube", "video", "camp-multi", "repurpose-16x9", "1000", "600", "50", "A"],
+            ],
+            [
+                {
+                    "slotId": "slot-001", "onda": 1, "semana": 1, "dataSugerida": "2026-11-23",
+                    "tenantId": "marca-salao", "brandName": "Marca Salão", "slug": "camp-marca",
+                    "canal": "youtube", "formatoVideo": "9:16",
+                    "hookVarianteA": "A", "hookVarianteB": "B",
+                    "utmParams": {"utm_source": "youtube", "utm_medium": "shorts",
+                                  "utm_campaign": "camp-marca", "utm_content": "marca-salao"},
+                },
+                {
+                    "slotId": "slot-002", "onda": 2, "semana": 5, "dataSugerida": "2026-12-21",
+                    "tenantId": "marca-salao", "brandName": "Marca Salão", "slug": "camp-marca-02",
+                    "canal": "instagram", "formatoVideo": "9:16",
+                    "hookVarianteA": "A", "hookVarianteB": "B",
+                    "utmParams": {"utm_source": "instagram", "utm_medium": "reels",
+                                  "utm_campaign": "camp-marca-02", "utm_content": "marca-salao"},
+                },
+                {
+                    "slotId": "slot-003", "onda": 1, "semana": 1, "dataSugerida": "2026-11-23",
+                    "tenantId": "multitrack-hub", "brandName": "Multitrack Hub", "slug": "camp-multi",
+                    "canal": "youtube", "formatoVideo": "16:9",
+                    "hookVarianteA": "A", "hookVarianteB": "B",
+                    "utmParams": {"utm_source": "youtube", "utm_medium": "video",
+                                  "utm_campaign": "camp-multi", "utm_content": "repurpose-16x9"},
+                },
+            ],
+        )
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        benchmarks = report["rankings"]["tenantBenchmarks"]
+        by_id = {b["tenantId"]: b for b in benchmarks["byTenant"]}
+        self.assertIn("marca-salao", by_id)
+        self.assertIn("multitrack-hub", by_id)
+        marca = by_id["marca-salao"]
+        multi = by_id["multitrack-hub"]
+        # marca-salao: 2 campanhas no calendario
+        self.assertEqual(marca["campaigns"], 2)
+        self.assertEqual(marca["sessions"], 1500)
+        # multitrack-hub: 1 campanha
+        self.assertEqual(multi["campaigns"], 1)
+        self.assertEqual(multi["sessions"], 1000)
+        # isolamento: metricas de marca-salao nao aparecem em multitrack-hub
+        self.assertNotEqual(marca["conversions"], multi["conversions"])
+
+    def test_06_benchmarks_expoem_fadiga_e_taxa_vitoria_ab(self) -> None:
+        root = self._fatigue_project(
+            "bench-fadiga",
+            [
+                ["youtube", "shorts", "camp-marca", "marca-salao", "1000", "600", "50", "A"],
+                ["instagram", "reels", "camp-marca", "marca-salao", "1000", "200", "10", "B"],
+            ],
+            [
+                {
+                    "slotId": "slot-001", "onda": 1, "semana": 1, "dataSugerida": "2026-11-23",
+                    "tenantId": "marca-salao", "brandName": "Marca Salão", "slug": "camp-marca",
+                    "canal": "youtube", "formatoVideo": "9:16",
+                    "hookVarianteA": "A", "hookVarianteB": "B",
+                    "utmParams": {"utm_source": "youtube", "utm_medium": "shorts",
+                                  "utm_campaign": "camp-marca", "utm_content": "marca-salao"},
+                },
+                {
+                    "slotId": "slot-002", "onda": 2, "semana": 5, "dataSugerida": "2026-12-21",
+                    "tenantId": "marca-salao", "brandName": "Marca Salão", "slug": "camp-marca",
+                    "canal": "instagram", "formatoVideo": "9:16",
+                    "hookVarianteA": "A", "hookVarianteB": "B",
+                    "utmParams": {"utm_source": "instagram", "utm_medium": "reels",
+                                  "utm_campaign": "camp-marca", "utm_content": "marca-salao"},
+                },
+            ],
+        )
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        marca = report["rankings"]["tenantBenchmarks"]["byTenant"][0]
+        self.assertEqual(marca["tenantId"], "marca-salao")
+        self.assertEqual(marca["campaigns"], 1)
+        self.assertEqual(marca["abCampaignsTotal"], 1)
+        # vencedor_B => taxa de vitoria 100%
+        self.assertEqual(marca["abWinRatePct"], 1.0)
+        self.assertEqual(marca["abCampaignsWins"], 1)
+        # campos de fadiga presentes
+        for campo in ("hooksComFadiga", "hooksComFadigaStatus", "hooksComFadigaZScore",
+                      "hooksComFadigaPValue", "hooksComFadigaReason"):
+            self.assertIn(campo, marca)
+
+
 if __name__ == "__main__":
     unittest.main()
