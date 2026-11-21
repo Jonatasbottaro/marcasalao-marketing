@@ -384,6 +384,121 @@ class EditorialQATests(unittest.TestCase):
         }
         self.assertEqual(before, after)
 
+    # ------------------------------------------------------------------
+    # 12-17. Etapa 6 / Agente 7 - novas lentes de coerencia editorial
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _write_json(path: str, payload: dict) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+
+    def _sandbox_with_calendar(self, tag: str) -> tuple[str, str]:
+        sandbox = self._build_sandbox(tag)
+        src = os.path.join(REPO_ROOT, *editorial_qa.CALENDAR_REL)
+        dst = os.path.join(sandbox, *editorial_qa.CALENDAR_REL)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+        return sandbox, dst
+
+    def _mutate_hooks(self, calendar_path: str, tenant: str, slug: str, mutate) -> None:
+        with open(calendar_path, "r", encoding="utf-8") as handle:
+            calendar = json.load(handle)
+        changed = 0
+        for slot in calendar["slots"]:
+            if slot.get("tenantId") == tenant and slot.get("slug") == slug:
+                mutate(slot)
+                changed += 1
+        self.assertGreater(changed, 0)
+        self._write_json(calendar_path, calendar)
+
+    def _add_ui_labels(self, sandbox: str, tenant: str, labels: dict) -> None:
+        path = os.path.join(sandbox, "tenants", tenant, "brand-kit.json")
+        with open(path, "r", encoding="utf-8") as handle:
+            kit = json.load(handle)
+        kit["uiLabels"] = labels
+        self._write_json(path, kit)
+
+    def test_12_hooks_identicos_sao_aviso(self) -> None:
+        sandbox, calendar = self._sandbox_with_calendar("hooks-iguais")
+        self._mutate_hooks(
+            calendar, "marca-salao", "camp-saas-demo-marca-salao-001",
+            lambda slot: slot.update(hookVarianteB=slot["hookVarianteA"]),
+        )
+        normal = editorial_qa.run_editorial_qa(root=sandbox)
+        row = self._check(normal, "coerencia_hooks_calendario")
+        self.assertIn("HOOK_VARIANTES_IDENTICAS", self._codes(row))
+        self.assertTrue(all(p["severity"] == "warning" for p in row["problems"]))
+        self.assertEqual(row["status"], "warn")
+        self.assertTrue(normal["ok"])
+        strict = editorial_qa.run_editorial_qa(root=sandbox, strict=True)
+        self.assertFalse(strict["ok"])
+
+    def test_13_hook_com_termo_proibido_e_erro(self) -> None:
+        sandbox, calendar = self._sandbox_with_calendar("hooks-guardrail")
+        self._mutate_hooks(
+            calendar, "marca-salao", "camp-saas-demo-marca-salao-001",
+            lambda slot: slot.update(hookVarianteB=slot["hookVarianteB"] + " whatsapp"),
+        )
+        result = editorial_qa.run_editorial_qa(root=sandbox)
+        row = self._check(result, "coerencia_hooks_calendario")
+        self.assertIn("HOOK_GUARDRAIL_VIOLACAO", self._codes(row))
+        self.assertTrue(any(p["severity"] == "error" for p in row["problems"]))
+        self.assertEqual(row["status"], "fail")
+        self.assertFalse(result["ok"])
+
+        filtered = editorial_qa.run_editorial_qa(root=sandbox, tenant="meu-salao")
+        filtered_row = self._check(filtered, "coerencia_hooks_calendario")
+        self.assertNotIn("HOOK_GUARDRAIL_VIOLACAO", self._codes(filtered_row))
+
+    def test_14_hook_vazio_e_erro(self) -> None:
+        sandbox, calendar = self._sandbox_with_calendar("hooks-vazios")
+        self._mutate_hooks(
+            calendar, "estudio-flow", "camp-saas-demo-estudio-flow-001",
+            lambda slot: slot.update(hookVarianteA="   "),
+        )
+        result = editorial_qa.run_editorial_qa(root=sandbox)
+        row = self._check(result, "coerencia_hooks_calendario")
+        self.assertIn("HOOK_VARIANTE_AUSENTE", self._codes(row))
+        self.assertFalse(result["ok"])
+
+    def test_15_ui_labels_invalidos_sao_erro(self) -> None:
+        sandbox = self._build_sandbox("uilabels-invalidos")
+        self._add_ui_labels(sandbox, "marca-salao", {
+            "ctaAgendamento": "   ",
+            "linkBio": "whatsapp",
+            "naoString": 42,
+        })
+        result = editorial_qa.run_editorial_qa(root=sandbox)
+        row = self._check(result, "aderencia_ui_labels")
+        codes = self._codes(row)
+        self.assertIn("UI_LABEL_VAZIA", codes)
+        self.assertIn("UI_LABEL_GUARDRAIL_VIOLACAO", codes)
+        self.assertIn("UI_LABEL_TIPO_INVALIDO", codes)
+        self.assertEqual(row["status"], "fail")
+        self.assertFalse(result["ok"])
+
+    def test_16_ui_labels_validos_sao_aprovados(self) -> None:
+        sandbox = self._build_sandbox("uilabels-validos")
+        self._add_ui_labels(sandbox, "marca-salao", {
+            "ctaAgendamento": "Agendar horário",
+            "linkBio": "Conheça o sistema",
+            "nested": {"titulo": "Agenda do salão"},
+        })
+        result = editorial_qa.run_editorial_qa(root=sandbox)
+        row = self._check(result, "aderencia_ui_labels")
+        self.assertEqual(row["problems"], [])
+        self.assertEqual(row["status"], "ok")
+        self.assertTrue(result["ok"])
+
+    def test_17_acervo_real_novas_lentes_aprovadas(self) -> None:
+        result = editorial_qa.run_editorial_qa(root=REPO_ROOT)
+        for check_id in ("coerencia_hooks_calendario", "aderencia_ui_labels"):
+            row = self._check(result, check_id)
+            self.assertEqual(row["problems"], [], row["problems"])
+            self.assertEqual(row["status"], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()
