@@ -148,9 +148,40 @@ Os artefatos são gravados transacionalmente em `02-reels-shorts/deliveries/estu
 
 ---
 
-## Nicho regulado (saúde/clínicas) — exemplo `clinica-vital`
+## Passo 6 — Fluxo completo pós-criação (`2 min`)
 
-O tenant `tenants/clinica-vital/` é o modelo de referência para nichos regulados, em que a peça pública não pode prometer resultado clínico, diagnosticar à distância, expor dados sensíveis ou sugerir automação de contato. Use este tenant como base para clínicas, consultórios e estúdios de saúde.
+Depois de validar e renderizar o vídeo (Passo 5), complete o ciclo de entrega com as ferramentas já existentes. Em worktrees/branches paralelas, direcione relatórios e saídas intermediárias para `.workspace/tmp/<tarefa>/` para não sobrescrever artefatos compartilhados.
+
+```bash
+# 1. Vídeo — MP4 1080x1920@30 sem faixa de áudio, SRT e narração TXT
+python tools/factory_cli.py render --tenant estudio-fitness --report .workspace/tmp/estudio-fitness-report.json --json
+
+# 2. Stories e Carrossel estáticos (kits 1080x1920 e 1080x1080 derivados das campanhas)
+python tools/static_cards.py --tenant estudio-fitness --types stories,carousel --json
+
+# 3. Derivados multiformato (cover, 1:1, 16:9) e derivatives.json por campanha
+python tools/derivative_formats.py --tenant estudio-fitness --json
+
+# 4. Pacotes sociais por entrega (uma entrega: --tenant <slug> --slug <id-da-entrega>)
+python tools/publish_pack.py --all --json
+
+# 5. Calendário editorial de 4 semanas e matriz UTM
+python tools/campaign_calendar.py --start-date 2026-11-23 --json
+
+# 6. Portal de revisão humana (somente leitura) e auditoria de release
+python tools/review_dashboard.py --build --json
+python tools/review_dashboard.py --serve --port 8765        # abra http://127.0.0.1:8765
+python tools/release_audit.py --strict --json               # gate: avisos também reprovam
+python tools/devlog_sync.py --json                          # consolida devlogs no contexto_projeto.md
+```
+
+> **Publicação é manual:** `publish_pack.py` grava pacotes com `autoPublish: false` e `campaign_calendar.py` nasce com `statusEditorial: "aguardando_aprovacao_titular"`. Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes. O portal `05-review-portal/` é instrumento de revisão: o titular aprova e publica fora daqui.
+
+---
+
+## Nicho regulado (saúde/estética) — referência oficial `clinica-vital`
+
+O tenant `tenants/clinica-vital/` é a **referência oficial** do projeto para nichos regulados (saúde, clínicas, consultórios e estúdios de estética). Nele, a peça pública não pode prometer resultado clínico ou estético, diagnosticar à distância, expor dados sensíveis ou sugerir automação de contato. Use este tenant como base — e não os tenants de salão — ao cadastrar um novo nicho regulado.
 
 ### Estrutura
 
@@ -194,15 +225,23 @@ A fixture usa nomes próprios do nicho (`especialistas`, `procedimentos`, `grade
 - `camp-saas-demo-clinica-vital-001.json`: jornada pública em `/avaliacao/clinica-vital-centro` → recepção em `/gestor/consultas` (paciente fictícia Patricia Monteiro), 6 cenas, `30.0s`.
 - `camp-saas-demo-clinica-vital-002.json`: rotina exclusiva da recepção em `/gestor/consultas` (filtro por especialista, status manual e busca por paciente), sem cenas de `/avaliacao`, 6 cenas, `30.0s`.
 
-### Validação e render
+### Validação, render e fluxo completo
 
 ```bash
+# Contratos e descoberta
 python tools/tenant_validator.py --tenant clinica-vital --json
 python tools/tenant_validator.py --all --json
 python tools/factory_cli.py list --tenant clinica-vital
-python tools/factory_cli.py render --tenant clinica-vital --report .workspace/tmp/etapa5b-agente3/report.json --json
-python tools/derivative_formats.py --tenant clinica-vital --json
 python -m unittest tools/tests/test_tenant_contracts.py -v
+
+# Render e pós-criação (o mesmo fluxo do Passo 6, com --tenant clinica-vital)
+python tools/factory_cli.py render --tenant clinica-vital --report .workspace/tmp/clinica-vital/report.json --json
+python tools/static_cards.py --tenant clinica-vital --types stories,carousel --json
+python tools/derivative_formats.py --tenant clinica-vital --json
+python tools/publish_pack.py --all --json
+python tools/campaign_calendar.py --start-date 2026-11-23 --json
+python tools/review_dashboard.py --build --json
+python tools/release_audit.py --strict --json
 ```
 
-> **Consolidação pós-bootstrap:** ao integrar o 5º tenant, ajuste as contagens fixas em `tools/tests/test_factory_cli.py` (`totalTenants`, `totalCampaigns` e o número de entregas) para o novo total e re-execute `python tools/factory_cli.py render --all --json` com `ffmpeg`/`ffprobe` disponíveis.
+> **Consolidação pós-bootstrap:** ao integrar o 5º tenant, ajuste as contagens fixas em `tools/tests/test_factory_cli.py` (`totalTenants`, `totalCampaigns` e o número de entregas) para o novo total e re-execute `python tools/factory_cli.py render --all --json` com `ffmpeg`/`ffprobe` disponíveis. Em `tools/tests/test_tenant_contracts.py`, as contagens globais usam `>= 4` para valer antes e depois do merge; a validação dos contratos clínicos é feita em memória e a checagem do tenant e das 2 campanhas no disco é condicional à existência de `tenants/clinica-vital/`.
