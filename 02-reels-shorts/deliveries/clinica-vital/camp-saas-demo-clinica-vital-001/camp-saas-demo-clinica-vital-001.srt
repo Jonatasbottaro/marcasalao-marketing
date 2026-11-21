@@ -1,14 +1,17 @@
 1
 00:00:00,000 --> 00:00:04,000
-Como organizar avaliações da clínica sem depender de troca de mensagens?
+Como organizar avaliações da clínica
+sem depender de troca de mensagens?
 
 2
 00:00:04,000 --> 00:00:10,000
-A paciente escolhe o procedimento e a especialista disponível.
+A paciente escolhe o procedimento
+e a especialista disponível.
 
 3
 00:00:10,000 --> 00:00:17,000
-Seleciona o horário livre para a avaliação e confirma o agendamento.
+Seleciona o horário livre
+para a avaliação e confirma o agendamento.
 
 4
 00:00:17,000 --> 00:00:20,000
@@ -16,8 +19,10 @@ A avaliação fica agendada com horário definido.
 
 5
 00:00:20,000 --> 00:00:26,000
-A recepção acompanha a consulta de Patricia Monteiro em /gestor/consultas.
+A recepção acompanha a consulta de
+Patricia Monteiro em /gestor/consultas.
 
 6
 00:00:26,000 --> 00:00:30,000
-Conheça a agenda clínica da Clínica Vital — clinicavital.com.br
+Conheça a agenda clínica da Clínica Vital —
+clinicavital.com.br
