@@ -9,10 +9,10 @@ audio por tenant, grava pacotes de entrega padronizados em
 
 O subcomando `pipeline` e o mestre end-to-end: encadeia contratos, render 9:16,
 derivados multiformato, cards estaticos, pacotes sociais, calendario editorial,
-portal de revisao, auditoria UTM e Release Gate. Modulos paralelos (Etapas 5/5B)
-sao importados de forma opcional: se um deles ainda nao existir, o estagio e
-marcado como `skipped` e o restante continua. Com `--skip-render`, os estagios
-de producao passam a verificar os artefatos versionados existentes.
+portal de revisao, auditoria UTM, QA editorial e Release Gate. Modulos paralelos
+(Etapas 5/5B) sao importados de forma opcional: se um deles ainda nao existir, o
+estagio e marcado como `skipped` e o restante continua. Com `--skip-render`, os
+estagios de producao passam a verificar os artefatos versionados existentes.
 
 Uso (a partir da raiz do checkout):
     python tools/factory_cli.py list [--tenant <tenantId>] [--json]
@@ -680,7 +680,40 @@ def cmd_pipeline(
         return details
 
     # ------------------------------------------------------------------
-    # 9. Release Gate final
+    # 9. QA editorial (modulo paralelo opcional)
+    # ------------------------------------------------------------------
+    editorial_qa_mod = _optional_module("editorial_qa")
+
+    def stage_editorial_qa() -> dict[str, Any]:
+        runner = None
+        for name in ("run_editorial_qa", "audit_editorial_qa", "run_qa", "audit"):
+            candidate = getattr(editorial_qa_mod, name, None)
+            if callable(candidate):
+                runner = candidate
+                break
+        if runner is None:
+            raise StageFailure(
+                "API_EDITORIAL_QA_AUSENTE: esperado run_editorial_qa(root=...) em tools/editorial_qa.py",
+                {"reason": "api_unavailable"},
+            )
+        result = runner(root=root_real)
+        if not isinstance(result, dict):
+            result = {"ok": True, "result": result}
+        details = {
+            "ok": result.get("ok", True),
+            "totalChecked": result.get("totalChecked"),
+            "findings": result.get("findings"),
+            "warnings": result.get("warnings"),
+            "reportPath": result.get("reportPath"),
+        }
+        if result.get("ok") is False:
+            problems = result.get("problems") or result.get("findings") or []
+            summary = "; ".join(str(p) for p in list(problems)[:5]) if isinstance(problems, list) else str(problems)
+            raise StageFailure("EDITORIAL_QA_REPROVADO: " + summary, details)
+        return details
+
+    # ------------------------------------------------------------------
+    # 10. Release Gate final
     # ------------------------------------------------------------------
     release_mod = _optional_module("release_audit")
 
@@ -743,6 +776,12 @@ def cmd_pipeline(
         stages.append(_skipped_stage("utm", "Auditoria UTM", "modulo utm_simulator indisponivel"))
     else:
         stages.append(_run_stage("utm", "Auditoria UTM", stage_utm))
+    if editorial_qa_mod is None:
+        stages.append(
+            _skipped_stage("editorial-qa", "QA editorial", "modulo editorial_qa indisponivel")
+        )
+    else:
+        stages.append(_run_stage("editorial-qa", "QA editorial", stage_editorial_qa))
     stages.append(_run_stage("release-gate", "Release Gate final", stage_release))
 
     by_id = {stage["id"]: stage for stage in stages}
@@ -759,6 +798,7 @@ def cmd_pipeline(
         "portalCampaigns": (by_id["portal"]["details"] or {}).get("totalCampaigns"),
         "utmUrls": (by_id["utm"]["details"] or {}).get("totalUrls"),
         "utmSimulation": (by_id["utm"]["details"] or {}).get("simulation"),
+        "editorialQa": (by_id["editorial-qa"]["details"] or {}).get("totalChecked"),
         "releaseDomains": (by_id["release-gate"]["details"] or {}).get("domains"),
     }
 
@@ -875,7 +915,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"Tenants: {counts['tenants']} | campanhas: {counts['campaigns']} | "
                     f"entregas: {counts['deliveries']} | derivados: {counts['derivatives']} | "
                     f"cards: {counts['staticCards']} | pacotes: {counts['publishPacks']} | "
-                    f"UTM: {counts['utmUrls']}"
+                    f"UTM: {counts['utmUrls']} | QA editorial: {counts['editorialQa']}"
                 )
                 print(f"Resultado: {'APROVADO' if pipeline_report['ok'] else 'REPROVADO'}")
             return 0 if pipeline_report["ok"] else 1

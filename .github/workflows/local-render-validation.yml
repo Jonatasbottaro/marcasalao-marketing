@@ -113,7 +113,8 @@ jobs:
             tools/tests/test_derivative_formats.py tools/tests/test_review_dashboard.py \
             tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py \
             tools/tests/test_bootstrap_ffmpeg.py tools/tests/test_static_cards.py \
-            tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py -v
+            tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py \
+            tools/tests/test_editorial_qa.py -v
           python tools/release_audit.py --strict --json
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
