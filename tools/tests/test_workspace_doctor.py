@@ -274,17 +274,131 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertEqual(result["summary"]["worktrees"]["arquivosNaoRastreados"], 2)
         self.assertFalse(self._problems(result, "GIT_INDISPONIVEL"))
 
-    def test_11_midia_nao_declarada_e_midia_ausente_sao_avisos(self) -> None:
+    def test_11_midia_orfa_bloqueia_e_midia_ausente_e_avisada(self) -> None:
         extra = self.derivatives / "extra-nao-declarado.png"
         extra.write_bytes(b"extra")
         source_path, _ = self.media["9:16"]
         source_path.unlink()
         result = wd.run_workspace_doctor(self.root)
-        self.assertTrue(result["ok"])
-        self.assertTrue(self._problems(result, "MIDIA_NAO_DECLARADA"))
-        self.assertTrue(self._problems(result, "MIDIA_AUSENTE"))
+        self.assertFalse(result["ok"])
+        orfaos = self._problems(result, "MIDIA_ORFA")
+        ausentes = self._problems(result, "MIDIA_AUSENTE")
+        self.assertEqual(len(orfaos), 1)
+        self.assertEqual(len(ausentes), 1)
+        self.assertIn("extra-nao-declarado.png", orfaos[0]["message"])
+        self.assertIn("manifest.video", ausentes[0]["message"])
         self.assertEqual(result["summary"]["archives"]["ausentes"], 1)
-        self.assertEqual(result["summary"]["archives"]["naoDeclarados"], 1)
+        self.assertEqual(result["summary"]["archives"]["orfos"], 1)
+
+    def test_12_arquivo_declarado_ausente(self) -> None:
+        source_path, _ = self.media["9:16"]
+        source_path.unlink()
+        result = wd.run_workspace_doctor(self.root)
+        # Midia local nao e versionada: ausencia e aviso, mas e detectada e nomeada.
+        self.assertTrue(result["ok"])
+        problema = self._problems(result, "MIDIA_AUSENTE")
+        self.assertEqual(len(problema), 1)
+        self.assertIn(self._rel(source_path), problema[0]["message"])
+
+    def _set_ffprobe(self, *, declared: dict, actual: dict) -> None:
+        with open(self.derivatives_path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        data["derivatives"]["1x1"]["ffprobe"] = declared
+        with open(self.derivatives_path, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(data, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        patcher = mock.patch.object(wd, "_ffprobe_metadata", return_value=actual)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_13_ffprobe_divergente_bloqueia(self) -> None:
+        declared = {"codec": "h264", "width": 1080, "height": 1080, "fps": 30.0,
+                    "audioStreams": 0, "pixFmt": "yuv420p"}
+        actual = dict(declared, width=1920, audioStreams=1)
+        self._set_ffprobe(declared=declared, actual=actual)
+        result = wd.run_workspace_doctor(self.root)
+        self.assertFalse(result["ok"])
+        problemas = self._problems(result, "ARCHIVE_FFPROBE_DIVERGENTE")
+        self.assertEqual(len(problemas), 1)
+        message = problemas[0]["message"]
+        self.assertIn("width", message)
+        self.assertIn("audioStreams", message)
+        self.assertEqual(result["summary"]["archives"]["probeDivergente"], 1)
+
+    def test_14_ffprobe_conferido(self) -> None:
+        declared = {"codec": "h264", "width": 1080, "height": 1080, "fps": 30.0,
+                    "audioStreams": 0, "pixFmt": "yuv420p"}
+        # Numeros em formatos diferentes e strings com caixa diferente devem convergir.
+        actual = {"codec": "H264", "width": 1080.0, "height": 1080.0, "fps": "30/1",
+                  "audioStreams": 0, "pixFmt": "YUV420P"}
+        self._set_ffprobe(declared=declared, actual=actual)
+        result = wd.run_workspace_doctor(self.root)
+        self.assertTrue(result["ok"], result["sections"])
+        self.assertEqual(self._problems(result, "ARCHIVE_FFPROBE_DIVERGENTE"), [])
+        self.assertEqual(result["summary"]["archives"]["probeDivergente"], 0)
+
+    def test_15_snapshot_export_e_verify_integro(self) -> None:
+        payload = wd.export_snapshot(self.root)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["action"], "export")
+        self.assertEqual(payload["count"], 6)
+        self.assertTrue(payload["snapshotPath"].startswith(".workspace/snapshots/"))
+        index = payload["index"]
+        self.assertEqual(index["schemaVersion"], 1)
+        self.assertEqual(index["type"], "workspace-archives-snapshot")
+        for entry in index["entries"]:
+            self.assertTrue(entry["path"].startswith(".workspace/archives/"))
+            self.assertNotIn(":", entry["path"])
+            self.assertEqual(len(entry["sha256"]), 64)
+        # Nenhum caminho absoluto da estacao pode vazar no indice.
+        self.assertNotIn(str(self.root), json.dumps(index, ensure_ascii=False))
+        self.assertTrue((self.root / payload["snapshotPath"]).is_file())
+
+        verified = wd.verify_snapshot(self.root, payload["snapshotPath"])
+        self.assertTrue(verified["ok"], verified["problems"])
+        self.assertEqual(verified["verified"], 6)
+        self.assertEqual(verified["problems"], [])
+
+    def test_16_snapshot_tamper_detectado(self) -> None:
+        import zipfile
+        payload = wd.export_snapshot(self.root)
+        snapshot = self.root / payload["snapshotPath"]
+        with zipfile.ZipFile(snapshot) as handle:
+            index = json.loads(handle.read(wd.SNAPSHOT_INDEX_NAME).decode("utf-8"))
+            members = {name: handle.read(name) for name in handle.namelist()
+                       if name != wd.SNAPSHOT_INDEX_NAME}
+        with zipfile.ZipFile(snapshot, "w", zipfile.ZIP_DEFLATED) as handle:
+            handle.writestr(wd.SNAPSHOT_INDEX_NAME, json.dumps(index, ensure_ascii=False))
+            for name, content in members.items():
+                if name.endswith("-1x1.mp4"):
+                    content += b"TAMPERADO"
+                handle.writestr(name, content)
+        verified = wd.verify_snapshot(self.root, payload["snapshotPath"])
+        self.assertFalse(verified["ok"])
+        codes = [problem["code"] for problem in verified["problems"]]
+        self.assertIn("SNAPSHOT_HASH_DIVERGENTE", codes)
+
+    def test_17_snapshot_fora_do_workspace_recusado(self) -> None:
+        with self.assertRaises(wd.WorkspaceDoctorError) as ctx:
+            wd.export_snapshot(self.root, "../fora-da-raiz.zip")
+        self.assertIn("SNAPSHOT_FORA_DO_WORKSPACE", str(ctx.exception))
+
+    def test_18_cli_snapshot_export_verify(self) -> None:
+        exported = io.StringIO()
+        with contextlib.redirect_stdout(exported):
+            code = wd.main(["snapshot", "export", "--root", str(self.root), "--json"])
+        self.assertEqual(code, 0)
+        payload = json.loads(exported.getvalue())
+        self.assertEqual(payload["action"], "export")
+
+        verified = io.StringIO()
+        with contextlib.redirect_stdout(verified):
+            code = wd.main([
+                "snapshot", "verify", "--root", str(self.root),
+                "--archive", payload["snapshotPath"], "--json",
+            ])
+        self.assertEqual(code, 0)
+        self.assertTrue(json.loads(verified.getvalue())["ok"])
 
 
 if __name__ == "__main__":

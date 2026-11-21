@@ -21,9 +21,14 @@ organizado nos 7 dominios da Etapa 4:
                              matriz-utm-consolidada.csv.
   6. portal_revisao          05-review-portal/ completo e sem caminhos absolutos
                              de estacao vazados no JSON/HTML.
-  7. higiene_git             nenhuma midia binaria rastreada, .gitattributes com
+  7. higiene_git             nenhuma midia binaria rastreada ou nao-ignorada,
+                             nenhum snapshot .zip versionado, .gitattributes com
                              eol=lf para .json/.srt/.md/.html e worktrees
                              historicas preservadas.
+
+Os dominios 2, 4 e 7 tambem cruzam os manifestos versionados com os binarios
+locais em ``.workspace/archives/`` (SHA-256, metadados ffprobe e midias orfas),
+usando a mesma logica de ``tools/workspace_doctor.py``.
 
 Severidades: `error` reprova sempre; `warning` nao reprova no modo padrao e
 reprova com `--strict`. Midia local da estacao (`<slug>.mp4` de entrega e
@@ -46,6 +51,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import render_local
 import tenant_validator
+import workspace_doctor
 
 MIN_VALID_TENANTS = 4
 HISTORICAL_WORKTREES = ("prova-campanha-conclusao", "studio-package-verify2")
@@ -538,9 +544,67 @@ def _check_higiene(root_real: str) -> list[dict]:
     tracked = [line.strip() for line in output.splitlines() if line.strip()]
     if tracked:
         problems.append(_error("MIDIA_RASTREADA", ", ".join(tracked)))
+
+    others = _run_git(
+        root_real, "ls-files", "--others", "--exclude-standard", "--", "*.mp4", "*.wav"
+    )
+    not_ignored = [line.strip() for line in others.splitlines() if line.strip()]
+    if not_ignored:
+        problems.append(
+            _error("MIDIA_NAO_IGNORADA", "fora do Git Ignore: " + ", ".join(not_ignored))
+        )
+
+    indexed = [line.strip() for line in _run_git(root_real, "ls-files").splitlines() if line.strip()]
+    snapshots = [path for path in indexed if _is_snapshot_path(path)]
+    if snapshots:
+        problems.append(_error("SNAPSHOT_RASTREADO", ", ".join(snapshots)))
     problems.extend(_check_gitattributes(root_real))
     problems.extend(_check_worktrees(root_real))
     return problems
+
+
+# ---------------------------------------------------------------------------
+# Integridade manifestos <-> binarios locais (dominios 2, 4 e 7)
+# ---------------------------------------------------------------------------
+def _is_snapshot_path(rel_path: str) -> bool:
+    norm = str(rel_path).replace("\\", "/")
+    lowered = norm.lower()
+    if norm.startswith(".workspace/snapshots/"):
+        return True
+    base = lowered.rsplit("/", 1)[-1]
+    if base == "snapshot-index.json" or base.startswith("workspace-snapshot-"):
+        return True
+    return lowered.endswith(".zip") and "snapshot" in lowered
+
+
+def _split_integrity_problems(integrity: dict) -> tuple[list[dict], list[dict], list[dict]]:
+    """Distribui os achados entre entregas_video, derivados_multiformato e higiene_git."""
+    entregas: list[dict] = []
+    derivados: list[dict] = []
+    higiene: list[dict] = []
+    for problem in integrity.get("problems", []):
+        code = problem["code"]
+        message = problem["message"]
+        if code == "MIDIA_ORFA" or code.startswith(("PATH_OUTSIDE", "SNAPSHOT")):
+            higiene.append(problem)
+        elif "derivatives." in message or code.startswith("DERIVATIVES_"):
+            derivados.append(problem)
+        else:
+            entregas.append(problem)
+    return entregas, derivados, higiene
+
+
+def _check_manifest_integrity(root_real: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """Só cruza quando ha binarios locais; midia ausente na estacao e politica aceita."""
+    main_root = os.path.realpath(workspace_doctor._resolve_main_root(root_real))
+    archives = os.path.join(main_root, *workspace_doctor.WORKSPACE_REL, "archives")
+    if not os.path.isdir(render_local.fs_path(archives)):
+        return [], [], []
+    try:
+        integrity = workspace_doctor.audit_manifest_integrity(root_real, source_root=root_real)
+    except workspace_doctor.WorkspaceDoctorError as exc:
+        return [_error("INTEGRIDADE_LOCAL_INDISPONIVEL", str(exc))], [], []
+    return _split_integrity_problems(integrity)
 
 
 def run_release_audit(root: str = ".", strict: bool = False) -> dict:
@@ -557,6 +621,12 @@ def run_release_audit(root: str = ".", strict: bool = False) -> dict:
     calendario_problems = _check_calendario(root_real)
     portal_problems = _check_portal(root_real)
     higiene_problems = _check_higiene(root_real)
+
+    # Integridade manifestos <-> binarios locais, distribuida entre os 7 dominios.
+    extra_entregas, extra_derivados, extra_higiene = _check_manifest_integrity(root_real)
+    entrega_problems = extra_entregas + entrega_problems
+    derivado_problems = extra_derivados + derivado_problems
+    higiene_problems = extra_higiene + higiene_problems
 
     results = (
         contrato_problems,
