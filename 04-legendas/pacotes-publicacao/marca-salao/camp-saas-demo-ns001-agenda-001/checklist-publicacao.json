@@ -7,36 +7,50 @@
   "guardrailsAudited": true,
   "guardrailStatus": {
     "srt": "ok",
-    "narration": "ok"
+    "narration": "ok",
+    "srt_violations": [],
+    "narration_violations": []
   },
   "media": [
     {
       "kind": "video",
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
+      "archivePath": ".workspace/archives/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.mp4",
+      "resolvedFrom": "archive",
       "sha256": "bb8d1e45098c039f078d7bbf4492f34ef89d7f850dbbdffbab0add122e896bd3",
       "bytes": 585286,
-      "sha256_disk_ok": false
+      "sha256_disk_ok": false,
+      "presentOnDisk": false
     },
     {
       "kind": "srt",
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001.srt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "8fd2c485641cc325ad0b299ff918e7ba0828fc3128c2e84016a038791882e85e",
       "bytes": 584,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "narration",
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/camp-saas-demo-ns001-agenda-001_narracao.txt",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "ad925a6784c6a7baf59c5be095e94f152e35788598294fdab2f3b3d17d4382a7",
       "bytes": 958,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     },
     {
       "kind": "storyboard",
       "path": "02-reels-shorts/deliveries/marca-salao/camp-saas-demo-ns001-agenda-001/preview-storyboard.png",
+      "archivePath": null,
+      "resolvedFrom": "delivery",
       "sha256": "b0f0460c1c4bb30cd8b49e865d40ba333c53ffb8619323f51e1471675cc7088c",
       "bytes": 703861,
-      "sha256_disk_ok": true
+      "sha256_disk_ok": true,
+      "presentOnDisk": true
     }
   ],
   "autoPublish": false,

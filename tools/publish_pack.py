@@ -15,6 +15,13 @@ tenant_validator.validate_text_against_guardrails(...) antes de gravar: se
 qualquer palavra proibida de forbiddenClaims/forbiddenUiElements aparecer, o
 script aborta com erro explicitamente e nao grava o pacote parcial.
 
+Resolucao de ``.workspace/``: os MP4s nao sao versionados e vivem em
+``<workspace>/archives/<slug>/`` no checkout principal. ``resolve_workspace_root``
+usa ``git rev-parse --git-common-dir`` para alcancar esse ``.workspace/``
+quando o script roda em qualquer worktree; o checklist registra
+``sha256_disk_ok`` conferindo a midia arquivada, e nao um caminho inexistente
+dentro da worktree.
+
 Ponto unico de entrada para o tenant:
     ctx = tenant_validator.load_and_validate_tenant(tenant_id, root=REPO_ROOT, strict=True)
 
@@ -33,6 +40,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from typing import Any
 
@@ -85,6 +93,74 @@ def _sha256_file(path: str) -> str:
         for chunk in iter(lambda: handle.read(65536), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _main_checkout_root(root: str) -> str | None:
+    """Raiz do checkout principal: pai do ``.git`` comum apontado pela worktree."""
+    try:
+        res = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if res.returncode != 0 or not res.stdout.strip():
+        return None
+    git_dir = os.path.normpath(os.path.join(os.path.realpath(root), res.stdout.strip()))
+    main_root = os.path.dirname(git_dir)
+    return main_root if os.path.isdir(render_local.fs_path(main_root)) else None
+
+
+def resolve_workspace_root(root: str = ".") -> str:
+    """Resolve o ``.workspace/`` aplicavel a raiz informada.
+
+    Prefere ``<raiz>/.workspace`` quando ele tem ``archives/``; em worktree
+    (sem ``.workspace/`` proprio) resolve o checkout principal via
+    ``git rev-parse --git-common-dir`` e usa o ``.workspace/`` de la, onde
+    vivem os MP4s preservados. Raizes que nao sao toplevel de checkout caem
+    no proprio ``<raiz>/.workspace``.
+    """
+    root_real = os.path.realpath(root)
+    candidate = os.path.join(root_real, ".workspace")
+    if os.path.isdir(render_local.fs_path(os.path.join(candidate, "archives"))):
+        return candidate
+    main_root = _main_checkout_root(root_real)
+    main_ws = os.path.join(main_root, ".workspace") if main_root else ""
+    if main_ws and os.path.isdir(render_local.fs_path(os.path.join(main_ws, "archives"))):
+        return main_ws
+    if os.path.isdir(render_local.fs_path(candidate)):
+        return candidate
+    if main_ws and os.path.isdir(render_local.fs_path(main_ws)):
+        return main_ws
+    return candidate
+
+
+def _resolve_artifact_path(
+    root_real: str, workspace_root: str, entry: dict
+) -> tuple[str | None, str]:
+    """Caminho em disco de um artefato do manifesto e a origem resolvida.
+
+    O video preservado declara ``archivePath`` (``.workspace/archives/...``);
+    ele e resolvido contra o ``.workspace/`` do checkout principal. Os demais
+    artefatos sao versionados e ficam sob a raiz do checkout.
+    """
+    archive_rel = str(entry.get("archivePath") or "")
+    if archive_rel.startswith(".workspace/"):
+        target = os.path.realpath(
+            os.path.join(workspace_root, archive_rel[len(".workspace/"):].replace("/", os.sep))
+        )
+        if render_local.contained(workspace_root, target):
+            return target, "archive"
+        return None, "fora_da_raiz"
+    rel_path = str(entry.get("path") or "")
+    if not rel_path:
+        return None, "sem_caminho"
+    target = os.path.realpath(os.path.join(root_real, rel_path.replace("/", os.sep)))
+    if render_local.contained(root_real, target):
+        return target, "delivery"
+    return None, "fora_da_raiz"
 
 
 def _parse_srt_blocks(srt_text: str) -> list[dict]:
@@ -215,7 +291,7 @@ def _build_facebook_reels(
 
 
 def _build_checklist(
-    manifest: dict, brand: dict, guardrails: dict, slug: str, pkg_dir_abs: str
+    manifest: dict, brand: dict, guardrails: dict, slug: str, root_real: str, workspace_root: str
 ) -> dict:
     artifacts = manifest.get("artifacts", {})
     media_files = []
@@ -224,44 +300,47 @@ def _build_checklist(
         rel_path = entry.get("path")
         if not rel_path:
             continue
-        abs_path = os.path.join(os.path.dirname(pkg_dir_abs), "..", "..", "..", rel_path)
-        abs_path = os.path.realpath(abs_path)
+        abs_path, source = _resolve_artifact_path(root_real, workspace_root, entry)
+        exists = bool(abs_path) and os.path.isfile(render_local.fs_path(abs_path))
         media_files.append(
             {
                 "kind": kind,
                 "path": rel_path,
+                "archivePath": entry.get("archivePath"),
+                "resolvedFrom": source,
                 "sha256": entry.get("sha256"),
                 "bytes": entry.get("bytes"),
                 "sha256_disk_ok": (
-                    _sha256_file(abs_path) == entry.get("sha256")
-                    if os.path.isfile(abs_path)
-                    else False
+                    exists and _sha256_file(abs_path) == entry.get("sha256")
                 ),
+                "presentOnDisk": exists,
             }
         )
 
     # Auditoria de guardrails sobre os textos da entrega (referencia)
-    srt_abs = os.path.realpath(os.path.join(pkg_dir_abs, "..", "..", "..", artifacts.get("srt", {}).get("path", "")))
-    narration_abs = os.path.realpath(os.path.join(pkg_dir_abs, "..", "..", "..", artifacts.get("narration", {}).get("path", "")))
-    guardrail_status = {"srt": "ok", "narration": "ok"}
-    try:
-        if os.path.isfile(srt_abs):
-            v = tenant_validator.validate_text_against_guardrails(
-                open(srt_abs, "r", encoding="utf-8").read(), guardrails, check_ui_elements=True
-            )
-            guardrail_status["srt"] = "ok" if not v else "violacao"
-            guardrail_status["srt_violations"] = v
-    except OSError:
-        guardrail_status["srt"] = "arquivo_nao_encontrado"
-    try:
-        if os.path.isfile(narration_abs):
-            v = tenant_validator.validate_text_against_guardrails(
-                open(narration_abs, "r", encoding="utf-8").read(), guardrails, check_ui_elements=True
-            )
-            guardrail_status["narration"] = "ok" if not v else "violacao"
-            guardrail_status["narration_violations"] = v
-    except OSError:
-        guardrail_status["narration"] = "arquivo_nao_encontrado"
+    def _audit_artifact(kind: str) -> tuple[str, list[str]]:
+        entry = artifacts.get(kind, {})
+        abs_path, _ = _resolve_artifact_path(root_real, workspace_root, entry)
+        if not abs_path or not os.path.isfile(render_local.fs_path(abs_path)):
+            return "arquivo_nao_encontrado", []
+        try:
+            with open(render_local.fs_path(abs_path), "r", encoding="utf-8") as handle:
+                texto = handle.read()
+        except OSError:
+            return "arquivo_nao_encontrado", []
+        violations = tenant_validator.validate_text_against_guardrails(
+            texto, guardrails, check_ui_elements=True
+        )
+        return ("ok" if not violations else "violacao"), violations
+
+    srt_status, srt_violations = _audit_artifact("srt")
+    narration_status, narration_violations = _audit_artifact("narration")
+    guardrail_status = {
+        "srt": srt_status,
+        "narration": narration_status,
+        "srt_violations": srt_violations,
+        "narration_violations": narration_violations,
+    }
 
     return {
         "slug": slug,
@@ -337,7 +416,9 @@ def generate_pack(tenant_id: str, slug: str, root: str = ".") -> dict:
         }
 
     # Checklist JSON.
-    checklist = _build_checklist(manifest, brand, guardrails, slug, out_dir)
+    checklist = _build_checklist(
+        manifest, brand, guardrails, slug, root_real, resolve_workspace_root(root_real)
+    )
     checklist_path = os.path.join(out_dir, "checklist-publicacao.json")
     with open(render_local.fs_path(checklist_path), "w", encoding="utf-8", newline="\n") as handle:
         json.dump(checklist, handle, ensure_ascii=False, indent=2)
