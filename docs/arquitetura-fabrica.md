@@ -1,6 +1,6 @@
 # Arquitetura da Fábrica de Vídeo Multi-Tenant
 
-Documento mestre do pipeline de produção de vídeo programático multi-tenant (Etapas 2 a 4). Público: operadores e agentes que executam, estendem ou auditam a fábrica. A fonte da verdade é o código; este documento descreve o comportamento comprovado pelos testes e pelo CI.
+Documento mestre do pipeline de produção de vídeo programático multi-tenant (Etapas 2 a 5B). Público: operadores e agentes que executam, estendem ou auditam a fábrica. A fonte da verdade é o código; este documento descreve o comportamento comprovado pelos testes e pelo CI.
 
 ## Sumário
 
@@ -50,6 +50,11 @@ tenants/ ──┘            │                                               
                                                                                 v
                                                         release_audit (gate de release, 7 domínios)
 
+Etapa 5/5B (camada de acabamento, transversal):
+    bootstrap_ffmpeg ──> factory_cli pipeline ──> static_cards ──> utm_simulator
+                              │                                          │
+                              └────────────> editorial_qa ──> handoff_bundler (pós-aprovação)
+
 devlog_sync (transversal): consolida os devlogs de sessão no contexto_projeto.md
 ```
 
@@ -76,7 +81,7 @@ tenants/<tenantId>/
     └── <slug>.json
 ```
 
-Os 4 tenants atuais (8 campanhas):
+Os 5 tenants atuais (10 campanhas):
 
 | Tenant | Marca | Preset | Domínio | Faixa de áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
@@ -84,6 +89,7 @@ Os 4 tenants atuais (8 campanhas):
 | `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitida (trilha opcional via `audio_tts`) | 3 |
 | `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibida | 2 |
 | `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibida | 1 |
+| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibida | 2 |
 
 Presets: `saas-demo` (cenas de app B2B/agenda/booking) e `shorts-completo` (hook, catálogo/projetos, métricas, cards e CTA). Fixtures não podem conter placeholders de teste técnico e, no preset `saas-demo`, devem manter as chaves estruturais lidas pelo motor (`profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota`) mesmo quando adotam nomes próprios do nicho.
 
@@ -120,6 +126,7 @@ Gera trilhas `.wav` (30 s, 44100 Hz, estéreo) **somente para tenants com `allow
 
 - `list [--tenant <id>] --json` — descoberta de tenants/campanhas.
 - `render [--tenant <id> | --all] [--report <caminho>] --json` — renderiza em lote, gravando transacionalmente em `02-reels-shorts/deliveries/<tenant>/<slug>/`, arquivando a cópia do vídeo em `.workspace/archives/<slug>/` e consolidando o índice em `02-reels-shorts/deliveries/factory-report.json` (ou no caminho de `--report`, recomendado em worktrees paralelas para não disputar o índice compartilhado).
+- `pipeline [--all | --tenant <id> [--campaign <slug>]] [--skip-render] [--start-date YYYY-MM-DD] [--weeks N] [--strict-audit] --json` (Etapa 5B) — subcomando mestre end-to-end: encadeia contratos → render 9:16 → derivados → cards estáticos → pacotes sociais → calendário → portal → auditoria UTM → Release Gate. Os módulos paralelos são importados de forma opcional: se um ainda não existir, o estágio é marcado `skipped` e o restante continua. Com `--skip-render`, os estágios de produção apenas verificam os artefatos versionados existentes.
 
 ### 2.7 `tools/publish_pack.py` — pacotes sociais (Agente 3, Etapa 3)
 
@@ -169,13 +176,43 @@ Lê os tenants validados e os `checklist-publicacao.json` gerados pelo `publish_
 
 Saídas: `04-legendas/calendario-editorial.json` (estrutura completa dos slots, com `audioPolicy`, `utmUrl` e contagens) e `04-legendas/calendario-editorial.md` (cronograma cronológico, checklist e matriz consolidada das URLs UTM). CLI: `python tools/campaign_calendar.py --start-date YYYY-MM-DD [--json]`.
 
-> **Pendência de consolidação:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, está em produção pelo Agente 3 e **ainda não consta na main**. Enquanto ausente, o domínio 5 reporta o aviso `MATRIZ_UTM_AUSENTE`: o modo normal segue aprovado e o `--strict` reprova.
+> **Consolidação concluída:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, já consta no repositório. Com ele presente, o domínio 5 não reporta `MATRIZ_UTM_AUSENTE` e o gate `--strict` aprova 7/7 domínios.
 
 ### 2.12 `tools/review_dashboard.py` — portal de revisão humana (Agente 2, Etapa 4)
 
 Consolida tenants (brand-kit + guardrails), entregas (manifesto, SRT, narração, storyboard) e pacotes sociais (checklist + os três textos por rede) num portal estático em `05-review-portal/`: `index.html` (dados embutidos, abre direto via `file://`), `portal-data.json` e `README.md`. O build é determinístico — não grava timestamps e produz bytes idênticos para os mesmos insumos, de modo que o portal versionado é o mesmo em qualquer estação.
 
 CLI: `python tools/review_dashboard.py --build [--json]` para gerar e `python tools/review_dashboard.py --serve [--port 8765]` para revisar no navegador. O portal é somente leitura: nenhuma ação dele publica, agenda ou altera artefato. O domínio 6 do `release_audit` exige os três arquivos e varre o JSON/HTML em busca de caminhos absolutos de estação vazados (`CAMINHO_ABSOLUTO_VAZADO`).
+
+### 2.13 `tools/bootstrap_ffmpeg.py` — bootstrap portátil de FFmpeg (Agente 1, Etapa 5B)
+
+Instala de forma idempotente o pacote essencial do Windows (gyan.dev) em `<MAIN_ROOT>/.workspace/tools/ffmpeg/` e valida `ffmpeg`/`ffprobe` com `-version`. `MAIN_ROOT` é resolvido por `git rev-parse --git-common-dir`, de modo que a instalação fica no checkout principal e é compartilhada por todas as worktrees. 100% stdlib; nenhum `.exe`/`.zip` é versionado. CLI: `python tools/bootstrap_ffmpeg.py [--check-only] [--force] [--json]`; API: `ensure_ffmpeg_tools(root=".", force=False) -> dict`.
+
+### 2.14 `tools/static_cards.py` — cards estáticos de Stories e Carrossel (Agente 1, Etapa 5)
+
+Gera, por campanha, dois kits versionados em `01-insta-stories/deliveries/<tenant>/<slug>/`: `stories/` (3 banners 1080×1920) e `carousel/` (4 slides 1080×1350), mais `static-manifest.json` (schemaVersion 1, `guardrailsAudited`, dimensões, bytes e SHA-256 das 7 lâminas). Usa as mesmas primitivas PNG bitmap 5×7 de `tools/ns002_pilot.py`, sem Pillow, e auditoriza todos os textos contra guardrails **antes** de renderizar qualquer pixel. CLI: `python tools/static_cards.py (--all | --tenant <id> [--campaign <slug>]) [--types stories,carousel] --json`. Não produz áudio.
+
+### 2.15 `tools/handoff_bundler.py` — empacotamento diário pós-aprovação (Agente 2, Etapa 5B)
+
+Cruza as aprovações do titular (`aprovacoes-titular.json`, schemas v1/v2 do `review_dashboard`), o calendário editorial, os pacotes sociais e os derivados para montar, em `.workspace/handoff-diario/<data>/<slotId>-<tenant>-<canal>/`, a ficha `POSTAGEM-MANUAL.md`, o `copy-pronta.txt`, o `handoff-manifest.json` (com `autoPublish: false`, hashes e status da mídia local) e a mídia correspondente quando presente no arquivo. Falha fechada: sem `--include-pending` empacota somente campanhas explicitamente aprovadas; decisão `ajuste` nunca entra; a copy é reauditada contra os guardrails. CLI: `python tools/handoff_bundler.py --all-approved [--json]` ou `--date YYYY-MM-DD [--include-pending]`. Nada é publicado.
+
+### 2.16 `tools/utm_simulator.py` — auditoria e simulação de funil UTM (Agente 4, Etapa 5B)
+
+Audita 100% das URLs UTM do `calendario-editorial.json` (e deriva a URL padrão do brand-kit para campanhas ainda não agendadas): HTTPS, host igual ao `domain`, presença e alfabeto de `utm_source`/`utm_medium`/`utm_campaign`/`utm_content`, `utm_campaign` igual ao slug e ausência de colisão de atribuição entre tenants. Com `--simulate-traffic`, gera sessões sintéticas determinísticas (seed fixa) das duas ondas e um catálogo de eventos de conversão por nicho, sem nenhum campo monetário preenchido. CLI: `python tools/utm_simulator.py [--calendar <arquivo>] [--simulate-traffic] [--out-dir .workspace/tmp/utm-sim] [--seed N] --json`.
+
+### 2.17 `tools/editorial_qa.py` — auditoria editorial transversal (Agente 8, Etapa 5B)
+
+Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` sob cinco lentes independentes, 100% stdlib e somente leitura:
+
+| Lente (`id`) | O que verifica | Código típico |
+| --- | --- | --- |
+| `duracao_srt_manifest` | Fim do último cue do SRT igual a `format.duration` do manifesto (padrão 30.0 s, tolerância 1 ms) e validade estrutural do SRT via `srt_validate` | `SRT_DURACAO_DIVERGENTE`, `SRT_SEM_CUES` |
+| `legibilidade_mobile` | Nenhuma linha de cue com mais de 48 caracteres; nenhum bloco vazio | `SRT_LINHA_LONGA` (aviso), `SRT_BLOCO_VAZIO` (erro) |
+| `paridade_entregas` | Presença e identidade (`tenantId`/`slug`) entre vídeo, cards estáticos (quando presentes) e pacote social | `PACOTE_SOCIAL_AUSENTE`, `CARDS_ESTATICOS_AUSENTE` (aviso), `PARIDADE_SLUG_DIVERGENTE` |
+| `guardrails_cruzados` | Re-auditoria de `forbiddenClaims`/`forbiddenUiElements` em SRT, narração e três legendas sociais | `GUARDRAIL_VIOLACAO` |
+| `integridade_utf8` | Ausência de U+FFFD e de sequências de mojibake em todos os arquivos UTF-8 auditados | `MOJIBAKE_DETECTADO`, `UTF8_INVALIDO` |
+
+`error` reprova sempre; `warning` reprova somente com `--strict` (é o caso das linhas de SRT acima de 48 caracteres, ainda presentes no acervo atual). CLI: `python tools/editorial_qa.py [--all | --tenant <id>] [--strict] [--json]`; API: `run_editorial_qa(root=".", strict=False, tenant=None) -> dict`, relatório `schemaVersion: 1` com `campaigns[]`, `checks[]` e `summary`. Exit codes: 0 aprovado, 1 reprovado, 2 erro de uso.
 
 ## 3. Regras operacionais e guardrails
 
@@ -220,21 +257,40 @@ python tools/campaign_calendar.py --start-date 2026-11-23 --json
 python tools/review_dashboard.py --build --json
 python tools/review_dashboard.py --serve --port 8765
 
-# 8. Auditoria de prontidão (qualquer estação/CI; avisos não reprovam)
+# 8. Cards estáticos: stories 1080x1920 + carrossel 1080x1350 (Etapa 5)
+python tools/static_cards.py --all --json
+
+# 9. Auditoria de URLs UTM (Etapa 5B; --simulate-traffic opcional)
+python tools/utm_simulator.py --json
+
+# 10. Auditoria editorial transversal (5 lentes; --strict também reprova avisos)
+python tools/editorial_qa.py --all --json
+python tools/editorial_qa.py --all --strict --json
+
+# 11. Bootstrap portátil de FFmpeg (somente se a estação não tiver os binários)
+python tools/bootstrap_ffmpeg.py --check-only --json
+
+# 12. Handoff diário pós-aprovação (somente campanhas aprovadas pelo titular)
+python tools/handoff_bundler.py --all-approved --json
+
+# 13. Pipeline mestre end-to-end (opcional; verifica artefatos com --skip-render)
+python tools/factory_cli.py pipeline --all --skip-render --json
+
+# 14. Auditoria de prontidão (qualquer estação/CI; avisos não reprovam)
 python tools/release_audit.py --json
 
-# 9. Gate de release (7 domínios; avisos também reprovam)
+# 15. Gate de release (7 domínios; avisos também reprovam)
 python tools/release_audit.py --strict --json
 
-# 10. Consolidar o registro de sessões no contexto do projeto (idempotente)
+# 16. Consolidar o registro de sessões no contexto do projeto (idempotente)
 python tools/devlog_sync.py --json
 ```
 
-Para cadastrar um 5º nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-nicho.md) (estrutura, schemas, fixture, campanha, validação e render em menos de 10 minutos).
+Para cadastrar um novo nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-nicho.md) (estrutura, schemas, fixture, campanha, validação e render em menos de 10 minutos).
 
 ## 5. Testes e CI
 
-Suíte consolidada da fábrica — **16 módulos** (6 do núcleo de render, 3 da Etapa 2, 3 da Etapa 3 e 4 da Etapa 4), executada no CI (`.github/workflows/local-render-validation.yml`, etapa "Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3 e 4)") em `ubuntu-latest` e `windows-latest`:
+Suíte consolidada da fábrica — **21 módulos** (6 do núcleo de render, 3 da Etapa 2, 3 da Etapa 3, 4 da Etapa 4 e 5 da Etapa 5/5B), executada no CI (`.github/workflows/local-render-validation.yml`, etapa "Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3, 4, 5 e 5B)") em `ubuntu-latest` e `windows-latest`. Os cinco módulos novos também são apanhados pela etapa de descoberta `python -m unittest discover -s tools/tests -v`:
 
 ```bash
 python -m unittest \
@@ -245,14 +301,19 @@ python -m unittest \
   tools/tests/test_factory_cli.py tools/tests/test_audio_tts.py \
   tools/tests/test_publish_pack.py tools/tests/test_devlog_sync.py \
   tools/tests/test_derivative_formats.py tools/tests/test_review_dashboard.py \
-  tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py -v
+  tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py \
+  tools/tests/test_bootstrap_ffmpeg.py tools/tests/test_static_cards.py \
+  tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py \
+  tools/tests/test_editorial_qa.py -v
 python tools/release_audit.py --strict --json
+python tools/editorial_qa.py --all --json
 ```
 
 - `test_release_audit.py` (22 testes) cobre o contrato `schemaVersion 2` dos 7 domínios no repositório real, o sandbox que aprova no modo normal e reprova no `--strict` (matriz UTM ausente), o sandbox completo que aprova **7/7 no `--strict`**, e defeitos simulados por domínio: hash corrompido, storyboard/diretório de entrega/pacote/arquivo social ausentes, política de áudio violada nos dois sentidos, `autoPublish: true` e `guardrailsAudited: false`, contagem de slots divergente, declaração de derivado incompleta e derivado com hash divergente, caminho absoluto vazado no portal, artefatos da Etapa 4 ausentes (aviso, não falha), mídia rastreada, `.gitattributes` sem `eol=lf` e sem cobertura por extensão, worktree órfã e worktree registrada sem diretório, além de `--json`/`--report-out`/`PATH_OUTSIDE_ROOT` e da saída UTF-8 do CLI.
+- `test_editorial_qa.py` (13 testes) cobre a auditoria do acervo real (10 campanhas, 5 lentes, nenhum erro) e, em sandbox, linha de SRT longa, U+FFFD e mojibake, violação de guardrail, filtro por tenant, `--strict`, `--json`, divergência de duração, pacote social ausente, bloco vazio, saída humana e determinismo sem efeito colateral.
 - `test_devlog_sync.py` (7 testes) cobre a consolidação da Etapa 3 (retrocompatibilidade byte a byte), a ordenação multi-etapa por `(etapa, agente)`, a atualização da linha `Fase atual`, a idempotência de execuções repetidas e o filtro `--pattern`.
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
-- **Dependência de consolidação:** o gate `--strict` exige 7/7 domínios. Enquanto `04-legendas/matriz-utm-consolidada.csv` (Agente 3) não estiver na main, o domínio 5 reporta o aviso `MATRIZ_UTM_AUSENTE` e o modo estrito reprova — no estado atual desta branch, `--json` retorna `ok: true` com 6 domínios ok e 1 aviso, e `--strict` retorna exit 1. Se for preciso manter o CI verde antes dessa consolidação, remova `--strict` dessa linha; a auditoria continua honesta nos dois modos.
+- **Gate `--strict`:** exige 7/7 domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada, `--json` e `--strict` retornam `ok: true` com 7 domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
 
 ## 6. Referências
 
