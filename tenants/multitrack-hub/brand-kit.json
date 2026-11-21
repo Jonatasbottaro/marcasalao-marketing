@@ -49,5 +49,14 @@
     "utm_source": "youtube",
     "utm_medium": "shorts",
     "utm_campaign_prefix": "mth"
+  },
+  "uiLabels": {
+    "teamSectionTitle": "CATALOGO DE PROJETOS",
+    "catalogSectionTitle": "FAIXAS E RATEIOS",
+    "publicRouteFallback": "/",
+    "managerRouteFallback": "/rateios",
+    "journeyBridgeCaption": "DA ORGANIZACAO DOS STEMS AOS RATEIOS",
+    "itemUnitLabel": "projeto",
+    "customerLabel": "Musico"
   }
 }

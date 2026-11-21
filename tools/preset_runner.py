@@ -96,6 +96,36 @@ def _brand_palette(brand_kit: dict) -> dict:
     return brand_kit.get("palette", {}).get("rgb", {})
 
 
+# Rotulos de UI padrao (salao): fallback 100% retrocompativel para
+# marca-salao/meu-salao e para brand-kits sem a secao ``uiLabels``.
+DEFAULT_UI_LABELS = {
+    "teamSectionTitle": "PROFISSIONAIS DO SALAO",
+    "catalogSectionTitle": "SERVICOS DISPONIVEIS",
+    "publicRouteFallback": "/booking/[salonId]",
+    "managerRouteFallback": "/gestor/agenda",
+    "journeyBridgeCaption": "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO",
+    "itemUnitLabel": "atendimento",
+    "customerLabel": "Cliente",
+}
+
+
+def _resolve_ui_labels(brand_kit: dict) -> dict:
+    """Resolve rotulos de UI do brand-kit com fallback de salao por chave.
+
+    ``brand_kit["uiLabels"]`` e opcional; chaves ausentes, vazias ou de tipo
+    invalido caem no valor padrao de salao, preservando o render de
+    marca-salao/meu-salao (e de qualquer brand-kit legado sem a secao).
+    """
+    provided = brand_kit.get("uiLabels")
+    labels = dict(DEFAULT_UI_LABELS)
+    if isinstance(provided, dict):
+        for key in DEFAULT_UI_LABELS:
+            value = provided.get(key)
+            if isinstance(value, str) and value.strip():
+                labels[key] = value
+    return labels
+
+
 def _draw_brand_header_generic(canvas, width, height, brand_kit, route_label):
     """Cabecalho de marca dinamico: monogram, displayTitle, tagline,
     headerOverlay.height e cores da brandKit."""
@@ -376,6 +406,15 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     text_mut = _pal(palette, "textMuted")
     dark_ink = (14, 18, 28)
 
+    labels = _resolve_ui_labels(brand_kit)
+    customer = _norm_text(labels["customerLabel"])
+    public_route = _norm_text(labels["publicRouteFallback"])
+    manager_route = _norm_text(labels["managerRouteFallback"])
+    catalog_title = _norm_text(labels["catalogSectionTitle"])
+    team_title = _norm_text(labels["teamSectionTitle"])
+    unit_label = _norm_text(labels["itemUnitLabel"])
+    bridge_caption = _norm_text(labels["journeyBridgeCaption"])
+
     kind = scene["kind"]
     if kind == "manager-agenda":
         cap_abs = os.path.join(root, base_capture_ref.replace("/", os.sep)) if base_capture_ref else None
@@ -384,8 +423,8 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         canvas = _base_gradient(width, height, bg_top, bg_bot)
 
     surface_labels = {
-        "public-booking": "/BOOKING",
-        "manager-agenda": "/GESTOR/AGENDA",
+        "public-booking": public_route,
+        "manager-agenda": manager_route,
     }
     header_pill = surface_labels.get(scene.get("surface"), campaign_id)
     header_h = _draw_brand_header_generic(canvas, width, height, brand_kit, header_pill)
@@ -410,7 +449,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
             ly += carousel_layout.char_height(6) + 22
         _fill_rect(canvas, width, height, 102, ly + 18, 360, ly + 26, accent)
         _draw_text(canvas, width, height, 102, ly + 56, _scene_text(scene, "subline"), 3, accent)
-        steps = ("1. CLIENTE ESCOLHE", "2. CONFIRMA HORARIO", "3. APARECE NA AGENDA")
+        steps = (f"1. {customer} ESCOLHE", "2. CONFIRMA HORARIO", "3. APARECE NA AGENDA")
         step_w = (width - 112 - 32) // 3
         sy = header_h + 820
         for idx, label in enumerate(steps):
@@ -426,10 +465,10 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     elif kind == "booking-selection":
         cy = _draw_surface_banner_generic(canvas, width, height, header_h + 36,
                                           _scene_text(scene, "badge"), _scene_text(scene, "headline"), palette)
-        rota = fixture.get("booking", {}).get("rota", "/booking/[salonId]")
+        rota = fixture.get("booking", {}).get("rota", public_route)
         _draw_text(canvas, width, height, 56, cy, f"ROTA PUBLICA: {rota}", 3, text_mut)
         cy += 52
-        _draw_text(canvas, width, height, 56, cy, "SERVICOS DISPONIVEIS", 4, text_pri)
+        _draw_text(canvas, width, height, 56, cy, catalog_title, 4, text_pri)
         cy += 44
         for srv in fixture.get("servicos", [])[:4]:
             is_sel = selected_service and srv["id"] == selected_service["id"]
@@ -444,7 +483,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
                            pad_x=16, pad_y=10)
             cy += 136
         cy += 14
-        _draw_text(canvas, width, height, 56, cy, "PROFISSIONAIS DO SALAO", 4, text_pri)
+        _draw_text(canvas, width, height, 56, cy, team_title, 4, text_pri)
         cy += 44
         col_w = (width - 112 - 20) // 2
         for idx, prof in enumerate(fixture.get("profissionais", [])[:4]):
@@ -462,7 +501,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
     elif kind == "booking-confirm":
         cy = _draw_surface_banner_generic(canvas, width, height, header_h + 36,
                                           _scene_text(scene, "badge"), _scene_text(scene, "headline"), palette)
-        _draw_text(canvas, width, height, 56, cy, "CALCULO DE HORARIOS LIVRES EM /BOOKING/[SALONID]", 2, text_mut)
+        _draw_text(canvas, width, height, 56, cy, f"CALCULO DE HORARIOS LIVRES EM {public_route}", 2, text_mut)
         cy += 34
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 335, card_bg, border_color=secondary, border_thickness=2)
         _draw_text(canvas, width, height, 84, cy + 26, "TERCA-FEIRA  18/11/2026", 4, text_pri)
@@ -486,7 +525,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 350, card_bg, left_stripe_color=ok_col)
         _draw_text(canvas, width, height, 92, cy + 26, "RESUMO DO AGENDAMENTO", 4, accent)
         if booking_case:
-            _draw_text(canvas, width, height, 92, cy + 84, f"CLIENTE: {booking_case.get('cliente', '-')}", 3, text_pri)
+            _draw_text(canvas, width, height, 92, cy + 84, f"{customer}: {booking_case.get('cliente', '-')}", 3, text_pri)
         if selected_service:
             _draw_text(canvas, width, height, 92, cy + 132,
                        f"SERVICO: {selected_service['nome']} ({selected_service['duracaoMin']} MIN)", 3, text_pri)
@@ -495,7 +534,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         _draw_text(canvas, width, height, 92, cy + 228, f"DATA: 18/11 AS {sel_slot}", 3, ok_col)
         if selected_service:
             _draw_text(canvas, width, height, 92, cy + 286,
-                       f"VALOR ESTIMADO: {_format_price_brl(selected_service['precoBRL'])}", 3, text_mut)
+                       f"VALOR ESTIMADO POR {unit_label}: {_format_price_brl(selected_service['precoBRL'])}", 3, text_mut)
         cy += 380
         _draw_card(canvas, width, height, 56, cy, width - 56, cy + 104, ok_col)
         cta_txt = _scene_text(scene, "ctaLabel") or "CONFIRMAR AGENDAMENTO"
@@ -513,7 +552,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         _draw_text(canvas, width, height, 102, header_h + 360, "REALIZADO!", 6, ok_col)
         _fill_rect(canvas, width, height, 102, header_h + 435, width - 102, header_h + 440, secondary)
         if booking_case:
-            _draw_text(canvas, width, height, 102, header_h + 475, f"CLIENTE: {booking_case.get('cliente', '-')}", 4, text_pri)
+            _draw_text(canvas, width, height, 102, header_h + 475, f"{customer}: {booking_case.get('cliente', '-')}", 4, text_pri)
         if selected_service:
             _draw_text(canvas, width, height, 102, header_h + 530, f"SERVICO: {selected_service['nome']}", 4, text_pri)
         if selected_prof:
@@ -570,7 +609,7 @@ def _render_saas_frame(scene: dict, brand_kit: dict, fixture: dict, root: str,
         _fill_rect(canvas, width, height, 102, ly + 22, 420, ly + 30, accent)
         domain_txt = _scene_text(scene, "subline") or brand_kit.get("domain", "")
         _draw_text(canvas, width, height, 102, ly + 72, domain_txt, 5, accent)
-        _draw_text(canvas, width, height, 102, ly + 145, "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO", 3, text_mut)
+        _draw_text(canvas, width, height, 102, ly + 145, bridge_caption, 3, text_mut)
     else:
         raise build_video.DeliveryError(f"tipo de cena nao suportado (saas-demo): {kind}")
 
@@ -725,6 +764,7 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
     brand_kit = ctx["brandKit"]
     guardrails = ctx["guardrails"]
     fixture = ctx["fixture"]
+    ui_labels = _resolve_ui_labels(brand_kit)
 
     # 2. Carrega o config da campanha.
     config_abs = (os.path.realpath(config_path) if os.path.isabs(config_path)
@@ -791,7 +831,8 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
     srt_text = build_srt_text(scenes)
     narration_text = build_narration_text(scenes, slug)
 
-    texts_to_audit = scene_texts + [("srt", srt_text), ("narracao", narration_text)]
+    ui_label_texts = [(f"uiLabels.{key}", val) for key, val in ui_labels.items()]
+    texts_to_audit = scene_texts + ui_label_texts + [("srt", srt_text), ("narracao", narration_text)]
     violations = _audit_texts(texts_to_audit, guardrails)
     if violations:
         raise PresetRunnerError("GUARDRAIL_VIOLACAO: " + "; ".join(violations))
@@ -875,6 +916,7 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
                 "monogram": brand_kit.get("monogram"),
                 "domain": brand_kit.get("domain"),
             },
+            "uiLabels": {key: _norm_text(val) for key, val in ui_labels.items()},
             "guardrails": {
                 "allowAudioTrack": allow_audio,
                 "requireSrt": bool(audio_policy.get("requireSrt")),

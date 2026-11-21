@@ -28,10 +28,27 @@ REPO_ROOT = os.path.dirname(TOOLS_DIR)
 sys.path.insert(0, TOOLS_DIR)
 
 # Garante ffmpeg/ffprobe no PATH do processo de teste (espelha o CI, que injeta o binario).
+# Resolve a raiz PRINCIPAL via git-common-dir para achar .workspace/tools/ffmpeg
+# compartilhado entre worktrees (o ffmpeg e instalado no checkout principal).
 if shutil.which("ffmpeg") is None:
-    _ffmpeg_dir = os.path.join(REPO_ROOT, ".workspace", "tools", "ffmpeg")
-    if os.path.isdir(_ffmpeg_dir):
-        os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+    _ffmpeg_candidates = []
+    try:
+        _common = subprocess.run(
+            ["git", "-C", REPO_ROOT, "rev-parse", "--git-common-dir"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+        if _common:
+            if not os.path.isabs(_common):
+                _common = os.path.join(REPO_ROOT, _common)
+            _main_root = os.path.dirname(os.path.abspath(os.path.normpath(_common)))
+            _ffmpeg_candidates.append(os.path.join(_main_root, ".workspace", "tools", "ffmpeg"))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    _ffmpeg_candidates.append(os.path.join(REPO_ROOT, ".workspace", "tools", "ffmpeg"))
+    for _ffmpeg_dir in _ffmpeg_candidates:
+        if os.path.isdir(_ffmpeg_dir):
+            os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+            break
 
 import build_video  # noqa: E402
 import preset_runner  # noqa: E402
@@ -328,6 +345,87 @@ class PresetRunnerTest(unittest.TestCase):
         self.assertEqual(manifest["format"]["height"], 1920)
         self.assertEqual(manifest["format"]["fps"], 30)
         self.assertEqual(manifest["artifacts"]["video"]["ffprobe"]["audioStreams"], 1)
+
+
+# ---------------------------------------------------------------------------
+# Etapa 6: rotulos de UI parametrizaveis por nicho (brand-kit.uiLabels)
+# ---------------------------------------------------------------------------
+class UiLabelsTest(unittest.TestCase):
+    """Parametrizacao de rotulos de UI: fallback de salao + nichos + guardrails + schema."""
+
+    @staticmethod
+    def _brand_kit(tid: str) -> dict:
+        return tenant_validator.load_and_validate_tenant(tid, root=REPO_ROOT, strict=True)["brandKit"]
+
+    def test_ui01_resolve_fallback_sem_uilabels(self) -> None:
+        """Sem uiLabels => fallback identico aos rotulos de salao (retrocompativel)."""
+        bk = self._brand_kit("marca-salao")
+        bk_sem = {k: v for k, v in bk.items() if k != "uiLabels"}
+        labels = preset_runner._resolve_ui_labels(bk_sem)
+        self.assertEqual(labels, preset_runner.DEFAULT_UI_LABELS)
+        self.assertEqual(labels["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
+        self.assertEqual(labels["publicRouteFallback"], "/booking/[salonId]")
+        # marca-salao com uiLabels tambem resolve para os mesmos valores de salao.
+        self.assertEqual(preset_runner._resolve_ui_labels(bk), preset_runner.DEFAULT_UI_LABELS)
+
+    def test_ui02_resolve_nichos_clinica_e_estudio(self) -> None:
+        cv = preset_runner._resolve_ui_labels(self._brand_kit("clinica-vital"))
+        self.assertEqual(cv["publicRouteFallback"], "/avaliacao/[clinicId]")
+        self.assertEqual(cv["managerRouteFallback"], "/gestor/consultas")
+        self.assertEqual(cv["teamSectionTitle"], "ESPECIALISTAS DA CLINICA")
+        self.assertEqual(cv["customerLabel"], "Paciente")
+        ef = preset_runner._resolve_ui_labels(self._brand_kit("estudio-flow"))
+        self.assertEqual(ef["publicRouteFallback"], "/aulas/[studioId]")
+        self.assertEqual(ef["managerRouteFallback"], "/gestor/turmas")
+        self.assertEqual(ef["customerLabel"], "Aluna")
+        # Fallback parcial: chave omitida cai no padrao de salao.
+        parcial = preset_runner._resolve_ui_labels({"uiLabels": {"customerLabel": "Aluna"}})
+        self.assertEqual(parcial["customerLabel"], "Aluna")
+        self.assertEqual(parcial["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
+
+    def test_ui03_guardrail_bloqueia_uilabel_proibido(self) -> None:
+        ctx = tenant_validator.load_and_validate_tenant("marca-salao", root=REPO_ROOT, strict=True)
+        guardrails = ctx["guardrails"]
+        bk = dict(ctx["brandKit"])
+        bk["uiLabels"] = dict(bk.get("uiLabels") or {})
+        bk["uiLabels"]["customerLabel"] = "Meu Salão"  # forbiddenClaim do marca-salao
+        labels = preset_runner._resolve_ui_labels(bk)
+        texts = [(f"uiLabels.{k}", v) for k, v in labels.items()]
+        violations = preset_runner._audit_texts(texts, guardrails)
+        self.assertTrue(violations, "uiLabel proibido deveria gerar violacao de guardrail")
+        joined = " ".join(violations).lower()
+        self.assertTrue("meu salao" in joined or "claim_forbidden" in joined, joined)
+
+    def test_ui04_schema_rejeita_chave_desconhecida_em_uilabels(self) -> None:
+        import copy
+        bk = copy.deepcopy(self._brand_kit("estudio-flow"))
+        bk["uiLabels"]["chaveInventada"] = "X"
+        errors = tenant_validator.validate_brand_kit(bk, root=REPO_ROOT)
+        self.assertTrue(errors, "schema deveria rejeitar chave desconhecida em uiLabels")
+        self.assertTrue(any("chaveInventada" in e for e in errors), errors)
+
+    def test_ui05_frames_nichos_e_sem_regressao_marca(self) -> None:
+        """Gera frames reais saas-demo dos nichos e confirma resolucao sem regressao."""
+        import struct
+        scene = {"id": "ui-frame", "kind": "booking-selection",
+                 "badge": "DEMO", "headline": "TESTE DE ROTULOS", "surface": "public-booking"}
+        for tid, esperado in (("clinica-vital", "ESPECIALISTAS DA CLINICA"),
+                              ("estudio-flow", "INSTRUTORES DO ESTUDIO")):
+            ctx = tenant_validator.load_and_validate_tenant(tid, root=REPO_ROOT, strict=True)
+            labels = preset_runner._resolve_ui_labels(ctx["brandKit"])
+            self.assertEqual(labels["teamSectionTitle"], esperado)
+            canvas = preset_runner._render_saas_frame(
+                dict(scene), ctx["brandKit"], ctx["fixture"], REPO_ROOT, None, {}, tid,
+            )
+            png = preset_runner._encode_png(preset_runner.OUTPUT_WIDTH,
+                                            preset_runner.OUTPUT_HEIGHT, canvas)
+            self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+            w, h = struct.unpack(">II", png[16:24])
+            self.assertEqual((w, h), (preset_runner.OUTPUT_WIDTH, preset_runner.OUTPUT_HEIGHT))
+        # Sem regressao: marca-salao continua com rotulos de salao.
+        ms = preset_runner._resolve_ui_labels(self._brand_kit("marca-salao"))
+        self.assertEqual(ms["teamSectionTitle"], "PROFISSIONAIS DO SALAO")
+        self.assertEqual(ms["journeyBridgeCaption"], "DO AGENDAMENTO DA CLIENTE A AGENDA DO SALAO")
 
 
 if __name__ == "__main__":
