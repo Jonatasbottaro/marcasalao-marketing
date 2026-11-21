@@ -497,6 +497,81 @@ def _two_proportion_z(
     return round(z, 4), round(p_value, 6)
 
 
+def _detect_hook_fatigue(
+    conversions_w1: float,
+    sessions_w1: float,
+    conversions_w2: float,
+    sessions_w2: float,
+    min_conversions: int = DEFAULT_MIN_CONVERSIONS,
+    z_threshold: float = DEFAULT_Z_THRESHOLD,
+) -> dict:
+    """Detecta fadiga temporal de hook comparando duas janelas.
+
+    Compara a taxa de conversao (CVR) da janela inicial (w1) com a janela
+    final (w2) para o mesmo hook/tenant/campanha. Se a CVR caiu
+    estatisticamente (z <= -z_threshold e p < alpha), classifica como
+    `fadiga_detectada`. Sem amostra minima em qualquer janela =>
+    `amostra_insuficiente`. Caso contrario => `estavel`.
+
+    Devolve dict com `fatigueStatus`, `fatigueZScore`, `fatiguePValue`,
+    `fatigueDetected` (bool) e `fatigueReason`.
+    """
+    if sessions_w1 <= 0 or sessions_w2 <= 0:
+        return {
+            "fatigueStatus": "amostra_insuficiente",
+            "fatigueZScore": None,
+            "fatiguePValue": None,
+            "fatigueDetected": False,
+            "fatigueReason": (
+                "Amostra insuficiente para detecao de fadiga: "
+                f"necessario pelo menos 1 sessao em cada janela "
+                f"(w1={_to_int(sessions_w1)}, w2={_to_int(sessions_w2)})."
+            ),
+        }
+    if conversions_w1 < min_conversions or conversions_w2 < min_conversions:
+        return {
+            "fatigueStatus": "amostra_insuficiente",
+            "fatigueZScore": None,
+            "fatiguePValue": None,
+            "fatigueDetected": False,
+            "fatigueReason": (
+                "Amostra insuficiente para detecao de fadiga: "
+                f"minimo de {min_conversions} conversoes por janela "
+                f"(w1={_to_int(conversions_w1)}, w2={_to_int(conversions_w2)})."
+            ),
+        }
+    z, p_value = _two_proportion_z(conversions_w1, sessions_w1, conversions_w2, sessions_w2)
+    if z is None or p_value is None:
+        return {
+            "fatigueStatus": "amostra_insuficiente",
+            "fatigueZScore": None,
+            "fatiguePValue": None,
+            "fatigueDetected": False,
+            "fatigueReason": "Nao foi possivel calcular o teste z de duas proporcoes.",
+        }
+    if z >= z_threshold and p_value < SIGNIFICANCE_ALPHA:
+        return {
+            "fatigueStatus": "fadiga_detectada",
+            "fatigueZScore": z,
+            "fatiguePValue": p_value,
+            "fatigueDetected": True,
+            "fatigueReason": (
+                "Fadiga de hook detectada: CVR caiu da janela inicial para a final "
+                f"(z={z}, p={p_value}, 95% de confianca)."
+            ),
+        }
+    return {
+        "fatigueStatus": "estavel",
+        "fatigueZScore": z,
+        "fatiguePValue": p_value,
+        "fatigueDetected": False,
+        "fatigueReason": (
+            f"Hook estavel entre janelas (z={z}, p={p_value}); "
+            "sem queda estatisticamente consistente."
+        ),
+    }
+
+
 def _classify_hook(
     rate_a: float,
     rate_b: float,
@@ -736,6 +811,75 @@ def _compare_hooks(
     }
 
 
+def _tenant_benchmarks(
+    by_tenant: dict[str, dict],
+    hook_comparison: dict,
+    by_wave: dict[int, dict],
+    min_conversions: int,
+) -> dict:
+    """Consolida benchmarks isolados por tenant_id.
+
+    Para cada tenant: total de campanhas, sessoes/engajadas/conversoes,
+    taxa de vitoria A/B (vencedor_A ou vencedor_B sobre total de campanhas
+    comparadas), hooks com fadiga detectada (comparando Onda 1 vs Onda 2)
+    e ranking de canais/formatos por CVR dentro do tenant.
+
+    Nao ha vazamento de metrica entre tenants: cada tenant e agregado
+    somente a partir de seus proprios slots.
+    """
+    # Taxa de vitoria A/B por tenant a partir do comparativo por campanha.
+    ab_by_tenant: dict[str, dict] = {}
+    for row in hook_comparison.get("byCampaign", []):
+        tid = row.get("tenantId")
+        if tid is None:
+            continue
+        entry = ab_by_tenant.setdefault(tid, {"total": 0, "wins": 0})
+        entry["total"] += 1
+        if row.get("classification") in ("vencedor_A", "vencedor_B"):
+            entry["wins"] += 1
+
+    # Fadiga temporal: compara Onda 1 (w1) vs Onda 2 (w2) por tenant.
+    wave1 = by_wave.get(1, _empty_group("onda", "Onda 1"))
+    wave2 = by_wave.get(2, _empty_group("onda", "Onda 2"))
+
+    benchmarks: dict[str, dict] = {}
+    for tenant_id, group in by_tenant.items():
+        ab = ab_by_tenant.get(tenant_id, {"total": 0, "wins": 0})
+        ab_rate = round(ab["wins"] / ab["total"], 4) if ab["total"] else None
+
+        fadiga = _detect_hook_fatigue(
+            wave1["conversions"],
+            wave1["sessions"],
+            wave2["conversions"],
+            wave2["sessions"],
+            min_conversions=min_conversions,
+        )
+
+        benchmarks[tenant_id] = {
+            "tenantId": tenant_id,
+            "campaigns": group.get("campaigns", 0),
+            "sessions": group["sessions"],
+            "engagedSessions": group["engagedSessions"],
+            "conversions": group["conversions"],
+            "conversionRatePct": group["conversionRatePct"],
+            "engagedRatePct": group["engagedRatePct"],
+            "slots": group["slots"],
+            "abWinRatePct": ab_rate,
+            "abCampaignsTotal": ab["total"],
+            "abCampaignsWins": ab["wins"],
+            "hooksComFadiga": fadiga["fatigueDetected"],
+            "hooksComFadigaStatus": fadiga["fatigueStatus"],
+            "hooksComFadigaZScore": fadiga["fatigueZScore"],
+            "hooksComFadigaPValue": fadiga["fatiguePValue"],
+            "hooksComFadigaReason": fadiga["fatigueReason"],
+        }
+
+    return {
+        "minConversions": min_conversions,
+        "byTenant": [benchmarks[tid] for tid in sorted(benchmarks)],
+    }
+
+
 def analyze_performance(
     root: str = ".",
     metrics_csv: str | None = None,
@@ -815,10 +959,12 @@ def analyze_performance(
     by_tenant: dict[str, dict] = {}
     by_channel: dict[str, dict] = {}
     by_wave: dict[int, dict] = {}
+    tenant_campaigns: dict[str, set[str]] = {}
     for slot in calendar_data["slots"]:
         by_tenant.setdefault(
             slot["tenantId"], _empty_group("tenantId", slot["tenantId"])
         )
+        tenant_campaigns.setdefault(slot["tenantId"], set()).add(slot["slug"])
         by_channel.setdefault(slot["canal"], _empty_group("channel", slot["canal"]))
         by_wave.setdefault(slot["onda"], _empty_group("onda", WAVE_LABELS.get(slot["onda"], f"Onda {slot['onda']}")))
         by_wave[slot["onda"]]["label"] = WAVE_LABELS.get(slot["onda"], f"Onda {slot['onda']}")
@@ -844,6 +990,7 @@ def analyze_performance(
             add(group, slot)
 
     for group in by_tenant.values():
+        group["campaigns"] = len(tenant_campaigns.get(group["tenantId"], set()))
         _finalize_group(group)
     for group in by_channel.values():
         _finalize_group(group)
@@ -856,6 +1003,9 @@ def analyze_performance(
     hook_comparison = _compare_hooks(
         slot_results, by_tenant, by_channel,
         min_sessions=min_sessions, min_conversions=min_conversions,
+    )
+    tenant_benchmarks = _tenant_benchmarks(
+        by_tenant, hook_comparison, by_wave, min_conversions
     )
     data_quality = {
         "invalidRows": metrics["invalidRows"],
@@ -893,6 +1043,7 @@ def analyze_performance(
             "byWave": _rank(list(by_wave.values())),
             "byHook": hook_rows,
             "hookComparison": hook_comparison,
+            "tenantBenchmarks": tenant_benchmarks,
         },
         "slots": slot_results,
         "unmatchedRows": unmatched,
