@@ -10,12 +10,12 @@
 
 | Item | Valor |
 |------|-------|
-| Raiz oficial | `D:/MEGA/Marketing/marcasalao-marketing` |
-| HEAD main (base / integração) | `af1e15f` (consolidação da Etapa 3 na `main`: 4 tenants, 8 campanhas, pacotes sociais, `devlog_sync` e suíte de CI), linear após `ad95adc → d55b291 → a77efe5 → d70dd93`, sem push remoto |
-| Branch de trabalho ativa | `main` (Etapa 3 consolidada a partir dos 4 agentes paralelos: `ad95adc` agente1 → `d55b291` agente2 → `a77efe5` agente3 → `d70dd93` agente4 → `af1e15f` consolidação; sem push remoto) |
+| Raiz oficial | `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing` |
+| HEAD main (base / integração) | `1ce9e2e` (tip da integração da Etapa 5B: 5 tenants, 10 campanhas, 9 agentes da Etapa 5 sincronizados — merges `--no-ff` das 8 branches paralelas sobre `3f8cb1a`, mais o commit de release desta sessão; sem push remoto) |
+| Branch de trabalho ativa | `main` (Etapa 5B consolidada a partir de 8 branches paralelas sobre `3f8cb1a`: agente1–agente8; sem push remoto) |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 5 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (4 agente(s): 1, 2, 3, 4) |
-| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4 e Etapa 5 (Agentes 1, 2, 3, 4) concluídas — ver seções 2 e 7 |
+| Fase atual | Etapa 5 concluída — Plataforma Multi-Tenant + Sync Multi-Agente (9 agente(s): 1, 2, 3, 4, 5, 6, 7, 8, 9) |
+| Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4 e Etapa 5 (Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9) concluídas — ver seções 2 e 7 |
 ---
 
 ## 2. Fase 1 — Resumo de execução (2026-11-18)
@@ -823,6 +823,440 @@ regravados com os campos novos (diff esperado e restrito a
 `04-legendas/pacotes-publicacao/**`).
 
 ---
+
+### Devlog — Etapa 5B / Agente 4 (integração do QA editorial no pipeline)
+<!-- devlog-sync:etapa5-agente5.md -->
+
+> **Data:** 2026-11-20  
+> **Branch/worktree:** `codex/etapa5b-agente4` em `.workspace/worktrees/etapa5b-agente4`  
+> **Base integrada:** `main` @ `3f8cb1a` (Etapa 5B consolidada: 5 tenants, 10 campanhas)  
+> **Escopo:** estágio opcional `editorial_qa` no pipeline mestre, cobertura de teste e suíte do CI
+
+## 1. Contexto
+
+A versão consolidada da Etapa 5B já trazia o `factory_cli.py pipeline` com 9 estágios
+(contratos, render, derivados, cards, pacotes, calendário, portal, UTM e release gate),
+o `utm_simulator`, o playbook de analytics e os triggers de `01-insta-stories/deliveries/**`.
+Esta rodada fecha a integração com o módulo paralelo de QA editorial.
+
+## 2. Alterações
+
+| Arquivo | Mudança |
+| --- | --- |
+| `tools/factory_cli.py` | novo estágio opcional `editorial-qa` entre `utm` e `release-gate`; resolução via `importlib` com adaptador para `run_editorial_qa`/`audit_editorial_qa`/`run_qa`/`audit`; `counts.editorialQa`; saída humana atualizada |
+| `tools/tests/test_factory_cli.py` | `test_02` (render binário) com `skipUnless` quando `ffmpeg`/`ffprobe` ausentes; listas de estágios atualizadas com `editorial-qa`; `editorial-qa` aceito como `ok` ou `skipped` (módulo paralelo) |
+| `.github/workflows/local-render-validation.yml` | `tools/tests/test_editorial_qa.py` incluído na suíte explícita do CI |
+| `.workspace/devlogs/etapa5-agente5.md` | este relatório |
+
+Contrato assumido para o módulo paralelo (documentado no erro do estágio):
+
+```
+tools/editorial_qa.py :: run_editorial_qa(root=".") -> dict
+# retorno: {"ok": bool, "totalChecked": int?, "findings": list?, "warnings": int?, "reportPath": str?}
+```
+
+Se o módulo não existir, o estágio fica `skipped` e o pipeline segue. Se existir e
+retornar `ok: false`, o estágio falha com `EDITORIAL_QA_REPROVADO` e o pipeline
+retorna `ok: false` (fail-closed apenas para o módulo presente).
+
+## 3. Evidências
+
+```
+$ python -m unittest tools/tests/test_factory_cli.py -v
+Ran 6 tests — OK (skipped=1)
+# skip: ffmpeg/ffprobe indisponiveis nesta estacao; render binario nao executavel
+
+$ python tools/factory_cli.py pipeline --all --skip-render --json
+ok=True
+contratos ok · render ok · derivados ok · cards-estaticos ok · pacotes ok
+calendario ok · portal ok · utm ok · editorial-qa skipped · release-gate ok
+counts: 5 tenants, 10 campanhas, 10 entregas, 10 derivados, 70 cards,
+        10 pacotes, 40 slots, 10 campanhas no portal, 40 URLs UTM, 7/7 domínios ok
+
+$ probe com módulo fake (fora do Git, em .workspace/tmp, removido)
+ok-path:   editorial-qa ok (totalChecked=10), pipeline ok=True
+fail-path: editorial-qa failed (EDITORIAL_QA_REPROVADO), pipeline ok=False
+```
+
+## 4. Limitações
+
+- `ffmpeg`/`ffprobe` continuam fora do PATH nesta estação e a worktree não possui
+  `.workspace/tools/ffmpeg`; por isso o teste de render binário foi marcado como
+  `skip` (permitido pelo contrato desta tarefa). O caminho real roda no CI.
+- `tools/editorial_qa.py` e `tools/tests/test_editorial_qa.py` ainda não existem
+  nesta branch; o estágio fica `skipped` e a entrada do CI passa a valer assim que
+  o módulo do agente paralelo for integrado.
+
+## 5. Handoff
+
+- Branch `codex/etapa5b-agente4` com commit limpo.
+- Verificação rápida: `python tools/factory_cli.py pipeline --all --skip-render --json`
+  deve listar 10 estágios, com `editorial-qa` em `ok` ou `skipped`.
+- Nenhum arquivo fora do território exclusivo foi alterado; `contexto_projeto.md`
+  permanece intacto.
+
+### Etapa 5B — Agente 5 de 8: auditoria, validação e render do 5º tenant (`clinica-vital`)
+<!-- devlog-sync:etapa5-agente6.md -->
+
+Data: 2026-11-20
+Branch isolada: `codex/etapa5b-agente5`
+Worktree: `<RAIZ>/.workspace/worktrees/etapa5b-agente5` (já existia; **não** foi recriada)
+Base: `main` @ `3f8cb1a` — "chore(release): conclui Etapa 5B (5 tenants, 10 campanhas, ffmpeg portatil e handoff)"
+Raiz real desta estação: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+
+## 1. Objetivo e isolamento
+
+Atuar como Arquiteto de Conteúdo Multi-Tenant, seguindo `schemas/brand-kit.schema.json`,
+`schemas/guardrails.schema.json` e o tenant de referência `tenants/estudio-flow/`.
+
+- `git fetch origin --prune --no-tags` executado no início; sem alteração de branch ou HEAD.
+- Worktree `etapa5b-agente5` conferida por `git worktree list --porcelain` antes de qualquer escrita:
+  já registrada no commit `3f8cb1a`, na branch `codex/etapa5b-agente5`. A regra 1 do pedido
+  ("criar se não existir") não se aplicou; nenhuma worktree foi criada, movida ou removida.
+- Território respeitado: `tenants/clinica-vital/**`,
+  `02-reels-shorts/deliveries/clinica-vital/**` e este devlog.
+  Não houve escrita em `contexto_projeto.md`, `factory-report.json`, schemas, ferramentas
+  ou outros tenants. Nenhuma outra worktree foi aberta para edição.
+
+## 2. Achado principal: tenant já integrado na base
+
+Ao abrir a worktree, `tenants/clinica-vital/` já continha a estrutura completa. A procedência
+foi confirmada no Git:
+
+```
+47e0f0e feat(etapa5b-agente3): onboarding do tenant clinica-vital (nicho regulado)
+3f8cb1a chore(release): conclui Etapa 5B (5 tenants, 10 campanhas, ffmpeg portatil e handoff)
+```
+
+Ou seja, o trabalho do Agente 3 já estava consolidado na `main` antes desta sessão.
+**Não houve recriação, sobrescrita ou duplicação de arquivos do tenant.** Em vez disso, o
+escopo foi convertido em auditoria formal contra o contrato pedido:
+
+| Item exigido | Situação observada |
+| --- | --- |
+| `brand-kit.json` — tenantId, brandName, displayTitle, monogram, tagline, domínio | conferido, literal do pedido preservado |
+| Paleta clínico-moderna (`#0EA5E9`, `#14B8A6`, `#F59E0B`, `#0B1324`) | conferida, com `palette.rgb` completo |
+| `headerOverlay.enabled: true`, `label: "CLINICA VITAL"` | conferido |
+| `defaultPreset: "saas-demo"` | conferido |
+| UTM `instagram` / `reels` / `cv` | conferido no formato exigido pelo schema (`utm_source`, `utm_medium`, `utm_campaign_prefix`) |
+| Guardrails clínicos (cura, diagnóstico online, antes/depois, resultado estético, sem dor, WhatsApp/SMS/lembretes 24h, faltas, faturamento) | presentes em `forbiddenClaims` |
+| UI proibida (pagamento, prontuário, receita digital, fotos antes/depois, "Meu Salão", "E2E", "Lorem ipsum") | presente em `forbiddenUiElements` |
+| Separação `/avaliacao/[clinicId]` × `/gestor/consultas` | presente em `routeRules` (`public-booking` × `manager-agenda`) |
+| `allowAudioTrack: false` / `-an` | presente em `audioPolicy` |
+| Fixture: 4 especialistas, 5 procedimentos com duração e BRL, grade diária | conferido, com chaves `profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota` |
+| `campaigns/README.md` + 2 campanhas `30.0s`, 6 cenas, `saas-demo` | conferido |
+| Campanha 001 — marcação em `/avaliacao/clinica-vital-centro` + recepção em `/gestor/consultas` (Patricia Monteiro) | conferido (`bookingCase`, cenas 02–05) |
+| Campanha 002 — rotina exclusiva da recepção, sem `/avaliacao` | conferido (4 cenas `manager-agenda`) |
+
+Adaptações ao contrato já aplicadas na base e confirmadas nesta auditoria: o pedido trouxe
+`utmDefaults` na forma curta (`source`/`medium`/`campaignPrefix`), mas o schema exige
+`utm_source`/`utm_medium`/`utm_campaign_prefix` e proíbe propriedades adicionais; da mesma forma,
+`headerOverlay` exige `badgeText`, `bgColor` e `textColor`. Os valores pedidos foram preservados
+nas chaves do schema, idênticas aos demais tenants.
+
+## 3. Validação de contratos
+
+Comandos executados dentro da worktree:
+
+```bash
+python tools/tenant_validator.py --tenant clinica-vital --json
+python tools/tenant_validator.py --all --json
+```
+
+Resultado do primeiro: `ok: true`, `errors: []`, com `brandKitPath`, `guardrailsPath` e
+`fixturePath` apontando para `tenants/clinica-vital/`.
+
+Resultado do segundo: `ok: true` para **5 tenants**, todos com `errors: []`:
+
+`clinica-vital`, `estudio-flow`, `marca-salao`, `meu-salao`, `multitrack-hub`.
+
+## 4. Ambiente ffmpeg — disponibilidade e exposição controlada
+
+No shell nu, `Get-Command ffmpeg` não retorna binário e
+`build_video.get_ffmpeg()` falha com:
+
+```
+DeliveryError: ffmpeg nao encontrado no PATH; instale ou exponha o binario antes de exportar
+```
+
+Contudo, o bootstrap do Agente 1 deixou os binários portáteis versionados no repositório,
+em `<RAIZ>/.workspace/tools/ffmpeg/ffmpeg.exe` e `ffprobe.exe` (ffmpeg 9.1 gyan.dev).
+Observe-se que `render_local.ensure_video_tools()` procura essa pasta sob a **raiz do checkout**,
+que nesta sessão é a worktree; por isso foi necessário expor o diretório portátil no PATH
+**apenas do processo** (sem `setx`, sem alterar PATH global e sem criar nada fora de `<RAIZ>`):
+
+```powershell
+$env:PATH = "<RAIZ>/.workspace/tools/ffmpeg;" + $env:PATH
+python -c "import sys; sys.path.insert(0,'tools'); import build_video; print(build_video.get_ffmpeg())"
+# -> <RAIZ>/.workspace/tools/ffmpeg/ffmpeg.EXE
+```
+
+Com essa exposição, a condição do pedido ("ffmpeg disponível no ambiente") foi satisfeita e o
+render foi executado — não foi necessário diferir para a consolidação pós-bootstrap.
+
+## 5. Render e derivados
+
+```bash
+python tools/factory_cli.py render --tenant clinica-vital \
+  --report .workspace/tmp/etapa5b-agente5/report.json --json
+```
+
+Resultado: `ok: true`, `mode: filtered`, 1 tenant, 2 campanhas. Para cada uma:
+`1080x1920`, `h264`, `yuv420p`, `30.0s`, `videoStreams: 1`, `audioStreams: 0`,
+`allowAudioTrack: false`. O relatório ficou em `.workspace/tmp/etapa5b-agente5/report.json`,
+dentro da worktree — `02-reels-shorts/deliveries/factory-report.json` **não foi tocado**.
+
+- `SAAS-DEMO-CLINICA-VITAL-001` — sha256 do vídeo `39e2841059156d074473556a2c3339441a3ba2f139cfcd2e153903b60bd603af`.
+- `SAAS-DEMO-CLINICA-VITAL-002` — sha256 do vídeo `f4c29946494b3fd42cf570c25222f1d88c2d30b180878de714434485e4f68cdd`.
+
+```bash
+python tools/derivative_formats.py --tenant clinica-vital --json
+```
+
+Resultado: `ok: true`, `total: 2`, `generated: 2`, `skipped: 0`, `errors: []`.
+Formatos `1x1`, `16x9`, `cover`, `thumb-16x9`, `preview-formats` para as duas campanhas,
+todos com `audioStreams: 0` e `appliedAudioPolicy: "-an"`.
+
+Verificação de entrega: `git diff` sobre `02-reels-shorts/deliveries/clinica-vital/` ficou
+**vazio** — o rerender foi byte-a-byte idêntico ao já versionado no commit de release. Não houve
+churn de manifests, SRT, narração, storyboards ou PNGs. Os MP4 não são versionados (o `.gitignore`
+os ignora); os manifests preservam hash, ffprobe e comando reproduzível, e as cópias ficam em
+`.workspace/archives/<slug>/` sob a raiz. Nenhum áudio foi gerado, preservado ou inserido.
+
+## 6. Arquivos alterados nesta sessão
+
+- Novo: `.workspace/devlogs/etapa5-agente6.md` (este relatório).
+- Nenhum arquivo em `tenants/clinica-vital/` ou `02-reels-shorts/deliveries/clinica-vital/`
+  precisou ser criado ou modificado: o base já estava conforme e o rerender foi determinístico.
+- Cache `tools/__pycache__/` gerado pelas execuções Python foi removido na limpeza.
+- `factory-report.json`, `contexto_projeto.md`, schemas, ferramentas e outros tenants: intactos.
+
+## 7. Handoff de armazenamento
+
+- Raiz usada nesta estação: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+  (valor de `git rev-parse --show-toplevel` no checkout principal).
+- Worktree utilizada: `<RAIZ>/.workspace/worktrees/etapa5b-agente5` (preexistente; não removida).
+- Diretórios auxiliares criados nesta tarefa: `<RAIZ>/.workspace/tmp/etapa5b-agente5/`
+  (relatório de render) e arquivos temporários do preset runner sob a worktree — todos dentro
+  de `<RAIZ>/.workspace/`, todos ignorados pelo Git.
+- Arquivo permanente adicionado ao Git: apenas este devlog, na branch `codex/etapa5b-agente5`.
+- Worktrees criadas: nenhuma. Worktrees removidas: nenhuma. Ferramentas portáteis usadas:
+  ffmpeg/ffprobe 9.1 (gyan.dev) já presentes em `<RAIZ>/.workspace/tools/ffmpeg`, sem download.
+- Temporários removidos ao final: `tools/__pycache__/` da worktree; arquivos de execução do
+  preset runner permanecem sob `.workspace/tmp/` por serem evidência local ignorada.
+- `git status --short` final da worktree: limpo após o commit (sem arquivos rastreados pendentes).
+- Nenhum arquivo ou diretório relacionado ao projeto foi criado ou mantido fora de
+  `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+
+### Devlog — Etapa 5B / Agente 6 (qualidade e documentação técnica)
+<!-- devlog-sync:etapa5-agente7.md -->
+
+> **Data:** 2026-11-20  
+> **Branch:** `codex/etapa5b-agente6`  
+> **Worktree:** `.workspace/worktrees/etapa5b-agente6`  
+> **Base:** `main` @ `3f8cb1a`  
+> **Escopo:** suíte de contratos de tenants robusta a 4/5 tenants, cobertura do nicho regulado `clinica-vital` e guia de novo nicho
+
+> Nota de nome: o arquivo segue literalmente o caminho `.workspace/devlogs/etapa5-agente7.md` indicado na tarefa, embora esta seja a entrega do Agente 6.
+
+## 1. Objetivo
+
+Atuar como Engenheiro de Qualidade e Documentação Técnica na Etapa 5B, dentro do território exclusivo:
+fazer a suíte `tools/tests/test_tenant_contracts.py` passar tanto com 4 tenants quanto após a integração do
+5º tenant (`clinica-vital`), cobrir o nicho regulado com contratos em memória e com verificação condicional
+no disco, e atualizar `docs/guia-novo-nicho.md` com a referência oficial e o fluxo completo pós-criação.
+
+## 2. Entregas
+
+| Arquivo | Estado | Conteúdo |
+| --- | --- | --- |
+| `tools/tests/test_tenant_contracts.py` | evoluído | contagens globais `>= 4`; `test_01` renomeado para `core_tenants` com os quatro tenants originais; `test_07` com `>= 4` e `clinica-vital` condicional; `test_08` reescrito como validação **em memória** (brand-kit + guardrails literais); `test_09` reescrito como validação **condicional no disco** (`Path.exists()` + `skipTest`) cobrindo `load_and_validate_tenant(strict=True)`, fixture e 2 campanhas |
+| `docs/guia-novo-nicho.md` | atualizado | `clinica-vital` promovido a **referência oficial** para saúde/estética; novo **Passo 6** com o fluxo pós-criação (`static_cards.py`, `derivative_formats.py`, `publish_pack.py`, `campaign_calendar.py`, `review_dashboard.py`, `release_audit.py`, `devlog_sync.py`); bloco do nicho regulado com o mesmo fluxo completo e nota sobre contagens `>= 4` |
+| `.workspace/devlogs/etapa5-agente7.md` | novo | este relatório |
+
+## 3. Decisões de desenho
+
+- **Contagens `>= 4`, nunca `== 5`:** a base desta worktree já contém `clinica-vital` (o commit de release
+  `3f8cb1a` registra 5 tenants/10 campanhas), mas a suíte não deve depender disso. `test_01` e `test_07`
+  exigem apenas os quatro tenants originais; a presença do 5º é verificada à parte.
+- **Contratos clínicos em memória (`test_08`):** os literais de `brand-kit` e `guardrails` são cópias dos
+  contratos reais, validados contra os schemas com `validate_brand_kit` / `validate_guardrails_contract`.
+  O teste cobre explicitamente o bloqueio de `antes e depois`, `cura garantida`, `diagnostico online`
+  (e a variante acentuada) e `lembrete automatico` (e a variante acentuada), elementos de UI proibidos,
+  a separação auditável entre `/avaliacao/[clinicId]` (`public-booking`) e `/gestor/consultas`
+  (`manager-agenda`) e a política `allowAudioTrack == False` com `-an`, `requireSrt` e narração externa.
+  Por não ler `tenants/`, este teste roda inclusive antes do merge do 5º tenant.
+- **Disco condicional (`test_09`):** `if not (Path(REPO_ROOT) / "tenants" / "clinica-vital").exists():`
+  encerra com `self.skipTest(...)`, que é mais informativo que um `return` silencioso. Quando o diretório
+  existe, valida `load_and_validate_tenant("clinica-vital", strict=True)`, a fixture e as duas campanhas
+  (tempos, textos contra guardrails, rotas por superfície e caso de booking).
+- **Documentação sem inventar CLI:** todas as flags documentadas foram conferidas nos `argparse` das
+  ferramentas (`--types` em `static_cards.py`, `--tenant`/`--campaign` em `derivative_formats.py`,
+  `--all`/`--tenant`/`--slug` em `publish_pack.py`, `--start-date` em `campaign_calendar.py`,
+  `--build`/`--serve` em `review_dashboard.py`).
+
+## 4. Evidências de validação (nesta estação)
+
+```
+$ python -m unittest tools/tests/test_tenant_contracts.py -v
+Ran 9 tests em ~0,18 s — OK   (PYTHON_EXIT_CODE=0)
+  test_01_core_tenants_pass_contract_validation ... ok
+  test_02_marca_salao_brand_kit_and_fixture_sync_with_pilot ... ok
+  test_03_ns002_artifacts_pass_marca_salao_guardrails ... ok
+  test_04_invalid_brand_kit_rejected_by_schema ... ok
+  test_05_forbidden_claims_and_ui_elements_blocked_per_tenant ... ok
+  test_06_fixture_rejects_generic_or_e2e_placeholders ... ok
+  test_07_cli_exit_codes ... ok
+  test_08_clinica_vital_regulated_niche_contracts_in_memory ... ok
+  test_09_clinica_vital_contracts_and_campaigns_on_disk ... ok
+
+Prova de robustez com 4 tenants (REPO_ROOT apontado para um diretorio temporario
+dentro da worktree, com schemas copiados e SEM tenants/clinica-vital):
+  IN_MEMORY_WITHOUT_TENANT_DIR=OK
+  DISK_TEST_SKIPPED=tenant clinica-vital ainda nao integrado nesta worktree
+```
+
+O diretorio temporario dessa prova foi removido ao final; nenhum arquivo de `tenants/` foi criado,
+renomeado ou apagado.
+
+## 5. Limitações
+
+- A simulacao de 4 tenants foi feita por substituicao de `REPO_ROOT` em processo isolado, nao por
+  remocao do diretorio real (fora do territorio autorizado). Os testes `test_01` e `test_07` foram
+  inspecionados e nao exigem `clinica-vital`.
+- `test_08` replica os contratos clinicos como literais; se o tenant real mudar, o `test_09` (disco)
+  continua sendo a fonte de verdade. A duplicacao e intencional para manter o teste em memoria independente.
+- Nao executei render, derivados, cards, pacotes, calendario, portal ou release gate: a tarefa e de
+  qualidade/documentacao e os comandos do Passo 6 foram validados apenas quanto as flags.
+
+## 6. Arquivos nao tocados
+
+`contexto_projeto.md` nao foi editado. Nenhum arquivo foi criado em `tenants/`. Nenhuma worktree de outro
+agente foi acessada. Nenhum post, campanha, calendario ou portal foi publicado ou alterado.
+
+## 7. Handoff
+
+- Branch pronta para merge: `codex/etapa5b-agente6`.
+- Comando de verificacao rapida: `python -m unittest tools/tests/test_tenant_contracts.py -v`.
+- Ao integrar, nao ha contagens fixas a ajustar nesta suite (`>= 4` ja cobre 4 e 5 tenants); a
+  consolidacao de `tools/tests/test_factory_cli.py` continua sendo responsabilidade do integrador.
+
+### Etapa 5B — Agente 7 de 8: Growth & Analytics (auditoria e simulação UTM)
+<!-- devlog-sync:etapa5-agente8.md -->
+
+> O nome de arquivo `etapa5-agente8.md` é o definido no pedido; o executor é o
+> **Agente 7** da rodada Etapa 5B (Engenheiro de Growth & Analytics).
+
+- **Branch isolada:** `codex/etapa5b-agente7`
+- **Worktree:** `<RAIZ>/.workspace/worktrees/etapa5b-agente7`
+- **Base:** `main` @ `3f8cb1a92755b72a1283a4182acc93b4814df919` (worktree já existia;
+  não foi recriada, conforme regra 1 do pedido).
+- **Data:** 2026-11-20
+- **Território exclusivo:** `tools/utm_simulator.py`,
+  `tools/tests/test_utm_simulator.py`, `docs/analytics-utm-playbook.md` e
+  `.workspace/devlogs/etapa5-agente8.md`. `contexto_projeto.md` não foi tocado.
+
+## Contexto de partida
+
+Já existia na main uma implementação anterior do Agente 4 (`e05c46e`) nos mesmos
+três arquivos de território. Foi lida antes de qualquer escrita e seu comportamento
+útil foi preservado (auditoria de domínio, parâmetros, colisões, URLs derivadas,
+simulação determinística, contenção de path, CLI). A versão desta branch atende aos
+requisitos específicos do pedido: eventos recomendados com os nomes exatos
+`view_booking_page`, `select_service_or_class`, `request_evaluation` e
+`inspect_multitrack_split`, e colisão definida sobre a **tupla completa**
+`(utm_source, utm_medium, utm_campaign, utm_content)` entre tenants distintos.
+
+## Arquivos alterados
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `tools/utm_simulator.py` | API `audit_and_simulate_utm(root, calendar_path, simulate_traffic, out_dir, seed)` e CLI com `--calendar`, `--simulate-traffic`, `--out-dir`, `--json`, `--root`, `--seed`. 100% stdlib (sem dependência de módulo local). Descoberta de tenants em `tenants/*/brand-kit.json`, auditoria de 100% das URLs do calendário + URLs derivadas de campanhas de tenants ainda não agendados, verificação de HTTPS/domínio exato, quatro parâmetros obrigatórios com formato limpo, `utm_campaign == slug`, colisão da tupla de atribuição e contenção de caminhos. Simulação sintética determinística das duas ondas (Reels 9:16, Shorts 9:16, Feed 1:1, Vídeo 16:9) com eventos por nicho e `revenueBRL: null`. |
+| `tools/tests/test_utm_simulator.py` | 12 testes `unittest`. |
+| `docs/analytics-utm-playbook.md` | Guia de conversões por nicho em GA4, Plausible e Umami, códigos de auditoria, checklist pré-publicação e rotina semanal com `matriz-utm-consolidada.csv`. |
+| `.workspace/devlogs/etapa5-agente8.md` | Este relatório. |
+
+## Cobertura dos testes
+
+1. auditoria real de todas as URLs do calendário (40 slots, 5 tenants);
+2. detecção de domínio divergente;
+3. detecção de colisão de atribuição entre tenants;
+4. cobertura de tenant descoberto em `tenants/*` e ainda não agendado (URL derivada);
+5. `--simulate-traffic`: arquivos gerados, duas ondas, três formatos, sem receita;
+6. contenção de path (`out-dir` e `calendar` fora da raiz);
+7. CLI `--json`;
+8. parâmetro ausente e valor sujo;
+9. HTTPS e campanha igual ao slug;
+10. catálogo fechado dos quatro eventos recomendados;
+11. determinismo da seed;
+12. CLI retorna `1` quando a auditoria reprova.
+
+## Evidências
+
+```text
+python -m unittest tools/tests/test_utm_simulator.py -v
+Ran 12 tests in 0.342s — OK
+
+python tools/utm_simulator.py --json
+ok=True; urlsAudited=40; urlsOk=40; derivedUrls=0;
+totalUrls=40; unscheduledTenants=[]; collisions=0
+
+python tools/utm_simulator.py --simulate-traffic --out-dir .workspace/tmp/utm-sim --json
+ok=True; sessoes=210; conversoes=17;
+formatos=16:9, 1:1, 9:16; onda-1=170, onda-2=40
+arquivos: utm_sessions_sample.json (145312 bytes), utm_attribution_summary.md (1763 bytes)
+```
+
+Todos os `revenueBRL` das sessões são nulos; nenhuma transação financeira é simulada.
+Os arquivos de simulação ficaram em `.workspace/tmp/utm-sim/` (local, fora do Git).
+
+## Limites e governança
+
+- Não publica, agenda, edita posts publicados nem altera outras marcas.
+- Não gera áudio, TTS, música nem faixa sonora (política de vídeo sem áudio).
+- `contexto_projeto.md`, `rastreio-utm.md`, `matriz-utm-consolidada.csv` e
+  `calendario-editorial.json` não foram alterados.
+- A ferramenta de analytics segue como decisão pendente do titular; o playbook é
+  operacional, mas não declara links UTM como ativos.
+
+## Handoff
+
+Commit realizado nesta branch, sem merge na main (consolidação a cargo do titular).
+A worktree permanece registrada e não foi removida — remoção exige autorização.
+Nenhum arquivo relacionado ao projeto foi criado fora de `<RAIZ>`.
+
+### Devlog — Etapa 5B, Agente 8 de 8
+<!-- devlog-sync:etapa5-agente9.md -->
+
+- **Data:** 2026-11-20
+- **Agente:** Agente 8 de 8 (Engenharia Sênior de Qualidade Editorial e Arquitetura)
+- **Branch:** `codex/etapa5b-agente8`
+- **Worktree:** `<RAIZ>/.workspace/worktrees/etapa5b-agente8` (já existia; criada a partir de `main`)
+- **<RAIZ> nesta estação:** `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`
+- **Nome do arquivo:** segue literalmente o caminho solicitado no pedido (`.workspace/devlogs/etapa5-agente9.md`), embora o executor seja o Agente 8.
+
+## Escopo executado
+
+1. `tools/editorial_qa.py` — CLI `python tools/editorial_qa.py [--all | --tenant <id>] [--strict] [--json] [--root <dir>]` e API `run_editorial_qa(root=".", strict=False, tenant=None) -> dict`, 100% stdlib e somente leitura. Reaproveita `srt_validate`, `tenant_validator.validate_text_against_guardrails` e `render_local`. Relatório `schemaVersion: 1` com `campaigns[]`, `checks[]` (5 lentes) e `summary`.
+2. `tools/tests/test_editorial_qa.py` — 13 testes com sandbox copiado para `<RAIZ>/.workspace/tmp/editorial-qa/`: acervo real, linha SRT longa, U+FFFD e mojibake, violação de guardrail, filtro por tenant, `--strict`, `--json` e saída humana, divergência de duração, pacote social ausente, bloco vazio e determinismo.
+3. `docs/arquitetura-fabrica.md` — seções 2.13–2.17 para `static_cards.py`, `bootstrap_ffmpeg.py`, `handoff_bundler.py`, `utm_simulator.py` e `editorial_qa.py`; subcomando `pipeline` documentado em 2.6; diagrama, contagem de tenants/campanhas (5/10), fluxo operacional e suíte (21 módulos) atualizados. Notas obsoletas sobre a matriz UTM foram corrigidas (consolidação concluída, gate 7/7).
+4. `README.md` — contagens, linha de `clinica-vital`, comandos das Etapas 5/5B, parágrafo da camada de acabamento e checklist operacional.
+
+## Resultado observado no acervo atual
+
+- 10 campanhas descobertas em `tenants/*/campaigns/*.json`; 5 tenants válidos.
+- Lentes aprovadas: `duracao_srt_manifest`, `paridade_entregas`, `guardrails_cruzados`, `integridade_utf8` (0 erros).
+- `legibilidade_mobile`: **46 avisos** `SRT_LINHA_LONGA` (linhas de 62 a 82 caracteres, limite 48) espalhados pelas 10 campanhas. Nenhum bloco vazio.
+- Nenhum `MOJIBAKE_DETECTADO`, nenhuma violação de guardrail, nenhuma divergência de duração (todos os SRTs terminam em 30,000 s contra `format.duration = 30.0`).
+- Modo normal: `ok: true`, exit 0. Modo `--strict`: `ok: false`, exit 1 — motivado pelos avisos de legibilidade. Isso é um achado editorial real, não uma falha da ferramenta: a correção das linhas dos SRTs pertence ao acervo e foi preservada (fora do território deste agente).
+- `python -m unittest tools/tests/test_editorial_qa.py -v`: **13 testes, 100% OK**.
+
+## Segurança e escopo
+
+- Nenhuma ferramenta publica, agenda ou cria rascunho; nenhum áudio é gerado.
+- Nenhum arquivo de `contexto_projeto.md`, SRT, manifesto ou pacote social foi alterado.
+- Sandbox de testes e arquivos temporários ficaram sob `<RAIZ>/.workspace/tmp/etapa5-agente8/` e `<RAIZ>/.workspace/tmp/editorial-qa/`; `tools/__pycache__/` e `tools/tests/__pycache__/` foram removidos antes do commit.
+- `git pull --ff-only` executado no início (já atualizado); `main` estava `ahead 13` do `origin/main` nesta estação.
 
 ## 2. Testes de `tools/publish_pack.py` refatorados
 
