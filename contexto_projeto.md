@@ -3446,3 +3446,23 @@ O ajuste final tornou as fixtures de FFmpeg e FFprobe do `workspace_doctor` port
 - **Pendência registrada para a próxima etapa:** `preset_runner`/testes de render não devem escrever masters em `.workspace/archives/<slug>/` durante a suíte — ou precisam de um diretório de archives isolado por execução, para que o gate de mídia não dependa de restauração manual.
 
 **Nada foi commitado nesta sessão de validação**: `contexto_projeto.md`, os 5 módulos de teste corrigidos e as alterações geradas pela suíte permanecem na árvore de trabalho, aguardando decisão do titular.
+
+### 21/11/2026 — Integração de `codex/utm-ab-recommendations`: comparativo Hook A/B híbrido
+
+**Situação encontrada:** a branch `codex/utm-ab-recommendations` (`533cc4c`, base `02c57a5`, anterior à Etapa 7) e a `main` continham **duas implementações independentes do mesmo recurso** — o comparativo Hook A × Hook B. Na main: `_compare_hooks` com lift e classificação, agregação por tenant/campanha e integração ao calendário via `--utm-report` (já publicada e com gates verdes). Na branch: `compare_hook_variants` com teste z de duas proporções, desfechos e recomendações, mais API própria de calendário. Decisão do titular: **híbrido — estrutura da main + rigor estatístico da branch**.
+
+**O que foi incorporado (merge `--no-ff` da branch):**
+
+- `_two_proportion_z()` — teste z de duas proporções com p-valor bilateral via `math.erfc`, 100% biblioteca padrão (sem scipy, sem rede), determinístico entre estações.
+- `_classify_hook()` — regra única de classificação usada por campanha e por tenant: `amostra_insuficiente` abaixo de sessões ou conversões mínimas; `empate_tecnico` com taxas iguais **ou** quando a diferença não atinge 95% de confiança; `vencedor_A`/`vencedor_B` somente com `|z| >= 1,96` e `p < 0,05`.
+- Novos campos em `rankings.hookComparison.byCampaign`/`byTenant`: `zScore`, `pValue`, `significant`, `classificationReason`; bloco `statistics` (`method: two_proportion_z`, `alpha`, `zThreshold`, `minSessions`, `minConversions`).
+- Limiar configurável de conversões: parâmetro `min_conversions` e CLI `--min-hook-conversions` (padrão 5), em paridade com `--min-hook-sessions`.
+- `campaign_calendar._recommendation()` passa a citar `z`/`p` na justificativa e a registrar explicitamente a ausência de significância; o comportamento segue **apenas recomendatório** (datas, canais, UTMs e textos inalterados).
+
+**O que não entrou (superado pela implementação da main):** `compare_hook_variants`, `load_analytics_report`, `build_hook_priorities` e `apply_analytics_recommendations`, junto com as 184 linhas de testes de calendário da branch baseadas no contrato `analytics-report.json` — a integração equivalente já é coberta por `test_22` a `test_24` de `tools/tests/test_utm_report_importer.py` (contrato `utm-performance-report.json` + `--utm-report`).
+
+**Testes:** nova classe `HookSignificanceTest` (6 casos: determinismo/simetria do z, vencedor com significância, diferença sem significância vira empate, conversões abaixo do mínimo, metadados estatísticos e agregação por tenant) e `test_19_hook_comparison_min_sessions_threshold_configurable` reescrito para a nova semântica (60 sessões com 3 × 6 conversões agora é empate técnico, não vencedor).
+
+**Documentação:** `docs/analytics-utm-playbook.md`, seção 8.5 (critério estatístico, limiares, campos e consumo pelo calendário).
+
+**Validação:** `editorial_qa --all --strict` → 14 campanhas, 7 lentes, 0 erros/0 avisos; `release_check.py` → **APROVADO 7/7 gates**; `test_utm_report_importer` + `test_campaign_calendar` → 44 testes OK.

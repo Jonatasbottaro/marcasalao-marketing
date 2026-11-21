@@ -320,6 +320,15 @@ ambiguidade, o erro pede `--provider ga4|plausible|umami`.
    para "corrigir" UTM — corrigir no próximo slot.
 4. O relatório é insumo de leitura, não autorização de publicação.
 
+### 8.5 Comparativo Hook A × Hook B (`rankings.hookComparison`)
+
+- **Escopo:** por campanha (`byCampaign`) e agregado por tenant (`byTenant`), com sessões, conversões, CVR, engajamento, lift e classificação.
+- **Critério estatístico:** teste z de duas proporções sobre `conversões/sessões`, implementado só com a biblioteca padrão (`math.erfc`) — determinístico e reproduzível em qualquer estação, sem scipy e sem rede.
+- **Vencedor só com significância:** `|z| >= 1,96` **e** `p < 0,05` (95% de confiança). Diferença observada sem significância vira `empate_tecnico`, com recomendação de manter o teste A/B.
+- **Amostra mínima por variante:** `--min-hook-sessions` (padrão 100 sessões) e `--min-hook-conversions` (padrão 5 conversões). Abaixo de qualquer um dos dois, `amostra_insuficiente` — nunca vencedor.
+- **Campos por linha:** `classification`, `classificationLabel`, `classificationReason`, `zScore`, `pValue` e `significant`; os parâmetros do teste ficam em `statistics` (`method: two_proportion_z`, `alpha`, `zThreshold`, `minSessions`, `minConversions`).
+- **Consumo no calendário:** `campaign_calendar.py --utm-report <relatorio.json>` traduz a classificação em `hookRecomendado` e `prioridadeHook` **apenas como recomendação**: datas, canais, UTMs e textos não mudam, e a decisão de trocar o hook continua sendo do titular.
+
 ---
 
 ## 9. Limites deste playbook

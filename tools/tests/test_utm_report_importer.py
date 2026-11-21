@@ -506,12 +506,18 @@ class UtmReportImporterTest(unittest.TestCase):
             ["instagram", "reels", "camp-marca", "marca-salao", "60", "30", "6", "B"],
         ])
         report = utm_report_importer.analyze_performance(
-            root=str(root), metrics_csv="metrics.csv", out_dir="out", min_sessions=50
+            root=str(root), metrics_csv="metrics.csv", out_dir="out",
+            min_sessions=50, min_conversions=2,
         )
         row = report["rankings"]["hookComparison"]["byCampaign"][0]
         self.assertEqual(report["rankings"]["hookComparison"]["minSessions"], 50)
+        self.assertEqual(report["rankings"]["hookComparison"]["minConversions"], 2)
         self.assertEqual(row["sessionsTotal"], 120)
-        self.assertEqual(row["classification"], "vencedor_B")
+        # Amostra suficiente para comparar, mas 5% vs 10% com 60 sessoes por
+        # variante nao atinge 95% de confianca: empate tecnico, sem vencedor.
+        self.assertEqual(row["classification"], "empate_tecnico")
+        self.assertFalse(row["significant"])
+        self.assertIsNotNone(row["zScore"])
 
         rc, out = self._run_main([
             "--root", str(root), "--metrics-csv", "metrics.csv",
@@ -605,6 +611,85 @@ class UtmReportImporterTest(unittest.TestCase):
                 "2026-11-23", weeks=7, root=REPO_ROOT, utm_report=target_rel
             )
         self.assertIn("UTM_REPORT_SEM_COMPARATIVO", str(ctx.exception))
+
+
+def _hook_slots(tenant: str, slug: str, sessions_a: int, conv_a: int,
+                sessions_b: int, conv_b: int) -> list[dict]:
+    """Dois slots sinteticos (Hook A e Hook B) para exercitar o comparativo."""
+    rows = []
+    for variant, sessions, conversions in (("A", sessions_a, conv_a), ("B", sessions_b, conv_b)):
+        rows.append(
+            {
+                "tenantId": tenant,
+                "slug": slug,
+                "canal": "youtube",
+                "hookVariant": variant,
+                "sessions": float(sessions),
+                "engagedSessions": float(sessions) / 2,
+                "conversions": float(conversions),
+            }
+        )
+    return rows
+
+
+class HookSignificanceTest(unittest.TestCase):
+    """Hibrido Etapa 8: significancia estatistica (teste z) sobre o comparativo A/B."""
+
+    def test_01_z_deterministico_e_simetrico(self) -> None:
+        z, p = utm_report_importer._two_proportion_z(50, 1000, 80, 1000)
+        self.assertIsNotNone(z)
+        self.assertIsNotNone(p)
+        self.assertLess(z, 0)  # A abaixo de B
+        self.assertLess(p, 0.05)
+        z_inv, p_inv = utm_report_importer._two_proportion_z(80, 1000, 50, 1000)
+        self.assertAlmostEqual(z_inv, -z, places=4)
+        self.assertEqual(p_inv, p)  # p-valor bilateral
+        self.assertEqual(utm_report_importer._two_proportion_z(1, 0, 1, 10), (None, None))
+
+    def test_02_vencedor_exige_significancia(self) -> None:
+        slots = _hook_slots("marca-salao", "camp-x", 1000, 50, 1000, 80)
+        result = utm_report_importer._compare_hooks(slots, {}, {})
+        row = result["byCampaign"][0]
+        self.assertEqual(row["classification"], "vencedor_B")
+        self.assertTrue(row["significant"])
+        self.assertGreaterEqual(abs(row["zScore"]), utm_report_importer.DEFAULT_Z_THRESHOLD)
+        self.assertLess(row["pValue"], utm_report_importer.SIGNIFICANCE_ALPHA)
+        self.assertIn("95% de confianca", row["classificationReason"])
+
+    def test_03_diferenca_sem_significancia_vira_empate(self) -> None:
+        slots = _hook_slots("marca-salao", "camp-x", 1000, 50, 1000, 55)
+        row = utm_report_importer._compare_hooks(slots, {}, {})["byCampaign"][0]
+        self.assertEqual(row["classification"], "empate_tecnico")
+        self.assertFalse(row["significant"])
+        self.assertIn("manter o teste A/B", row["classificationReason"])
+
+    def test_04_conversoes_abaixo_do_minimo_e_amostra_insuficiente(self) -> None:
+        slots = _hook_slots("marca-salao", "camp-x", 5000, 2, 5000, 4)
+        row = utm_report_importer._compare_hooks(slots, {}, {})["byCampaign"][0]
+        self.assertEqual(row["classification"], "amostra_insuficiente")
+        self.assertFalse(row["significant"])
+        self.assertIn("Amostra insuficiente", row["classificationReason"])
+
+    def test_05_metadata_de_estatistica_exposto(self) -> None:
+        slots = _hook_slots("marca-salao", "camp-x", 1000, 50, 1000, 80)
+        result = utm_report_importer._compare_hooks(slots, {}, {})
+        stats = result["statistics"]
+        self.assertEqual(stats["method"], "two_proportion_z")
+        self.assertEqual(stats["alpha"], 0.05)
+        self.assertEqual(stats["zThreshold"], utm_report_importer.DEFAULT_Z_THRESHOLD)
+        self.assertEqual(stats["minConversions"], utm_report_importer.DEFAULT_MIN_CONVERSIONS)
+
+    def test_06_agregacao_por_tenant_tambem_testa_significancia(self) -> None:
+        slots = (
+            _hook_slots("marca-salao", "camp-x", 1000, 50, 1000, 80)
+            + _hook_slots("marca-salao", "camp-y", 1000, 60, 1000, 90)
+        )
+        result = utm_report_importer._compare_hooks(slots, {}, {})
+        tenant_row = result["byTenant"][0]
+        for field in ("zScore", "pValue", "significant", "classificationReason"):
+            self.assertIn(field, tenant_row)
+        self.assertEqual(tenant_row["classification"], "vencedor_B")
+        self.assertTrue(tenant_row["significant"])
 
 
 if __name__ == "__main__":

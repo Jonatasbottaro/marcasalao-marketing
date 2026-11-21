@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -114,6 +115,9 @@ HOOK_COMPARISON_LABELS = {
     "amostra_insuficiente": "amostra insuficiente",
 }
 DEFAULT_MIN_SESSIONS = 100
+DEFAULT_MIN_CONVERSIONS = 5
+DEFAULT_Z_THRESHOLD = 1.96
+SIGNIFICANCE_ALPHA = 0.05
 
 
 class UtmReportError(Exception):
@@ -468,13 +472,112 @@ def _rank(groups: list[dict]) -> list[dict]:
     )
 
 
+def _two_proportion_z(
+    conversions_a: float,
+    sessions_a: float,
+    conversions_b: float,
+    sessions_b: float,
+) -> tuple[float | None, float | None]:
+    """Teste z de duas proporcoes com `math.erfc` — 100% stdlib, sem scipy/rede.
+
+    A proporcao testada e `conversoes/sessoes` (CTR de conversao do link
+    rastreado). `math.erfc` fornece o p-valor bilateral da normal, o que torna
+    o resultado reproduzivel em qualquer estacao.
+    """
+    if sessions_a <= 0 or sessions_b <= 0:
+        return None, None
+    p_a = conversions_a / sessions_a
+    p_b = conversions_b / sessions_b
+    pooled = (conversions_a + conversions_b) / (sessions_a + sessions_b)
+    variance = pooled * (1.0 - pooled) * (1.0 / sessions_a + 1.0 / sessions_b)
+    if variance <= 0:
+        return 0.0, 1.0
+    z = (p_a - p_b) / math.sqrt(variance)
+    p_value = math.erfc(abs(z) / math.sqrt(2.0))
+    return round(z, 4), round(p_value, 6)
+
+
+def _classify_hook(
+    rate_a: float,
+    rate_b: float,
+    sessions_a: float,
+    sessions_b: float,
+    conversions_a: float,
+    conversions_b: float,
+    min_sessions: int = DEFAULT_MIN_SESSIONS,
+    min_conversions: int = DEFAULT_MIN_CONVERSIONS,
+    z_threshold: float = DEFAULT_Z_THRESHOLD,
+) -> dict:
+    """Classifica Hook A x Hook B exigindo significancia estatistica.
+
+    Sem amostra minima (sessoes e conversoes por variante) nao ha vencedor; com
+    amostra suficiente, so ha vencedor quando o teste z de duas proporcoes
+    atinge o limiar (`z_threshold`, 95% de confianca). Fora disso, empate
+    tecnico com recomendacao de manter o teste.
+    """
+    z, p_value = _two_proportion_z(conversions_a, sessions_a, conversions_b, sessions_b)
+    if sessions_a + sessions_b < min_sessions or conversions_a < min_conversions or conversions_b < min_conversions:
+        return {
+            "classification": "amostra_insuficiente",
+            "classificationLabel": HOOK_COMPARISON_LABELS["amostra_insuficiente"],
+            "classificationReason": (
+                f"Amostra insuficiente: minimo de {min_sessions} sessoes e "
+                f"{min_conversions} conversoes por variante "
+                f"(A={_to_int(sessions_a)}/{_to_int(conversions_a)}, "
+                f"B={_to_int(sessions_b)}/{_to_int(conversions_b)})."
+            ),
+            "zScore": z,
+            "pValue": p_value,
+            "significant": False,
+        }
+    if rate_a == rate_b:
+        return {
+            "classification": "empate_tecnico",
+            "classificationLabel": HOOK_COMPARISON_LABELS["empate_tecnico"],
+            "classificationReason": f"Taxas identicas ({rate_a:.2f}%) entre Hook A e Hook B.",
+            "zScore": z,
+            "pValue": p_value,
+            "significant": False,
+        }
+    significant = (
+        z is not None
+        and p_value is not None
+        and abs(z) >= z_threshold
+        and p_value < SIGNIFICANCE_ALPHA
+    )
+    winner = "B" if rate_b > rate_a else "A"
+    if significant:
+        classification = f"vencedor_{winner}"
+        reason = (
+            f"Diferenca estatisticamente consistente: Hook {winner} "
+            f"{max(rate_a, rate_b):.2f}% vs {min(rate_a, rate_b):.2f}% "
+            f"(z={z}, p={p_value}, 95% de confianca)."
+        )
+    else:
+        classification = "empate_tecnico"
+        reason = (
+            f"Diferenca observada (A {rate_a:.2f}% vs B {rate_b:.2f}%) nao atinge 95% de "
+            f"confianca (z={z}, p={p_value}); manter o teste A/B."
+        )
+    return {
+        "classification": classification,
+        "classificationLabel": HOOK_COMPARISON_LABELS[classification],
+        "classificationReason": reason,
+        "zScore": z,
+        "pValue": p_value,
+        "significant": bool(significant),
+    }
+
+
 def _compare_hooks(
     slots: list[dict],
     by_tenant: dict[str, dict],
     by_channel: dict[str, dict],
     min_sessions: int = DEFAULT_MIN_SESSIONS,
+    min_conversions: int = DEFAULT_MIN_CONVERSIONS,
+    z_threshold: float = DEFAULT_Z_THRESHOLD,
 ) -> dict:
-    """Compara Hook A x Hook B por tenant e por campanha, com lift e classificacao."""
+    """Compara Hook A x Hook B por tenant e por campanha, com lift, teste z e classificacao."""
 
     def empty() -> dict:
         return {"A": _empty_group("hook", "A"), "B": _empty_group("hook", "B")}
@@ -522,14 +625,17 @@ def _compare_hooks(
         lift_conversion = _rate(rate_b - rate_a, rate_a) if rate_a else None
         lift_engagement = _rate(engaged_b - engaged_a, engaged_a) if engaged_a else None
 
-        if sessions_total < min_sessions:
-            classification = "amostra_insuficiente"
-        elif rate_a == rate_b:
-            classification = "empate_tecnico"
-        elif rate_b > rate_a:
-            classification = "vencedor_B"
-        else:
-            classification = "vencedor_A"
+        stats = _classify_hook(
+            rate_a,
+            rate_b,
+            sessions_a,
+            sessions_b,
+            conversions_a,
+            conversions_b,
+            min_sessions,
+            min_conversions,
+            z_threshold,
+        )
 
         return {
             "tenantId": entry["tenantId"],
@@ -547,8 +653,12 @@ def _compare_hooks(
             "liftEngagementPct": lift_engagement,
             "slotsA": entry["A"]["slots"],
             "slotsB": entry["B"]["slots"],
-            "classification": classification,
-            "classificationLabel": HOOK_COMPARISON_LABELS[classification],
+            "classification": stats["classification"],
+            "classificationLabel": stats["classificationLabel"],
+            "classificationReason": stats["classificationReason"],
+            "zScore": stats["zScore"],
+            "pValue": stats["pValue"],
+            "significant": stats["significant"],
         }
 
     rows = sorted((finalize(entry) for entry in active), key=lambda row: (row["tenantId"], row["campaign"]))
@@ -574,14 +684,17 @@ def _compare_hooks(
             _finalize_group(group_a)
             _finalize_group(group_b)
             total = group_a["sessions"] + group_b["sessions"]
-            if total < min_sessions:
-                classification = "amostra_insuficiente"
-            elif group_a["conversionRatePct"] == group_b["conversionRatePct"]:
-                classification = "empate_tecnico"
-            elif group_b["conversionRatePct"] > group_a["conversionRatePct"]:
-                classification = "vencedor_B"
-            else:
-                classification = "vencedor_A"
+            tenant_stats = _classify_hook(
+                group_a["conversionRatePct"],
+                group_b["conversionRatePct"],
+                group_a["sessions"],
+                group_b["sessions"],
+                group_a["conversions"],
+                group_b["conversions"],
+                min_sessions,
+                min_conversions,
+                z_threshold,
+            )
             tenant_rows.append(
                 {
                     "tenantId": tenant,
@@ -599,13 +712,25 @@ def _compare_hooks(
                     )
                     if group_a["conversionRatePct"]
                     else None,
-                    "classification": classification,
-                    "classificationLabel": HOOK_COMPARISON_LABELS[classification],
+                    "classification": tenant_stats["classification"],
+                    "classificationLabel": tenant_stats["classificationLabel"],
+                    "classificationReason": tenant_stats["classificationReason"],
+                    "zScore": tenant_stats["zScore"],
+                    "pValue": tenant_stats["pValue"],
+                    "significant": tenant_stats["significant"],
                 }
             )
 
     return {
         "minSessions": min_sessions,
+        "minConversions": min_conversions,
+        "statistics": {
+            "method": "two_proportion_z",
+            "alpha": SIGNIFICANCE_ALPHA,
+            "zThreshold": z_threshold,
+            "minSessions": min_sessions,
+            "minConversions": min_conversions,
+        },
         "byCampaign": rows,
         "byTenant": tenant_rows,
     }
@@ -619,12 +744,17 @@ def analyze_performance(
     calendar: str | None = None,
     out_dir: str = DEFAULT_OUT_DIR,
     min_sessions: int = DEFAULT_MIN_SESSIONS,
+    min_conversions: int = DEFAULT_MIN_CONVERSIONS,
 ) -> dict:
     """Ingere o CSV, cruza com o calendario e grava o relatorio executivo."""
     if not metrics_csv:
         raise UtmReportError("USO_INVALIDO: informe --metrics-csv ou --generate-template")
     if min_sessions < 0:
         raise UtmReportError(f"LIMIAR_INVALIDO: --min-hook-sessions nao pode ser negativo ({min_sessions})")
+    if min_conversions < 0:
+        raise UtmReportError(
+            f"LIMIAR_INVALIDO: --min-hook-conversions nao pode ser negativo ({min_conversions})"
+        )
     root_real = _root_real(root)
     calendar_data = load_calendar(root_real, calendar)
     hooks = load_hook_log(root_real, hook_log)
@@ -724,7 +854,8 @@ def analyze_performance(
 
     hook_rows = [by_hook[key] for key in sorted(by_hook)]
     hook_comparison = _compare_hooks(
-        slot_results, by_tenant, by_channel, min_sessions=min_sessions
+        slot_results, by_tenant, by_channel,
+        min_sessions=min_sessions, min_conversions=min_conversions,
     )
     data_quality = {
         "invalidRows": metrics["invalidRows"],
@@ -966,6 +1097,12 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Limiar de sessoes do comparativo A/B (padrao {DEFAULT_MIN_SESSIONS})",
     )
     parser.add_argument(
+        "--min-hook-conversions",
+        type=int,
+        default=DEFAULT_MIN_CONVERSIONS,
+        help=f"Limiar de conversoes por variante no comparativo A/B (padrao {DEFAULT_MIN_CONVERSIONS})",
+    )
+    parser.add_argument(
         "--generate-template", default=None, help="Gera CSV modelo preenchivel neste caminho"
     )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
@@ -990,6 +1127,7 @@ def main(argv: list[str] | None = None) -> int:
             calendar=args.calendar,
             out_dir=args.out_dir,
             min_sessions=args.min_hook_sessions,
+            min_conversions=args.min_hook_conversions,
         )
     except (UtmReportError, OSError, ValueError) as exc:
         if args.json:

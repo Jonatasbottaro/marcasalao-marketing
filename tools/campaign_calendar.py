@@ -585,6 +585,10 @@ def load_utm_report(root_real: str, utm_report: str | None) -> dict | None:
             "conversionRateB": row.get("conversionRateB"),
             "liftConversionPct": row.get("liftConversionPct"),
             "minSessions": comparison.get("minSessions"),
+            "zScore": row.get("zScore"),
+            "pValue": row.get("pValue"),
+            "significant": row.get("significant"),
+            "classificationReason": row.get("classificationReason"),
         }
 
     return {
@@ -615,24 +619,28 @@ def _recommendation(comparison: dict | None) -> tuple[str, str]:
         total = sessions_a + sessions_b
     lift_text = "n/d" if lift is None else f"{lift}%"
     total_text = "n/d" if total is None else f"{total}"
+    z = comparison.get("zScore")
+    p_value = comparison.get("pValue")
+    stats_text = "" if z is None or p_value is None else f", z={z}, p={p_value}"
 
     if classification == "vencedor_A":
         return (
             "A",
             f"Hook A venceu no relatorio UTM: CVR {rate_a}% vs {rate_b}% "
-            f"(lift de B {lift_text}, {total_text} sessoes comparadas).",
+            f"(lift de B {lift_text}, {total_text} sessoes comparadas{stats_text}).",
         )
     if classification == "vencedor_B":
         return (
             "B",
             f"Hook B venceu no relatorio UTM: CVR {rate_b}% vs {rate_a}% "
-            f"(lift de B {lift_text}, {total_text} sessoes comparadas).",
+            f"(lift de B {lift_text}, {total_text} sessoes comparadas{stats_text}).",
         )
     if classification == "empate_tecnico":
         return (
             HOOK_SEM_DADOS,
             f"Empate tecnico no relatorio UTM: CVR {rate_a}% vs {rate_b}% "
-            f"(lift {lift_text}, {total_text} sessoes comparadas).",
+            f"(lift {lift_text}, {total_text} sessoes comparadas{stats_text}); "
+            "sem significancia estatistica, manter o teste A/B.",
         )
     return (
         HOOK_SEM_DADOS,
