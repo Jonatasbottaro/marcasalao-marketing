@@ -97,7 +97,7 @@ jobs:
           npm run build
           test -f dist/src/validate-local-render-input.js
 
-      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3, 4, 5 e 5B)
+      - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2 a 6)
         run: |
           python tools/tenant_validator.py --all --json
           python tools/factory_cli.py list --json
@@ -114,7 +114,9 @@ jobs:
             tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py \
             tools/tests/test_bootstrap_ffmpeg.py tools/tests/test_static_cards.py \
             tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py \
-            tools/tests/test_editorial_qa.py -v
+            tools/tests/test_editorial_qa.py tools/tests/test_utm_report_importer.py \
+            tools/tests/test_srt_formatter.py tools/tests/test_approval_cli.py \
+            tools/tests/test_workspace_doctor.py -v
           python tools/release_audit.py --strict --json
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
