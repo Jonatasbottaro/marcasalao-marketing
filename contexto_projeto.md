@@ -11,10 +11,10 @@
 | Item | Valor |
 |------|-------|
 | Raiz oficial | `<RAIZ>`, o checkout principal retornado por `git rev-parse --show-toplevel` |
-| Último commit técnico validado na main | `9a800d1`, com CI verde no Windows e no Ubuntu ([run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554)). Etapa 7 local em `227e939` (3 commits ainda não enviados), validada nesta estação conforme a sessão de 21/11/2026. |
-| Branch de trabalho ativa | `main`, com a Etapa 6 enviada ao remoto. Release `08555ad` e correções dos gates `2439fb0` e `9a800d1`. Etapa 7 (`899d36b`, `19e74c0`, `227e939`) existe só nesta estação. |
+| Último commit técnico validado na main | `babfc60` — merge híbrido do comparativo Hook A/B (teste z de duas proporções), com `release_check.py` **7/7 gates** e `editorial_qa --strict` 14 campanhas sem problemas nesta estação. Último CI verde confirmado no GitHub Actions: `9a800d1` ([run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554)); o CI dos commits posteriores ainda não foi conferido nesta estação (sem `gh` instalado). |
+| Branch de trabalho ativa | `main`, **sincronizada com `origin/main` em `babfc60`**. Etapa 7 (`899d36b`, `19e74c0`, `227e939`) e os checkpoints WIP (`4ce5566`, `cce0d8c`) já foram enviados ao remoto. |
 | Worktrees de outros agentes | preservadas — ver seção 3 |
-| Fase atual | Etapa 7 em validação local — 5 tenants / 14 campanhas e calendário de 7 semanas (acabamento, integridade bidirecional e E2E da fábrica) |
+| Fase atual | Etapa 8 em andamento — comparativo Hook A/B híbrido com significância estatística integrado à main; 5 tenants / 14 campanhas e calendário de 7 semanas |
 | Status das 5 tarefas | Fase 1, Etapa 1, Etapa 2, Etapa 3, Etapa 4, Etapa 5 e Etapa 6 (Etapa 5: Agentes 1, 2, 3, 4, 5, 6, 7, 8, 9 + Etapa 6: Agentes 1, 2, 3, 4, 5, 6, 7, 8) concluídas — ver seções 2 e 7 |
 ---
 
