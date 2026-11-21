@@ -359,6 +359,43 @@ Consolida métricas de forma **estritamente isolada por `tenant_id`** — nenhum
 - `campaign_calendar.py` anexa aos slots os campos `fatigueStatus`, `fatigueZScore`, `fatiguePValue`, `fatigueDetected` e `fatigueReason` e acrescenta o alerta de fadiga à justificativa do `hookRecomendadoJustificativa`, sem mutar a campanha (datas, canais, UTM e cópia permanecem intocados).
 - `review_dashboard.py --build --utm-report <relatorio.json>` expõe `hookBenchmarks.byTenant` no `portal-data.json` e renderiza o indicador "Fadiga de Hook" no painel de métricas do portal, com o número de tenants com fadiga detectada.
 
+### 8.7 Fluxo assistido de promoção de vencedores (`promote-hook`)
+
+A Etapa 10 adiciona o subcomando `promote-hook` a `tools/approval_cli.py`, que pontua a recomendação estatística do relatório UTM (`rankings.hookComparison.byCampaign`) à atualização do manifesto da campanha (`tenants/<tenantId>/campaigns/<slug>.json`) com um histórico de auditoria (`promotionHistory`). É um fluxo humano-em-ciclo: nada é publicado nem alterado sem `--apply`, e mesmo com `--apply` há um gate de qualidade editorial antes de gravar.
+
+**CLI:**
+```bash
+python tools/approval_cli.py promote-hook \
+  --tenant <tenantId> --campaign <slug> \
+  --utm-report <caminho/utm-performance-report.json> \
+  --reviewer "<nome>" \
+  [--dry-run | --apply]
+```
+
+- **`--dry-run` (padrão):** só exibe o preview (diff `difflib.unified_diff` contra o manifesto) e o alerta de fadiga, sem gravar nada. `applied=false`.
+- **`--apply`:** grava a entrada `promotionHistory` no arquivo de aprovações do titular (`.workspace/tmp/aprovacoes-titular.json`) de forma atômica (arquivo `.tmp` + `os.replace`), sem sobra de temporários.
+
+**Requisitos de segurança (todos obrigatórios):**
+
+1. **Significância estatística:** o comparativo da campanha deve ter `classification` em `vencedor_A` ou `vencedor_B`, `|z| >= 1,96` e `p < 0,05` (95% de confiança). Caso contrário, aborta com `PROMOTION_NAO_SIGNIFICATIVO` e nada grava.
+2. **Isolamento multi-tenant:** o `tenantId` da linha de comparativo deve ser exatamente o tenant solicitado. Mesmo slug de campanha pertencente a outro tenant é rejeitado com `PROMOTION_TENANT_DIVERGENTE`.
+3. **Alerta de fadiga:** quando `tenantBenchmarks` indica `hooksComFadiga=true` para o tenant, o preview exibe o alerta proeminente (`fatigueDetected`, `fatigueStatus`, `fatigueReason`) antes do diff.
+4. **Gate editorial (`--apply` apenas):** executa `editorial_qa --all --strict` antes de gravar. Qualquer erro ou aviso aborta com `PROMOTION_EDITORIAL_QA_REPROVADA` e sem escrita parcial.
+5. **Portabilidade:** todos os caminhos (relatório UTM, arquivo de aprovações) são validados para ficarem dentro da raiz do checkout (`git rev-parse --show-toplevel`); temporários ficam somente em `.workspace/`.
+
+**Entrada de auditoria (`promotionHistory`):**
+Cada promoção persistida acrescenta um item com:
+- `campaignId`, `tenantId`, `promotedVariant` (`A` ou `B`),
+- `zScore`, `pValue`, `classificationReason`,
+- `fatigueStatus`, `fatigueDetected`,
+- `sourceReport` (caminho do relatório UTM usado),
+- `promotedAt` (ISO-8601 UTC),
+- `promotedBy` (revisor).
+
+O portal de revisão (`review_dashboard.py --build`) expõe `promotionHistory` por campanha no `portal-data.json` e o renderiza no card da campanha (variante, revisor, data, z/p, fadiga e fonte), mantendo o histórico completo de promoções visível ao titular.
+
+**Consumo no calendário:** `campaign_calendar.py` continua a anexar `hookRecomendado`/`hookRecomendadoJustificativa` aos slots como recomendação apenas; a decisão de trocar o hook e a gravação da promoção continuam sendo do titular via `promote-hook --apply`.
+
 ---
 
 ## 9. Limites deste playbook
@@ -377,4 +414,5 @@ Consolida métricas de forma **estritamente isolada por `tenant_id`** — nenhum
 - [Guia de novo nicho](guia-novo-nicho.md)
 - `tools/utm_simulator.py`, `tools/tests/test_utm_simulator.py`,
   `tools/utm_report_importer.py`, `tools/tests/test_utm_report_importer.py`,
+  `tools/approval_cli.py`, `tools/tests/test_hook_promotion_cli.py`,
   `tools/campaign_calendar.py`, `04-legendas/matriz-utm-consolidada.csv`

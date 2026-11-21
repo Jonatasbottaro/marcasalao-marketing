@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import difflib
 import json
 import os
 import re
@@ -66,6 +67,25 @@ HASH_ARTIFACTS = {
 
 _ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
 _SAFE_SLUG_RE = re.compile(r"^[a-z0-9]+(?:[-_][a-z0-9]+)*$")
+
+# ---------------------------------------------------------------------------
+# Promocao assistida de hook (Etapa 10)
+# ---------------------------------------------------------------------------
+PROMOTION_FIELD = "promotionHistory"
+PROMOTION_SCHEMA_VERSION = 1
+PROMOTION_SOURCE_REPORT_KEY = "sourceReport"
+Z_THRESHOLD = 1.96
+P_VALUE_ALPHA = 0.05
+WINNING_CLASSIFICATIONS = ("vencedor_A", "vencedor_B")
+PROMOTION_ERROR_CODES = {
+    "PROMOTION_UTM_REPORT_AUSENTE",
+    "PROMOTION_NAO_SIGNIFICATIVO",
+    "PROMOTION_TENANT_DIVERGENTE",
+    "PROMOTION_CAMPANHA_NAO_ENCONTRADA",
+    "PROMOTION_FORA_DA_RAIZ",
+    "PROMOTION_EDITORIAL_QA_REPROVADA",
+    "PROMOTION_FATIGA_DETECTADA",
+}
 
 _USAGE_ERROR_CODES = {
     "DECISAO_INVALIDA",
@@ -595,6 +615,359 @@ def cmd_validate(root: str = ".", approvals_file: str | None = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Subcomando: promote-hook (Etapa 10)
+# ---------------------------------------------------------------------------
+
+def _utm_report_path(root_real: str, utm_report: str | None) -> str:
+    """Resolve o caminho do relatorio UTM, exigindo que fique dentro da raiz."""
+    if not utm_report:
+        raise ApprovalError(
+            "PROMOTION_UTM_REPORT_AUSENTE",
+            "informe --utm-report com o caminho do relatorio de desempenho UTM",
+        )
+    candidate = os.path.realpath(
+        utm_report if os.path.isabs(utm_report)
+        else os.path.join(root_real, utm_report.replace("/", os.sep))
+    )
+    if not render_local.contained(root_real, candidate):
+        raise ApprovalError(
+            "PROMOTION_FORA_DA_RAIZ", "relatorio UTM fora da raiz do projeto"
+        )
+    if not os.path.isfile(render_local.fs_path(candidate)):
+        raise ApprovalError(
+            "PROMOTION_UTM_REPORT_AUSENTE",
+            f"relatorio UTM nao encontrado: {utm_report}",
+        )
+    return candidate
+
+
+def _load_utm_report(root_real: str, utm_report: str | None) -> dict:
+    path = _utm_report_path(root_real, utm_report)
+    try:
+        report = _load_json(path)
+    except (OSError, ValueError) as exc:
+        raise ApprovalError(
+            "PROMOTION_UTM_REPORT_AUSENTE",
+            f"relatorio UTM ilegivel: {exc}",
+        )
+    rankings = report.get("rankings")
+    if not isinstance(rankings, dict):
+        raise ApprovalError(
+            "PROMOTION_UTM_REPORT_AUSENTE",
+            "relatorio UTM sem bloco 'rankings'",
+        )
+    hook_comparison = rankings.get("hookComparison")
+    if not isinstance(hook_comparison, dict):
+        raise ApprovalError(
+            "PROMOTION_UTM_REPORT_AUSENTE",
+            "relatorio UTM sem rankings.hookComparison",
+        )
+    return report
+
+
+def _find_campaign_comparison(
+    hook_comparison: dict, tenant_id: str, campaign_slug: str
+) -> dict | None:
+    """Localiza a linha de comparativo A/B do tenant/campanha informado."""
+    by_campaign = hook_comparison.get("byCampaign")
+    if not isinstance(by_campaign, list):
+        return None
+    for row in by_campaign:
+        if not isinstance(row, dict):
+            continue
+        if row.get("tenantId") == tenant_id and row.get("campaign") == campaign_slug:
+            return row
+    return None
+
+
+def _find_campaign_by_slug(
+    hook_comparison: dict, campaign_slug: str
+) -> dict | None:
+    """Localiza qualquer linha de comparativo com o slug da campanha, independente do tenant."""
+    by_campaign = hook_comparison.get("byCampaign")
+    if not isinstance(by_campaign, list):
+        return None
+    for row in by_campaign:
+        if not isinstance(row, dict):
+            continue
+        if row.get("campaign") == campaign_slug:
+            return row
+    return None
+
+
+def _significant(row: dict) -> bool:
+    z = row.get("zScore")
+    p_value = row.get("pValue")
+    classification = row.get("classification")
+    if z is None or p_value is None:
+        return False
+    return (
+        classification in WINNING_CLASSIFICATIONS
+        and abs(z) >= Z_THRESHOLD
+        and p_value < P_VALUE_ALPHA
+    )
+
+
+def _editorial_qa_gate(root_real: str, run_qa: Any = None) -> None:
+    """Executa editorial_qa --strict e aborta se houver qualquer erro ou aviso.
+
+    `run_qa` e injetavel para testes; por default usa
+    ``editorial_qa.run_editorial_qa``.
+    """
+    if run_qa is None:
+        from editorial_qa import run_editorial_qa
+
+        run_qa = run_editorial_qa  # type: ignore[assignment]
+
+    result = run_qa(root=root_real, strict=True, tenant=None)
+    if not result.get("ok"):
+        problems = result.get("summary", {}).get("problems", {})
+        raise ApprovalError(
+            "PROMOTION_EDITORIAL_QA_REPROVADA",
+            (
+                "editorial_qa --strict reprovou antes da promocao: "
+                f"{problems.get('errors', 0)} erro(s), "
+                f"{problems.get('warnings', 0)} aviso(s)"
+            ),
+        )
+
+
+def cmd_promote_hook(
+    root: str = ".",
+    tenant_id: str | None = None,
+    campaign_slug: str | None = None,
+    utm_report: str | None = None,
+    reviewer: str | None = None,
+    dry_run: bool = True,
+    apply_: bool = False,
+    approvals_file: str | None = None,
+    run_qa: Any = None,
+) -> dict:
+    """Promove o hook vencedor para o manifesto da campanha com auditoria completa.
+
+    Fluxo:
+      1. Valida significancia estatistica (z>=1.96, p<0.05, vencedor_A/vencedor_B).
+      2. Alerta de fadiga (fatigueDetected=True aviso proeminente antes do diff).
+      3. Calcula diff difflib contra o manifesto da campanha.
+      4. Em --dry-run (padrao): so preview, nada grava.
+      5. Em --apply: executa editorial_qa --strict (gate de seguranca), escreve
+         promotionHistory no arquivo de aprovacoes de forma atomica.
+    """
+    root_real = os.path.realpath(root)
+    tenant_id = str(tenant_id or "").strip()
+    campaign_slug = str(campaign_slug or "").strip()
+    reviewer = str(reviewer or "").strip()
+    if not reviewer:
+        raise ApprovalError("REVISOR_OBRIGATORIO", "informe --reviewer")
+
+    campaigns = discover_campaigns(root_real)
+    key = (tenant_id, campaign_slug)
+    if tenant_id not in {t for t, _ in campaigns}:
+        raise ApprovalError("TENANT_DESCONHECIDO", tenant_id)
+    if key not in campaigns:
+        raise ApprovalError("CAMPANHA_DESCONHECIDA", f"{tenant_id}/{campaign_slug}")
+    campaign = campaigns[key]
+
+    report = _load_utm_report(root_real, utm_report)
+    hook_comparison = report["rankings"]["hookComparison"]
+    comparison = _find_campaign_by_slug(hook_comparison, campaign_slug)
+    if comparison is None:
+        raise ApprovalError(
+            "PROMOTION_CAMPANHA_NAO_ENCONTRADA",
+            f"{tenant_id}/{campaign_slug} nao tem comparativo A/B no relatorio UTM",
+        )
+
+    # Multi-tenant isolacao: o tenant_id da linha de comparacao deve bater com o
+    # tenant solicitado. Mesmo slug de campanha pertencente a outro tenant e
+    # rejeitado (sem vazamento de comparativo entre tenants).
+    if str(comparison.get("tenantId")) != tenant_id:
+        raise ApprovalError(
+            "PROMOTION_TENANT_DIVERGENTE",
+            (
+                f"comparativo de {comparison.get('campaign')} pertence ao tenant "
+                f"{comparison.get('tenantId')}, nao a {tenant_id}"
+            ),
+        )
+
+    # Significancia estatistica (gate obrigatorio).
+    if not _significant(comparison):
+        raise ApprovalError(
+            "PROMOTION_NAO_SIGNIFICATIVO",
+            (
+                f"{tenant_id}/{campaign_slug}: classificacao="
+                f"{comparison.get('classification')}, z={comparison.get('zScore')}, "
+                f"p={comparison.get('pValue')} (requerido vencedor_A/vencedor_B, "
+                f"|z|>={Z_THRESHOLD}, p<{P_VALUE_ALPHA})"
+            ),
+        )
+
+    winning_variant = "A" if comparison["classification"] == "vencedor_A" else "B"
+
+    # Alerta de fadiga do tenant (do tenantBenchmarks).
+    fatigue_status = None
+    fatigue_detected = False
+    tenant_benchmarks = (
+        report["rankings"].get("tenantBenchmarks")
+        if isinstance(report["rankings"], dict)
+        else None
+    )
+    if isinstance(tenant_benchmarks, dict):
+        for row in tenant_benchmarks.get("byTenant", []):
+            if isinstance(row, dict) and row.get("tenantId") == tenant_id:
+                fatigue_status = row.get("hooksComFadigaStatus")
+                fatigue_detected = bool(row.get("hooksComFadiga"))
+                break
+
+    # Diff do manifesto da campanha (preview).
+    config_path = os.path.join(root_real, campaign["configPath"])
+    try:
+        with open(render_local.fs_path(config_path), "r", encoding="utf-8") as handle:
+            original_text = handle.read()
+    except OSError as exc:
+        raise ApprovalError(
+            "PROMOTION_CAMPANHA_NAO_ENCONTRADA",
+            f"nao foi possivel ler o manifesto da campanha: {exc}",
+        )
+
+    promotion_entry = {
+        "schemaVersion": PROMOTION_SCHEMA_VERSION,
+        "campaignId": campaign["campaignId"],
+        "tenantId": tenant_id,
+        "promotedVariant": winning_variant,
+        "zScore": comparison.get("zScore"),
+        "pValue": comparison.get("pValue"),
+        "classificationReason": comparison.get("classificationReason"),
+        "fatigueStatus": fatigue_status,
+        "fatigueDetected": fatigue_detected,
+        "sourceReport": _rel(root_real, _utm_report_path(root_real, utm_report)),
+        "promotedAt": _now_utc(),
+        "promotedBy": reviewer,
+    }
+
+    modified_text = original_text
+    diff_lines: list[str] = []
+    if dry_run or apply_:
+        lines = original_text.splitlines(keepends=True)
+        promo_json = json.dumps(promotion_entry, ensure_ascii=False, indent=2) + "\n"
+        inserted = False
+        new_lines: list[str] = []
+        for line in lines:
+            new_lines.append(line)
+            if line.strip() == "}":
+                # Insere o bloco promotionHistory antes da chave de fechamento raiz.
+                indent = "  "
+                new_lines.append(f'{indent}"{PROMOTION_FIELD}": [\n')
+                new_lines.append(f'{indent}{{')
+                entry_lines = promo_json.splitlines()
+                for i, el in enumerate(entry_lines):
+                    comma = "," if i < len(entry_lines) - 1 else ""
+                    new_lines.append(f"{indent}  {el}{comma}\n")
+                new_lines.append(f"{indent}}}]\n")
+                inserted = True
+                break
+        if not inserted:
+            new_lines.append(promo_json)
+        modified_text = "".join(new_lines)
+
+        diff_lines = list(
+            difflib.unified_diff(
+                original_text.splitlines(keepends=True),
+                modified_text.splitlines(keepends=True),
+                fromfile=campaign["configPath"],
+                tofile=campaign["configPath"],
+                lineterm="",
+            )
+        )
+
+    # preview (sempre, inclusive no --apply): mostra o diff e o alerta de fadiga
+    preview = {
+        "campaignId": campaign["campaignId"],
+        "tenantId": tenant_id,
+        "promotedVariant": winning_variant,
+        "classification": comparison.get("classification"),
+        "zScore": comparison.get("zScore"),
+        "pValue": comparison.get("pValue"),
+        "fatigueDetected": fatigue_detected,
+        "fatigueStatus": fatigue_status,
+        "fatigueReason": None,
+        "diff": diff_lines,
+        "dryRun": bool(dry_run and not apply_),
+    }
+    if isinstance(tenant_benchmarks, dict):
+        for row in tenant_benchmarks.get("byTenant", []):
+            if isinstance(row, dict) and row.get("tenantId") == tenant_id:
+                preview["fatigueReason"] = row.get("hooksComFadigaReason")
+                break
+
+    # --apply: gate editorial_qa --strict, depois persiste promotionHistory.
+    if apply_:
+        _editorial_qa_gate(root_real, run_qa=run_qa)
+        approvals_path = _resolve_approvals_path(root_real, approvals_file)
+        doc = (
+            load_document(approvals_path)
+            if os.path.isfile(render_local.fs_path(approvals_path))
+            else {}
+        )
+        index = _index_document(doc)
+
+        existing = index.get(key) or {}
+        existing_history = existing.get(PROMOTION_FIELD) or []
+        if not isinstance(existing_history, list):
+            existing_history = []
+        existing_history.append(promotion_entry)
+
+        merged: dict[tuple[str, str], dict] = {}
+        for other_key, other_item in index.items():
+            normalized = dict(other_item)
+            normalized["decisao"] = _normalize_decision(other_item)
+            normalized.pop("aprovada", None)
+            merged[other_key] = normalized
+        merged[key] = {
+            **merged.get(key, {}),
+            "tenantId": tenant_id,
+            "slug": campaign_slug,
+            "campaignId": campaign["campaignId"],
+            "preset": campaign["preset"],
+            "decisao": _normalize_decision(merged.get(key, {})) or "aguardando",
+            PROMOTION_FIELD: existing_history,
+        }
+        campanhas = [merged[k] for k in sorted(merged)]
+
+        payload = {
+            "schemaVersion": SCHEMA_VERSION,
+            "arquivo": APPROVALS_FILENAME,
+            "origem": DOC_ORIGIN,
+            "exportadoEm": _now_utc(),
+            "revisor": reviewer,
+            "resumo": _summary(campanhas),
+            "campanhas": campanhas,
+        }
+        _atomic_write_json(approvals_path, payload)
+
+        return {
+            "ok": True,
+            "autoPublish": False,
+            "approvalsFile": _rel(root_real, approvals_path),
+            "tenantId": tenant_id,
+            "slug": campaign_slug,
+            "campaignId": campaign["campaignId"],
+            "promotedVariant": winning_variant,
+            "promotedAt": promotion_entry["promotedAt"],
+            "promotedBy": reviewer,
+            "preview": preview,
+            "applied": True,
+        }
+
+    return {
+        "ok": True,
+        "autoPublish": False,
+        "tenantId": tenant_id,
+        "slug": campaign_slug,
+        "campaignId": campaign["campaignId"],
+        "promotedVariant": winning_variant,
+        "preview": preview,
+        "applied": False,
+    }
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -646,6 +1019,31 @@ def main(argv: list[str] | None = None) -> int:
     p_validate.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_validate.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
+    p_promote = subparsers.add_parser(
+        "promote-hook", help="Promove o hook vencedor para o manifesto da campanha"
+    )
+    p_promote.add_argument("--tenant", required=True, help="Slug do tenant")
+    p_promote.add_argument("--campaign", required=True, help="Slug da campanha")
+    p_promote.add_argument(
+        "--utm-report", required=True, help="Caminho do relatorio UTM (utm-performance-report.json)"
+    )
+    p_promote.add_argument("--reviewer", required=True, help="Nome do revisor")
+    p_promote.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=True,
+        help="Apenas preview do diff (padrao; nada grava)",
+    )
+    p_promote.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Persiste a promocao (exige editorial_qa --strict antes)",
+    )
+    p_promote.add_argument("--approvals-file", default=None, help="JSON de aprovacoes")
+    p_promote.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    p_promote.add_argument("--json", action="store_true", help="Emite JSON no stdout")
+
     args = parser.parse_args(argv)
 
     try:
@@ -660,6 +1058,19 @@ def main(argv: list[str] | None = None) -> int:
                 reviewer=args.reviewer,
                 notes=args.notes,
                 external_audio_checked=args.external_audio_checked,
+                approvals_file=args.approvals_file,
+            )
+        elif args.subcommand == "validate":
+            result = cmd_validate(root=args.root, approvals_file=args.approvals_file)
+        elif args.subcommand == "promote-hook":
+            result = cmd_promote_hook(
+                root=args.root,
+                tenant_id=args.tenant,
+                campaign_slug=args.campaign,
+                utm_report=args.utm_report,
+                reviewer=args.reviewer,
+                dry_run=args.dry_run and not args.apply,
+                apply_=args.apply,
                 approvals_file=args.approvals_file,
             )
         else:

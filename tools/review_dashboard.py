@@ -515,6 +515,25 @@ def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict
                 if isinstance(row, dict) and row.get("tenantId"):
                     hook_benchmarks[str(row["tenantId"])] = row
 
+    # Historico de promocoes de hook (Etapa 10): indexado por (tenantId, slug).
+    promotion_history: dict[tuple[str, str], list[dict]] = {}
+    approvals_path = approvals_store_path(root)
+    if os.path.isfile(render_local.fs_path(approvals_path)):
+        try:
+            approvals_doc = _load_json(approvals_path)
+        except (OSError, ValueError):
+            approvals_doc = {}
+        for item in (approvals_doc.get("campanhas") or []):
+            if not isinstance(item, dict):
+                continue
+            tid = item.get("tenantId")
+            slug = item.get("slug")
+            if not isinstance(tid, str) or not isinstance(slug, str):
+                continue
+            history = item.get("promotionHistory")
+            if isinstance(history, list):
+                promotion_history[(tid, slug)] = history
+
     for tenant_id in _list_dirs(os.path.join(root, TENANTS_ROOT)):
         brand_kit = os.path.join(root, TENANTS_ROOT, tenant_id, "brand-kit.json")
         if not os.path.isfile(render_local.fs_path(brand_kit)):
@@ -530,6 +549,9 @@ def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict
             campaign = _collect_campaign(
                 root, tenant_id, slug, tenant["audioPolicy"]["allowAudioTrack"]
             )
+            history = promotion_history.get((tenant_id, slug))
+            if history is not None:
+                campaign["promotionHistory"] = history
             campaigns.append(campaign)
             video_abs = os.path.realpath(
                 os.path.join(root, campaign["video"]["archiveRelPath"].replace("/", os.sep))
@@ -1330,6 +1352,31 @@ function card(c) {
   obs.value = e0.observacoes;
   obs.addEventListener("input", function () { registrar(c, "observacoes", obs.value); });
   aprovacao.appendChild(obs);
+
+  // Historico de promocoes de hook (Etapa 10): exibe cada entrada persistida.
+  if (c.promotionHistory && c.promotionHistory.length) {
+    const secaoPromo = el("div", { class: "linha" });
+    secaoPromo.appendChild(
+      el("strong", {}, [document.createTextNode("Promoção de hook (auditoria):")])
+    );
+    const lista = el("ul", { class: "promocao-lista" });
+    c.promotionHistory.forEach(function (e) {
+      const item = el("li", {}, [
+        el("strong", {}, [document.createTextNode("Variante promovida: " + e.promotedVariant)]),
+        el("span", { text: " · Revisor: " + (e.promotedBy || "-") }),
+        el("span", { text: " · Em: " + (e.promotedAt || "-") }),
+        el("span", { text: " · z=" + (e.zScore != null ? e.zScore : "-") + ", p=" + (e.pValue != null ? e.pValue : "-") }),
+        el("span", { text: " · Fadiga: " + (e.fatigueDetected ? "DETECTADA (" + (e.fatigueStatus || "-") + ")" : "não detectada") }),
+        el("span", { text: " · Fonte: " + (e.sourceReport || "-") }),
+      ]);
+      if (e.classificationReason) {
+        item.appendChild(el("p", { class: "nota", text: e.classificationReason }));
+      }
+      lista.appendChild(item);
+    });
+    secaoPromo.appendChild(lista);
+    aprovacao.appendChild(secaoPromo);
+  }
   cardEl.appendChild(aprovacao);
   return cardEl;
 }
