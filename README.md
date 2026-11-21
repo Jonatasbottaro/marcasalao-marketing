@@ -6,7 +6,7 @@ Repositório de marketing do Marca Salão, com fluxos também organizados para a
 
 Comece por [docs/contexto/README.md](docs/contexto/README.md). O [estado atual](docs/contexto/ESTADO-ATUAL.md) diferencia o código integrado na main, as alterações em revisão e as pendências editoriais. As [próximas etapas](docs/contexto/PROXIMOS-PASSOS.md) e o [handoff](docs/contexto/HANDOFF.md) orientam a retomada entre agentes e computadores.
 
-A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/README.md). As decisões de arquitetura são registros históricos; não substituem a verificação do código e das PRs.
+A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/README.md). As decisões de arquitetura são registros históricos; não substituem a verificação do código e das PRs. Para a rotina prática de revisão, aprovação, handoff e publicação manual, use o [guia operacional do titular](docs/guia-operacional-titular.md).
 
 ## Estrutura
 - `00-briefings/` - Briefings de campanha: dor, impacto, evidência e limites de promessa antes de produzir
@@ -58,11 +58,17 @@ python tools/bootstrap_ffmpeg.py --check-only --json    # 13. bootstrap portáti
 python tools/handoff_bundler.py --all-approved --json   # 14. handoff diário pós-aprovação (nada publica)
 python tools/factory_cli.py pipeline --all --skip-render --json  # 15. pipeline mestre end-to-end
 python tools/devlog_sync.py --json                      # 16. consolidar devlogs no contexto_projeto.md
+python tools/review_dashboard.py --serve --port 8765    # 17. revisão humana no portal (ou approval_cli status/decide)
+python tools/factory_cli.py handoff --all-approved --json  # 18. pacote diário SOMENTE com aprovados
+python tools/utm_report_importer.py --json              # 19. fechamento semanal: importar métricas UTM
+python tools/workspace_doctor.py --check                # 20. diagnóstico de saúde do workspace
 ```
 
 **Camada de acabamento (Etapas 5 e 5B):** `static_cards.py` entrega stories e carrossel versionados com `static-manifest.json` auditado; `bootstrap_ffmpeg.py` instala FFmpeg/FFprobe portáteis em `.workspace/tools/` do checkout principal; `handoff_bundler.py` empacota o handoff diário **somente com campanhas aprovadas pelo titular** (`autoPublish: false`); `utm_simulator.py` audita e simula o funil UTM sem cobrança financeira; `editorial_qa.py` cruza duração SRT×manifesto, legibilidade mobile (linhas ≤ 48 caracteres), paridade vídeo/cards/pacote, guardrails e integridade UTF-8; e `factory_cli.py pipeline` encadeia todas as etapas, marcando como `skipped` os módulos ainda ausentes. Nenhum desses módulos publica, agenda ou cria rascunho.
 
-Checklist de operação manual: alinhar a estação (`git fetch origin --prune && git pull --ff-only`) → validar contratos → renderizar → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → derivados → pacotes → calendário → portal → cards estáticos → auditoria UTM → auditoria editorial `editorial_qa` → auditoria `release_audit` → gate `--strict` → (pós-aprovação) handoff diário → consolidar devlogs.
+**Operação do titular (Etapa 6):** o [guia operacional](docs/guia-operacional-titular.md) descreve o ciclo completo — rever campanhas no portal (`review_dashboard.py --serve`) ou por terminal (`approval_cli.py status`/`decide`), gerar o pacote com `factory_cli.py handoff --all-approved` e publicar **manualmente** (locução externa para tenants `-an`, `autoPublish: false`), e fechar a semana com `utm_report_importer.py` + `workspace_doctor.py --check`. Os rótulos de interface vêm de `uiLabels` no `brand-kit.json`; `srt_formatter.py` normaliza legendas para legibilidade mobile. Esses módulos estão sendo consolidados em paralelo — conferir o `--help` de cada um na integração.
+
+Checklist de operação manual: alinhar a estação (`git fetch origin --prune && git pull --ff-only`) → validar contratos → renderizar → (opcional) trilha `audio_tts` apenas para `multitrack-hub` → derivados → pacotes → calendário → portal → cards estáticos → auditoria UTM → auditoria editorial `editorial_qa` → auditoria `release_audit` → gate `--strict` → revisão/aprovação do titular → handoff diário → publicação manual → importação UTM + `workspace_doctor` → consolidar devlogs.
 
 Protocolo de revisão humana e publicação: o portal `05-review-portal/` e o calendário editorial são instrumentos de **revisão e proposta** — o titular aprova, e a publicação nas redes é feita manualmente por ele (ou por ferramenta externa mediante autorização específica). `autoPublish: false` e `statusEditorial: "aguardando_aprovacao_titular"` são verificados pelo gate de release; nada neste repositório publica, agenda ou cria rascunho por conta própria. Novo nicho/tenant: [docs/guia-novo-nicho.md](docs/guia-novo-nicho.md).
 

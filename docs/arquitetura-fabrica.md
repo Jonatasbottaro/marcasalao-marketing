@@ -1,6 +1,6 @@
 # Arquitetura da Fábrica de Vídeo Multi-Tenant
 
-Documento mestre do pipeline de produção de vídeo programático multi-tenant (Etapas 2 a 5B). Público: operadores e agentes que executam, estendem ou auditam a fábrica. A fonte da verdade é o código; este documento descreve o comportamento comprovado pelos testes e pelo CI.
+Documento mestre do pipeline de produção de vídeo programático multi-tenant (Etapas 2 a 6). Público: operadores e agentes que executam, estendem ou auditam a fábrica. A fonte da verdade é o código; este documento descreve o comportamento comprovado pelos testes e pelo CI. O fluxo para o titular está resumido em [docs/guia-operacional-titular.md](guia-operacional-titular.md).
 
 ## Sumário
 
@@ -54,6 +54,11 @@ Etapa 5/5B (camada de acabamento, transversal):
     bootstrap_ffmpeg ──> factory_cli pipeline ──> static_cards ──> utm_simulator
                               │                                          │
                               └────────────> editorial_qa ──> handoff_bundler (pós-aprovação)
+
+Etapa 6 (operação do titular):
+    review_dashboard --serve / approval_cli ──> factory_cli handoff ──> publicação MANUAL
+                         │                                               │
+                         └──> utm_report_importer ──> workspace_doctor ───┘ (fechamento semanal)
 
 devlog_sync (transversal): consolida os devlogs de sessão no contexto_projeto.md
 ```
@@ -127,6 +132,7 @@ Gera trilhas `.wav` (30 s, 44100 Hz, estéreo) **somente para tenants com `allow
 - `list [--tenant <id>] --json` — descoberta de tenants/campanhas.
 - `render [--tenant <id> | --all] [--report <caminho>] --json` — renderiza em lote, gravando transacionalmente em `02-reels-shorts/deliveries/<tenant>/<slug>/`, arquivando a cópia do vídeo em `.workspace/archives/<slug>/` e consolidando o índice em `02-reels-shorts/deliveries/factory-report.json` (ou no caminho de `--report`, recomendado em worktrees paralelas para não disputar o índice compartilhado).
 - `pipeline [--all | --tenant <id> [--campaign <slug>]] [--skip-render] [--start-date YYYY-MM-DD] [--weeks N] [--strict-audit] --json` (Etapa 5B) — subcomando mestre end-to-end: encadeia contratos → render 9:16 → derivados → cards estáticos → pacotes sociais → calendário → portal → auditoria UTM → Release Gate. Os módulos paralelos são importados de forma opcional: se um ainda não existir, o estágio é marcado `skipped` e o restante continua. Com `--skip-render`, os estágios de produção apenas verificam os artefatos versionados existentes.
+- `handoff --all-approved [--json]` (Etapa 6) — subcomando de operação diária: empacota **somente** campanhas aprovadas pelo titular, reauditando a copy contra os guardrails e gravando `autoPublish: false`. Equivale ao fluxo do `handoff_bundler.py`, integrado na CLI mestre; com nenhuma aprovação, não gera pacote e reporta o motivo. Ver [guia operacional](guia-operacional-titular.md).
 
 ### 2.7 `tools/publish_pack.py` — pacotes sociais (Agente 3, Etapa 3)
 
@@ -214,6 +220,22 @@ Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` sob cinco 
 
 `error` reprova sempre; `warning` reprova somente com `--strict` (é o caso das linhas de SRT acima de 48 caracteres, ainda presentes no acervo atual). CLI: `python tools/editorial_qa.py [--all | --tenant <id>] [--strict] [--json]`; API: `run_editorial_qa(root=".", strict=False, tenant=None) -> dict`, relatório `schemaVersion: 1` com `campaigns[]`, `checks[]` e `summary`. Exit codes: 0 aprovado, 1 reprovado, 2 erro de uso.
 
+### 2.18 Camada de operação do titular (Etapa 6)
+
+Fecha o ciclo entre a aprovação humana, a publicação manual e o aprendizado semanal. O passo a passo completo está em [docs/guia-operacional-titular.md](guia-operacional-titular.md); a rotina de métricas está no [playbook de UTM](analytics-utm-playbook.md).
+
+| Módulo / contrato | Papel na operação | Ponto de entrada |
+| --- | --- | --- |
+| `tools/srt_formatter.py` | Normalização/quebra de linha das legendas para legibilidade mobile (limite de 48 caracteres por linha do `editorial_qa`), sem alterar timecodes nem duração final | CLI em `tools/srt_formatter.py` |
+| `tools/approval_cli.py` | Leitura e registro das decisões do titular no mesmo arquivo `aprovacoes-titular.json` (schema v2) usado pelo portal: `aguardando` / `aprovado` / `ajuste` e conferência de locução externa | `python tools/approval_cli.py status` · `python tools/approval_cli.py decide ...` |
+| `tools/factory_cli.py handoff` | Empacotamento diário pós-aprovação: ficha `POSTAGEM-MANUAL.md`, `copy-pronta.txt`, `handoff-manifest.json` e mídia local, com `autoPublish: false` | `python tools/factory_cli.py handoff --all-approved --json` |
+| `tools/utm_report_importer.py` | Importação/reconciliação do relatório exportado da ferramenta de analytics contra `04-legendas/matriz-utm-consolidada.csv`, na chave `(tenant_id, slug, utm_source, utm_medium, utm_content)` | `python tools/utm_report_importer.py --json` |
+| `tools/workspace_doctor.py` | Diagnóstico de saúde do checkout antes do próximo ciclo (estrutura, contratos, artefatos, portabilidade e consistência local) | `python tools/workspace_doctor.py --check` |
+| `uiLabels` no `tenants/<tenantId>/brand-kit.json` | Rótulos de interface exibidos no portal e no handoff (decisões, locução externa, chamadas por rede), substituindo textos fixos por termos configuráveis por marca | objeto `uiLabels` no brand-kit; requer `additionalProperties` do schema actualizado na consolidação |
+| `docs/guia-operacional-titular.md` | Manual único da rotina diária (revisão → handoff → publicação manual) e semanal (métricas UTM + doctor) | documento versionado em `docs/` |
+
+**Estado de consolidação:** estes módulos são desenvolvidos em paralelo por outros agentes da Etapa 6. No commit em que esta seção foi escrita, ainda não constavam na `main`; as interfaces acima seguem o contrato do pedido e devem ser reconferidas contra o código e o `--help` de cada ferramenta na integração. Nenhuma delas publica, agenda ou cria rascunho, e nenhuma gera áudio.
+
 ## 3. Regras operacionais e guardrails
 
 - **Vídeo sem áudio (regra do titular):** para Marca Salão (e tenants com `allowAudioTrack: false`), exportar **sem faixa de áudio** (`-an`), com legendas queimadas e sincronizadas, SRT e narração TXT separados para geração de áudio em ferramenta externa. Vídeos de demonstração/teste não são campanhas aprovadas.
@@ -229,7 +251,7 @@ Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` sob cinco 
 # 0. Alinhar a estação
 git fetch origin --prune && git pull --ff-only
 
-# 1. Validar contratos (4 tenants)
+# 1. Validar contratos (5 tenants)
 python tools/tenant_validator.py --all --json
 
 # 2. (Opcional, só multitrack-hub) trilha de áudio
@@ -284,6 +306,22 @@ python tools/release_audit.py --strict --json
 
 # 16. Consolidar o registro de sessões no contexto do projeto (idempotente)
 python tools/devlog_sync.py --json
+
+# 17. Revisão humana (Etapa 6): portal local ou CLI de aprovações
+python tools/review_dashboard.py --serve --port 8765
+python tools/approval_cli.py status
+#   (decisão no portal ou via approval_cli decide; -an exige locução externa conferida)
+
+# 18. Pacote diário de postagem manual (somente aprovados)
+python tools/factory_cli.py handoff --all-approved --json
+#   -> .workspace/handoff-diario/<data>/<slot>/ ; publicação é MANUAL
+
+# 19. Normalizar legendas para legibilidade mobile quando necessário (Etapa 6)
+python tools/srt_formatter.py --help
+
+# 20. Fechamento semanal: importar métricas UTM e checar o workspace
+python tools/utm_report_importer.py --json
+python tools/workspace_doctor.py --check
 ```
 
 Para cadastrar um novo nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-nicho.md) (estrutura, schemas, fixture, campanha, validação e render em menos de 10 minutos).
@@ -314,9 +352,12 @@ python tools/editorial_qa.py --all --json
 - `test_devlog_sync.py` (7 testes) cobre a consolidação da Etapa 3 (retrocompatibilidade byte a byte), a ordenação multi-etapa por `(etapa, agente)`, a atualização da linha `Fase atual`, a idempotência de execuções repetidas e o filtro `--pattern`.
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
 - **Gate `--strict`:** exige 7/7 domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada, `--json` e `--strict` retornam `ok: true` com 7 domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
+- **Etapa 6:** as suítes dos módulos de operação do titular são acrescentadas na consolidação da etapa; a contagem de 21 módulos acima refere-se ao estado integrado até a Etapa 5B.
 
 ## 6. Referências
 
+- [docs/guia-operacional-titular.md](guia-operacional-titular.md) — rotina diária e semanal do titular: revisão, handoff, publicação manual e analytics.
+- [docs/analytics-utm-playbook.md](analytics-utm-playbook.md) — eventos por nicho, configuração em GA4/Plausible/Umami e rotina semanal de UTM.
 - [docs/guia-novo-nicho.md](guia-novo-nicho.md) — cadastrar um novo projeto/nicho em menos de 10 minutos.
 - [docs/contexto/README.md](contexto/README.md) — estado atual, próximos passos e handoff.
 - [WORKFLOW.md](../WORKFLOW.md) — fluxo editorial completo e regra de vídeo sem áudio.
