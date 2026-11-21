@@ -19,8 +19,11 @@ Gates orquestrados (nesta ordem):
                           (14 campanhas, 7 lentes, 0 erros e 0 avisos).
   5. Workspace doctor   - ``python tools/workspace_doctor.py --check --json``.
   6. Release audit      - ``python tools/release_audit.py --strict --json``
-                          (7/7 dominios).
-  7. E2E da fabrica     - ``python -m unittest discover -s tests/e2e -v``.
+                          (8/8 dominios, incluindo empacotamento de distribuicao).
+  7. Empacotamento      - ``python tools/publish_bundler.py verify`` sobre todos
+                          os bundles em ``.workspace/bundles/`` (nao reprova se
+                          nao houver bundles nesta estacao).
+  8. E2E da fabrica     - ``python -m unittest discover -s tests/e2e -v``.
 
 CLI:
     python tools/release_check.py [--json] [--skip-ts] [--root <raiz>]
@@ -218,6 +221,13 @@ def gate_release_audit(root: str) -> dict:
     return _wrap_tool("RELEASE_AUDIT", "release_audit", proc)
 
 
+def gate_bundling(root: str) -> dict:
+    proc = _run(
+        [sys.executable, "tools/publish_bundler.py", "verify", "--json"], cwd=root
+    )
+    return _wrap_tool("BUNDLING", "publish_bundler verify", proc)
+
+
 def gate_e2e(root: str) -> dict:
     proc = _run([sys.executable, "-m", "unittest", "discover", "-s", "tests/e2e", "-v"], cwd=root)
     ok = proc.returncode == 0
@@ -265,6 +275,7 @@ GATES = (
     ("editorial_qa", gate_editorial_qa),
     ("workspace_doctor", gate_workspace_doctor),
     ("release_audit", gate_release_audit),
+    ("bundling", gate_bundling),
     ("e2e", gate_e2e),
 )
 
@@ -274,7 +285,8 @@ GATE_LABELS = {
     "tenant_validator": "Contratos multi-tenant (5 tenants)",
     "editorial_qa": "Qualidade editorial (14 campanhas, 7 lentes)",
     "workspace_doctor": "Saude do workspace",
-    "release_audit": "Auditoria de release (7 dominios)",
+    "release_audit": "Auditoria de release (8 dominios)",
+    "bundling": "Empacotamento de distribuicao (.workspace/bundles)",
     "e2e": "Suite E2E da fabrica",
 }
 

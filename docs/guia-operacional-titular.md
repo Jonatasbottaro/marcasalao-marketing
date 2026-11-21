@@ -18,11 +18,11 @@ O ferramental da Etapa 6 está sendo consolidado em paralelo por outros agentes.
 
 ```bash
 git fetch origin --prune && git pull --ff-only
-python tools/release_check.py --skip-ts      # gate único: contratos + editorial + doctor + release_audit + E2E
+python tools/release_check.py --skip-ts      # gate único: contratos + editorial + doctor + release_audit + empacotamento + E2E
 python tools/review_dashboard.py --build --json
 ```
 
-> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` 7/7 domínios e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
+> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` com 8 domínios, `publish_bundler verify` do empacotamento e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
 
 O `--build` reconstrói `05-review-portal/index.html`, `portal-data.json` e o `README.md` do portal. O build é determinístico e verifica os hashes SHA-256 de SRT, narração e storyboard contra o `manifest.json` de cada entrega; qualquer divergência aborta com `HASH_DIVERGENTE`. Detalhes em [05-review-portal/README.md](../05-review-portal/README.md).
 
@@ -110,6 +110,23 @@ Use a ficha e a `copy-pronta.txt`; a URL completa já vem com os parâmetros UTM
 - **Regra de arte compartilhada:** quando a campanha usar a arte quadrada única, mantenha a CTA neutra “Conheça o Marca Salão” na imagem e adapte apenas a legenda por rede.
 - Se precisar corrigir texto, **edite o post existente** e valide — não republicue.
 
+### 2.3 Empacotamento determinístico de distribuição (Etapa 11)
+
+O empacotamento consolida artefatos aprovados de uma campanha em pacotes `.zip` portáveis e auditáveis por SHA-256, gravados em `.workspace/bundles/<tenantId>/<slug>/` (não rastreados pelo Git). Cada pacote pertence a um único tenant e nasce com `autoPublish: false`.
+
+```bash
+# Empacota somente campanhas aprovadas pelo titular (fail-closed)
+python tools/publish_bundler.py pack --tenant <id> --slug <slug> --json
+
+# Empacota prévia sem aprovação expressa (selo PREVIA_NAO_APROVADA)
+python tools/publish_bundler.py pack --tenant <id> --slug <slug> --allow-unapproved --json
+
+# Verifica integridade de um bundle existente (SHA-256, entradas, manifesto)
+python tools/publish_bundler.py verify --bundle .workspace/bundles/<id>/<slug>/<slug>-v1.zip --json
+```
+
+Falha fechada: exige decisão `aprovado` em `.workspace/tmp/aprovacoes-titular.json` a menos que `--allow-unapproved`; decisão `ajuste` nunca entra. Antes de gravar o ZIP, confere o SHA-256 de masters e derivados em `.workspace/archives/` contra o manifesto e o `derivatives.json`. Grava, ao lado do ZIP, um manifesto com `schemaVersion`, `tenantId`, `slug`, `autoPublish: false`, `approvalStatus`, `audioPolicy`, `bundlePath`, `bundleSha256`, `bundleBytes`, `promotionHistory[]`, `items[]` e `bundleSummary`. ZIP bit-determinístico (entradas ordenadas lexicograficamente, data/hora fixa, permissões normalizadas).
+
 ---
 
 ## 3. Fechar o ciclo semanal (analytics + saúde do checkout)
@@ -145,7 +162,7 @@ Checklist de saída: tabela curta por tenant (campanha, canal, formato, sessões
 ```bash
 # 0. Alinhar e validar (gate único)
 git fetch origin --prune && git pull --ff-only
-python tools/release_check.py --skip-ts       # contratos + editorial + doctor + release_audit + E2E
+python tools/release_check.py --skip-ts       # contratos + editorial + doctor + release_audit + empacotamento + E2E
 python tools/tenant_validator.py --all --json
 
 # 1. Revisar (escolha UMA via: portal ou terminal)

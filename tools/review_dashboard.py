@@ -61,6 +61,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import render_local
 import tenant_validator
+import publish_bundler
 
 PORTAL_DIR_NAME = "05-review-portal"
 DELIVERIES_ROOT = os.path.join("02-reels-shorts", "deliveries")
@@ -417,6 +418,26 @@ def _collect_campaign(root: str, tenant_id: str, slug: str, tenant_ctx_audio: bo
         "pacote": pacote,
     }
 
+def _coletar_bundle_status(root: str, tenant_id: str, slug: str) -> dict | None:
+    """Verifica se existe bundle valido para a campanha em .workspace/bundles/."""
+    bundles_root = os.path.join(root, ".workspace", "bundles", tenant_id, slug)
+    if not os.path.isdir(render_local.fs_path(bundles_root)):
+        return None
+    for name in sorted(os.listdir(render_local.fs_path(bundles_root))):
+        if not name.endswith(".zip"):
+            continue
+        bundle_abs = os.path.join(bundles_root, name)
+        try:
+            result = publish_bundler.verify_bundle(bundle_abs, root=root)
+        except publish_bundler.PublishBundlerError:
+            return {"bundlePath": name, "verificado": False, "erro": "verificacao falhou"}
+        return {
+            "bundlePath": name,
+            "verificado": bool(result.get("ok")),
+            "problemas": result.get("problems", []),
+        }
+    return None
+
 
 def _coletar_derivatives(delivery_dir: str, tenant_id: str, slug: str) -> list[dict] | None:
     """Le derivatives.json opcional da entrega (variantes 1x1/16x9 etc.).
@@ -552,6 +573,9 @@ def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict
             history = promotion_history.get((tenant_id, slug))
             if history is not None:
                 campaign["promotionHistory"] = history
+            bundles = _coletar_bundle_status(root, tenant_id, slug)
+            if bundles is not None:
+                campaign["bundleStatus"] = bundles
             campaigns.append(campaign)
             video_abs = os.path.realpath(
                 os.path.join(root, campaign["video"]["archiveRelPath"].replace("/", os.sep))

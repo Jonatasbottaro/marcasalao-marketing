@@ -1,15 +1,17 @@
-"""Testes do auditor de release em 7 dominios (tools/release_audit.py).
+"""Testes do auditor de release em 8 dominios (tools/release_audit.py).
 
-Cobertura (Etapa 4, Agente 4):
-  - Relatorio schemaVersion 2 com 7 dominios ordenados, problemas tipados
+Cobertura (Etapa 4, Agente 4 + Etapa 11, Agente 1):
+  - Relatorio schemaVersion 2 com 8 dominios ordenados, problemas tipados
     (severity/code/message) e aprovacao nao-strict no repositorio atual.
-  - Avisos dos dominios 4/5/6 antes da consolidacao completa: nao reprovam
+  - Avisos dos dominios 4/5/6/8 antes da consolidacao completa: nao reprovam
     sem --strict, reprovam com --strict; sandbox completo aprova no --strict.
   - Falhas simuladas por dominio: hash corrompido, arquivo/diretorio ausente,
     politica de audio violada, autoPublish true, guardrailsAudited false,
     contagem de slots divergente, caminho absoluto vazado no portal, declaracao
     de derivado incompleta, midia rastreada, .gitattributes sem cobertura
     eol=lf e worktrees irregulares.
+  - Dominio 8 (empacotamento_distribuicao): sem bundles na estação gera aviso
+    `BUNDLES_AUSENTES`; bundles adulterados geram erro.
   - CLI: --json, --strict, --report-out (com contencao sob a raiz) e erros
     de uso (exit 2).
 """
@@ -42,6 +44,7 @@ DOMAIN_IDS = [
     "calendario_utm",
     "portal_revisao",
     "higiene_git",
+    "empacotamento_distribuicao",
 ]
 
 DOMAIN_NAMES = [
@@ -52,6 +55,7 @@ DOMAIN_NAMES = [
     "Calendário Editorial & Matriz UTM",
     "Portal Visual de Revisão",
     "Higiene Git, EOL e Worktrees",
+    "Empacotamento de Distribuição",
 ]
 
 WARN_ONLY_DOMAINS = {"derivados_multiformato", "calendario_utm", "portal_revisao"}
@@ -212,7 +216,7 @@ class ReleaseAuditTests(unittest.TestCase):
                     self.assertEqual(problem["severity"], "warning")
                     self.assertIn(domain["id"], WARN_ONLY_DOMAINS)
         summary = result["summary"]
-        self.assertEqual(sum(summary["domains"].values()), 7)
+        self.assertEqual(sum(summary["domains"].values()), 8)
         self.assertGreaterEqual(summary["tenants"]["valid"], 4)
         self.assertEqual(summary["tenants"]["invalid"], 0)
         self.assertEqual(summary["campaigns"]["total"], _count_campaign_files(REPO_ROOT))
