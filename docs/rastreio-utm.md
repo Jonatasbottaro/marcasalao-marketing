@@ -54,8 +54,8 @@ https://marcasalao.com.br/?utm_source=instagram&utm_medium=stories&utm_campaign=
 
 ### Convenção multi-tenant (Etapa 4)
 
-A partir da Etapa 4, o mesmo padrão de parâmetros vale para os 4 tenants da
-content factory, cada um com seu próprio domínio de destino:
+A partir da Etapa 4, o mesmo padrão de parâmetros vale para os 5 tenants da
+content factory (14 campanhas no total), cada um com seu próprio domínio de destino:
 
 | Tenant | Marca | Domínio oficial | Nicho |
 |--------|-------|------------------|-------|
@@ -63,6 +63,7 @@ content factory, cada um com seu próprio domínio de destino:
 | `meu-salao` | Meu Salão | `meusalao.com.br` | SaaS de agenda para salões |
 | `estudio-flow` | Estúdio Flow | `estudioflow.com.br` | Aulas e turmas em estúdio (pilates/bem-estar) |
 | `multitrack-hub` | Multitrack Hub | `multitrackhub.com.br` | Catálogo de multitracks, stems e rateios |
+| `clinica-vital` | Clínica Vital | `clinicavital.com.br` | SaaS de gestão para clínicas |
 
 Regras multi-tenant:
 
@@ -250,7 +251,12 @@ Todas as cópias de legenda geradas são auditadas com
 qualquer palavra proibida de `forbiddenClaims`/`forbiddenUiElements` aparecer,
 o script aborta e não grava o pacote parcial.
 
-### Tabela consolidada de URLs (8 campanhas × 3 canais = 24 URLs)
+### Tabela consolidada de URLs (visão histórica: 8 campanhas × 3 canais = 24 URLs de lançamento)
+
+> A tabela abaixo é um recorte histórico gerado quando o acervo tinha 8 campanhas.
+> A matriz completa e vigente (5 tenants, 14 campanhas, 56 slots) é exportada
+> linha a linha em `04-legendas/matriz-utm-consolidada.csv`, gerada por
+> `tools/campaign_calendar.py` — essa é a fonte da verdade.
 
 | Tenant | Campanha (slug) | Canal | URL rastreada |
 |--------|-----------------|-------|---------------|
@@ -285,7 +291,7 @@ o script aborta e não grava o pacote parcial.
 
 ### 6.1 Matriz de reaproveitamento — Onda 2 (Feed 1:1 e Vídeo 16:9)
 
-A Onda 2 do calendário editorial (seção 7) reaproveita cada uma das 8 campanhas
+A Onda 2 do calendário editorial (seção 7) reaproveita cada uma das 14 campanhas
 em UM slot adicional, alternando Instagram Feed 1:1 e YouTube Vídeo 16:9. O
 `utm_content` muda para identificar o derivado (`repurpose-1x1` / `repurpose-16x9`)
 e o `utm_medium` acompanha o formato (`feed` / `video`):
@@ -301,9 +307,10 @@ e o `utm_medium` acompanha o formato (`feed` / `video`):
 | multitrack-hub | camp-shorts-rateios-002 | Instagram Feed | 1:1 | https://multitrackhub.com.br/?utm_source=instagram&utm_medium=feed&utm_campaign=camp-shorts-rateios-002&utm_content=repurpose-1x1 |
 | multitrack-hub | camp-shorts-stems-workflow-003 | YouTube Vídeo | 16:9 | https://multitrackhub.com.br/?utm_source=youtube&utm_medium=video&utm_campaign=camp-shorts-stems-workflow-003&utm_content=repurpose-16x9 |
 
-Combinando a tabela da seção 6 (24 URLs de lançamento) com esta (8 URLs de
-reaproveitamento), a matriz completa soma **32 URLs rastreadas** — exatamente os
-32 slots do calendário editorial, exportadas linha a linha em
+Combinando os lançamentos da seção 6 com os reaproveitamentos desta seção, a
+matriz vigente soma **56 URLs rastreadas** (14 campanhas × 3 canais de
+lançamento + 14 reaproveitamentos) — exatamente os 56 slots do calendário
+editorial de 7 semanas, exportadas linha a linha em
 `04-legendas/matriz-utm-consolidada.csv`.
 
 > [!IMPORTANT]
@@ -318,13 +325,13 @@ reaproveitamento), a matriz completa soma **32 URLs rastreadas** — exatamente 
 A partir da versão 1.3, o cronograma editorial das campanhas publicáveis é gerado
 por `tools/campaign_calendar.py`, que lê os tenants em `tenants/*/` (brand-kit +
 guardrails) e os pacotes em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/`
-(checklist-publicacao.json e legendas por canal) e distribui as 8 campanhas em
-4 semanas, em duas ondas:
+(checklist-publicacao.json e legendas por canal) e distribui as 14 campanhas (5
+tenants) em um calendário de 7 semanas (56 slots), em duas ondas:
 
-**Onda 1 — lançamento (semanas 1-2, 24 slots 9:16)**
+**Onda 1 — lançamento (slots 9:16)**
 
 - Cada campanha cobre os 3 canais (YouTube Shorts, Instagram Reels, Facebook
-  Reels) — 8 campanhas × 3 canais = 24 slots.
+  Reels).
 - Janelas fixas por canal (BRT): YouTube 12:00-13:00, Instagram 18:30-19:30,
   Facebook 20:00-21:00.
 - Regras duras, validadas por testes automatizados:
@@ -364,34 +371,38 @@ guardrails) e os pacotes em `04-legendas/pacotes-publicacao/<tenantId>/<slug>/`
 python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4
 
 # Saída JSON com hashes SHA-256 dos arquivos gerados
-python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 7 --json
 ```
 
 ### Saídas
 
-- `04-legendas/calendario-editorial.json`: 32 slots estruturados (`slotId`,
+- `04-legendas/calendario-editorial.json`: 56 slots estruturados (`slotId`,
   `onda`, `semana`, `dataSugerida`, `diaSemana`, `janelaHorarioBrt`,
   `tenantId`, `brandName`, `slug`, `preset`, `audioPolicy`, `canal`,
   `formatoVideo`, `hookVarianteA`, `hookVarianteB`, `utmParams`, `utmUrl`,
   `checklistPrePublicacao`, `statusEditorial`, `autoPublish`) mais
   metadados consolidados, regras aplicadas e métricas por tenant/canal.
 - `04-legendas/calendario-editorial.md`: resumo executivo por tenant e por
-  canal, cronograma visual das 4 semanas, checklist de operação manual
+  canal, cronograma visual das 7 semanas, checklist de operação manual
   pré-publicação (incluindo o lembrete de locução externa para os tenants
   `-an` e a confirmação de analytics ativa) e a tabela de URLs UTM por campanha.
-- `04-legendas/matriz-utm-consolidada.csv`: 32 linhas com 20 colunas
+- `04-legendas/matriz-utm-consolidada.csv`: 56 linhas com 20 colunas
   padronizadas (`slot_id` a `auto_publish`), UTF-8 com fim de linha LF, pronta
   para Google Sheets/Excel/Looker Studio.
 
-### Cronograma vigente (gerado em 2026-11-19, início 2026-11-23, 4 semanas)
+### Cronograma vigente (início 2026-11-23, 7 semanas, 56 slots)
 
-| Semana | Período | Onda | Slots | Conteúdo |
-|--------|---------|------|-------|----------|
-| 1 | 2026-11-23 a 2026-11-28 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
-| 2 | 2026-11-30 a 2026-12-05 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
-| 3 | 2026-12-07 a 2026-12-12 | 2 | 6 | Reaproveitamentos 1:1 / 16:9 |
-| 4 | 2026-12-14 a 2026-12-15 | 2 | 2 | Reaproveitamentos 1:1 / 16:9 |
+| Semana | Onda | Slots | Conteúdo |
+|--------|------|-------|----------|
+| 1 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
+| 2 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
+| 3 | 1 | 12 | Lançamentos 9:16 (YouTube Shorts, Instagram Reels, Facebook Reels) |
+| 4 | 2 | 6 | Reaproveitamentos 1:1 / 16:9 |
+| 5 | 2 | 6 | Reaproveitamentos 1:1 / 16:9 |
+| 6 | 2 | 6 | Reaproveitamentos 1:1 / 16:9 |
+| 7 | 2 | 2 | Reaproveitamentos 1:1 / 16:9 |
 
+> Total: 56 slots (Onda 1: 42, Onda 2: 14) cobrindo 2026-11-23 a 2027-01-05.
 > A fonte da verdade é `04-legendas/calendario-editorial.json`; regenerar com
 > outra data inicial substitui o cronograma vigente.
 
@@ -406,6 +417,7 @@ python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json
 | 2026-11-18 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário editorial automatizado (campaign_calendar.py), matriz UTM consolidada de 8 campanhas × 3 canais (24 URLs) e passo a passo de analytics (GA4/Plausible/Umami) |
 | 2026-11-19 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário v2 (4 semanas, 32 slots em 2 ondas, hooks A/B, matriz-utm-consolidada.csv), convenção multi-tenant da seção 2, matriz de reaproveitamento da seção 6.1 e guia de leitura dos UTMs (seção 5.2) |
 | 2026-11-21 | Arquitetura de Documentação | Seção 9 com as 3 decisões pendentes do titular e os critérios de ativação dos links UTM; vínculo com o checklist de decisões |
+| 2026-11-21 | Agente 8 | Portfólio atualizado para 5 tenants / 14 campanhas / calendário de 7 semanas (56 slots); seção 9.2 e verificação única passam a usar `python tools/release_check.py` |
 
 ---
 
@@ -433,6 +445,7 @@ Enquanto qualquer critério faltar, mantém-se a marcação `<!-- rastreamento: 
 ### 9.2 Verificação única recomendada
 
 ```bash
+python tools/release_check.py --skip-ts
 python tools/utm_simulator.py --json
 python tools/editorial_qa.py --all --strict --json
 python tools/release_audit.py --strict --json

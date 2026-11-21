@@ -84,6 +84,18 @@ CALENDAR_MD_REL = os.path.join("04-legendas", "calendario-editorial.md")
 UTM_CSV_REL = os.path.join("04-legendas", "matriz-utm-consolidada.csv")
 PUBLICACAO_ROOT = os.path.join("04-legendas", "pacotes-publicacao")
 
+# Comparativo de hooks A/B (configurado em utm_report_importer.py).
+HOOK_COMPARISON_KEY = "hookComparison"
+HOOK_RECOMENDADO_FIELD = "hookRecomendado"
+HOOK_JUSTIFICATIVA_FIELD = "hookRecomendadoJustificativa"
+HOOK_SEM_DADOS = "testar_ab"
+HOOK_CLASSIFICACOES = (
+    "vencedor_A",
+    "vencedor_B",
+    "empate_tecnico",
+    "amostra_insuficiente",
+)
+
 WEEKS_DEFAULT = 4
 CAMPAIGNS_PER_LANE = 2
 CHANNEL_SPACING_HOURS = 48
@@ -522,8 +534,149 @@ def _build_metrics(campaigns: list[dict], slots: list[dict]) -> dict:
     }
 
 
-def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = ".") -> dict:
-    """Constrói o calendário editorial completo (sem gravar em disco)."""
+def load_utm_report(root_real: str, utm_report: str | None) -> dict | None:
+    """Carrega um relatorio UTM (`utm-performance-report.json`) confinado a raiz.
+
+    Devolve o indice de comparativos por tenant/campanha ou None quando nenhum
+    caminho e informado. O relatorio precisa ser saida de
+    `tools/utm_report_importer.py`, com `rankings.hookComparison`.
+    """
+    if not utm_report:
+        return None
+    report_path = os.path.realpath(os.path.join(root_real, utm_report))
+    if not render_local.contained(root_real, report_path):
+        raise CampaignCalendarError(
+            f"UTM_REPORT_FORA_DA_RAIZ: {utm_report} (fora de {root_real})"
+        )
+    if not os.path.isfile(render_local.fs_path(report_path)):
+        raise CampaignCalendarError(f"UTM_REPORT_AUSENTE: {utm_report}")
+    try:
+        with open(render_local.fs_path(report_path), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise CampaignCalendarError(f"UTM_REPORT_INVALIDO: {utm_report}: {exc}") from exc
+
+    rankings = data.get("rankings") if isinstance(data, dict) else None
+    comparison = rankings.get(HOOK_COMPARISON_KEY) if isinstance(rankings, dict) else None
+    if not isinstance(comparison, dict):
+        raise CampaignCalendarError(
+            f"UTM_REPORT_SEM_COMPARATIVO: {utm_report} nao possui rankings.{HOOK_COMPARISON_KEY}"
+        )
+    by_campaign = comparison.get("byCampaign")
+    if not isinstance(by_campaign, list):
+        raise CampaignCalendarError(
+            f"UTM_REPORT_SEM_COMPARATIVO: {utm_report} sem rankings.{HOOK_COMPARISON_KEY}.byCampaign"
+        )
+
+    index: dict[tuple[str, str], dict] = {}
+    for row in by_campaign:
+        if not isinstance(row, dict):
+            continue
+        tenant = row.get("tenantId")
+        campaign = row.get("campaign")
+        classification = row.get("classification")
+        if tenant is None or campaign is None:
+            continue
+        index[(str(tenant), str(campaign))] = {
+            "classification": classification,
+            "sessionsA": row.get("sessionsA"),
+            "sessionsB": row.get("sessionsB"),
+            "conversionRateA": row.get("conversionRateA"),
+            "conversionRateB": row.get("conversionRateB"),
+            "liftConversionPct": row.get("liftConversionPct"),
+            "minSessions": comparison.get("minSessions"),
+        }
+
+    return {
+        "path": render_local.rel(root_real, report_path),
+        "minSessions": comparison.get("minSessions"),
+        "byCampaign": index,
+    }
+
+
+def _recommendation(comparison: dict | None) -> tuple[str, str]:
+    """Traduz um comparativo A/B em (hookRecomendado, justificativa objetiva)."""
+    if not comparison or comparison.get("classification") not in HOOK_CLASSIFICACOES:
+        return (
+            HOOK_SEM_DADOS,
+            "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; "
+            "manter teste A/B.",
+        )
+
+    classification = comparison["classification"]
+    rate_a = comparison.get("conversionRateA")
+    rate_b = comparison.get("conversionRateB")
+    sessions_a = comparison.get("sessionsA")
+    sessions_b = comparison.get("sessionsB")
+    lift = comparison.get("liftConversionPct")
+    min_sessions = comparison.get("minSessions")
+    total = None
+    if isinstance(sessions_a, (int, float)) and isinstance(sessions_b, (int, float)):
+        total = sessions_a + sessions_b
+    lift_text = "n/d" if lift is None else f"{lift}%"
+    total_text = "n/d" if total is None else f"{total}"
+
+    if classification == "vencedor_A":
+        return (
+            "A",
+            f"Hook A venceu no relatorio UTM: CVR {rate_a}% vs {rate_b}% "
+            f"(lift de B {lift_text}, {total_text} sessoes comparadas).",
+        )
+    if classification == "vencedor_B":
+        return (
+            "B",
+            f"Hook B venceu no relatorio UTM: CVR {rate_b}% vs {rate_a}% "
+            f"(lift de B {lift_text}, {total_text} sessoes comparadas).",
+        )
+    if classification == "empate_tecnico":
+        return (
+            HOOK_SEM_DADOS,
+            f"Empate tecnico no relatorio UTM: CVR {rate_a}% vs {rate_b}% "
+            f"(lift {lift_text}, {total_text} sessoes comparadas).",
+        )
+    return (
+        HOOK_SEM_DADOS,
+        f"Amostra insuficiente no relatorio UTM: {total_text} sessoes comparadas "
+        f"(minimo {min_sessions}); manter teste A/B.",
+    )
+
+
+def _apply_utm_recommendations(calendar: dict, utm_report: dict | None) -> dict:
+    """Ancora `hookRecomendado` e justificativa nos slots do calendario."""
+    for slot in calendar["slots"]:
+        comparison = None
+        if utm_report is not None:
+            key = (slot["tenantId"], slot["slug"])
+            comparison = utm_report["byCampaign"].get(key)
+        recommended, justification = _recommendation(comparison)
+        slot[HOOK_RECOMENDADO_FIELD] = recommended
+        slot[HOOK_JUSTIFICATIVA_FIELD] = justification
+    calendar["utmReport"] = (
+        {
+            "path": utm_report["path"],
+            "minSessions": utm_report["minSessions"],
+            "aplicado": True,
+        }
+        if utm_report is not None
+        else None
+    )
+    return calendar
+
+
+def build_editorial_calendar(
+    start_date: str,
+    weeks: int = WEEKS_DEFAULT,
+    root: str = ".",
+    utm_report: str | None = None,
+) -> dict:
+    """Constrói o calendário editorial completo (sem gravar em disco).
+
+    Quando `utm_report` e informado (caminho relativo a raiz de um
+    `utm-performance-report.json`), cada slot recebe `hookRecomendado`
+    (`A`, `B` ou `testar_ab`) e uma justificativa objetiva baseada no
+    comparativo A/B. Sem `utm_report` a saida e deterministicamente
+    `testar_ab` para todos os slots.
+    """
     root_real = os.path.realpath(root)
     try:
         start = datetime.date.fromisoformat(start_date)
@@ -606,7 +759,7 @@ def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: 
         slot["slotId"] = f"slot-{index:03d}"
 
     tenants_used = sorted({campaign["tenantId"] for campaign in campaigns})
-    return {
+    calendar = {
         "schemaVersion": 2,
         "generatedBy": "tools/campaign_calendar.py",
         "startDate": start.isoformat(),
@@ -640,6 +793,9 @@ def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: 
         "metrics": _build_metrics(campaigns, slots),
         "slots": slots,
     }
+
+    utm_report_data = load_utm_report(root_real, utm_report)
+    return _apply_utm_recommendations(calendar, utm_report_data)
 
 
 def _channel_label(slot: dict) -> str:
@@ -684,6 +840,11 @@ def _render_md(calendar: dict) -> str:
         "> Status editorial: `aguardando_aprovacao_titular` — nenhuma publicação sem "
         "aprovação expressa do titular."
     )
+    if calendar.get("utmReport"):
+        lines.append(
+            f"> Hook recomendado ancorado no relatorio UTM `{calendar['utmReport']['path']}` "
+            f"(limiar de {calendar['utmReport']['minSessions']} sessoes)."
+        )
     lines.append("")
 
     lines.append("## 1. Resumo executivo")
@@ -895,9 +1056,16 @@ def write_calendar(calendar: dict, root: str = ".") -> dict:
     return outputs
 
 
-def generate_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = ".") -> dict:
+def generate_calendar(
+    start_date: str,
+    weeks: int = WEEKS_DEFAULT,
+    root: str = ".",
+    utm_report: str | None = None,
+) -> dict:
     """Constrói, audita e grava o calendário editorial. Devolve o resumo."""
-    calendar = build_editorial_calendar(start_date, weeks=weeks, root=root)
+    calendar = build_editorial_calendar(
+        start_date, weeks=weeks, root=root, utm_report=utm_report
+    )
     outputs = write_calendar(calendar, root=root)
     return {
         "ok": True,
@@ -910,6 +1078,7 @@ def generate_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = "
         "totalSlots": calendar["totalSlots"],
         "guardrailsAudited": calendar["guardrailsAudited"],
         "guardrailViolations": calendar["guardrailViolations"],
+        "utmReport": calendar["utmReport"],
         "outputs": outputs,
     }
 
@@ -925,6 +1094,11 @@ def main(argv: list[str] | None = None) -> int:
         "--weeks", type=int, default=WEEKS_DEFAULT, help="Semanas do cronograma (padrao 4)"
     )
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    parser.add_argument(
+        "--utm-report",
+        default=None,
+        help="Caminho (relativo a raiz) de um utm-performance-report.json com hookComparison",
+    )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
     args = parser.parse_args(argv)
 
@@ -938,7 +1112,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        result = generate_calendar(args.start_date, weeks=args.weeks, root=args.root)
+        result = generate_calendar(
+            args.start_date, weeks=args.weeks, root=args.root, utm_report=args.utm_report
+        )
     except CampaignCalendarError as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1

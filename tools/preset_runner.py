@@ -12,6 +12,9 @@ atomicamente; qualquer falha preserva a entrega anterior):
     (tenantId, preset, hashes SHA-256 de todos os artefatos e saida ffprobe).
 Copia do .mp4 em .workspace/archives/<slug>/ (*.mp4 e .workspace/ estao no
 .gitignore; o manifesto preserva hash, ffprobe e comando reproduzivel).
+O parametro ``archives_dir`` / ``--archives-dir`` redireciona toda leitura e
+gravacao de MP4 arquivado para um diretorio alternativo confinado a raiz
+(usado pelos testes para nunca tocar nos masters compartilhados).
 
 Ponto unico de entrada para brandKit, guardrails e fixture:
     ctx = tenant_validator.load_and_validate_tenant(tenant_id, root=REPO_ROOT, strict=True)
@@ -40,6 +43,7 @@ import struct
 import subprocess
 import sys
 import zlib
+from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -993,8 +997,41 @@ def _audit_texts(texts: list[tuple[str, str]], guardrails: dict) -> list[str]:
 # ===========================================================================
 # Pipeline principal
 # ===========================================================================
+def resolve_archives_dir(root_real: str, archives_dir: Path | str | None = None,
+                         create: bool = True) -> str:
+    """Resolve o diretorio de archives da execucao (raiz que contem <slug>/).
+
+    ``None`` preserva o comportamento historico (``<workspace>/archives`` no
+    checkout principal). Um valor explicito e confinado a raiz do projeto e
+    usado para TODA leitura/gravacao de MP4 arquivado, sem tocar no diretorio
+    compartilhado.
+    """
+    if archives_dir is None:
+        return resolve_default_archives_dir(root_real, create=create)
+    raw = str(archives_dir)
+    candidate = raw if os.path.isabs(raw) else os.path.join(root_real, raw.replace("/", os.sep))
+    resolved = os.path.realpath(candidate)
+    if not render_local.contained(root_real, resolved):
+        raise PresetRunnerError(
+            "ARCHIVES_FORA_DA_RAIZ: archives-dir deve ficar sob a raiz do projeto")
+    if os.path.exists(render_local.fs_path(resolved)) and not os.path.isdir(render_local.fs_path(resolved)):
+        raise PresetRunnerError("ARCHIVES_INVALIDO: archives-dir nao e um diretorio")
+    if create:
+        os.makedirs(render_local.fs_path(resolved), exist_ok=True)
+    return resolved
+
+
+def resolve_default_archives_dir(root_real: str, create: bool = True) -> str:
+    """``<raiz>/.workspace/archives`` (comportamento historico da ferramenta)."""
+    base = os.path.join(root_real, ".workspace", "archives")
+    if create:
+        os.makedirs(render_local.fs_path(base), exist_ok=True)
+    return os.path.realpath(base)
+
+
 def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
-                        audio_path: str | None = None, root: str = ".") -> dict:
+                        audio_path: str | None = None, root: str = ".",
+                        archives_dir: Path | str | None = None) -> dict:
     """Executa o pipeline completo de um preset e devolve o manifesto."""
     root_real = os.path.realpath(root)
     render_local.ensure_video_tools(root_real)
@@ -1098,7 +1135,8 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
     storyboard_dest = os.path.join(output_abs, storyboard_name)
     manifest_dest = os.path.join(output_abs, manifest_name)
 
-    archive_dir = os.path.join(root_real, ".workspace", "archives", slug)
+    archive_root = resolve_archives_dir(root_real, archives_dir)
+    archive_dir = os.path.join(archive_root, slug)
     archive_video_dest = os.path.join(archive_dir, video_name)
 
     staging_dir = os.path.join(root_real, ".workspace", "tmp", f"preset-runner-{slug}")
@@ -1184,6 +1222,8 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
                 f"--config {render_local.rel(root_real, config_abs)} "
                 f"--output-dir {render_local.rel(root_real, output_abs)}"
                 + (f" --audio {render_local.rel(root_real, os.path.realpath(audio_path))}" if audio_path else "")
+                + (f" --archives-dir {render_local.rel(root_real, archive_root)}"
+                   if archives_dir is not None else "")
             ),
             "tools": {
                 "ffmpeg": render_local.tool_version(build_video.get_ffmpeg()),
@@ -1223,6 +1263,9 @@ def run_preset_pipeline(tenant_id: str, config_path: str, output_dir: str,
                 },
             },
         }
+        motion_plan = config.get("motionPlan")
+        if isinstance(motion_plan, dict) and motion_plan.get("schemaVersion") == 1:
+            manifest["motionPlan"] = motion_plan
         render_local.write_text(paths["manifest"], json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 
     # ------------------------------------------------------------------
@@ -1264,13 +1307,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-dir", required=True, help="Diretorio de destino dos artefatos")
     parser.add_argument("--audio", default=None, help="Caminho para trilha de audio externa (somente se allowAudioTrack=true)")
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    parser.add_argument(
+        "--archives-dir", default=None,
+        help="Diretorio de archives alternativo (exclusivo desta execucao; confinado a raiz)",
+    )
     parser.add_argument("--json", action="store_true", help="Emite o manifesto JSON no stdout")
     args = parser.parse_args(argv)
 
     try:
         manifest = run_preset_pipeline(
             args.tenant, args.config, args.output_dir,
-            audio_path=args.audio, root=args.root,
+            audio_path=args.audio, root=args.root, archives_dir=args.archives_dir,
         )
     except PresetRunnerError as exc:
         print(f"Erro: {exc}", file=sys.stderr)

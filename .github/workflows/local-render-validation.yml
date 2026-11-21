@@ -97,7 +97,19 @@ jobs:
         run: |
           npm ci
           npm run build
+          npm test
           test -f dist/src/validate-local-render-input.js
+
+      - name: Verificacao unica de release (tools/release_check.py)
+        # Orquestra os gates oficiais com as flags reais de cada ferramenta:
+        # higiene Git + autoPublish:false, contratos (5 tenants), editorial
+        # (14 campanhas/7 lentes), workspace_doctor, release_audit --strict
+        # (7/7 dominios) e a suite E2E. O build/teste TypeScript ja rodou no
+        # passo anterior, portanto --skip-ts evita recompilar em dobro.
+        env:
+          PYTHONUTF8: '1'
+        run: |
+          python tools/release_check.py --skip-ts --json
 
       - name: Validar contratos multi-tenant e suites da fabrica (Etapas 2 a 6)
         run: |

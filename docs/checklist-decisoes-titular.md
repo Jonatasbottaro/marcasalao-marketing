@@ -105,6 +105,7 @@ python tools/utm_report_importer.py --json
 ### Verificação única
 
 ```bash
+python tools/release_check.py --skip-ts
 python tools/tenant_validator.py --all --json
 python tools/editorial_qa.py --all --strict --json
 python tools/release_audit.py --strict --json

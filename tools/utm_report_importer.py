@@ -107,6 +107,14 @@ DETECTION_MARKERS: dict[str, dict[str, int]] = {
 
 HOOK_COLUMNS = ("hook_variant_used", "hook variant used", "hook_variant", "hook")
 
+HOOK_COMPARISON_LABELS = {
+    "vencedor_A": "vencedor A",
+    "vencedor_B": "vencedor B",
+    "empate_tecnico": "empate tecnico",
+    "amostra_insuficiente": "amostra insuficiente",
+}
+DEFAULT_MIN_SESSIONS = 100
+
 
 class UtmReportError(Exception):
     """Erro controlado do importador (entrada, provedor, calendario ou caminho)."""
@@ -460,6 +468,149 @@ def _rank(groups: list[dict]) -> list[dict]:
     )
 
 
+def _compare_hooks(
+    slots: list[dict],
+    by_tenant: dict[str, dict],
+    by_channel: dict[str, dict],
+    min_sessions: int = DEFAULT_MIN_SESSIONS,
+) -> dict:
+    """Compara Hook A x Hook B por tenant e por campanha, com lift e classificacao."""
+
+    def empty() -> dict:
+        return {"A": _empty_group("hook", "A"), "B": _empty_group("hook", "B")}
+
+    groups: dict[tuple[str, str], dict] = {}
+
+    def ensure(tenant: str, campaign: str) -> dict:
+        key = (tenant, campaign)
+        entry = groups.get(key)
+        if entry is None:
+            entry = {"tenantId": tenant, "campaign": campaign, "A": _empty_group("hook", "A"), "B": _empty_group("hook", "B")}
+            groups[key] = entry
+        return entry
+
+    for slot in slots:
+        entry = ensure(slot["tenantId"], slot["slug"])
+        variant = slot.get("hookVariant") or ""
+        if variant in ("A", "B"):
+            side = entry[variant]
+            side["sessions"] += float(slot["sessions"])
+            side["engagedSessions"] += float(slot["engagedSessions"])
+            side["conversions"] += float(slot["conversions"])
+            side["slots"] += 1
+
+    for entry in groups.values():
+        for side in ("A", "B"):
+            group = entry[side]
+            group["label"] = f"Hook {side}"
+            _finalize_group(group)
+
+    # Campanhas sem nenhuma sessao atribuida a A ou B nao entram no comparativo:
+    # sem variante medida nao ha o que classificar.
+    active = [entry for entry in groups.values() if entry["A"]["sessions"] or entry["B"]["sessions"]]
+
+    def finalize(entry: dict) -> dict:
+        sessions_a = entry["A"]["sessions"]
+        sessions_b = entry["B"]["sessions"]
+        sessions_total = sessions_a + sessions_b
+        conversions_a = entry["A"]["conversions"]
+        conversions_b = entry["B"]["conversions"]
+        rate_a = entry["A"]["conversionRatePct"]
+        rate_b = entry["B"]["conversionRatePct"]
+        engaged_a = entry["A"]["engagedRatePct"]
+        engaged_b = entry["B"]["engagedRatePct"]
+        lift_conversion = _rate(rate_b - rate_a, rate_a) if rate_a else None
+        lift_engagement = _rate(engaged_b - engaged_a, engaged_a) if engaged_a else None
+
+        if sessions_total < min_sessions:
+            classification = "amostra_insuficiente"
+        elif rate_a == rate_b:
+            classification = "empate_tecnico"
+        elif rate_b > rate_a:
+            classification = "vencedor_B"
+        else:
+            classification = "vencedor_A"
+
+        return {
+            "tenantId": entry["tenantId"],
+            "campaign": entry["campaign"],
+            "sessionsA": sessions_a,
+            "sessionsB": sessions_b,
+            "sessionsTotal": sessions_total,
+            "conversionsA": conversions_a,
+            "conversionsB": conversions_b,
+            "conversionRateA": rate_a,
+            "conversionRateB": rate_b,
+            "engagedRateA": engaged_a,
+            "engagedRateB": engaged_b,
+            "liftConversionPct": lift_conversion,
+            "liftEngagementPct": lift_engagement,
+            "slotsA": entry["A"]["slots"],
+            "slotsB": entry["B"]["slots"],
+            "classification": classification,
+            "classificationLabel": HOOK_COMPARISON_LABELS[classification],
+        }
+
+    rows = sorted((finalize(entry) for entry in active), key=lambda row: (row["tenantId"], row["campaign"]))
+
+    tenants = sorted({row["tenantId"] for row in rows})
+    tenant_rows: list[dict] = []
+    for tenant in tenants:
+        group_a = _empty_group("tenantId", tenant)
+        group_b = _empty_group("tenantId", tenant)
+        count = 0
+        for row in rows:
+            if row["tenantId"] != tenant:
+                continue
+            count += 1
+            for side, acc in (("A", group_a), ("B", group_b)):
+                source = row[f"conversionRate{side}"]
+                sessions = row[f"sessions{side}"]
+                if sessions:
+                    acc["conversions"] += row[f"conversions{side}"]
+                    acc["sessions"] += sessions
+                    acc["engagedSessions"] += row[f"engagedRate{side}"] / 100 * sessions
+        if count:
+            _finalize_group(group_a)
+            _finalize_group(group_b)
+            total = group_a["sessions"] + group_b["sessions"]
+            if total < min_sessions:
+                classification = "amostra_insuficiente"
+            elif group_a["conversionRatePct"] == group_b["conversionRatePct"]:
+                classification = "empate_tecnico"
+            elif group_b["conversionRatePct"] > group_a["conversionRatePct"]:
+                classification = "vencedor_B"
+            else:
+                classification = "vencedor_A"
+            tenant_rows.append(
+                {
+                    "tenantId": tenant,
+                    "campaigns": count,
+                    "sessionsA": group_a["sessions"],
+                    "sessionsB": group_b["sessions"],
+                    "sessionsTotal": total,
+                    "conversionRateA": group_a["conversionRatePct"],
+                    "conversionRateB": group_b["conversionRatePct"],
+                    "engagedRateA": group_a["engagedRatePct"],
+                    "engagedRateB": group_b["engagedRatePct"],
+                    "liftConversionPct": _rate(
+                        group_b["conversionRatePct"] - group_a["conversionRatePct"],
+                        group_a["conversionRatePct"],
+                    )
+                    if group_a["conversionRatePct"]
+                    else None,
+                    "classification": classification,
+                    "classificationLabel": HOOK_COMPARISON_LABELS[classification],
+                }
+            )
+
+    return {
+        "minSessions": min_sessions,
+        "byCampaign": rows,
+        "byTenant": tenant_rows,
+    }
+
+
 def analyze_performance(
     root: str = ".",
     metrics_csv: str | None = None,
@@ -467,10 +618,13 @@ def analyze_performance(
     hook_log: str | None = None,
     calendar: str | None = None,
     out_dir: str = DEFAULT_OUT_DIR,
+    min_sessions: int = DEFAULT_MIN_SESSIONS,
 ) -> dict:
     """Ingere o CSV, cruza com o calendario e grava o relatorio executivo."""
     if not metrics_csv:
         raise UtmReportError("USO_INVALIDO: informe --metrics-csv ou --generate-template")
+    if min_sessions < 0:
+        raise UtmReportError(f"LIMIAR_INVALIDO: --min-hook-sessions nao pode ser negativo ({min_sessions})")
     root_real = _root_real(root)
     calendar_data = load_calendar(root_real, calendar)
     hooks = load_hook_log(root_real, hook_log)
@@ -569,6 +723,9 @@ def analyze_performance(
         _finalize_group(group)
 
     hook_rows = [by_hook[key] for key in sorted(by_hook)]
+    hook_comparison = _compare_hooks(
+        slot_results, by_tenant, by_channel, min_sessions=min_sessions
+    )
     data_quality = {
         "invalidRows": metrics["invalidRows"],
         "duplicateCalendarKeys": calendar_data["duplicates"],
@@ -604,6 +761,7 @@ def analyze_performance(
             "byChannel": _rank(list(by_channel.values())),
             "byWave": _rank(list(by_wave.values())),
             "byHook": hook_rows,
+            "hookComparison": hook_comparison,
         },
         "slots": slot_results,
         "unmatchedRows": unmatched,
@@ -676,6 +834,35 @@ def render_markdown(report: dict) -> str:
         ))
     else:
         lines.append("Sem `hook_variant_used` no CSV nem `--hook-log`; comparativo indisponivel.")
+    lines.extend(["", "## Comparativo de hooks A x B", ""])
+    comparison = report["rankings"]["hookComparison"]
+    lines.append(
+        f"- Limiar de amostra: {comparison['minSessions']} sessoes por comparativo "
+        "(abaixo disso => `amostra_insuficiente`)"
+    )
+    if comparison["byCampaign"]:
+        lines.extend(_table(
+            ["Tenant", "Campanha", "Sessoes A", "Sessoes B", "CVR A", "CVR B",
+             "Lift conversao", "Lift engajamento", "Classificacao"],
+            [[f"`{row['tenantId']}`", f"`{row['campaign']}`", row["sessionsA"], row["sessionsB"],
+              f"{row['conversionRateA']}%", f"{row['conversionRateB']}%",
+              ("n/d" if row["liftConversionPct"] is None else f"{row['liftConversionPct']}%"),
+              ("n/d" if row["liftEngagementPct"] is None else f"{row['liftEngagementPct']}%"),
+              f"`{row['classification']}`"]
+             for row in comparison["byCampaign"]],
+        ))
+    else:
+        lines.append("Sem sessoes com variante de hook; comparativo A/B indisponivel.")
+    if comparison["byTenant"]:
+        lines.extend(["", "### Comparativo por tenant", ""])
+        lines.extend(_table(
+            ["Tenant", "Campanhas", "Sessoes A", "Sessoes B", "CVR A", "CVR B", "Lift", "Classificacao"],
+            [[f"`{row['tenantId']}`", row["campaigns"], row["sessionsA"], row["sessionsB"],
+              f"{row['conversionRateA']}%", f"{row['conversionRateB']}%",
+              ("n/d" if row["liftConversionPct"] is None else f"{row['liftConversionPct']}%"),
+              f"`{row['classification']}`"]
+             for row in comparison["byTenant"]],
+        ))
     lines.extend(["", "## Trafego nao atribuido", ""])
     if report["unmatchedRows"]:
         lines.extend(_table(
@@ -773,6 +960,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--out-dir", default=DEFAULT_OUT_DIR, help="Diretorio dos relatorios")
     parser.add_argument(
+        "--min-hook-sessions",
+        type=int,
+        default=DEFAULT_MIN_SESSIONS,
+        help=f"Limiar de sessoes do comparativo A/B (padrao {DEFAULT_MIN_SESSIONS})",
+    )
+    parser.add_argument(
         "--generate-template", default=None, help="Gera CSV modelo preenchivel neste caminho"
     )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
@@ -796,6 +989,7 @@ def main(argv: list[str] | None = None) -> int:
             hook_log=args.hook_log,
             calendar=args.calendar,
             out_dir=args.out_dir,
+            min_sessions=args.min_hook_sessions,
         )
     except (UtmReportError, OSError, ValueError) as exc:
         if args.json:

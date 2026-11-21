@@ -29,10 +29,9 @@ class TenantContractsTest(unittest.TestCase):
 
     def test_01_core_tenants_pass_contract_validation(self) -> None:
         discovered = tenant_validator.list_tenants(REPO_ROOT)
-        # Contagem minima dos quatro tenants originais: a suite deve passar tanto na
-        # worktree com 4 tenants quanto apos a integracao do clinica-vital (5 tenants).
-        self.assertGreaterEqual(len(discovered), 4)
-        for expected in ("estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"):
+        # Portfolio consolidado: 5 tenants (incluindo clinica-vital).
+        self.assertEqual(len(discovered), 5)
+        for expected in ("clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"):
             self.assertIn(expected, discovered)
 
         ef = tenant_validator.load_and_validate_tenant("estudio-flow", root=REPO_ROOT, strict=True)
@@ -60,6 +59,13 @@ class TenantContractsTest(unittest.TestCase):
         self.assertEqual(mth["brandKit"]["defaultPreset"], "shorts-completo")
         self.assertTrue(mth["guardrails"]["audioPolicy"]["allowAudioTrack"])
         self.assertTrue(mth["guardrails"]["audioPolicy"]["requireSrt"])
+
+        cv = tenant_validator.load_and_validate_tenant("clinica-vital", root=REPO_ROOT, strict=True)
+        self.assertTrue(cv["ok"])
+        self.assertEqual(cv["brandKit"]["monogram"], "CV")
+        self.assertEqual(cv["brandKit"]["defaultPreset"], "saas-demo")
+        self.assertFalse(cv["guardrails"]["audioPolicy"]["allowAudioTrack"])
+        self.assertTrue(cv["guardrails"]["audioPolicy"]["requireSrt"])
 
     def test_02_marca_salao_brand_kit_and_fixture_sync_with_pilot(self) -> None:
         kit = self._load_json("tenants/marca-salao/brand-kit.json")
@@ -182,14 +188,13 @@ class TenantContractsTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertGreaterEqual(len(payload["tenants"]), 4)
+        self.assertEqual(len(payload["tenants"]), 5)
         validated_ids = {entry["tenantId"] for entry in payload["tenants"]}
         self.assertTrue(
-            {"estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"}.issubset(validated_ids)
+            {"clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"}.issubset(validated_ids)
         )
-        if "clinica-vital" in validated_ids:
-            cv_entry = next(entry for entry in payload["tenants"] if entry["tenantId"] == "clinica-vital")
-            self.assertTrue(cv_entry["ok"])
+        for entry in payload["tenants"]:
+            self.assertTrue(entry["ok"], entry["tenantId"])
 
         with contextlib.redirect_stdout(io.StringIO()) as err_buf:
             rc_missing = tenant_validator.main(["--tenant", "inexistente", "--root", REPO_ROOT, "--json"])
@@ -451,7 +456,7 @@ class TenantContractsTest(unittest.TestCase):
         self.assertEqual(audio["ffmpegFlag"], "-an")
 
     def test_09_clinica_vital_contracts_and_campaigns_on_disk(self) -> None:
-        """Valida o tenant e as 2 campanhas no disco assim que clinica-vital existir."""
+        """Valida o tenant e as campanhas no disco (clinica-vital integrado)."""
         if not (Path(REPO_ROOT) / "tenants" / "clinica-vital").exists():
             self.skipTest("tenant clinica-vital ainda nao integrado nesta worktree")
 
@@ -478,7 +483,11 @@ class TenantContractsTest(unittest.TestCase):
 
         gr = loaded["guardrails"]
         campaigns = {}
-        for name in ("camp-saas-demo-clinica-vital-001.json", "camp-saas-demo-clinica-vital-002.json"):
+        for name in (
+            "camp-clinica-vital-002.json",
+            "camp-saas-demo-clinica-vital-001.json",
+            "camp-saas-demo-clinica-vital-002.json",
+        ):
             cfg = self._load_json(f"tenants/clinica-vital/campaigns/{name}")
             campaigns[cfg["id"]] = cfg
             self.assertEqual(cfg["tenantId"], "clinica-vital")
@@ -515,6 +524,12 @@ class TenantContractsTest(unittest.TestCase):
         reception_surfaces = [scene["surface"] for scene in reception["scenes"]]
         self.assertEqual(reception_surfaces.count("manager-agenda"), 4)
         self.assertEqual(reception_surfaces.count("public-booking"), 0)
+
+        # Campanha mista (public-booking + manager-agenda) do portfolio 14.
+        mixed = campaigns["camp-clinica-vital-002"]
+        mixed_surfaces = [scene["surface"] for scene in mixed["scenes"]]
+        self.assertIn("public-booking", mixed_surfaces)
+        self.assertIn("manager-agenda", mixed_surfaces)
 
 
 if __name__ == "__main__":

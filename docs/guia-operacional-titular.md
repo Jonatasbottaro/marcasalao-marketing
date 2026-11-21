@@ -18,9 +18,11 @@ O ferramental da Etapa 6 está sendo consolidado em paralelo por outros agentes.
 
 ```bash
 git fetch origin --prune && git pull --ff-only
-python tools/tenant_validator.py --all --json
+python tools/release_check.py --skip-ts      # gate único: contratos + editorial + doctor + release_audit + E2E
 python tools/review_dashboard.py --build --json
 ```
+
+> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` 7/7 domínios e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
 
 O `--build` reconstrói `05-review-portal/index.html`, `portal-data.json` e o `README.md` do portal. O build é determinístico e verifica os hashes SHA-256 de SRT, narração e storyboard contra o `manifest.json` de cada entrega; qualquer divergência aborta com `HASH_DIVERGENTE`. Detalhes em [05-review-portal/README.md](../05-review-portal/README.md).
 
@@ -141,8 +143,9 @@ Checklist de saída: tabela curta por tenant (campanha, canal, formato, sessões
 ## 4. Checklist rápido (copiar e colar)
 
 ```bash
-# 0. Alinhar e validar
+# 0. Alinhar e validar (gate único)
 git fetch origin --prune && git pull --ff-only
+python tools/release_check.py --skip-ts       # contratos + editorial + doctor + release_audit + E2E
 python tools/tenant_validator.py --all --json
 
 # 1. Revisar (escolha UMA via: portal ou terminal)

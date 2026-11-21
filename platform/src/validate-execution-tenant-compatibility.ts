@@ -10,6 +10,7 @@
  */
 
 import {
+    AUDIO_PERMITTED_TENANTS,
     TENANT_COMPATIBILITY_VALID_SUMMARY,
     tenantCompatibilityInvalidSummary,
     type TenantCompatibilityReport,
@@ -98,6 +99,9 @@ export function validateExecutionPackageTenantCompatibility(
             if (codec !== '' && !(policy.audioProfile.allowedCodecs as readonly string[]).includes(codec)) {
                 errors.push(issue('EXEC_AUDIO_CODEC_NOT_ALLOWED', path, `Audio codec "${codec}" is not allowed for tenant "${tenantId}".`))
                 return
+            }
+            if (codec === 'aac' && !(AUDIO_PERMITTED_TENANTS as readonly string[]).includes(tenantId)) {
+                errors.push(issue('EXEC_AUDIO_CODEC_RESTRICTED', path, 'AAC audio is restricted to the audio-permitted tenant.'))
             }
         })
     }

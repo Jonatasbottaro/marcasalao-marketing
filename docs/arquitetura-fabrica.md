@@ -86,15 +86,15 @@ tenants/<tenantId>/
     └── <slug>.json
 ```
 
-Os 5 tenants atuais (10 campanhas):
+Os 5 tenants atuais (14 campanhas, calendário de 7 semanas / 56 slots):
 
 | Tenant | Marca | Preset | Domínio | Faixa de áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
-| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibida (`-an`, narração externa obrigatória) | 2 |
-| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitida (trilha opcional via `audio_tts`) | 3 |
-| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibida | 2 |
-| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibida | 1 |
-| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibida | 2 |
+| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibida (`-an`, narração externa obrigatória) | 3 |
+| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitida (trilha opcional via `audio_tts`) | 5 |
+| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibida | 4 |
+| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibida | 3 |
+| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibida | 4 |
 
 Presets: `saas-demo` (cenas de app B2B/agenda/booking) e `shorts-completo` (hook, catálogo/projetos, métricas, cards e CTA). Fixtures não podem conter placeholders de teste técnico e, no preset `saas-demo`, devem manter as chaves estruturais lidas pelo motor (`profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota`) mesmo quando adotam nomes próprios do nicho.
 
@@ -208,7 +208,7 @@ Audita 100% das URLs UTM do `calendario-editorial.json` (e deriva a URL padrão 
 
 ### 2.17 `tools/editorial_qa.py` — auditoria editorial transversal (Agente 8, Etapa 5B)
 
-Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` sob cinco lentes independentes, 100% stdlib e somente leitura:
+Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` (14 campanhas, 7 lentes independentes), 100% stdlib e somente leitura:
 
 | Lente (`id`) | O que verifica | Código típico |
 | --- | --- | --- |
@@ -217,6 +217,8 @@ Audita todas as campanhas descobertas em `tenants/*/campaigns/*.json` sob cinco 
 | `paridade_entregas` | Presença e identidade (`tenantId`/`slug`) entre vídeo, cards estáticos (quando presentes) e pacote social | `PACOTE_SOCIAL_AUSENTE`, `CARDS_ESTATICOS_AUSENTE` (aviso), `PARIDADE_SLUG_DIVERGENTE` |
 | `guardrails_cruzados` | Re-auditoria de `forbiddenClaims`/`forbiddenUiElements` em SRT, narração e três legendas sociais | `GUARDRAIL_VIOLACAO` |
 | `integridade_utf8` | Ausência de U+FFFD e de sequências de mojibake em todos os arquivos UTF-8 auditados | `MOJIBAKE_DETECTADO`, `UTF8_INVALIDO` |
+| `coerencia_hooks_calendario` | Quando há `calendario-editorial.json`, cada campanha agendada tem `hookVarianteA`/`hookVarianteB` não vazios, distintos e livres de violações de guardrails | `HOOK_VARIANTE_AUSENTE` (erro), `HOOK_VARIANTE_IDENTICA` (aviso) |
+| `aderencia_ui_labels` | Quando `brand-kit.json` define `uiLabels`, todos os valores são strings não vazias e passam em `validate_text_against_guardrails` com UI elements habilitados | `UI_LABEL_INVALIDO` |
 
 `error` reprova sempre; `warning` reprova somente com `--strict` (é o caso das linhas de SRT acima de 48 caracteres, ainda presentes no acervo atual). CLI: `python tools/editorial_qa.py [--all | --tenant <id>] [--strict] [--json]`; API: `run_editorial_qa(root=".", strict=False, tenant=None) -> dict`, relatório `schemaVersion: 1` com `campaigns[]`, `checks[]` e `summary`. Exit codes: 0 aprovado, 1 reprovado, 2 erro de uso.
 
@@ -301,6 +303,12 @@ python tools/factory_cli.py pipeline --all --skip-render --json
 # 14. Auditoria de prontidão (qualquer estação/CI; avisos não reprovam)
 python tools/release_audit.py --json
 
+# 14a. Gate único de release: orquestra higiene Git, TS, contratos, editorial,
+#      workspace_doctor, release_audit --strict e a suíte E2E num só comando
+python tools/release_check.py
+python tools/release_check.py --skip-ts   # quando platform/ já foi compilado
+python tools/release_check.py --json      # relatório JSON no stdout
+
 # 15. Gate de release (7 domínios; avisos também reprovam)
 python tools/release_audit.py --strict --json
 
@@ -328,7 +336,7 @@ Para cadastrar um novo nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-ni
 
 ## 5. Testes e CI
 
-Suíte consolidada da fábrica — **21 módulos** (6 do núcleo de render, 3 da Etapa 2, 3 da Etapa 3, 4 da Etapa 4 e 5 da Etapa 5/5B), executada no CI (`.github/workflows/local-render-validation.yml`, etapa "Validar contratos multi-tenant e suites da fabrica (Etapas 2, 3, 4, 5 e 5B)") em `ubuntu-latest` e `windows-latest`. Os cinco módulos novos também são apanhados pela etapa de descoberta `python -m unittest discover -s tools/tests -v`:
+Suíte consolidada da fábrica — **21 módulos** (6 do núcleo de render, 3 da Etapa 2, 3 da Etapa 3, 4 da Etapa 4 e 5 da Etapa 5/5B), executada no CI (`.github/workflows/local-render-validation.yml`) em `ubuntu-latest` e `windows-latest`. O workflow roda, após compilar `platform/` (`npm run build && npm test`): (1) a verificação única `python tools/release_check.py --skip-ts --json`, que orquestra higiene Git + `autoPublish: false`, contratos (5 tenants), editorial `--all --strict` (14 campanhas/7 lentes), `workspace_doctor --check`, `release_audit --strict` (7/7 domínios) e a suíte E2E; e (2) a suíte `unittest` canônica da fábrica e o `discover -s tests/e2e`. Os módulos também são apanhados pela descoberta `python -m unittest discover -s tools/tests -v`:
 
 ```bash
 python -m unittest \

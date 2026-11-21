@@ -172,3 +172,24 @@ def find_media(root: str) -> list[str]:
 def media_outside_workspace(root: str) -> list[str]:
     """Mídia na árvore versionada — nunca permitida (regra do CI e do release_audit)."""
     return [rel for rel in find_media(root) if not rel.startswith(".workspace/")]
+
+
+def manifest_path(root: str, tenant: str, slug: str) -> str:
+    return _abs(root, f"02-reels-shorts/deliveries/{tenant}/{slug}/manifest.json")
+
+
+def mutate_manifest_video_sha(root: str, tenant: str, slug: str, new_sha: str) -> str:
+    """Regrava o sha256 do video no manifesto da campanha e devolve o valor anterior."""
+    path = manifest_path(root, tenant, slug)
+    doc = read_json(path)
+    previous = doc["artifacts"]["video"]["sha256"]
+    doc["artifacts"]["video"]["sha256"] = new_sha
+    write_json(path, doc)
+    return previous
+
+
+def restore_manifest_video_sha(root: str, tenant: str, slug: str, sha: str) -> None:
+    path = manifest_path(root, tenant, slug)
+    doc = read_json(path)
+    doc["artifacts"]["video"]["sha256"] = sha
+    write_json(path, doc)

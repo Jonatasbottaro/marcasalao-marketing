@@ -48,9 +48,12 @@ if shutil.which("ffmpeg") is None:
 
 import build_video  # noqa: E402
 import derivative_formats  # noqa: E402
+import preset_runner  # noqa: E402
 import render_local  # noqa: E402
+import tenant_validator  # noqa: E402
 
 TEST_TMP_ROOT = os.path.join(REPO_ROOT, ".workspace", "tmp", "test_derivative_formats")
+ARCHIVES_ROOT = os.path.join(TEST_TMP_ROOT, "archives")
 
 MS_TENANT = "marca-salao"
 MTH_TENANT = "multitrack-hub"
@@ -63,6 +66,35 @@ FAKE_SLUGS = (MS_SLUG, MTH_SLUG, MTH_NOAUDIO_SLUG, MISSING_SLUG)
 MS_PRIMARY = "#F5C107"
 MS_BACKGROUND = "#121620"
 
+MOTION_PLAN = {
+    "schemaVersion": 1,
+    "requestId": "test-deriv-ms",
+    "effects": [{
+        "sceneId": "cena-1",
+        "region": {"x": 0.1, "y": 0.1, "w": 0.5, "h": 0.2},
+        "color": "#FFD700",
+        "thickness": 6,
+        "startMs": 500,
+        "endMs": 2500,
+    }],
+}
+
+
+def _shared_archives_snapshot(slugs=None) -> dict[str, str]:
+    """Hash de arquivos em .workspace/archives/ (opcionalmente por slug)."""
+    base = os.path.join(REPO_ROOT, ".workspace", "archives")
+    snapshot: dict[str, str] = {}
+    if not os.path.isdir(render_local.fs_path(base)):
+        return snapshot
+    for dirpath, _dirs, names in os.walk(render_local.fs_path(base)):
+        for name in names:
+            abs_path = os.path.join(dirpath, name)
+            rel_path = render_local.rel(base, abs_path)
+            if slugs is not None and rel_path.split("/", 1)[0] not in slugs:
+                continue
+            snapshot[rel_path] = render_local.sha256_file(abs_path)
+    return snapshot
+
 
 def _clean_dir(path: str) -> str:
     if os.path.isdir(path):
@@ -72,7 +104,7 @@ def _clean_dir(path: str) -> str:
 
 
 def _archive_source(slug: str) -> str:
-    return os.path.join(REPO_ROOT, ".workspace", "archives", slug, f"{slug}.mp4")
+    return os.path.join(ARCHIVES_ROOT, slug, f"{slug}.mp4")
 
 
 def _make_source(path: str, with_audio: bool) -> None:
@@ -92,16 +124,19 @@ def _make_source(path: str, with_audio: bool) -> None:
         raise AssertionError(f"falha ao gerar fonte sintetica: {res.stderr[-300:]}")
 
 
-def _write_delivery_manifest(tenant: str, slug: str) -> str:
+def _write_delivery_manifest(tenant: str, slug: str, motion_plan: dict | None = None) -> str:
     delivery_dir = os.path.join(REPO_ROOT, "02-reels-shorts", "deliveries", tenant, slug)
     os.makedirs(render_local.fs_path(delivery_dir), exist_ok=True)
     path = os.path.join(delivery_dir, "manifest.json")
-    render_local.write_text(path, json.dumps({
+    doc = {
         "schemaVersion": 1,
         "tenantId": tenant,
         "preset": "synthetic-test",
         "artifacts": {"video": {"sha256": "fonte-sintetica-de-teste"}},
-    }, ensure_ascii=False, indent=2) + "\n")
+    }
+    if motion_plan is not None:
+        doc["motionPlan"] = motion_plan
+    render_local.write_text(path, json.dumps(doc, ensure_ascii=False, indent=2) + "\n")
     return delivery_dir
 
 
@@ -122,6 +157,8 @@ class DerivativeFormatsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         _clean_dir(TEST_TMP_ROOT)
+        _clean_dir(ARCHIVES_ROOT)
+        cls.shared_archives_before = _shared_archives_snapshot(slugs=FAKE_SLUGS)
 
         # marca-salao recebe fonte COM audio para provar que o -an e forcado
         # pela politica do tenant; multitrack-hub recebe com e sem audio.
@@ -130,7 +167,7 @@ class DerivativeFormatsTest(unittest.TestCase):
         _make_source(_archive_source(MTH_NOAUDIO_SLUG), with_audio=False)
 
         cls._fake_delivery_dirs = [
-            _write_delivery_manifest(MS_TENANT, MS_SLUG),
+            _write_delivery_manifest(MS_TENANT, MS_SLUG, motion_plan=MOTION_PLAN),
             _write_delivery_manifest(MTH_TENANT, MTH_SLUG),
             _write_delivery_manifest(MTH_TENANT, MTH_NOAUDIO_SLUG),
             _write_delivery_manifest(MS_TENANT, MISSING_SLUG),
@@ -138,10 +175,10 @@ class DerivativeFormatsTest(unittest.TestCase):
         cls.addClassCleanup(cls._remove_fixtures)
 
         cls.ms_result = derivative_formats.generate_campaign_derivatives(
-            MS_TENANT, MS_SLUG, root=REPO_ROOT,
+            MS_TENANT, MS_SLUG, root=REPO_ROOT, archives_dir=ARCHIVES_ROOT,
         )
         cls.mth_result = derivative_formats.generate_campaign_derivatives(
-            MTH_TENANT, MTH_SLUG, root=REPO_ROOT,
+            MTH_TENANT, MTH_SLUG, root=REPO_ROOT, archives_dir=ARCHIVES_ROOT,
         )
 
     @classmethod
@@ -150,11 +187,10 @@ class DerivativeFormatsTest(unittest.TestCase):
             shutil.rmtree(render_local.fs_path(delivery_dir, force=True), ignore_errors=True)
         for slug in FAKE_SLUGS:
             shutil.rmtree(
-                render_local.fs_path(
-                    os.path.join(REPO_ROOT, ".workspace", "archives", slug), force=True,
-                ),
+                render_local.fs_path(os.path.join(ARCHIVES_ROOT, slug), force=True),
                 ignore_errors=True,
             )
+        shutil.rmtree(render_local.fs_path(ARCHIVES_ROOT, force=True), ignore_errors=True)
 
     # ------------------------------------------------------------------
     # 1. Composicao 1:1 com -an forcado (tenant allowAudioTrack=false)
@@ -181,6 +217,13 @@ class DerivativeFormatsTest(unittest.TestCase):
         self.assertEqual(sq["foreground"]["padEdge"], 4)
         self.assertEqual(sq["foreground"]["padColor"], MS_PRIMARY)
         self.assertEqual(sq["visualStyle"]["schemaVersion"], 1)
+        brand = tenant_validator.load_and_validate_tenant(
+            MS_TENANT, root=REPO_ROOT, strict=True)["brandKit"]
+        tokens = preset_runner.resolve_visual_tokens(brand, "1:1")
+        self.assertEqual(sq["visualStyle"], tokens["visualStyle"])
+        self.assertEqual(sq["uiLabels"], tokens["uiLabels"])
+        self.assertEqual(sq["typography"], tokens["typography"])
+        self.assertEqual(sq["framing"], tokens["framing"])
         self.assertEqual(sq["framing"]["profile"], "1:1")
         self.assertEqual(
             (sq["framing"]["width"], sq["framing"]["height"]), (1080, 1080)
@@ -210,6 +253,13 @@ class DerivativeFormatsTest(unittest.TestCase):
         self.assertEqual(wd["audioStreams"], 0)
         self.assertEqual(wd["foreground"]["width"], 608)
         self.assertEqual(wd["foreground"]["height"], 1080)
+        brand = tenant_validator.load_and_validate_tenant(
+            MS_TENANT, root=REPO_ROOT, strict=True)["brandKit"]
+        tokens = preset_runner.resolve_visual_tokens(brand, "16:9")
+        self.assertEqual(wd["visualStyle"], tokens["visualStyle"])
+        self.assertEqual(wd["uiLabels"], tokens["uiLabels"])
+        self.assertEqual(wd["typography"], tokens["typography"])
+        self.assertEqual(wd["framing"], tokens["framing"])
         self.assertEqual(wd["framing"]["profile"], "16:9")
         self.assertEqual((wd["framing"]["width"], wd["framing"]["height"]), (1920, 1080))
         self.assertTrue(wd["framingPreservedFullFrame"])
@@ -285,10 +335,10 @@ class DerivativeFormatsTest(unittest.TestCase):
             self.assertEqual(int(audio[0]["channels"]), 2, kind)
 
     def test_06_fonte_sem_audio_rejected(self) -> None:
-        deriv_dir = os.path.join(REPO_ROOT, ".workspace", "archives", MTH_NOAUDIO_SLUG, "derivatives")
+        deriv_dir = os.path.join(ARCHIVES_ROOT, MTH_NOAUDIO_SLUG, "derivatives")
         with self.assertRaises(derivative_formats.DerivativeFormatsError) as ctx:
             derivative_formats.generate_campaign_derivatives(
-                MTH_TENANT, MTH_NOAUDIO_SLUG, root=REPO_ROOT,
+                MTH_TENANT, MTH_NOAUDIO_SLUG, root=REPO_ROOT, archives_dir=ARCHIVES_ROOT,
             )
         self.assertEqual(ctx.exception.code, "FONTE_SEM_AUDIO")
         self.assertFalse(os.path.exists(deriv_dir), "nenhum derivado deve ser gerado")
@@ -338,18 +388,20 @@ class DerivativeFormatsTest(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_08_contract_errors(self) -> None:
         with self.assertRaises(derivative_formats.DerivativeFormatsError) as ctx:
-            derivative_formats.generate_campaign_derivatives(MS_TENANT, MISSING_SLUG, root=REPO_ROOT)
+            derivative_formats.generate_campaign_derivatives(
+                MS_TENANT, MISSING_SLUG, root=REPO_ROOT, archives_dir=ARCHIVES_ROOT)
         self.assertEqual(ctx.exception.code, "FONTE_AUSENTE")
 
         with self.assertRaises(derivative_formats.DerivativeFormatsError) as ctx:
             derivative_formats.generate_campaign_derivatives(
-                MS_TENANT, "slug-que-nao-existe", root=REPO_ROOT,
+                MS_TENANT, "slug-que-nao-existe", root=REPO_ROOT, archives_dir=ARCHIVES_ROOT,
             )
         self.assertEqual(ctx.exception.code, "ENTREGA_NAO_ENCONTRADA")
 
         with self.assertRaises(derivative_formats.DerivativeFormatsError) as ctx:
             derivative_formats.generate_campaign_derivatives(
                 MS_TENANT, MS_SLUG, root=REPO_ROOT, formats="1x1,foo",
+                archives_dir=ARCHIVES_ROOT,
             )
         self.assertEqual(ctx.exception.code, "FORMATO_INVALIDO")
 
@@ -365,6 +417,15 @@ class DerivativeFormatsTest(unittest.TestCase):
         main_root = derivative_formats._main_checkout_root(REPO_ROOT)
         self.assertIsNotNone(main_root)
         self.assertTrue(os.path.isdir(render_local.fs_path(main_root)))
+
+        custom = derivative_formats.resolve_archives_dir(REPO_ROOT, ARCHIVES_ROOT)
+        self.assertEqual(
+            os.path.normcase(os.path.realpath(custom)),
+            os.path.normcase(os.path.realpath(ARCHIVES_ROOT)),
+        )
+        with self.assertRaises(derivative_formats.DerivativeFormatsError) as ctx:
+            derivative_formats.resolve_archives_dir(REPO_ROOT, "../archives-fora-da-raiz")
+        self.assertEqual(ctx.exception.code, "ARCHIVES_FORA_DA_RAIZ")
 
         summary = derivative_formats.probe_media(_archive_source(MS_SLUG))
         self.assertEqual(summary["width"], 1080)
@@ -393,11 +454,13 @@ class DerivativeFormatsTest(unittest.TestCase):
         self.assertEqual(only, [(MS_TENANT, MS_SLUG)])
 
         # Sem --force e com derivados integros em disco: pula (skip).
-        again = derivative_formats.generate_campaign_derivatives(MS_TENANT, MS_SLUG, root=REPO_ROOT)
+        again = derivative_formats.generate_campaign_derivatives(
+            MS_TENANT, MS_SLUG, root=REPO_ROOT, archives_dir=ARCHIVES_ROOT)
         self.assertEqual(again["status"], "skipped")
         # Com --force: regenera de fato.
         forced = derivative_formats.generate_campaign_derivatives(
             MS_TENANT, MS_SLUG, root=REPO_ROOT, force=True,
+            archives_dir=ARCHIVES_ROOT,
         )
         self.assertEqual(forced["status"], "generated")
 
@@ -410,7 +473,8 @@ class DerivativeFormatsTest(unittest.TestCase):
         res = subprocess.run(
             [sys.executable, os.path.join(TOOLS_DIR, "derivative_formats.py"),
              "--tenant", MS_TENANT, "--campaign", MS_SLUG,
-             "--formats", "cover", "--force", "--json"],
+             "--formats", "cover", "--force", "--json",
+             "--archives-dir", ARCHIVES_ROOT],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             cwd=REPO_ROOT, env=env, timeout=300,
         )
@@ -485,6 +549,29 @@ class DerivativeFormatsTest(unittest.TestCase):
                             self.assertEqual(
                                 render_local.sha256_file(deriv_abs), entry["sha256"], kind,
                             )
+
+    # ------------------------------------------------------------------
+    # 14. Archives compartilhados intocados + MotionPlan v1 herdado
+    # ------------------------------------------------------------------
+    def test_13_shared_archives_untouched_and_motion_plan_parity(self) -> None:
+        self.assertEqual(_shared_archives_snapshot(slugs=FAKE_SLUGS), self.shared_archives_before)
+
+        disk = json.loads(_read_manifest_raw(MS_TENANT, MS_SLUG).decode("utf-8"))
+        self.assertEqual(disk.get("motionPlan"), MOTION_PLAN)
+        self.assertEqual(
+            disk["visualTokens"]["uiLabels"],
+            disk["derivatives"]["1x1"]["uiLabels"],
+        )
+        self.assertEqual(
+            disk["visualTokens"]["typography"],
+            disk["derivatives"]["16x9"]["typography"],
+        )
+        self.assertTrue(
+            disk["source"]["path"].startswith(
+                ".workspace/tmp/test_derivative_formats/archives"),
+            disk["source"]["path"],
+        )
+        self.assertNotIn(".workspace/archives/", disk["source"]["path"])
 
 
 if __name__ == "__main__":

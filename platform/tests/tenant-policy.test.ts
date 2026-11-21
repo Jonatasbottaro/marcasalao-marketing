@@ -25,6 +25,7 @@ import type {
 import { validateContentPipeline } from '../src/validate-content-pipeline.js'
 import { validateExecutionPackageTenantCompatibility } from '../src/validate-execution-tenant-compatibility.js'
 import { validateTenantPolicy } from '../src/validate-tenant-policy.js'
+import * as platformIndex from '../src/index.js'
 import { moduleRoot } from './contract-harness.js'
 
 const PALETTE = {
@@ -313,4 +314,70 @@ test('pipeline com entrada de compatibilidade incompleta reporta erro dedicado',
     })
     assert.equal(report.valid, false)
     assert.ok(report.errors.some((e) => e.code === 'TENANT_COMPATIBILITY_INPUT_INCOMPLETE'))
+})
+
+// ---------------------------------------------------------------------------
+// Etapa 8: rotas estritas, audio por tenant, invariante autoPublish e index
+// ---------------------------------------------------------------------------
+test('rota de gestao deve pertencer a superficie de gestao', () => {
+    const invalid = policy({ tenantId: 'marca-salao', routes: { public: '/booking/[salonId]', management: '/dashboard' } })
+    const report = validateTenantPolicy(invalid)
+    assert.equal(report.valid, false)
+    assert.ok(report.errors.some((e) => e.code === 'TENANT_POLICY_ROUTE_MANAGEMENT_INVALID'))
+})
+
+test('rota publica nao pode apontar para superficie de gestao', () => {
+    const invalid = policy({ tenantId: 'marca-salao', routes: { public: '/gestor/agenda', management: '/gestor/turmas' } })
+    const report = validateTenantPolicy(invalid)
+    assert.equal(report.valid, false)
+    assert.ok(report.errors.some((e) => e.code === 'TENANT_POLICY_ROUTE_PUBLIC_INVALID'))
+})
+
+test('tenant de servico nao pode habilitar faixa de audio', () => {
+    const invalid = policy({
+        tenantId: 'marca-salao',
+        audioProfile: { allowAudioTrack: true, allowedCodecs: ['aac'], requireSrt: true, requireExternalNarration: true },
+    })
+    const report = validateTenantPolicy(invalid)
+    assert.equal(report.valid, false)
+    assert.ok(report.errors.some((e) => e.code === 'TENANT_POLICY_AUDIO_TRACK_RESTRICTED'))
+    assert.ok(report.errors.some((e) => e.code === 'TENANT_POLICY_AAC_RESTRICTED'))
+})
+
+test('aac em tenant nao permitido e bloqueado na compatibilidade', () => {
+    const policyPermittingAac = policy({
+        tenantId: 'marca-salao',
+        audioProfile: { allowAudioTrack: true, allowedCodecs: ['aac'], requireSrt: true, requireExternalNarration: true },
+    })
+    const report = validateExecutionPackageTenantCompatibility(packageWith('audio/aac'), policyPermittingAac)
+    assert.equal(report.valid, false)
+    assert.ok(report.errors.some((e) => e.code === 'TENANT_POLICY_AAC_RESTRICTED'))
+})
+
+test('invariante autoPublish: true e bloqueado no pipeline', () => {
+    const report = validateContentPipeline({
+        ...validPipelineInput(),
+        tenantPolicy: marcPolicy(),
+        executionPackage: { schemaVersion: 1, expectedArtifacts: CLEAN_ARTIFACTS, autoPublish: true },
+    })
+    assert.equal(report.valid, false)
+    assert.ok(report.errors.some((e) => e.code === 'AUTO_PUBLISH_FORBIDDEN'))
+})
+
+test('invariante autoPublish: false e aceito', () => {
+    const report = validateContentPipeline({
+        ...validPipelineInput(),
+        tenantPolicy: marcPolicy(),
+        executionPackage: { schemaVersion: 1, expectedArtifacts: CLEAN_ARTIFACTS, autoPublish: false },
+    })
+    assert.equal(report.valid, true, JSON.stringify(report.errors))
+})
+
+test('index expoe a superficie publica tipada', () => {
+    assert.equal(typeof platformIndex.validateComposition, 'function')
+    assert.equal(typeof platformIndex.validateContentPipeline, 'function')
+    assert.equal(typeof platformIndex.validateTenantPolicy, 'function')
+    assert.equal(typeof platformIndex.validateExecutionPackageTenantCompatibility, 'function')
+    assert.equal(typeof platformIndex.isManagementRoute, 'function')
+    assert.ok(Array.isArray(platformIndex.AUDIO_PERMITTED_TENANTS))
 })

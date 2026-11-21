@@ -10,6 +10,7 @@
 
 import { KEBAB_CASE_PATTERN } from './project-contract.js'
 import {
+    AUDIO_PERMITTED_TENANTS,
     TENANT_AUDIO_CODECS,
     TENANT_AUDIO_PROFILE_KEYS,
     TENANT_DEFAULT_PRESETS,
@@ -20,6 +21,7 @@ import {
     TENANT_POLICY_UI_LABEL_KEYS,
     TENANT_POLICY_VALID_SUMMARY,
     TENANT_ROUTE_KEYS,
+    isManagementRoute,
     tenantPolicyInvalidSummary,
     type TenantPolicyValidationReport,
 } from './tenant-policy-contract.js'
@@ -141,6 +143,12 @@ export function validateTenantPolicy(input: unknown): TenantPolicyValidationRepo
         if (hasPublic && hasManagement && routes.public === routes.management) {
             errors.push(issue('TENANT_POLICY_ROUTE_NOT_DISTINCT', 'routes', 'routes.public and routes.management must differ.'))
         }
+        if (hasManagement && !isManagementRoute(routes.management as string)) {
+            errors.push(issue('TENANT_POLICY_ROUTE_MANAGEMENT_INVALID', 'routes.management', 'routes.management must be a management surface (/gestor/* or /rateios).'))
+        }
+        if (hasPublic && isManagementRoute(routes.public as string)) {
+            errors.push(issue('TENANT_POLICY_ROUTE_PUBLIC_INVALID', 'routes.public', 'routes.public must not point to a management surface (/gestor/* or /rateios).'))
+        }
     }
 
     // audioProfile
@@ -181,7 +189,16 @@ export function validateTenantPolicy(input: unknown): TenantPolicyValidationRepo
         if (allowAudio === true && codecs.length === 0) {
             errors.push(issue('TENANT_POLICY_AUDIO_ENABLED_WITHOUT_CODEC', 'audioProfile.allowedCodecs', 'allowedCodecs must be non-empty when allowAudioTrack is true.'))
         }
+        if (tenantIdValid) {
+            const isPermitted = (AUDIO_PERMITTED_TENANTS as readonly string[]).includes(tenantId as string)
+            if (allowAudio === true && !isPermitted) {
+                errors.push(issue('TENANT_POLICY_AUDIO_TRACK_RESTRICTED', 'audioProfile.allowAudioTrack', 'Only the audio-permitted tenant may enable an audio track.'))
             }
+            if (codecs.includes('aac') && !isPermitted) {
+                errors.push(issue('TENANT_POLICY_AAC_RESTRICTED', 'audioProfile.allowedCodecs', 'AAC audio is restricted to the audio-permitted tenant.'))
+            }
+        }
+    }
 
     // guardrails
     const guardrails = input.guardrails

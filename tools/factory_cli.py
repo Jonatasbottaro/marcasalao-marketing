@@ -118,7 +118,110 @@ def discover_tenant_campaigns(tenant_id: str, root: str = ".") -> list[dict[str,
     return found
 
 
-def cmd_list(root: str = ".", tenant_filter: str | None = None) -> dict[str, Any]:
+def build_factory_report(
+    root: str = ".",
+    deliveries_dir: str = DEFAULT_DELIVERIES_DIR,
+    report_path: str | None = None,
+) -> dict[str, Any]:
+    """Consolida `factory-report.json` a partir dos manifestos ja gravados.
+
+    Somente leitura dos artefatos: nenhum MP4 e renderizado ou sobrescrito. O
+    relatorio preserva os hashes declarados em cada manifest.json da entrega.
+    """
+    root_real = os.path.realpath(root)
+    deliveries_abs = _resolve_contained(root_real, deliveries_dir, "deliveries-dir")
+    report_abs = _resolve_contained(
+        root_real,
+        report_path or os.path.join(deliveries_abs, "factory-report.json"),
+        "report-path",
+    )
+    tenants = tenant_validator.list_tenants(root_real)
+    deliveries: list[dict[str, Any]] = []
+    errors: list[dict[str, str]] = []
+    processed: list[str] = []
+
+    for tid in tenants:
+        ctx = tenant_validator.load_and_validate_tenant(tid, root=root_real, strict=False)
+        kit = ctx["brandKit"]
+        campaigns = discover_tenant_campaigns(tid, root=root_real)
+        processed.append(tid)
+        for camp in campaigns:
+            slug = camp["slug"]
+            out_dir = os.path.join(deliveries_abs, tid, slug)
+            manifest_path = os.path.join(out_dir, "manifest.json")
+            if not os.path.isfile(render_local.fs_path(manifest_path)):
+                errors.append({
+                    "code": "MANIFESTO_AUSENTE",
+                    "detail": render_local.rel(root_real, manifest_path),
+                })
+                continue
+            manifest = _load_json(manifest_path)
+            arts = manifest.get("artifacts") or {}
+            video = arts.get("video") or {}
+            srt = arts.get("srt") or {}
+            narration = arts.get("narration") or {}
+            storyboard = arts.get("storyboard") or {}
+            guardrails = manifest.get("guardrails") or {}
+            deliveries.append({
+                "tenantId": tid,
+                "brandName": kit.get("brandName"),
+                "monogram": kit.get("monogram"),
+                "campaignSlug": slug,
+                "campaignId": camp["campaignId"],
+                "preset": manifest.get("preset") or camp["preset"],
+                "configPath": camp["configPath"],
+                "deliveryDir": render_local.rel(root_real, out_dir),
+                "manifestPath": render_local.rel(root_real, manifest_path),
+                "allowAudioTrack": bool(guardrails.get("allowAudioTrack", False)),
+                "ffprobe": video.get("ffprobe") or {},
+                "artifacts": {
+                    "video": {
+                        "path": video.get("path"),
+                        "archivePath": video.get("archivePath"),
+                        "sha256": video.get("sha256"),
+                        "bytes": video.get("bytes"),
+                    },
+                    "srt": {
+                        "path": srt.get("path"),
+                        "sha256": srt.get("sha256"),
+                        "bytes": srt.get("bytes"),
+                    },
+                    "narration": {
+                        "path": narration.get("path"),
+                        "sha256": narration.get("sha256"),
+                        "bytes": narration.get("bytes"),
+                    },
+                    "storyboard": {
+                        "path": storyboard.get("path"),
+                        "sha256": storyboard.get("sha256"),
+                        "bytes": storyboard.get("bytes"),
+                    },
+                },
+            })
+
+    report = {
+        "schemaVersion": 1,
+        "generatedBy": "tools/factory_cli.py",
+        "mode": "report",
+        "ok": not errors,
+        "deliveriesRoot": render_local.rel(root_real, deliveries_abs),
+        "totalTenants": len(processed),
+        "totalCampaigns": len(deliveries),
+        "tenants": processed,
+        "deliveries": deliveries,
+        "errors": errors,
+    }
+    _atomic_write_json(report_abs, report)
+    report["reportPath"] = render_local.rel(root_real, report_abs)
+    return report
+
+
+def cmd_list(
+    root: str = ".",
+    tenant_filter: str | None = None,
+    write_report: bool = False,
+    report_path: str | None = None,
+) -> dict[str, Any]:
     """Retorna todos os tenants descobertos, seus presets e campanhas cadastradas."""
     root_real = os.path.realpath(root)
     tenants = [tenant_filter] if tenant_filter else tenant_validator.list_tenants(root_real)
@@ -158,13 +261,23 @@ def cmd_list(root: str = ".", tenant_filter: str | None = None) -> dict[str, Any
             }
         entries.append(entry)
 
-    return {
+    result = {
         "schemaVersion": 1,
         "ok": all_ok,
         "totalTenants": len(entries),
         "totalCampaigns": total_campaigns,
         "tenants": entries,
     }
+    if write_report:
+        report = build_factory_report(root_real, report_path=report_path)
+        result["factoryReport"] = {
+            "ok": report["ok"],
+            "path": report["reportPath"],
+            "totalTenants": report["totalTenants"],
+            "totalCampaigns": report["totalCampaigns"],
+            "errors": report["errors"],
+        }
+    return result
 
 
 def _atomic_write_json(path: str, payload: dict[str, Any]) -> None:
@@ -831,26 +944,134 @@ def cmd_handoff(
     approvals_file: str | None = None,
     output_dir: str | None = None,
 ) -> dict[str, Any]:
-    """Audita as aprovacoes e dispara o empacotamento manual de postagem.
+    """Audita aprovacoes, QA editorial e empacota a postagem manual.
 
-    Modulos das etapas paralelas sao importados de forma segura: sem
-    ``approval_cli`` ou ``handoff_bundler`` a operacao falha de forma
-    controlada. ``autoPublish`` nunca e ligado.
+    Retorna codigos estruturados no JSON em vez de abortar:
+    ``APROVACOES_INVALIDAS``, ``APPROVAL_STALE``, ``EDITORIAL_QA_REPROVADO`` e
+    ``HANDOFF_FALHOU``. ``autoPublish`` nunca e ligado.
     """
     root_real = os.path.realpath(root)
     approval_cli = _optional_module("approval_cli")
-    if approval_cli is None:
-        raise FactoryError("MODULO_AUSENTE: tools/approval_cli.py")
     bundler = _optional_module("handoff_bundler")
+    base: dict[str, Any] = {
+        "schemaVersion": 1,
+        "autoPublish": False,
+        "mode": "date" if date else "all-approved",
+        "date": date,
+    }
+    if approval_cli is None:
+        return {
+            **base,
+            "ok": False,
+            "code": "APROVACOES_INVALIDAS",
+            "detail": "MODULO_AUSENTE: tools/approval_cli.py",
+            "approvalAudit": None,
+            "editorialQa": None,
+            "handoff": None,
+        }
     if bundler is None:
-        raise FactoryError("MODULO_AUSENTE: tools/handoff_bundler.py")
+        return {
+            **base,
+            "ok": False,
+            "code": "HANDOFF_FALHOU",
+            "detail": "MODULO_AUSENTE: tools/handoff_bundler.py",
+            "approvalAudit": None,
+            "editorialQa": None,
+            "handoff": None,
+        }
 
     audit = approval_cli.cmd_validate(root=root_real, approvals_file=approvals_file)
+    audit_block = {
+        "ok": audit.get("ok"),
+        "exists": audit.get("exists"),
+        "total": audit.get("total"),
+        "summary": audit.get("summary"),
+        "staleApprovals": audit.get("staleApprovals"),
+        "warnings": audit.get("warnings"),
+        "approvalsFile": audit.get("approvalsFile"),
+    }
     if audit.get("errors"):
         detail = "; ".join(
             f"{err.get('code')}: {err.get('detail')}" for err in audit["errors"]
         )
-        raise FactoryError(f"APROVACOES_INVALIDAS: {detail}")
+        return {
+            **base,
+            "ok": False,
+            "code": "APROVACOES_INVALIDAS",
+            "detail": detail,
+            "approvalAudit": audit_block,
+            "editorialQa": None,
+            "handoff": None,
+        }
+
+    approved = [
+        row for row in audit.get("campaigns", [])
+        if row.get("decision") == "aprovado"
+    ]
+    stale = [row for row in approved if row.get("staleApproval")]
+    if stale:
+        return {
+            **base,
+            "ok": False,
+            "code": "APPROVAL_STALE",
+            "detail": "aprovacao(es) aprovada(s) com hash divergente do manifest atual",
+            "staleApprovals": [
+                {
+                    "tenantId": row.get("tenantId"),
+                    "slug": row.get("slug"),
+                    "changedHashes": row.get("changedHashes"),
+                }
+                for row in stale
+            ],
+            "approvalAudit": audit_block,
+            "editorialQa": None,
+            "handoff": None,
+        }
+
+    editorial_qa_block = None
+    if approved:
+        qa_mod = _optional_module("editorial_qa")
+        if qa_mod is None:
+            return {
+                **base,
+                "ok": False,
+                "code": "EDITORIAL_QA_REPROVADO",
+                "detail": "MODULO_AUSENTE: tools/editorial_qa.py",
+                "approvalAudit": audit_block,
+                "editorialQa": None,
+                "handoff": None,
+            }
+        qa = qa_mod.run_editorial_qa(root=root_real)
+        approved_keys = {(row["tenantId"], row["slug"]) for row in approved}
+        failed_campaigns = [
+            row for row in qa.get("campaigns", [])
+            if (row.get("tenant"), row.get("slug")) in approved_keys and not row.get("ok")
+        ]
+        failed_checks = [
+            {"id": check.get("id"), "problems": check.get("problems")}
+            for check in qa.get("checks", [])
+            if any(p.get("severity") == "error" for p in check.get("problems") or [])
+        ]
+        editorial_qa_block = {
+            "ok": qa.get("ok"),
+            "summary": qa.get("summary"),
+            "failedCampaigns": failed_campaigns,
+            "failedChecks": failed_checks,
+        }
+        if failed_campaigns or failed_checks:
+            detail = "; ".join(
+                [f"{row.get('tenant')}/{row.get('slug')}" for row in failed_campaigns]
+                + [str(check.get("id")) for check in failed_checks]
+            )
+            return {
+                **base,
+                "ok": False,
+                "code": "EDITORIAL_QA_REPROVADO",
+                "detail": detail or "editorial_qa reprovou campanha aprovada",
+                "approvalAudit": audit_block,
+                "editorialQa": editorial_qa_block,
+                "handoff": None,
+            }
 
     try:
         bundle = bundler.build_handoff_bundle(
@@ -862,24 +1083,36 @@ def cmd_handoff(
             output_dir=output_dir,
         )
     except bundler.HandoffBundlerError as exc:
-        raise FactoryError(f"HANDOFF_FALHOU: {exc}") from exc
+        return {
+            **base,
+            "ok": False,
+            "code": "HANDOFF_FALHOU",
+            "detail": str(exc),
+            "approvalAudit": audit_block,
+            "editorialQa": editorial_qa_block,
+            "handoff": None,
+        }
     bundle.setdefault("autoPublish", False)
 
+    if bundle.get("ok") is False and bundle.get("code"):
+        return {
+            **base,
+            "ok": False,
+            "code": bundle["code"],
+            "detail": bundle.get("detail"),
+            "staleApprovals": bundle.get("staleApprovals"),
+            "approvalAudit": audit_block,
+            "editorialQa": editorial_qa_block,
+            "handoff": bundle,
+        }
+
     return {
-        "schemaVersion": 1,
+        **base,
         "ok": bool(bundle.get("ok")),
-        "autoPublish": False,
-        "mode": "date" if date else "all-approved",
-        "date": date,
-        "approvalAudit": {
-            "ok": audit.get("ok"),
-            "exists": audit.get("exists"),
-            "total": audit.get("total"),
-            "summary": audit.get("summary"),
-            "staleApprovals": audit.get("staleApprovals"),
-            "warnings": audit.get("warnings"),
-            "approvalsFile": audit.get("approvalsFile"),
-        },
+        "code": None,
+        "detail": None,
+        "approvalAudit": audit_block,
+        "editorialQa": editorial_qa_block,
         "handoff": bundle,
     }
 
@@ -891,6 +1124,14 @@ def main(argv: list[str] | None = None) -> int:
     p_list = subparsers.add_parser("list", help="Lista tenants validos, presets e campanhas")
     p_list.add_argument("--tenant", default=None, help="Filtra um tenant especifico")
     p_list.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    p_list.add_argument(
+        "--write-report",
+        action="store_true",
+        help="Regrava factory-report.json a partir dos manifestos existentes",
+    )
+    p_list.add_argument(
+        "--report", default=None, help="Caminho do factory-report.json a regravar"
+    )
     p_list.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
     p_render = subparsers.add_parser("render", help="Renderiza campanhas multi-tenant em lote")
@@ -950,7 +1191,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.subcommand == "list":
-            res = cmd_list(root=args.root, tenant_filter=args.tenant)
+            res = cmd_list(
+                root=args.root,
+                tenant_filter=args.tenant,
+                write_report=bool(args.write_report),
+                report_path=args.report,
+            )
             if args.json:
                 print(json.dumps(res, ensure_ascii=False, indent=2))
             else:
@@ -1023,6 +1269,10 @@ def main(argv: list[str] | None = None) -> int:
                     f"stale={len(audit.get('staleApprovals') or [])} | "
                     f"slots={bundle.get('bundledSlots', 0)} | autoPublish: false"
                 )
+                if handoff_report.get("code"):
+                    print(f"Codigo: {handoff_report['code']}")
+                    if handoff_report.get("detail"):
+                        print(f"Detalhe: {handoff_report['detail']}")
                 if bundle.get("reason"):
                     print(f"Motivo: {bundle['reason']}")
                 elif bundle.get("outputDir"):

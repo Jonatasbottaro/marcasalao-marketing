@@ -25,19 +25,28 @@ A arquitetura e os comandos do núcleo ficam em [platform/README.md](platform/RE
 
 ## Fábrica de vídeo multi-tenant (contratos → render → pacotes → release)
 
-Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Estado atual: **5 tenants, 10 campanhas e 21 módulos de testes** no gate do CI (incluindo a camada de acabamento das Etapas 5 e 5B). Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard, `manifest.json` com hashes SHA-256 e `derivatives.json` (cover, 1:1, 16:9); o pacote social sai com `autoPublish: false`, o calendário editorial nasce `aguardando_aprovacao_titular` e o portal de revisão é somente leitura. **Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes: a publicação é sempre manual e exige autorização específica do titular.** Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+Pipeline programático que transforma contratos JSON versionados em pacotes de vídeo prontos para publicação manual, para N marcas sem alterar o motor de render. Estado atual: **5 tenants, 14 campanhas e 21 módulos de testes** no gate do CI (incluindo a camada de acabamento das Etapas 5 e 5B). Cada campanha entrega MP4 1080×1920@30 (sem faixa de áudio quando o tenant proíbe), SRT, narração TXT, storyboard, `manifest.json` com hashes SHA-256 e `derivatives.json` (cover, 1:1, 16:9); o pacote social sai com `autoPublish: false`, o calendário editorial nasce `aguardando_aprovacao_titular` (7 semanas, 56 slots) e o portal de revisão é somente leitura. **Nenhuma ferramenta deste repositório publica, agenda ou cria rascunho nas redes: a publicação é sempre manual e exige autorização específica do titular.** Arquitetura completa em [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+
+**Verificação de release em um comando:**
+
+```bash
+python tools/release_check.py            # orquestra todos os gates oficiais (higiene Git, TS, contratos, editorial, doctor, release_audit, E2E)
+python tools/release_check.py --skip-ts  # pula build/teste TypeScript (quando já compilado)
+python tools/release_check.py --json      # relatório JSON no stdout
+```
 
 | Tenant | Marca | Preset | Domínio | Áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
-| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibido (`-an`) | 2 |
-| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitido (opcional) | 3 |
-| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibido | 2 |
-| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibido | 1 |
-| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibido | 2 |
+| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibido (`-an`) | 3 |
+| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitido (opcional) | 5 |
+| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibido | 4 |
+| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibido | 3 |
+| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibido | 4 |
 
 Comandos rápidos (a partir da raiz do checkout):
 
 ```bash
+python tools/release_check.py                          # 0. gate unico: orquestra TODOS os gates oficiais
 python tools/tenant_validator.py --all --json           # 1. validar contratos (brand-kit, guardrails, fixture)
 python tools/factory_cli.py list --json                 # 2. descobrir tenants e campanhas
 python tools/factory_cli.py render --all --json         # 3. renderizar em lote (MP4, SRT, narração, storyboard, manifesto)

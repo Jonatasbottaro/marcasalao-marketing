@@ -4,6 +4,7 @@
   "deliveriesRoot": "02-reels-shorts/deliveries",
   "pacotesRoot": "04-legendas/pacotes-publicacao",
   "archivesRoot": ".workspace/archives",
+  "autoPublish": false,
   "totals": {
     "tenants": 5,
     "campaigns": 14

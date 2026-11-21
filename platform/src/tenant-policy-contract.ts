@@ -64,13 +64,25 @@ export interface TenantRoutes {
     readonly management: string
 }
 
-/** Codecs de audio reconhecidos na v1 (restringe AAC ao tenant permitido). */
+/** Codecs de audio reconhecidos na v1. */
 export const TENANT_AUDIO_CODECS = ['aac'] as const
 export type TenantAudioCodec = (typeof TENANT_AUDIO_CODECS)[number]
 
-// O audio e dirigido pelos DADOS da politica (`audioProfile.allowAudioTrack` e
-// `allowedCodecs`): o nucleo permanece agnostico de projeto/tenant. Quais
-// tenants habilitam audio (e com qual codec) e propriedade declarada no tenant.
+/** Unico(s) tenant(s) autorizado(s) a veicular faixa de audio (AAC) na v1. */
+export const AUDIO_PERMITTED_TENANTS = ['multitrack-hub'] as const
+export type AudioPermittedTenant = (typeof AUDIO_PERMITTED_TENANTS)[number]
+
+/** Superficies reservadas a rotas de gestao (nunca publicas). */
+export const MANAGEMENT_ROUTE_PREFIXES = ['/gestor/'] as const
+export const MANAGEMENT_ROUTE_EXACT = ['/rateios'] as const
+
+/** True quando a rota pertence a superficie de gestao (gestor/* ou rateios). */
+export function isManagementRoute(route: string): boolean {
+    if ((MANAGEMENT_ROUTE_EXACT as readonly string[]).includes(route)) {
+        return true
+    }
+    return MANAGEMENT_ROUTE_PREFIXES.some((prefix) => route.startsWith(prefix))
+}
 
 export const TENANT_AUDIO_PROFILE_KEYS = [
     'allowAudioTrack',

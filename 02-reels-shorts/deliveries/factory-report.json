@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
+  "generatedBy": "tools/factory_cli.py",
+  "mode": "report",
   "ok": true,
-  "mode": "all",
   "deliveriesRoot": "02-reels-shorts/deliveries",
   "totalTenants": 5,
-  "totalCampaigns": 11,
+  "totalCampaigns": 14,
   "tenants": [
     "clinica-vital",
     "estudio-flow",
@@ -13,6 +14,52 @@
     "multitrack-hub"
   ],
   "deliveries": [
+    {
+      "tenantId": "clinica-vital",
+      "brandName": "Clínica Vital",
+      "monogram": "CV",
+      "campaignSlug": "camp-clinica-vital-002",
+      "campaignId": "CLINICA-VITAL-002",
+      "preset": "saas-demo",
+      "configPath": "tenants/clinica-vital/campaigns/camp-clinica-vital-002.json",
+      "deliveryDir": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002",
+      "manifestPath": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/manifest.json",
+      "allowAudioTrack": false,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+          "archivePath": ".workspace/archives/camp-clinica-vital-002/camp-clinica-vital-002.mp4",
+          "sha256": "b795fbed2125b5647d30832c7c3a062fcf4bdb6f5fb4a3730a65e64f0f9a6938",
+          "bytes": 473376
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002.srt",
+          "sha256": "41ee28cf56d86835fe6d1eee99ee1c51d1ab2da032704d9735677e97045b35cd",
+          "bytes": 504
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/camp-clinica-vital-002_narracao.txt",
+          "sha256": "1fc36ab2743d12d33bcd2370fe6cd9212fc58b40cb74111b3b536f8e89fa0a98",
+          "bytes": 893
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/clinica-vital/camp-clinica-vital-002/preview-storyboard.png",
+          "sha256": "bf4e8afda57b5429e526a22cf131e72be692d347974f6ff703d1b9799ea467b2",
+          "bytes": 618904
+        }
+      }
+    },
     {
       "tenantId": "clinica-vital",
       "brandName": "Clínica Vital",
@@ -293,6 +340,52 @@
       "tenantId": "meu-salao",
       "brandName": "Meu Salão",
       "monogram": "MS",
+      "campaignSlug": "camp-meu-salao-002",
+      "campaignId": "MEU-SALAO-002",
+      "preset": "saas-demo",
+      "configPath": "tenants/meu-salao/campaigns/camp-meu-salao-002.json",
+      "deliveryDir": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002",
+      "manifestPath": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/manifest.json",
+      "allowAudioTrack": false,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 0,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": null
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.mp4",
+          "archivePath": ".workspace/archives/camp-meu-salao-002/camp-meu-salao-002.mp4",
+          "sha256": "9a0bd3acc0a8939b2dd9d316bd6475dc59d0f07be59816018c2abab93d89171d",
+          "bytes": 432075
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002.srt",
+          "sha256": "7755e7a7379e6cd3205ac46340f69d8490a3d30b4a1a8a891cef43abd5388f4b",
+          "bytes": 499
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/camp-meu-salao-002_narracao.txt",
+          "sha256": "39b9b74f4f35b4101bb07de2036ad6a3ad65522c443f2ef044093155382f78db",
+          "bytes": 885
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/meu-salao/camp-meu-salao-002/preview-storyboard.png",
+          "sha256": "bdb4049324ae76fd060cf407a97f4cee9e27bbc374bf3f3f1117f14b63ec2c48",
+          "bytes": 613390
+        }
+      }
+    },
+    {
+      "tenantId": "meu-salao",
+      "brandName": "Meu Salão",
+      "monogram": "MS",
       "campaignSlug": "camp-saas-demo-meu-salao-001",
       "campaignId": "SAAS-DEMO-MEU-SALAO-001",
       "preset": "saas-demo",
@@ -378,6 +471,52 @@
           "path": "02-reels-shorts/deliveries/meu-salao/camp-saas-demo-meu-salao-002/preview-storyboard.png",
           "sha256": "8cc577e1cf1c662f82cefb40f5020afd536bcbb9be219e18677147b7e7e1b244",
           "bytes": 674337
+        }
+      }
+    },
+    {
+      "tenantId": "multitrack-hub",
+      "brandName": "Multitrack Hub",
+      "monogram": "MH",
+      "campaignSlug": "camp-multitrack-hub-002",
+      "campaignId": "MULTITRACK-HUB-002",
+      "preset": "shorts-completo",
+      "configPath": "tenants/multitrack-hub/campaigns/camp-multitrack-hub-002.json",
+      "deliveryDir": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002",
+      "manifestPath": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/manifest.json",
+      "allowAudioTrack": true,
+      "ffprobe": {
+        "videoStreams": 1,
+        "audioStreams": 1,
+        "codec": "h264",
+        "width": 1080,
+        "height": 1920,
+        "fps": 30.0,
+        "pixFmt": "yuv420p",
+        "duration": 30.0,
+        "audioCodec": "aac"
+      },
+      "artifacts": {
+        "video": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+          "archivePath": ".workspace/archives/camp-multitrack-hub-002/camp-multitrack-hub-002.mp4",
+          "sha256": "078d1cf73026e60cae395b128564af509582d49c54df876f3ad4df525968d436",
+          "bytes": 424520
+        },
+        "srt": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002.srt",
+          "sha256": "78f2338f792ac83410f434bc12d1efae869c650fe567003cb5fbefc890172fa1",
+          "bytes": 423
+        },
+        "narration": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/camp-multitrack-hub-002_narracao.txt",
+          "sha256": "4d3f8032c927998c8d83ad54e3ae0d271b36cdc1e34ff3db803f8455543f54bd",
+          "bytes": 722
+        },
+        "storyboard": {
+          "path": "02-reels-shorts/deliveries/multitrack-hub/camp-multitrack-hub-002/preview-storyboard.png",
+          "sha256": "d9a00dbbd4a8dd0da11d8878a28d5eaf52f03542e9bf52fd3c097806e71f5d32",
+          "bytes": 535728
         }
       }
     },
@@ -519,5 +658,6 @@
         }
       }
     }
-  ]
+  ],
+  "errors": []
 }

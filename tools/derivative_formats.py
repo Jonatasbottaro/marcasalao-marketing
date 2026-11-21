@@ -58,6 +58,11 @@ do checkout principal. Ferramentas: ``build_video.get_ffmpeg()`` /
 Uso (a partir da raiz do checkout):
     python tools/derivative_formats.py --all [--formats 1x1,16x9,cover,thumb,grid] [--force] [--json]
     python tools/derivative_formats.py --tenant marca-salao [--campaign <slug>] [--json]
+    python tools/derivative_formats.py --tenant marca-salao --campaign <slug> --archives-dir <dir>
+
+``--archives-dir`` redireciona toda leitura/gravacao de MP4 arquivado para um
+diretorio alternativo confinado a raiz (os testes usam um diretorio temporario
+para nao alterar os masters compartilhados de ``.workspace/archives/``).
 
 Uso programatico:
     from tools import derivative_formats
@@ -77,6 +82,7 @@ import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -279,6 +285,29 @@ def resolve_workspace_root(repo_root: str = ".") -> str:
     )
 
 
+def resolve_archives_dir(repo_root: str, archives_dir: Path | str | None = None) -> str:
+    """Raiz de archives da execucao (contem ``<slug>/<slug>.mp4``).
+
+    ``None`` usa o ``.workspace/archives`` historico (worktree-aware). Um valor
+    explicito e confinado a raiz do projeto; toda leitura/gravacao de MP4
+    arquivado passa a ocorrer somente dentro dele.
+    """
+    root_real = os.path.realpath(repo_root)
+    if archives_dir is None:
+        return os.path.realpath(os.path.join(resolve_workspace_root(root_real), "archives"))
+    raw = str(archives_dir)
+    candidate = raw if os.path.isabs(raw) else os.path.join(root_real, raw.replace("/", os.sep))
+    resolved = os.path.realpath(candidate)
+    if not render_local.contained(root_real, resolved):
+        raise DerivativeFormatsError(
+            "ARCHIVES_FORA_DA_RAIZ",
+            "archives-dir deve ficar sob a raiz do projeto",
+        )
+    if os.path.exists(render_local.fs_path(resolved)) and not os.path.isdir(render_local.fs_path(resolved)):
+        raise DerivativeFormatsError("ARCHIVES_INVALIDO", "archives-dir nao e um diretorio")
+    return resolved
+
+
 def _ensure_tools(root_real: str) -> tuple[str, str]:
     """ffmpeg/ffprobe pelo PATH (build_video) com fallback em .workspace/tools/ffmpeg."""
     try:
@@ -477,11 +506,6 @@ def _audit_derivative(label: str, probe: dict, width: int, height: int,
 # ---------------------------------------------------------------------------
 # Manifesto versionado
 # ---------------------------------------------------------------------------
-def _ws_rel(*parts: str) -> str:
-    """Caminho relativo ao checkout dentro de .workspace/ (portavel entre estacoes)."""
-    return "/".join((".workspace",) + tuple(parts))
-
-
 def _format_entry(rel_path: str, abs_path: str, probe: dict, extra: dict) -> dict:
     is_video = probe["codec"] != "png"
     entry = {
@@ -562,7 +586,8 @@ def _campaign_complete(manifest_path: str, derivatives_dir: str, delivery_dir: s
 # Geracao por campanha
 # ---------------------------------------------------------------------------
 def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
-                                  formats: Any = None, force: bool = False) -> dict:
+                                  formats: Any = None, force: bool = False,
+                                  archives_dir: Path | str | None = None) -> dict:
     """Gera os derivados de uma campanha e devolve o resultado com o manifesto gravado."""
     root_real = os.path.realpath(root)
     ffmpeg, _ffprobe_bin = _ensure_tools(root_real)
@@ -592,12 +617,12 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
     delivery = _load_json(delivery_manifest_path)
 
     # 3. MP4 fonte 9:16 arquivado + validacao de geometria/audio/duracao.
-    ws_root = resolve_workspace_root(root_real)
-    source_path = os.path.join(ws_root, "archives", slug, f"{slug}.mp4")
+    archives_root = resolve_archives_dir(root_real, archives_dir)
+    source_path = os.path.join(archives_root, slug, f"{slug}.mp4")
     if not os.path.isfile(render_local.fs_path(source_path)):
         raise DerivativeFormatsError(
             "FONTE_AUSENTE",
-            f"MP4 fonte ausente: {_ws_rel('archives', slug, f'{slug}.mp4')}; "
+            f"MP4 fonte ausente: {render_local.rel(root_real, source_path)}; "
             "regenere a entrega com a fabrica (tools/preset_runner.py / tools/factory_cli.py)",
         )
     source_info = build_video.probe_media(render_local.fs_path(source_path))
@@ -620,10 +645,22 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
         raise DerivativeFormatsError("FONTE_DURACAO_INVALIDA", f"duracao observada: {duration}s")
     frame_ts = FRAME_TIMESTAMP if duration >= FRAME_MIN_DURATION else round(duration / 2.0, 3)
 
-    # 4. Formatos pedidos e destinos (derivados no .workspace/ da estacao).
+    # 4. Formatos pedidos e destinos (derivados no diretorio de archives da execucao).
     requested = _normalize_formats(formats)
-    derivatives_dir = os.path.join(ws_root, "archives", slug, "derivatives")
+    derivatives_dir = os.path.join(archives_root, slug, "derivatives")
     manifest_path = os.path.join(delivery_dir, "derivatives.json")
+
+    # Caminhos do manifesto permanecem canonicos (``.workspace/archives/...``)
+    # no modo padrao, mesmo quando o checkout principal e resolvido de uma
+    # worktree; com archives-dir explicito, usa-se o caminho relativo a raiz.
+    archive_prefix = (
+        ".workspace/archives" if archives_dir is None
+        else render_local.rel(root_real, archives_root)
+    )
+
+    def _archive_rel(abs_path: str) -> str:
+        inner = os.path.relpath(abs_path, archives_root).replace(os.sep, "/")
+        return f"{archive_prefix}/{inner}"
 
     if not force and _campaign_complete(manifest_path, derivatives_dir, delivery_dir, requested):
         return {
@@ -656,7 +693,7 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
     for key in requested:
         filename = ARCHIVE_NAMES[key].format(slug=slug)
         out_path = os.path.join(derivatives_dir, filename)
-        rel_path = _ws_rel("archives", slug, "derivatives", filename)
+        rel_path = _archive_rel(out_path)
         if key == "1x1":
             _render_video(ffmpeg, source_path, out_path, SQUARE_WIDTH, SQUARE_HEIGHT,
                           SQUARE_BG_FILTERS, primary_ff, duration, allow_audio,
@@ -669,6 +706,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 "foreground": dict(fg_meta),
                 "background": {"source": "self", "filters": SQUARE_BG_FILTERS},
                 "visualStyle": tokens_1x1["visualStyle"],
+                "uiLabels": tokens_1x1["uiLabels"],
+                "typography": tokens_1x1["typography"],
                 "framing": tokens_1x1["framing"],
                 "framingPreservedFullFrame": (
                     int(tokens_1x1["framing"]["derivativeTopInsetPx"]) == 0
@@ -688,6 +727,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
                 "foreground": dict(fg_meta),
                 "background": {"source": "self", "filters": WIDE_BG_FILTERS},
                 "visualStyle": tokens_16x9["visualStyle"],
+                "uiLabels": tokens_16x9["uiLabels"],
+                "typography": tokens_16x9["typography"],
                 "framing": tokens_16x9["framing"],
                 "framingPreservedFullFrame": (
                     int(tokens_16x9["framing"]["derivativeTopInsetPx"]) == 0
@@ -770,7 +811,7 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
         "allowAudioTrack": allow_audio,
         "appliedAudioPolicy": applied_policy,
         "source": {
-            "path": _ws_rel("archives", slug, f"{slug}.mp4"),
+            "path": _archive_rel(source_path),
             "sha256": source_sha,
             "bytes": os.path.getsize(render_local.fs_path(source_path)),
             "deliveryManifest": render_local.rel(root_real, delivery_manifest_path),
@@ -782,15 +823,23 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
             "schemaVersion": 1,
             "visualStyle": tokens_1x1["visualStyle"],
             "uiLabels": tokens_1x1["uiLabels"],
+            "typography": tokens_1x1["typography"],
             "framing": {"1:1": tokens_1x1["framing"], "16:9": tokens_16x9["framing"]},
             "framingPreservedFullFrame": True,
         },
-        "command": f"python tools/derivative_formats.py --tenant {tenant_id} --campaign {slug}",
+        "command": (
+            f"python tools/derivative_formats.py --tenant {tenant_id} --campaign {slug}"
+            + (f" --archives-dir {render_local.rel(root_real, archives_root)}"
+               if archives_dir is not None else "")
+        ),
         "tools": {
             "ffmpeg": render_local.tool_version(build_video.get_ffmpeg()),
             "ffprobe": render_local.tool_version(build_video.get_ffprobe()),
         },
     }
+    delivery_motion = delivery.get("motionPlan")
+    if isinstance(delivery_motion, dict) and delivery_motion.get("schemaVersion") == 1:
+        manifest["motionPlan"] = delivery_motion
     render_local.write_text(
         manifest_path,
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -812,7 +861,8 @@ def generate_campaign_derivatives(tenant_id: str, slug: str, root: str = ".",
 # Geracao em lote (--all)
 # ---------------------------------------------------------------------------
 def generate_all_derivatives(root: str = ".", formats: Any = None,
-                             force: bool = False) -> dict:
+                             force: bool = False,
+                             archives_dir: Path | str | None = None) -> dict:
     """Gera os derivados de todas as campanhas vigentes; erros por campanha nao abortam o lote."""
     root_real = os.path.realpath(root)
     requested = _normalize_formats(formats)
@@ -822,6 +872,7 @@ def generate_all_derivatives(root: str = ".", formats: Any = None,
         try:
             result = generate_campaign_derivatives(
                 tenant_id, slug, root=root_real, formats=requested, force=force,
+                archives_dir=archives_dir,
             )
             campaigns.append(result)
         except DerivativeFormatsError as exc:
@@ -857,6 +908,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="lista separada por virgulas: 1x1,16x9,cover,thumb,grid")
     parser.add_argument("--force", action="store_true",
                         help="regenera mesmo com derivados integros em disco")
+    parser.add_argument("--archives-dir", default=None,
+                        help="raiz de archives alternativa (confinada ao projeto)")
     parser.add_argument("--json", action="store_true", dest="as_json",
                         help="saida JSON com relatorio completo")
     args = parser.parse_args(argv)
@@ -869,7 +922,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.all:
-        report = generate_all_derivatives(root=root, formats=formats, force=args.force)
+        report = generate_all_derivatives(
+            root=root, formats=formats, force=args.force, archives_dir=args.archives_dir)
     elif args.tenant:
         pairs = discover_campaigns(root, tenant_id=args.tenant, campaign=args.campaign)
         if not pairs:
@@ -885,6 +939,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 campaigns.append(generate_campaign_derivatives(
                     tenant_id, slug, root=root, formats=formats, force=args.force,
+                    archives_dir=args.archives_dir,
                 ))
             except DerivativeFormatsError as exc:
                 errors.append({"tenantId": tenant_id, "slug": slug,

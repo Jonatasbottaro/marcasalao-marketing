@@ -193,12 +193,26 @@ def load_approvals(abs_path: str) -> dict[tuple[str, str], dict]:
         slug = item.get("slug")
         if not isinstance(tenant_id, str) or not isinstance(slug, str):
             continue
+        hashes = item.get("hashes")
+        if not isinstance(hashes, dict):
+            hashes = {}
         index[(tenant_id, slug)] = {
             "status": _decision(item),
             "locucaoExternaConferida": bool(item.get("locucaoExternaConferida", False)),
             "observacoes": item.get("observacoes")
             if isinstance(item.get("observacoes"), str)
             else "",
+            "updatedAt": item.get("updatedAt")
+            if isinstance(item.get("updatedAt"), str)
+            else None,
+            "reviewer": doc.get("revisor")
+            if isinstance(doc.get("revisor"), str)
+            else "",
+            "hashes": {
+                str(key): str(value)
+                for key, value in hashes.items()
+                if isinstance(key, str) and isinstance(value, str)
+            },
             "schemaVersion": doc.get("schemaVersion"),
         }
     return index
@@ -221,6 +235,36 @@ def _utm_from_params(slot: dict, brand: dict) -> str:
         return ""
     query = "&".join(f"{key}={value}" for key, value in params.items())
     return f"https://{domain}/?{query}"
+
+
+HASH_ARTIFACTS = {
+    "video": "video",
+    "srt": "srt",
+    "narracao": "narration",
+    "storyboard": "storyboard",
+}
+
+
+def _current_manifest_hashes(root_real: str, tenant_id: str, slug: str) -> dict[str, str]:
+    """SHA-256 declarados no manifest.json atual da entrega."""
+    manifest_path = os.path.join(
+        root_real, DELIVERIES_ROOT_REL, tenant_id, slug, "manifest.json"
+    )
+    if not os.path.isfile(render_local.fs_path(manifest_path)):
+        return {}
+    artifacts = _load_json(manifest_path).get("artifacts") or {}
+    hashes: dict[str, str] = {}
+    for out_key, art_key in HASH_ARTIFACTS.items():
+        art = artifacts.get(art_key)
+        if isinstance(art, dict) and isinstance(art.get("sha256"), str):
+            hashes[out_key] = art["sha256"]
+    return hashes
+
+
+def _changed_hashes(stored: dict, current: dict) -> list[str]:
+    if not isinstance(stored, dict) or not stored:
+        return []
+    return [key for key, value in stored.items() if current.get(key) != value]
 
 
 def _external_narration(policy: dict) -> bool:
@@ -512,6 +556,27 @@ def _bundle_slot(
     }
     external_narration = _external_narration(audit_policy)
 
+    current_hashes = _current_manifest_hashes(root_real, tenant_id, slug)
+    approved_hashes = approval.get("hashes") if approval else {}
+    if not isinstance(approved_hashes, dict):
+        approved_hashes = {}
+    approval_proof = None
+    if approved:
+        approval_proof = {
+            "reviewer": approval.get("reviewer") or "",
+            "updatedAt": approval.get("updatedAt"),
+            "decision": "aprovado",
+            "autoPublish": False,
+            "hashCheck": "ok" if approved_hashes else "sem_hashes",
+            "changedHashes": _changed_hashes(approved_hashes, current_hashes),
+            "hashesAprovados": approved_hashes,
+            "hashesValidados": current_hashes,
+            "validatedAgainst": render_local.rel(
+                root_real,
+                os.path.join(root_real, DELIVERIES_ROOT_REL, tenant_id, slug, "manifest.json"),
+            ),
+        }
+
     info = {
         "slotId": slot_id,
         "tenantId": tenant_id,
@@ -579,6 +644,7 @@ def _bundle_slot(
             "sha256Copied": cover_copy["sha256Copied"],
             "error": cover_copy["error"],
         },
+        "approvalProof": approval_proof,
         "guardrailsAudited": True,
         "guardrailViolations": [],
         "autoPublish": False,
@@ -754,6 +820,35 @@ def build_handoff_bundle(
             )
 
     selected.sort(key=lambda pair: (str(pair[0].get("dataSugerida")), str(pair[0].get("slotId"))))
+
+    stale: list[dict] = []
+    for slot, approval in selected:
+        if not approval or approval.get("status") != "aprovado":
+            continue
+        changed = _changed_hashes(
+            approval.get("hashes") or {},
+            _current_manifest_hashes(
+                root_real, str(slot.get("tenantId")), str(slot.get("slug"))
+            ),
+        )
+        if changed:
+            stale.append(
+                {
+                    "slotId": slot.get("slotId"),
+                    "tenantId": slot.get("tenantId"),
+                    "slug": slot.get("slug"),
+                    "changedHashes": changed,
+                }
+            )
+    if stale:
+        return {
+            "ok": False,
+            "autoPublish": False,
+            "code": "APPROVAL_STALE",
+            "detail": "aprovacao(es) com hash divergente do manifest atual",
+            "bundledSlots": 0,
+            "staleApprovals": stale,
+        }
 
     if not selected:
         if not approvals or not any(item["status"] == "aprovado" for item in approvals.values()):

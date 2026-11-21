@@ -24,6 +24,8 @@ export type ContentPipelineStage =
     // Etapa 6: rotulo para issues da checagem ExecutionPackage x TenantPolicy,
     // que e aditiva e NAO entra no DAG de 5 estagios (CONTENT_PIPELINE_STAGES).
     | 'tenant-policy'
+    // Etapa 8: rotulo para a invariante global `autoPublish: false` (aditiva).
+    | 'autopublish'
 
 export const CONTENT_PIPELINE_STAGES: readonly ContentPipelineStage[] = Object.freeze([
     'project',

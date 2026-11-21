@@ -38,6 +38,13 @@ import review_dashboard  # noqa: E402
 import srt_formatter  # noqa: E402
 import tenant_validator  # noqa: E402
 
+NOVAS_CAMPANHAS = (
+    ("clinica-vital", "camp-clinica-vital-002"),
+    ("estudio-flow", "camp-saas-demo-estudio-flow-002"),
+    ("meu-salao", "camp-meu-salao-002"),
+    ("multitrack-hub", "camp-multitrack-hub-002"),
+)
+
 
 class FactoryEndToEndTests(unittest.TestCase):
     maxDiff = None
@@ -241,3 +248,125 @@ class FactoryEndToEndTests(unittest.TestCase):
         after = support.find_media(self.root)
         self.assertEqual(before, after)
         self.assertEqual(before, [])
+
+    # ------------------------------------------------------------------
+    # 5. Fluxo completo por campanha nova (4 campanhas do portfolio 14)
+    # ------------------------------------------------------------------
+    def test_05_fluxo_completo_novas_campanhas(self) -> None:
+        steps: list[str] = []
+        for tenant, slug in NOVAS_CAMPANHAS:
+            ctx = tenant_validator.load_and_validate_tenant(
+                tenant, root=self.root, strict=True
+            )
+            self.assertTrue(ctx["ok"], tenant)
+            steps.append(f"tenant:{tenant}/ok")
+
+            srt_path = support.inject_long_srt(self.root, tenant=tenant, slug=slug)
+            self.assertGreater(
+                support.srt_max_line(srt_path),
+                srt_formatter.DEFAULT_MAX_CHARS,
+                f"{tenant}/{slug}: fixture deveria ter linha longa",
+            )
+            formatted = srt_formatter.format_delivery_srts(
+                self.root, tenant=tenant, slug=slug
+            )
+            self.assertEqual(formatted["totals"]["changed"], 1, formatted)
+            self.assertEqual(
+                support.srt_max_line(srt_path),
+                srt_formatter.DEFAULT_MAX_CHARS,
+                f"{tenant}/{slug}: apos formatacao nao deveria haver linha longa",
+            )
+            support.sync_checklist_srt(self.root, tenant=tenant, slug=slug)
+            review_dashboard.build_portal(root=self.root)
+            steps.append(f"srt:{tenant}/48chars")
+
+            qa = editorial_qa.run_editorial_qa(root=self.root, strict=True)
+            self.assertEqual([c["id"] for c in qa["checks"]], list(editorial_qa.CHECK_IDS))
+            self.assertEqual(len(qa["checks"]), 7)
+            self.assertTrue(qa["ok"], qa["summary"])
+            steps.append(f"qa:{tenant}/7")
+
+            decision = self._approve(tenant=tenant, slug=slug)
+            self.assertEqual(decision["decision"], "aprovado")
+            self.assertFalse(decision["autoPublish"])
+            self.assertTrue(decision["campaign"]["locucaoExternaConferida"])
+            steps.append(f"approve:{tenant}")
+
+            code, output = self._run_cli([
+                "validate", "--approvals-file", self.approvals_rel,
+            ])
+            self.assertEqual(code, 0, output)
+            clean = json.loads(output)
+            self.assertTrue(clean["ok"], clean.get("errors"))
+            self.assertEqual(clean["staleApprovals"], [])
+
+            manifest = support.manifest_path(self.root, tenant, slug)
+            previous_sha = support.read_json(manifest)["artifacts"]["video"]["sha256"]
+            try:
+                support.mutate_manifest_video_sha(
+                    self.root, tenant, slug, "e" * 64
+                )
+                code_stale, out_stale = self._run_cli([
+                    "validate", "--approvals-file", self.approvals_rel,
+                ])
+                stale = json.loads(out_stale)
+                self.assertFalse(stale["ok"])
+                self.assertTrue(
+                    any(
+                        s["tenantId"] == tenant and s["slug"] == slug
+                        for s in stale["staleApprovals"]
+                    ),
+                    f"{tenant}/{slug}: esperava staleApproval",
+                )
+            finally:
+                support.restore_manifest_video_sha(
+                    self.root, tenant, slug, previous_sha
+                )
+            steps.append(f"stale:{tenant}")
+
+            reapproved = self._approve(tenant=tenant, slug=slug)
+            self.assertEqual(reapproved["decision"], "aprovado")
+            steps.append(f"reapprove:{tenant}")
+
+        handoff = factory_cli.cmd_handoff(
+            root=self.root,
+            all_approved=True,
+            approvals_file=self.approvals_rel,
+            output_dir=support.HANDOFF_REL,
+        )
+        self.assertTrue(handoff["ok"], handoff)
+        self.assertIs(handoff["autoPublish"], False)
+        bundle = handoff["handoff"]
+        self.assertGreaterEqual(bundle.get("bundledSlots", 0), len(NOVAS_CAMPANHAS))
+        self.assertIs(bundle.get("autoPublish"), False)
+        for slot in bundle.get("slots", []):
+            if not isinstance(slot, dict):
+                continue
+            tenant = slot.get("tenantId")
+            slug = slot.get("slug")
+            if (tenant, slug) not in NOVAS_CAMPANHAS:
+                continue
+            directory_rel = slot.get("directory")
+            self.assertTrue(directory_rel, f"{tenant}/{slug}: diretorio ausente")
+            directory_abs = support._abs(self.root, directory_rel)
+            for name in ("POSTAGEM-MANUAL.md", "copy-pronta.txt", "handoff-manifest.json"):
+                self.assertTrue(
+                    os.path.isfile(
+                        support.render_local.fs_path(os.path.join(directory_abs, name))
+                    ),
+                    f"{name} ausente em {directory_rel}",
+                )
+            manifest = support.read_json(os.path.join(directory_abs, "handoff-manifest.json"))
+            self.assertIs(manifest.get("autoPublish"), False)
+        steps.append(f"handoff:{bundle.get('bundledSlots')}slots")
+
+        audit = release_audit.run_release_audit(root=self.root, strict=True)
+        self.assertTrue(audit["ok"], audit["summary"])
+        self.assertEqual(
+            audit["summary"]["domains"],
+            {"ok": 7, "warn": 0, "fail": 0},
+        )
+        steps.append("release_audit:7/7")
+
+        self.assertEqual(support.find_media(self.root), [])
+        print("E2E-novas " + " -> ".join(steps))

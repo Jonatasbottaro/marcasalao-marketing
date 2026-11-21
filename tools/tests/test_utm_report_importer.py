@@ -449,6 +449,163 @@ class UtmReportImporterTest(unittest.TestCase):
         self.assertEqual(rc_missing, 2)
         self.assertIn("USO_INVALIDO", json.loads(out_missing)["error"])
 
+    # ------------------------------------------------------------------
+    # comparativo A/B: classificacao, limiar, empate e integracao
+    # ------------------------------------------------------------------
+    def _hook_project(self, name: str, rows: list[list[str]], header: list[str] | None = None) -> Path:
+        root = self._project(name)
+        full_header = header or (GA4_HEADER + ["hook_variant_used"])
+        self._write_csv(root, "metrics.csv", full_header, rows)
+        return root
+
+    def test_17_hook_comparison_classifies_winner(self) -> None:
+        root = self._hook_project("cmp-winner", [
+            ["youtube", "shorts", "camp-marca", "marca-salao", "1000", "600", "50", "A"],
+            ["instagram", "reels", "camp-marca", "marca-salao", "500", "250", "40", "B"],
+        ])
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        comparison = report["rankings"]["hookComparison"]
+        self.assertEqual(comparison["minSessions"], 100)
+        by_campaign = comparison["byCampaign"]
+        self.assertEqual(len(by_campaign), 1)
+        row = by_campaign[0]
+        self.assertEqual(row["tenantId"], "marca-salao")
+        self.assertEqual(row["campaign"], "camp-marca")
+        self.assertEqual(row["sessionsA"], 1000)
+        self.assertEqual(row["sessionsB"], 500)
+        self.assertEqual(row["sessionsTotal"], 1500)
+        self.assertEqual(row["conversionRateA"], 5.0)
+        self.assertEqual(row["conversionRateB"], 8.0)
+        self.assertEqual(row["classification"], "vencedor_B")
+        self.assertEqual(row["liftConversionPct"], 60.0)
+        self.assertEqual(row["classificationLabel"], "vencedor B")
+        # agregado por tenant acompanha a classificacao
+        tenant_row = next(
+            g for g in comparison["byTenant"] if g["tenantId"] == "marca-salao"
+        )
+        self.assertEqual(tenant_row["classification"], "vencedor_B")
+
+    def test_18_hook_comparison_insufficient_sample(self) -> None:
+        root = self._hook_project("cmp-insuf", [
+            ["youtube", "shorts", "camp-marca", "marca-salao", "40", "20", "3", "A"],
+            ["instagram", "reels", "camp-marca", "marca-salao", "30", "15", "4", "B"],
+        ])
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        row = report["rankings"]["hookComparison"]["byCampaign"][0]
+        self.assertEqual(row["sessionsTotal"], 70)
+        self.assertEqual(row["classification"], "amostra_insuficiente")
+        self.assertEqual(row["classificationLabel"], "amostra insuficiente")
+
+    def test_19_hook_comparison_min_sessions_threshold_configurable(self) -> None:
+        root = self._hook_project("cmp-threshold", [
+            ["youtube", "shorts", "camp-marca", "marca-salao", "60", "30", "3", "A"],
+            ["instagram", "reels", "camp-marca", "marca-salao", "60", "30", "6", "B"],
+        ])
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out", min_sessions=50
+        )
+        row = report["rankings"]["hookComparison"]["byCampaign"][0]
+        self.assertEqual(report["rankings"]["hookComparison"]["minSessions"], 50)
+        self.assertEqual(row["sessionsTotal"], 120)
+        self.assertEqual(row["classification"], "vencedor_B")
+
+        rc, out = self._run_main([
+            "--root", str(root), "--metrics-csv", "metrics.csv",
+            "--out-dir", "out", "--min-hook-sessions", "200", "--json",
+        ])
+        self.assertEqual(rc, 0)
+        row_cli = json.loads(out)["rankings"]["hookComparison"]["byCampaign"][0]
+        self.assertEqual(row_cli["classification"], "amostra_insuficiente")
+
+    def test_20_hook_comparison_technical_tie(self) -> None:
+        root = self._hook_project("cmp-empate", [
+            ["youtube", "shorts", "camp-marca", "marca-salao", "500", "300", "25", "A"],
+            ["instagram", "reels", "camp-marca", "marca-salao", "500", "300", "25", "B"],
+        ])
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        row = report["rankings"]["hookComparison"]["byCampaign"][0]
+        self.assertEqual(row["sessionsTotal"], 1000)
+        self.assertEqual(row["conversionRateA"], 5.0)
+        self.assertEqual(row["conversionRateB"], 5.0)
+        self.assertEqual(row["classification"], "empate_tecnico")
+        self.assertEqual(row["liftConversionPct"], 0.0)
+
+    def test_21_hook_comparison_absent_without_variant(self) -> None:
+        root = self._ga4_project("cmp-absent")
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        comparison = report["rankings"]["hookComparison"]
+        self.assertEqual(comparison["byCampaign"], [])
+        self.assertEqual(comparison["byTenant"], [])
+        markdown = (root / report["reports"]["markdown"]).read_text(encoding="utf-8")
+        self.assertIn("Comparativo de hooks A x B", markdown)
+
+    def test_22_utm_report_feeds_campaign_calendar_recommendations(self) -> None:
+        import campaign_calendar
+
+        root = self._hook_project("cmp-calendar", [
+            ["youtube", "shorts", "camp-marca", "marca-salao", "1000", "600", "50", "A"],
+            ["instagram", "reels", "camp-marca", "marca-salao", "500", "250", "40", "B"],
+        ])
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", out_dir="out"
+        )
+        report_rel = report["reports"]["json"]
+
+        calendar = campaign_calendar.build_editorial_calendar(
+            "2026-11-23", weeks=7, root=REPO_ROOT, utm_report=None
+        )
+        self.assertTrue(all(s["hookRecomendado"] == "testar_ab" for s in calendar["slots"]))
+        self.assertIsNone(calendar["utmReport"])
+
+        # copia o relatorio para dentro da raiz real do calendario
+        target_rel = ".workspace/tmp/test_utm_report_importer/utm-report.json"
+        target = Path(REPO_ROOT) / target_rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            (root / report_rel).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        calendar = campaign_calendar.build_editorial_calendar(
+            "2026-11-23", weeks=7, root=REPO_ROOT, utm_report=target_rel
+        )
+        self.assertIsNotNone(calendar["utmReport"])
+        recommended = {s["hookRecomendado"] for s in calendar["slots"]}
+        self.assertTrue(recommended.issubset({"A", "B", "testar_ab"}))
+        for slot in calendar["slots"]:
+            self.assertIn(
+                slot["hookRecomendado"], ("A", "B", "testar_ab")
+            )
+            self.assertTrue(slot["hookRecomendadoJustificativa"])
+
+    def test_23_campaign_calendar_rejects_utm_report_outside_root(self) -> None:
+        import campaign_calendar
+
+        with self.assertRaises(campaign_calendar.CampaignCalendarError) as ctx:
+            campaign_calendar.build_editorial_calendar(
+                "2026-11-23", weeks=7, root=REPO_ROOT, utm_report="../fora.json"
+            )
+        self.assertIn("UTM_REPORT_FORA_DA_RAIZ", str(ctx.exception))
+
+    def test_24_campaign_calendar_rejects_malformed_utm_report(self) -> None:
+        import campaign_calendar
+
+        target_rel = ".workspace/tmp/test_utm_report_importer/malformed.json"
+        target = Path(REPO_ROOT) / target_rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps({"rankings": {}}), encoding="utf-8")
+        with self.assertRaises(campaign_calendar.CampaignCalendarError) as ctx:
+            campaign_calendar.build_editorial_calendar(
+                "2026-11-23", weeks=7, root=REPO_ROOT, utm_report=target_rel
+            )
+        self.assertIn("UTM_REPORT_SEM_COMPARATIVO", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

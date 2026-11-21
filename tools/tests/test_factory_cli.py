@@ -41,8 +41,8 @@ class FactoryCliTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         payload = json.loads(buf.getvalue())
         self.assertTrue(payload["ok"])
-        self.assertGreaterEqual(payload["totalTenants"], 4)
-        self.assertGreaterEqual(payload["totalCampaigns"], 8)
+        self.assertEqual(payload["totalTenants"], 5)
+        self.assertEqual(payload["totalCampaigns"], 14)
 
         by_id = {entry["tenantId"]: entry for entry in payload["tenants"]}
         self.assertEqual(by_id["estudio-flow"]["defaultPreset"], "saas-demo")
@@ -53,13 +53,21 @@ class FactoryCliTest(unittest.TestCase):
         self.assertFalse(by_id["meu-salao"]["allowAudioTrack"])
         self.assertEqual(by_id["multitrack-hub"]["defaultPreset"], "shorts-completo")
         self.assertTrue(by_id["multitrack-hub"]["allowAudioTrack"])
+        self.assertEqual(by_id["clinica-vital"]["defaultPreset"], "saas-demo")
+        self.assertFalse(by_id["clinica-vital"]["allowAudioTrack"])
 
         for tid, expected_slug in (
+            ("clinica-vital", "camp-clinica-vital-002"),
+            ("clinica-vital", "camp-saas-demo-clinica-vital-001"),
+            ("clinica-vital", "camp-saas-demo-clinica-vital-002"),
             ("estudio-flow", "camp-saas-demo-estudio-flow-001"),
+            ("estudio-flow", "camp-saas-demo-estudio-flow-002"),
             ("marca-salao", "camp-saas-demo-marca-salao-001"),
             ("marca-salao", "camp-saas-demo-ns001-agenda-001"),
+            ("meu-salao", "camp-meu-salao-002"),
             ("meu-salao", "camp-saas-demo-meu-salao-001"),
             ("meu-salao", "camp-saas-demo-meu-salao-002"),
+            ("multitrack-hub", "camp-multitrack-hub-002"),
             ("multitrack-hub", "camp-shorts-completo-multitrack-001"),
             ("multitrack-hub", "camp-shorts-rateios-002"),
             ("multitrack-hub", "camp-shorts-stems-workflow-003"),
@@ -119,12 +127,13 @@ class FactoryCliTest(unittest.TestCase):
             report = json.load(handle)
 
         self.assertTrue(report["ok"])
-        self.assertGreaterEqual(report["totalTenants"], 4)
-        self.assertGreaterEqual(report["totalCampaigns"], 8)
+        self.assertEqual(report["totalTenants"], 5)
+        self.assertEqual(report["totalCampaigns"], 14)
         self.assertEqual(len(report["deliveries"]), report["totalCampaigns"])
 
         self.assertTrue(
-            {"estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"}.issubset(set(report["tenants"]))
+            {"clinica-vital", "estudio-flow", "marca-salao", "meu-salao", "multitrack-hub"}
+            .issubset(set(report["tenants"]))
         )
 
         # Confere politica de audio por tenant e integridade dos artefatos versionados
@@ -229,8 +238,8 @@ class FactoryCliTest(unittest.TestCase):
                 self.assertEqual(status, "ok", stage_id)
 
         counts = report["counts"]
-        self.assertGreaterEqual(counts["tenants"], 4)
-        self.assertGreaterEqual(counts["campaigns"], 8)
+        self.assertEqual(counts["tenants"], 5)
+        self.assertEqual(counts["campaigns"], 14)
         self.assertEqual(counts["deliveries"], counts["campaigns"])
         self.assertEqual(counts["derivatives"], counts["campaigns"])
         self.assertEqual(counts["staticCards"], 7 * counts["campaigns"])

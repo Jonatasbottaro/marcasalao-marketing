@@ -85,6 +85,32 @@ function mapIssues(
     }))
 }
 
+/**
+ * Invariante global: nenhum manifesto ou plano de saida pode habilitar
+ * publicacao automatica. `autoPublish` ausente e aceito; quando presente,
+ * precisa ser exatamente `false`.
+ */
+function collectAutoPublishIssues(
+    documents: ReadonlyArray<readonly [string, unknown]>,
+): ContentPipelineIssue[] {
+    const issues: ContentPipelineIssue[] = []
+    for (const [label, document] of documents) {
+        if (!isPlainObject(document)) {
+            continue
+        }
+        if (Object.prototype.hasOwnProperty.call(document, 'autoPublish') && document.autoPublish !== false) {
+            issues.push({
+                stage: 'autopublish',
+                severity: 'error',
+                code: 'AUTO_PUBLISH_FORBIDDEN',
+                path: `${label}.autoPublish`,
+                message: 'autoPublish must be false (or absent); automatic publishing is forbidden.',
+            })
+        }
+    }
+    return issues
+}
+
 export function validateContentPipeline(
     input: unknown,
 ): ContentPipelineValidationReport {
@@ -269,6 +295,15 @@ export function validateContentPipeline(
             })
         }
     }
+
+    // Invariante global: nenhum manifesto/plano pode habilitar publicacao automatica.
+    errors.push(...collectAutoPublishIssues([
+        ['project', projectInput],
+        ['composition', compositionInput],
+        ['output-plan', outputPlanInput],
+        ['beat-plan', beatPlanInput],
+        ['executionPackage', typedInput.executionPackage],
+    ]))
 
     const completedStages: ContentPipelineStage[] = []
     const blockedStages: ContentPipelineStage[] = []

@@ -182,7 +182,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-002",
@@ -221,7 +223,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-003",
@@ -261,7 +265,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-004",
@@ -300,7 +306,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-005",
@@ -340,7 +348,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-006",
@@ -379,7 +389,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-007",
@@ -419,7 +431,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-008",
@@ -458,7 +472,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-009",
@@ -498,7 +514,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-010",
@@ -537,7 +555,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-011",
@@ -577,7 +597,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-012",
@@ -616,7 +638,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-013",
@@ -656,7 +680,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-014",
@@ -695,7 +721,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-015",
@@ -735,7 +763,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-016",
@@ -774,7 +804,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-017",
@@ -814,7 +846,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-018",
@@ -853,7 +887,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-019",
@@ -893,7 +929,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-020",
@@ -932,7 +970,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-021",
@@ -972,7 +1012,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-022",
@@ -1011,7 +1053,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-023",
@@ -1051,7 +1095,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-024",
@@ -1090,7 +1136,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-025",
@@ -1130,7 +1178,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-026",
@@ -1170,7 +1220,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-027",
@@ -1210,7 +1262,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-028",
@@ -1250,7 +1304,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-029",
@@ -1290,7 +1346,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-030",
@@ -1330,7 +1388,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-031",
@@ -1370,7 +1430,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-032",
@@ -1410,7 +1472,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-033",
@@ -1450,7 +1514,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-034",
@@ -1490,7 +1556,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-035",
@@ -1530,7 +1598,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-036",
@@ -1570,7 +1640,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-037",
@@ -1610,7 +1682,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-038",
@@ -1650,7 +1724,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-039",
@@ -1690,7 +1766,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-040",
@@ -1730,7 +1808,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-041",
@@ -1770,7 +1850,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-042",
@@ -1810,7 +1892,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-043",
@@ -1850,7 +1934,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-044",
@@ -1890,7 +1976,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-045",
@@ -1929,7 +2017,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-046",
@@ -1969,7 +2059,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-047",
@@ -2009,7 +2101,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-048",
@@ -2049,7 +2143,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-049",
@@ -2089,7 +2185,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-050",
@@ -2129,7 +2227,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-051",
@@ -2169,7 +2269,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-052",
@@ -2209,7 +2311,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-053",
@@ -2249,7 +2353,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-054",
@@ -2288,7 +2394,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-055",
@@ -2327,7 +2435,9 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     },
     {
       "slotId": "slot-056",
@@ -2366,7 +2476,10 @@
         "Enquanto a ferramenta de analytics estiver PENDENTE (docs/rastreio-utm.md, seção 5), não declarar o link UTM como ativo em registros de campanha."
       ],
       "statusEditorial": "aguardando_aprovacao_titular",
-      "autoPublish": false
+      "autoPublish": false,
+      "hookRecomendado": "testar_ab",
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
     }
-  ]
+  ],
+  "utmReport": null
 }

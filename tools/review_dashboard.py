@@ -92,6 +92,7 @@ _APPROVALS_ITEM_KEYS = {
     "locucaoExternaConferida",
     "observacoes",
     "hashes",
+    "updatedAt",
 }
 _APPROVALS_RESUMO_KEYS = {"totalCampanhas", "aprovadas", "ajustes", "pendentes"}
 _MAX_CORPO_POST = 1_000_000
@@ -537,6 +538,7 @@ def _collect_data(root: str) -> tuple[dict, dict]:
         "deliveriesRoot": DELIVERIES_ROOT.replace(os.sep, "/"),
         "pacotesRoot": PACOTES_ROOT.replace(os.sep, "/"),
         "archivesRoot": ARCHIVES_ROOT.replace(os.sep, "/"),
+        "autoPublish": False,
         "totals": {"tenants": len(tenants), "campaigns": len(campaigns)},
         "tenants": tenants,
         "campaigns": campaigns,
@@ -583,6 +585,7 @@ def build_portal(root: str = ".", output_dir: str | None = None) -> dict:
 
     return {
         "ok": True,
+        "autoPublish": False,
         "outputDir": _rel(root_real, out_abs),
         "totalTenants": data["totals"]["tenants"],
         "totalCampaigns": data["totals"]["campaigns"],
@@ -745,6 +748,8 @@ main{padding:18px 22px;display:grid;grid-template-columns:repeat(auto-fill,minma
 .chip.audio-aac{background:rgba(46,160,67,.15);color:#3fb950;border-color:#2ea043}
 .chip.status.aguardando{background:rgba(210,153,34,.15);color:#d29922;border-color:#9e6a03}
 .chip.status.aprovado{background:rgba(46,160,67,.2);color:#3fb950;border-color:#2ea043}
+.chip.stale{background:rgba(248,81,73,.18);color:#ff7b72;border-color:#f85149}
+.alerta{font-size:11px;color:#ff7b72;border:1px solid #f85149;border-radius:6px;padding:6px 8px;margin:6px 0}
 .chip.status.ajuste{background:rgba(248,81,73,.15);color:#f85149;border-color:#da3633}
 .card-media{padding:10px 14px 0;display:flex;flex-direction:column;gap:6px}
 .viewer img,.viewer video{width:100%;max-height:430px;object-fit:contain;background:#000;border-radius:8px;display:block}
@@ -861,13 +866,41 @@ function salvarEstado(estado) {
   catch (e) { /* localStorage indisponivel: segue sem persistencia */ }
 }
 function chaveCampanha(c) { return c.tenantId + "/" + c.slug; }
+function hashesAtuais(c) {
+  return {
+    video: c.video.sha256,
+    srt: c.srt.sha256,
+    narracao: c.narracao.sha256,
+    storyboard: c.storyboard.sha256
+  };
+}
+function hashesValidos(valor) {
+  if (!valor || typeof valor !== "object" || Array.isArray(valor)) { return null; }
+  const limpo = {};
+  Object.keys(valor).forEach(function (k) {
+    if (typeof valor[k] === "string") { limpo[k] = valor[k]; }
+  });
+  return Object.keys(limpo).length ? limpo : null;
+}
 function estadoCampanha(c) {
   const item = (carregarEstado().campanhas || {})[chaveCampanha(c)];
   return {
     decisao: item && DECISOES[item.decisao] ? item.decisao : "aguardando",
     locucaoExternaConferida: !!(item && item.locucaoExternaConferida),
-    observacoes: item && item.observacoes ? item.observacoes : ""
+    observacoes: item && item.observacoes ? item.observacoes : "",
+    updatedAt: item && typeof item.updatedAt === "string" ? item.updatedAt : "",
+    hashes: hashesValidos(item && item.hashes)
   };
+}
+function avaliarStale(c) {
+  const e = estadoCampanha(c);
+  if (e.decisao !== "aprovado" || !e.hashes) { return { stale: false, changed: [] }; }
+  const atuais = hashesAtuais(c);
+  const mudados = [];
+  Object.keys(e.hashes).forEach(function (chave) {
+    if (atuais[chave] && atuais[chave] !== e.hashes[chave]) { mudados.push(chave); }
+  });
+  return { stale: mudados.length > 0, changed: mudados };
 }
 function registrar(c, campo, valor) {
   const estado = carregarEstado();
@@ -875,6 +908,11 @@ function registrar(c, campo, valor) {
   const chave = chaveCampanha(c);
   const item = estado.campanhas[chave] || { decisao: "aguardando", locucaoExternaConferida: false, observacoes: "" };
   item[campo] = valor;
+  item.updatedAt = new Date().toISOString();
+  if (campo === "decisao") {
+    if (valor === "aprovado") { item.hashes = hashesAtuais(c); }
+    else { delete item.hashes; }
+  }
   estado.campanhas[chave] = item;
   salvarEstado(estado);
   agendarSync();
@@ -891,7 +929,7 @@ function docAprovacoes() {
   const estado = carregarEstado();
   const campanhas = DATA.campaigns.map(function (c) {
     const e = estadoCampanha(c);
-    return {
+    const item = {
       tenantId: c.tenantId,
       slug: c.slug,
       campaignId: c.campaignId,
@@ -900,13 +938,10 @@ function docAprovacoes() {
       decisao: e.decisao,
       locucaoExternaConferida: e.locucaoExternaConferida,
       observacoes: e.observacoes,
-      hashes: {
-        video: c.video.sha256,
-        srt: c.srt.sha256,
-        narracao: c.narracao.sha256,
-        storyboard: c.storyboard.sha256
-      }
+      hashes: e.hashes || hashesAtuais(c)
     };
+    if (e.updatedAt) { item.updatedAt = e.updatedAt; }
+    return item;
   });
   const resumo = { totalCampanhas: campanhas.length, aprovadas: 0, ajustes: 0, pendentes: 0 };
   campanhas.forEach(function (k) {
@@ -972,11 +1007,14 @@ function importarAprovacoes(arquivo) {
         return c.tenantId === item.tenantId && c.slug === item.slug;
       })[0];
       if (!alvo) { return; }
-      estado.campanhas[chaveCampanha(alvo)] = {
+      const importado = {
         decisao: DECISOES[item.decisao] ? item.decisao : "aguardando",
         locucaoExternaConferida: !!item.locucaoExternaConferida,
-        observacoes: typeof item.observacoes === "string" ? item.observacoes : ""
+        observacoes: typeof item.observacoes === "string" ? item.observacoes : "",
+        hashes: hashesValidos(item.hashes)
       };
+      if (typeof item.updatedAt === "string") { importado.updatedAt = item.updatedAt; }
+      estado.campanhas[chaveCampanha(alvo)] = importado;
     });
     salvarEstado(estado);
     agendarSync();
@@ -1052,6 +1090,28 @@ function painelGuardrails(c) {
   [["video", c.video.sha256], ["srt", c.srt.sha256], ["narracao", c.narracao.sha256], ["storyboard", c.storyboard.sha256]].forEach(function (par) {
     painel.appendChild(el("div", { class: "hash-linha", text: par[0] + ": " + par[1] }));
   });
+  const aprovacao = estadoCampanha(c);
+  if (aprovacao.decisao === "aprovado" && aprovacao.hashes) {
+    const integridade = avaliarStale(c);
+    if (integridade.stale) {
+      painel.appendChild(el("p", {
+        class: "alerta",
+        text: "APROVAÇÃO STALE: hashes divergentes do manifesto atual ("
+          + integridade.changed.join(", ") + "). Reaprove a campanha antes de empacotar."
+      }));
+    } else {
+      painel.appendChild(el("p", {
+        class: "nota",
+        text: "Aprovação íntegra: hashes da aprovação conferem com o manifesto atual."
+      }));
+    }
+    if (aprovacao.updatedAt) {
+      painel.appendChild(el("p", { class: "nota", text: "Aprovação registrada em " + aprovacao.updatedAt }));
+    }
+    Object.keys(aprovacao.hashes).forEach(function (chave) {
+      painel.appendChild(el("div", { class: "hash-linha", text: "aprovado/" + chave + ": " + aprovacao.hashes[chave] }));
+    });
+  }
   return painel;
 }
 
@@ -1117,10 +1177,17 @@ function card(c) {
   cardEl.style.setProperty("--c-primary", (tenant.palette && tenant.palette.primary) || "#1f6feb");
 
   const chipStatus = el("span", { class: "chip status aguardando" });
+  const chipStale = el("span", { class: "chip stale", text: "HASH DIVERGENTE (STALE)" });
+  chipStale.hidden = true;
   function atualizarChip() {
     const e = estadoCampanha(c);
     chipStatus.textContent = DECISOES[e.decisao];
     chipStatus.className = "chip status " + e.decisao;
+    const integridade = avaliarStale(c);
+    chipStale.hidden = !integridade.stale;
+    if (integridade.stale) {
+      chipStale.title = "Hashes divergentes: " + integridade.changed.join(", ");
+    }
   }
 
   const cabecalho = el("div", { class: "card-head" }, [
@@ -1135,7 +1202,8 @@ function card(c) {
       class: "chip " + (c.politicaAudio === "AAC" ? "audio-aac" : "audio-an"),
       text: c.politicaAudio === "AAC" ? "ÁUDIO AAC" : "SEM ÁUDIO (-an)"
     }),
-    chipStatus
+    chipStatus,
+    chipStale
   ]);
   atualizarChip();
   cardEl.appendChild(cabecalho);
@@ -1475,6 +1543,12 @@ def _validar_item_aprovacoes(item: Any, conhecidas: dict) -> None:
                 raise _AprovacoesInvalidas(
                     "TIPO_INVALIDO", "hashes deve mapear texto para texto"
                 )
+    if "updatedAt" in item:
+        updated_at = item["updatedAt"]
+        if not isinstance(updated_at, str) or not _EXPORTADO_EM_RE.match(updated_at):
+            raise _AprovacoesInvalidas(
+                "TIPO_INVALIDO", "updatedAt deve ser timestamp ISO"
+            )
 
 
 # ---------------------------------------------------------------------------

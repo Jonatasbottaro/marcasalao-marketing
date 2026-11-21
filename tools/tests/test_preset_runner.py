@@ -99,6 +99,15 @@ class PresetRunnerTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         _clean_dir(TEST_TMP_ROOT)
 
+        # Archives exclusivos da suite: nenhum master compartilhado e tocado.
+        cls._archives_tmp = tempfile.TemporaryDirectory(
+            prefix="archives-", dir=TEST_TMP_ROOT)
+        cls.addClassCleanup(cls._archives_tmp.cleanup)
+        cls.archives_dir = os.path.realpath(cls._archives_tmp.name)
+        cls.shared_archive_hashes = {
+            slug: cls._shared_archive_sha(slug) for slug in (MS_SLUG, MTH_SLUG)
+        }
+
         cls.ms_output = _clean_dir(os.path.join(TEST_TMP_ROOT, "marca-salao-saas-demo"))
         cls.mth_output = _clean_dir(os.path.join(TEST_TMP_ROOT, "multitrack-hub-shorts"))
         cls.mth_audio_output = _clean_dir(os.path.join(TEST_TMP_ROOT, "multitrack-hub-audio"))
@@ -113,16 +122,26 @@ class PresetRunnerTest(unittest.TestCase):
         # Render real: saas-demo (marca-salao) -> deve ficar sem audio (-an).
         cls.MS_MANIFEST = preset_runner.run_preset_pipeline(
             MS_TENANT, MS_CONFIG, cls.ms_output, audio_path=None, root=REPO_ROOT,
+            archives_dir=cls.archives_dir,
         )
         # Render real: shorts-completo (multitrack-hub) -> gera audio anullsrc (AAC).
         cls.MTH_MANIFEST = preset_runner.run_preset_pipeline(
             MTH_TENANT, MTH_CONFIG, cls.mth_output, audio_path=None, root=REPO_ROOT,
+            archives_dir=cls.archives_dir,
         )
         # Render real: shorts-completo com audio externo fornecido via --audio.
         cls.MTH_AUDIO_MANIFEST = preset_runner.run_preset_pipeline(
             MTH_TENANT, MTH_CONFIG, cls.mth_audio_output,
             audio_path=cls.test_audio_path, root=REPO_ROOT,
+            archives_dir=cls.archives_dir,
         )
+
+    @staticmethod
+    def _shared_archive_sha(slug: str):
+        path = os.path.join(REPO_ROOT, ".workspace", "archives", slug, f"{slug}.mp4")
+        if not os.path.isfile(render_local.fs_path(path)):
+            return None
+        return render_local.sha256_file(path)
 
     def _artifact_path(self, manifest: dict, kind: str) -> str:
         return os.path.join(REPO_ROOT, manifest["artifacts"][kind]["path"])
@@ -227,7 +246,7 @@ class PresetRunnerTest(unittest.TestCase):
         with self.assertRaises(preset_runner.PresetRunnerError) as ctx:
             preset_runner.run_preset_pipeline(
                 MS_TENANT, forbidden_config_path, self.forbidden_output,
-                audio_path=None, root=REPO_ROOT,
+                audio_path=None, root=REPO_ROOT, archives_dir=self.archives_dir,
             )
         self.assertIn("GUARDRAIL_VIOLACAO", str(ctx.exception))
         # O motor deve falhar ANTES de renderizar: nenhum MP4 produzido.
@@ -239,6 +258,7 @@ class PresetRunnerTest(unittest.TestCase):
             preset_runner.run_preset_pipeline(
                 MS_TENANT, MS_CONFIG, self.audio_reject_output,
                 audio_path=self.test_audio_path, root=REPO_ROOT,
+                archives_dir=self.archives_dir,
             )
         self.assertIn("AUDIO_NAO_PERMITIDO", str(ctx.exception))
         video_dest = os.path.join(self.audio_reject_output, f"{MS_SLUG}.mp4")
@@ -324,6 +344,7 @@ class PresetRunnerTest(unittest.TestCase):
             "--config", MTH_CONFIG,
             "--output-dir", out_dir,
             "--root", REPO_ROOT,
+            "--archives-dir", self.archives_dir,
         ]
         res = subprocess.run(
             cmd, capture_output=True, text=True, encoding="utf-8",
@@ -345,6 +366,34 @@ class PresetRunnerTest(unittest.TestCase):
         self.assertEqual(manifest["format"]["height"], 1920)
         self.assertEqual(manifest["format"]["fps"], 30)
         self.assertEqual(manifest["artifacts"]["video"]["ffprobe"]["audioStreams"], 1)
+
+    # ------------------------------------------------------------------
+    # 6. Isolamento de archives e contencao do --archives-dir
+    # ------------------------------------------------------------------
+    def test_09_archives_dir_isolado_nao_toca_master_compartilhado(self) -> None:
+        for slug, before in self.shared_archive_hashes.items():
+            now = self._shared_archive_sha(slug)
+            self.assertEqual(now, before, f"master compartilhado alterado: {slug}")
+
+        for label, manifest in (("marca-salao", self.MS_MANIFEST),
+                                ("multitrack-hub", self.MTH_MANIFEST)):
+            with self.subTest(tenant=label):
+                archive_abs = os.path.join(
+                    REPO_ROOT, manifest["artifacts"]["video"]["archivePath"])
+                self.assertTrue(os.path.isfile(render_local.fs_path(archive_abs)), archive_abs)
+                self.assertTrue(
+                    os.path.normcase(os.path.realpath(archive_abs)).startswith(
+                        os.path.normcase(self.archives_dir + os.sep)),
+                    f"{label}: archive fora do diretorio isolado: {archive_abs}",
+                )
+                self.assertIn("--archives-dir", manifest["command"])
+
+        with self.assertRaises(preset_runner.PresetRunnerError) as ctx:
+            preset_runner.run_preset_pipeline(
+                MTH_TENANT, MTH_CONFIG, self.mth_output, root=REPO_ROOT,
+                archives_dir="../archives-fora-da-raiz",
+            )
+        self.assertIn("ARCHIVES_FORA_DA_RAIZ", str(ctx.exception))
 
 
 # ---------------------------------------------------------------------------
