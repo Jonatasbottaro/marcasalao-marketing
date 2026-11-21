@@ -591,10 +591,22 @@ def load_utm_report(root_real: str, utm_report: str | None) -> dict | None:
             "classificationReason": row.get("classificationReason"),
         }
 
+    tenant_benchmarks: dict[str, dict] = {}
+    benchmarks = rankings.get("tenantBenchmarks") if isinstance(rankings, dict) else None
+    if isinstance(benchmarks, dict):
+        for row in benchmarks.get("byTenant", []):
+            if not isinstance(row, dict):
+                continue
+            tid = row.get("tenantId")
+            if tid is None:
+                continue
+            tenant_benchmarks[str(tid)] = row
+
     return {
         "path": render_local.rel(root_real, report_path),
         "minSessions": comparison.get("minSessions"),
         "byCampaign": index,
+        "byTenant": tenant_benchmarks,
     }
 
 
@@ -651,14 +663,31 @@ def _recommendation(comparison: dict | None) -> tuple[str, str]:
 
 def _apply_utm_recommendations(calendar: dict, utm_report: dict | None) -> dict:
     """Ancora `hookRecomendado` e justificativa nos slots do calendario."""
+    benchmarks = utm_report.get("byTenant", {}) if utm_report else {}
     for slot in calendar["slots"]:
         comparison = None
+        fatigue = None
         if utm_report is not None:
             key = (slot["tenantId"], slot["slug"])
             comparison = utm_report["byCampaign"].get(key)
+            bench = benchmarks.get(slot["tenantId"])
+            if bench and bench.get("hooksComFadigaStatus") == "fadiga_detectada":
+                fatigue = bench
         recommended, justification = _recommendation(comparison)
         slot[HOOK_RECOMENDADO_FIELD] = recommended
         slot[HOOK_JUSTIFICATIVA_FIELD] = justification
+        slot["fatigueStatus"] = (
+            fatigue["hooksComFadigaStatus"] if fatigue else "sem_dados"
+        )
+        slot["fatigueZScore"] = fatigue["hooksComFadigaZScore"] if fatigue else None
+        slot["fatiguePValue"] = fatigue["hooksComFadigaPValue"] if fatigue else None
+        slot["fatigueDetected"] = bool(fatigue) if fatigue else False
+        if fatigue:
+            slot["fatigueReason"] = fatigue["hooksComFadigaReason"]
+            justification = (
+                f"{justification} ALERTA DE FADIGA: {fatigue['hooksComFadigaReason']}"
+            )
+            slot[HOOK_JUSTIFICATIVA_FIELD] = justification
     calendar["utmReport"] = (
         {
             "path": utm_report["path"],

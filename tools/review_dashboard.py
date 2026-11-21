@@ -500,11 +500,20 @@ def _coletar_png_opcional(root: str, delivery_dir: str, filename: str) -> dict |
     }
 
 
-def _collect_data(root: str) -> tuple[dict, dict]:
+def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict]:
     tenants: list[dict] = []
     campaigns: list[dict] = []
     videos_found = 0
     videos_missing = 0
+
+    hook_benchmarks: dict[str, dict] = {}
+    if utm_report:
+        rankings = utm_report.get("rankings") if isinstance(utm_report, dict) else None
+        benchmarks = rankings.get("tenantBenchmarks") if isinstance(rankings, dict) else None
+        if isinstance(benchmarks, dict):
+            for row in benchmarks.get("byTenant", []):
+                if isinstance(row, dict) and row.get("tenantId"):
+                    hook_benchmarks[str(row["tenantId"])] = row
 
     for tenant_id in _list_dirs(os.path.join(root, TENANTS_ROOT)):
         brand_kit = os.path.join(root, TENANTS_ROOT, tenant_id, "brand-kit.json")
@@ -543,6 +552,10 @@ def _collect_data(root: str) -> tuple[dict, dict]:
         "tenants": tenants,
         "campaigns": campaigns,
     }
+    if hook_benchmarks:
+        data["hookBenchmarks"] = {
+            "byTenant": [hook_benchmarks[tid] for tid in sorted(hook_benchmarks)],
+        }
     stats = {"encontrados": videos_found, "ausentes": videos_missing}
     return data, stats
 
@@ -551,7 +564,8 @@ def _collect_data(root: str) -> tuple[dict, dict]:
 # Geracao do portal
 # ---------------------------------------------------------------------------
 
-def build_portal(root: str = ".", output_dir: str | None = None) -> dict:
+def build_portal(root: str = ".", output_dir: str | None = None,
+                 utm_report: dict | None = None) -> dict:
     """Gera index.html, portal-data.json e README.md. Devolve o resumo."""
     root_real = os.path.realpath(root)
     if not os.path.isdir(render_local.fs_path(root_real)):
@@ -562,7 +576,7 @@ def build_portal(root: str = ".", output_dir: str | None = None) -> dict:
         raise ReviewPortalError(f"SAIDA_FORA_DA_RAIZ: {out_rel}")
     os.makedirs(render_local.fs_path(out_abs), exist_ok=True)
 
-    data, stats = _collect_data(root_real)
+    data, stats = _collect_data(root_real, utm_report)
 
     payload_json = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
     html = render_index_html(data)
@@ -795,6 +809,7 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
     <div class="metrica"><span class="metrica-valor" id="metrica-aprovados">—</span><span class="metrica-rotulo">Aprovados</span></div>
     <div class="metrica"><span class="metrica-valor" id="metrica-pendentes">—</span><span class="metrica-rotulo">Pendentes</span></div>
     <div class="metrica"><span class="metrica-valor" id="metrica-ajustes">—</span><span class="metrica-rotulo">Ajustes</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-fadiga">—</span><span class="metrica-rotulo">Fadiga de Hook</span></div>
   </div>
   <div class="filtros">
     <label>Tenant <select id="filtro-tenant"><option value="">Todos</option></select></label>
@@ -1352,6 +1367,11 @@ function atualizarPainel() {
   document.getElementById("metrica-aprovados").textContent = contagens.aprovado;
   document.getElementById("metrica-ajustes").textContent = contagens.ajuste;
   document.getElementById("metrica-pendentes").textContent = contagens.aguardando;
+  const fadiga = DATA.hookBenchmarks && DATA.hookBenchmarks.byTenant
+    ? DATA.hookBenchmarks.byTenant.filter(function (b) { return b.hooksComFadiga; }).length
+    : 0;
+  document.getElementById("metrica-fadiga").textContent =
+    fadiga ? fadiga + " tenant(s) com fadiga" : "sem fadiga detectada";
 }
 
 function render() {
@@ -1549,6 +1569,22 @@ def _validar_item_aprovacoes(item: Any, conhecidas: dict) -> None:
             raise _AprovacoesInvalidas(
                 "TIPO_INVALIDO", "updatedAt deve ser timestamp ISO"
             )
+
+
+def _load_utm_report_for_portal(root: str, utm_report_rel: str) -> dict | None:
+    """Carrega o relatorio UTM confinado a raiz para o portal de revisao."""
+    if not utm_report_rel:
+        return None
+    report_path = os.path.realpath(os.path.join(root, utm_report_rel))
+    if not render_local.contained(root, report_path):
+        raise ReviewPortalError(f"UTM_REPORT_FORA_DA_RAIZ: {utm_report_rel}")
+    if not os.path.isfile(render_local.fs_path(report_path)):
+        raise ReviewPortalError(f"UTM_REPORT_AUSENTE: {utm_report_rel}")
+    try:
+        with open(render_local.fs_path(report_path), "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise ReviewPortalError(f"UTM_REPORT_INVALIDO: {utm_report_rel}: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -1945,6 +1981,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", default="127.0.0.1", help="Host do --serve (padrao: 127.0.0.1)")
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout (apenas --build)")
+    parser.add_argument("--utm-report", default=None, help="Caminho do relatorio UTM para indicadores de fadiga/benchmarks")
     args = parser.parse_args(argv)
 
     modos = [args.build, args.serve, args.export_aprovacoes]
@@ -1957,7 +1994,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.build:
-            resumo = build_portal(root=args.root, output_dir=args.output_dir)
+            utm_data = None
+            if args.utm_report:
+                utm_data = _load_utm_report_for_portal(args.root, args.utm_report)
+            resumo = build_portal(
+                root=args.root,
+                output_dir=args.output_dir,
+                utm_report=utm_data,
+            )
             if args.json:
                 print(json.dumps(resumo, ensure_ascii=False, indent=2))
             else:
