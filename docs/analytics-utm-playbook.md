@@ -329,6 +329,36 @@ ambiguidade, o erro pede `--provider ga4|plausible|umami`.
 - **Campos por linha:** `classification`, `classificationLabel`, `classificationReason`, `zScore`, `pValue` e `significant`; os parâmetros do teste ficam em `statistics` (`method: two_proportion_z`, `alpha`, `zThreshold`, `minSessions`, `minConversions`).
 - **Consumo no calendário:** `campaign_calendar.py --utm-report <relatorio.json>` traduz a classificação em `hookRecomendado` e `prioridadeHook` **apenas como recomendação**: datas, canais, UTMs e textos não mudam, e a decisão de trocar o hook continua sendo do titular.
 
+### 8.6 Detecção de fadiga de hook e benchmarks por tenant (`rankings.tenantBenchmarks`)
+
+A Etapa 9 acrescenta duas camadas ao relatório de performance UTM: detecção temporal de fadiga de hook e consolidação isolada por `tenant_id`.
+
+#### 8.6.1 Detecção de fadiga de hook (`_detect_hook_fatigue`)
+
+Compara a CVR (conversões/sessões) entre duas janelas temporais — janela inicial (Onda 1) e janela final (Onda 2) — para o mesmo hook/tenant/campanha:
+
+- **Fadiga detectada (`fadiga_detectada`):** a CVR caiu estatisticamente da janela inicial para a final (`z >= 1,96` **e** `p < 0,05`, 95% de confiança). O hook está desgastando e deve ser revisado.
+- **Estável (`estavel`):** houve diferença observada, mas sem significância estatística consistente. Manter o teste A/B em curso.
+- **Amostra insuficiente (`amostra_insuficiente`):** qualquer das janelas tem menos de `--min-hook-conversions` (padrão 5) conversões ou menos de 1 sessão. Não há base para concluir.
+
+**Campos expostos por linha:** `fatigueStatus`, `fatigueZScore`, `fatiguePValue`, `fatigueDetected` (bool) e `fatigueReason`. A amostra mínima respeita `--min-hook-conversions`.
+
+#### 8.6.2 Benchmarks isolados por tenant (`rankings.tenantBenchmarks`)
+
+Consolida métricas de forma **estritamente isolada por `tenant_id`** — nenhuma métrica de um tenant vaza para outro:
+
+- Total de campanhas, sessões, sessões engajadas, conversões, CVR, taxa de engajamento e slots.
+- **Taxa de vitória A/B (`abWinRatePct`):** proporção de campanhas classificadas como `vencedor_A` ou `vencedor_B` sobre o total de campanhas comparadas no tenant.
+- **Hooks com fadiga (`hooksComFadiga`):** verdadeiro quando a detecção temporal (Onda 1 vs Onda 2) classificou o tenant como `fadiga_detectada`, com `fatigueZScore`, `fatiguePValue` e `fatigueReason` anexados.
+- **Ranking de canais/formatos por CVR dentro do tenant:** cada tenant aparece com seus próprios canais e formatos, ordenados por conversão.
+
+**Regras de isolamento:** o agrupamento é feito exclusivamente a partir dos slots próprios de cada tenant, e o comparativo A/B é calculado apenas sobre campanhas do próprio tenant. Não há junção cruzada nem medição agregada entre tenants distintos.
+
+#### 8.6.3 Consumo no calendário e no portal de revisão
+
+- `campaign_calendar.py` anexa aos slots os campos `fatigueStatus`, `fatigueZScore`, `fatiguePValue`, `fatigueDetected` e `fatigueReason` e acrescenta o alerta de fadiga à justificativa do `hookRecomendadoJustificativa`, sem mutar a campanha (datas, canais, UTM e cópia permanecem intocados).
+- `review_dashboard.py --build --utm-report <relatorio.json>` expõe `hookBenchmarks.byTenant` no `portal-data.json` e renderiza o indicador "Fadiga de Hook" no painel de métricas do portal, com o número de tenants com fadiga detectada.
+
 ---
 
 ## 9. Limites deste playbook
