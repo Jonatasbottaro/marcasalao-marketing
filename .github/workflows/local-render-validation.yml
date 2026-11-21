@@ -20,6 +20,7 @@ on:
       - '04-legendas/matriz-utm-consolidada.csv'
       - '05-review-portal/**'
       - 'docs/**'
+      - 'tests/e2e/**'
       - '.github/workflows/local-render-validation.yml'
   pull_request:
     paths:
@@ -34,6 +35,7 @@ on:
       - '04-legendas/matriz-utm-consolidada.csv'
       - '05-review-portal/**'
       - 'docs/**'
+      - 'tests/e2e/**'
       - '.github/workflows/local-render-validation.yml'
   workflow_dispatch:
 
@@ -118,6 +120,14 @@ jobs:
             tools/tests/test_srt_formatter.py tools/tests/test_approval_cli.py \
             tools/tests/test_workspace_doctor.py -v
           python tools/release_audit.py --strict --json
+
+      # E2E da fabrica: cadeia completa sobre fixtures em sandbox deterministica.
+      # Roda nos dois sistemas do matrix sem FFmpeg/rede e sem publicar nada.
+      - name: Suíte E2E da fabrica (6 etapas, Windows + Ubuntu)
+        env:
+          PYTHONUTF8: '1'
+        run: |
+          python -m unittest discover -s tests/e2e -v
 
       - name: Suite Python com render obrigatorio (sem skips permitidos)
         env:
@@ -717,3 +727,34 @@ jobs:
           path: .workspace/archives/prova-campanha-ns001-ns002/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Invariante de midia: o destino final de todo render/derivado e
+      # .workspace/archives/; .workspace/tmp/ e apenas staging transitorio dos
+      # proofs. Nenhum .mp4/.wav pode existir na arvore versionada (o
+      # release_audit domain 7 exige `git ls-files "*.mp4" "*.wav"` vazio).
+      # Nada e publicado, deployado ou enviado a worker remoto.
+      - name: Nenhuma midia (.mp4/.wav) fora de .workspace/archives/
+        env:
+          PYTHONUTF8: '1'
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+
+          violations = []
+          for dirpath, dirnames, filenames in os.walk('.'):
+              dirnames[:] = [d for d in dirnames if d not in ('.git', 'node_modules')]
+              for name in filenames:
+                  if not name.lower().endswith(('.mp4', '.wav')):
+                      continue
+                  rel = os.path.relpath(os.path.join(dirpath, name), '.').replace(os.sep, '/')
+                  if rel.startswith('.workspace/'):
+                      continue  # archives/ (final) ou tmp/ (staging do proof)
+                  violations.append(rel)
+          if violations:
+              print('Midia gerada fora de .workspace/ (arvore versionada):')
+              for rel in sorted(violations):
+                  print(' -', rel)
+              sys.exit(1)
+          print('OK: nenhum .mp4/.wav fora de .workspace/; destino final = .workspace/archives/')
+          PY

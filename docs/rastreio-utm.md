@@ -1,9 +1,9 @@
 # Padrão de Rastreio UTM — Marca Salão
 
-> **Versão:** 1.3  
-> **Data:** 2026-11-19  
-> **Responsável:** pendente de definição  
-> **Status:** rascunho para validação do titular
+> **Versão:** 1.4  
+> **Data:** 2026-11-21  
+> **Responsável:** titular (D2 em aberto)  
+> **Status:** rascunho para validação do titular — 3 decisões pendentes, consolidadas em [checklist-decisoes-titular.md](checklist-decisoes-titular.md)
 
 ---
 
@@ -162,7 +162,9 @@ de tenant** (`marcasalao.com.br`, `meusalao.com.br`, `estudioflow.com.br`,
 > [!NOTE]
 > Esta seção deve ser preenchida antes das primeiras publicações com link rastreado.
 > Enquanto estiver como PENDENTE, nenhum link UTM deve ser declarado como ativo
-> em registros de campanha.
+> em registros de campanha. Os critérios que autorizam remover a marcação
+> `<!-- rastreamento: NÃO CONFIGURADO -->` estão na seção 9 e no
+> [checklist de decisões do titular](checklist-decisoes-titular.md).
 
 ### 5.2 Guia de leitura dos UTMs (antes da primeira publicação)
 
@@ -403,3 +405,36 @@ python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json
 | 2026-11-18 | Agente 3 — codex/etapa3-agente3-publish-utm | Geração automatizada de URLs via tools/publish_pack.py e tabela de URLs por canal/tenant |
 | 2026-11-18 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário editorial automatizado (campaign_calendar.py), matriz UTM consolidada de 8 campanhas × 3 canais (24 URLs) e passo a passo de analytics (GA4/Plausible/Umami) |
 | 2026-11-19 | Agente 3 — codex/etapa4-agente3-calendario-utm | Calendário v2 (4 semanas, 32 slots em 2 ondas, hooks A/B, matriz-utm-consolidada.csv), convenção multi-tenant da seção 2, matriz de reaproveitamento da seção 6.1 e guia de leitura dos UTMs (seção 5.2) |
+| 2026-11-21 | Arquitetura de Documentação | Seção 9 com as 3 decisões pendentes do titular e os critérios de ativação dos links UTM; vínculo com o checklist de decisões |
+
+---
+
+## 9. Decisões pendentes do titular e ativação dos links UTM
+
+As três decisões abaixo só podem ser tomadas pelo titular e **bloqueiam a primeira publicação manual**. O detalhe operacional (opções, evidência e registro) está em [checklist-decisoes-titular.md](checklist-decisoes-titular.md).
+
+| ID | Decisão | Impacto direto neste padrão |
+| --- | --- | --- |
+| **D1** | Identidade visual externa (`Salao02`): atualizar para "Marca Salão" na origem **ou** manter overlay nas capturas | Define se a captura já sai com a marca correta ou se o `headerOverlay` continua responsável por substituir "Meu Salão". Não altera os UTMs. |
+| **D2** | Ferramenta oficial de analytics (GA4 / Plausible / Umami) | Preenche a seção 5 e permite declarar as URLs das seções 6 e 6.1 como ativas. |
+| **D3** | Validação final de roteiros, fixtures e link da bio `@marcasalao` | Confere a copy e o destino antes de publicar; o link da bio precisa ser conferido no perfil, não apenas citado na biografia. |
+
+### 9.1 Critérios para ativar os links UTM (todos obrigatórios)
+
+1. **D2 decidida:** ferramenta, responsável pelo acesso e link do relatório oficial registrados na seção 5.
+2. **Domínio validado:** cada URL da matriz resolve em HTTPS no `domain` do brand-kit do tenant, sem `www` e sem redirect que perca a query.
+3. **Evento de conversão criado antes da coleta**, por tenant, conforme o catálogo de [analytics-utm-playbook.md](analytics-utm-playbook.md).
+4. **Teste de ponta a ponta** em janela anônima com uma URL real da matriz, confirmando os quatro parâmetros na ferramenta.
+5. **Auditoria limpa:** `python tools/utm_simulator.py --json` com `ok: true`, `collisions: []` e `totalUrls == urlsAudited == urlsOk`.
+6. **Publicação manual autorizada:** campanha aprovada no portal/CLI, `autoPublish: false` conferido no handoff e `release_audit --strict` aprovando 7/7.
+
+Enquanto qualquer critério faltar, mantém-se a marcação `<!-- rastreamento: NÃO CONFIGURADO -->` e nenhuma URL desta tabela é declarada como ativa. Ajustes de UTM valem somente para slots futuros: **nunca editar post publicado para "corrigir" parâmetro**.
+
+### 9.2 Verificação única recomendada
+
+```bash
+python tools/utm_simulator.py --json
+python tools/editorial_qa.py --all --strict --json
+python tools/release_audit.py --strict --json
+python -m unittest discover -s tests/e2e -v
+```

@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:05,000
+Você consegue visualizar todos os agendamentos do dia com clareza e sem precisar conferir cada profissional separadamente?
+
+2
+00:00:05,000 --> 00:00:11,000
+Todos os atendimentos da agenda do salão ficam reunidos em uma única tela, com status e horário atualizados.
+
+3
+00:00:11,000 --> 00:00:17,000
+Filtre por profissional ou por status para localizar rapidamente um atendimento específico na agenda do dia.
+
+4
+00:00:17,000 --> 00:00:23,000
+A equipe acompanha cada atendimento e atualiza o status manualmente conforme o atendimento é realizado no salão.
+
+5
+00:00:23,000 --> 00:00:27,000
+Na hora da dúvida, localize o atendimento pelo nome do cliente diretamente na agenda compartilhada.
+
+6
+00:00:27,000 --> 00:00:30,000
+Conheça a agenda do Marca Salão — marcasalao.com.br e veja como organizar o dia da sua equipe.
