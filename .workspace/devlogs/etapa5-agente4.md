@@ -134,3 +134,84 @@ portal foi publicado/alterado.
 - Próximo agente/integrador: rodar a suíte completa no CI, onde FFmpeg está
   disponível, e confirmar `pipeline --all` no modo de produção após o merge dos
   Agentes 1–3.
+
+---
+
+# Revisão de operações editoriais — handoff bundler (Agente 3 de 8)
+
+> **Data:** 2026-11-20
+> **Branch:** `codex/etapa5b-agente3` (worktree `.workspace/worktrees/etapa5b-agente3`)
+> **Base:** `main` @ `3f8cb1a` (Etapa 5B consolidada)
+> **Escopo:** validar/entregar `tools/handoff_bundler.py` + suíte, corrigir conformidade de armazenamento e registrar evidências
+
+> Esta seção foi **anexada** ao relatório anterior do orquestrador (Agente 4),
+> preservando integralmente o conteúdo existente.
+
+## 1. Descoberta de estado
+
+A worktree `etapa5b-agente3` já existia na branch `codex/etapa5b-agente3`,
+apontando para `main` @ `3f8cb1a`. A `main` avançou de `edd56e8` para `3f8cb1a`
+e já integrou o bundler no commit `d10f7c9` (rotulado "Agente 2"). Portanto o
+trabalho não foi duplicado: o motor existente foi auditado linha a linha contra
+a especificação, e apenas lacunas reais foram corrigidas.
+
+## 2. Auditoria contra a especificação
+
+| Requisito | Estado | Evidência |
+| --- | --- | --- |
+| CLI com `--approvals-file`, `--date`, `--all-approved`, `--include-pending`, `--output-dir`, `--json` | OK | `main()` em `tools/handoff_bundler.py` |
+| API `build_handoff_bundle(...)` | OK | assinatura pública no mesmo módulo |
+| 100% stdlib | OK | imports: argparse, hashlib, json, os, re, shutil, sys |
+| Schema v1 (`aprovada: true`) e v2 (`decisao: "aprovado"`) | OK | `_decision()` + testes 02/03 |
+| Trava sem aprovação → JSON exato com `NENHUMA_CAMPANHA_APROVADA_PELO_TITULAR` | OK | teste 01 |
+| `autoPublish` sempre `false` | OK | manifesto, resultado e índice |
+| `POSTAGEM-MANUAL.md`, `copy-pronta.txt`, `handoff-manifest.json`, mídia, `cover.png` | OK | teste 08 e e2e |
+| Mídia resolvida via `git-common-dir` | OK | `publish_pack.resolve_workspace_root` |
+| `INDICE-OPERACIONAL.md` + `indice-operacional.json` | OK | teste 12 |
+| Selo `PREVIA_NAO_APROVADA` com `--include-pending` | OK | teste 06 |
+| Alerta de locução externa apenas para `-an` | OK | teste 09 (`multitrack-hub` sem alerta) |
+
+## 3. Correção aplicada
+
+- `tools/tests/test_handoff_bundler.py`: o fixture usava
+  `tempfile.TemporaryDirectory` (diretório do sistema, fora de `<RAIZ>`),
+  violando a regra de armazenamento obrigatório. Passou a usar
+  `<RAIZ>/.workspace/tmp/test_handoff_bundler`, removido em `tearDownClass`;
+  o import de `tempfile` foi eliminado e o restante da suíte não mudou.
+
+Nenhuma alteração foi feita em `tools/handoff_bundler.py` (já conforme),
+`04-legendas/calendario-editorial.*` ou `contexto_projeto.md`.
+
+## 4. Evidências de validação
+
+```bash
+python -m unittest tools/tests/test_handoff_bundler.py -v
+# Ran 12 tests in 2.384s — OK
+```
+
+Cobertura: trava humana (01), schemas v1/v2 (02/03), filtragem seletiva (04),
+Onda 1 × Onda 2 com derivados e cover (05), `--include-pending` + exclusão de
+`ajuste` (06), `--date` (07), documentos e checklist de 5 passos (08), alerta
+`-an` vs AAC (09), contenção de path (10), CLI `--json` exit 0 (11), índice
+consolidado (12).
+
+Smoke real (calendário e pacotes versionados + `.workspace/archives`), com
+aprovação sintética em `.workspace/tmp` e `--date 2026-11-23`:
+
+- `bundledSlots: 2`, `autoPublish: false`, índice gerado.
+- `marca-salao` (`-an`): `mediaCopied: true`, `hashVerified: true`, alerta de
+  locução externa presente.
+- `multitrack-hub`: `mediaCopied: false`, `error: HASH_DIVERGENTE`
+  (arquivo em `archives` com 824.561 bytes; manifesto registra 352.456).
+  Comportamento fail-closed correto — a cópia foi descartada. Operacionalmente,
+  esse slot exige nova renderização/atualização do manifesto antes do handoff.
+- `cover.png` copiado nos dois slots; temporários removidos após o teste.
+
+## 5. Handoff
+
+- Raiz usada: `C:/Users/Usuario/Documents/GitHub/marcasalao-marketing`.
+- Worktree preservada (já existente, não recriada); nenhuma outra worktree tocada.
+- Fixtures de teste e saída smoke ficaram apenas em `.workspace/tmp` (ignorado)
+  e foram removidos; nenhum artefato permanente fora do Git.
+- Pendência operacional fora do território: reconciliar mídia/manifesto do
+  `camp-shorts-completo-multitrack-001` (hash divergente nesta estação).

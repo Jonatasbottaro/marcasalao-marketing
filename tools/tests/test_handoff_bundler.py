@@ -27,7 +27,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 
 TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -235,13 +234,18 @@ def _write_approvals(root: str, name: str, entries: list[dict]) -> str:
 class HandoffBundlerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls._tmp = tempfile.TemporaryDirectory(prefix="handoff-bundler-test-")
-        cls.root = os.path.realpath(cls._tmp.name)
+        # Fixture dentro da raiz do projeto: a regra de armazenamento proibe
+        # usar %TEMP%/%TMP% para artefatos do projeto.
+        fixture_root = os.path.join(REPO_ROOT, ".workspace", "tmp", "test_handoff_bundler")
+        if os.path.isdir(render_local.fs_path(fixture_root)):
+            shutil.rmtree(render_local.fs_path(fixture_root))
+        os.makedirs(render_local.fs_path(fixture_root), exist_ok=True)
+        cls.root = os.path.realpath(fixture_root)
         _build_fixture(cls.root)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls._tmp.cleanup()
+        shutil.rmtree(render_local.fs_path(cls.root), ignore_errors=True)
 
     def _build(self, **kwargs) -> dict:
         kwargs.setdefault("root", self.root)
