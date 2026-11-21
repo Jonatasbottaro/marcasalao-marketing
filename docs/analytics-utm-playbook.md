@@ -243,9 +243,86 @@ usadas na análise: `slot_id`, `onda`, `semana`, `data_sugerida`, `tenant_id`, `
 - Top 3 e bottom 3 de `utm_content` por tenant (comparação das variantes A/B).
 - Lista de anomalias com `slot_id` e ação recomendada para o próximo ciclo.
 
+A execução prática desta rotina, a partir do CSV exportado do provedor, está na
+seção 8 (`tools/utm_report_importer.py`).
+
 ---
 
-## 8. Limites deste playbook
+## 8. Fechamento semanal com `utm_report_importer.py`
+
+O importador fecha o ciclo: ingere o CSV exportado do provedor, normaliza os
+cabeçalhos, cruza com o calendário/matriz e grava um relatório executivo por
+tenant, canal, onda e variante de hook. É 100% stdlib e não simula receita.
+
+### 8.1 Fluxo semanal (segunda-feira)
+
+1. Exportar o CSV de sessões/conversões do provedor escolhido (GA4, Plausible ou
+   Umami), agrupado por `utm_source`, `utm_medium`, `utm_campaign` e `utm_content`.
+2. Se preferir preencher manualmente, gerar o template com as 40 linhas da matriz:
+
+```bash
+python tools/utm_report_importer.py \
+  --generate-template .workspace/tmp/utm-report/metrics-semana-01.csv --json
+```
+
+3. Registrar qual hook foi publicado por slot (`A` ou `B`). O log é opcional quando
+   o CSV já traz a coluna `hook_variant_used`:
+
+```json
+{"hooks": [{"slot_id": "slot-001", "variant": "A"}]}
+{"hooks": [{"utm_campaign": "camp-x", "utm_content": "marca-salao", "hook_variant": "B"}]}
+{"slot-001": "A", "slot-002": "B"}
+```
+
+4. Rodar o importador (o provedor é detectado automaticamente):
+
+```bash
+python tools/utm_report_importer.py \
+  --metrics-csv .workspace/tmp/utm-report/metrics-semana-01.csv \
+  --provider auto \
+  --hook-log .workspace/tmp/utm-report/hooks-semana-01.json \
+  --out-dir .workspace/tmp/utm-report/semana-01 --json
+```
+
+5. Ler `utm-performance-report.md` (executivo) e arquivar o JSON no diário da
+   semana. Nenhum post é alterado e nenhum número de receita é inferido.
+
+### 8.2 Colunas aceitas por provedor
+
+| Campo canônico | GA4 | Plausible | Umami |
+| --- | --- | --- | --- |
+| source | `Session source` | `utm_source` / `source` | `source` / `utm_source` |
+| medium | `Session medium` | `utm_medium` / `medium` | `medium` / `utm_medium` |
+| campaign | `Session campaign` | `utm_campaign` / `campaign` | `campaign` / `utm_campaign` |
+| content | `Session manual ad content` / `Session manual content` | `utm_content` / `content` | `content` / `utm_content` |
+| sessions | `Sessions` | `visitors` / `visits` | `views` / `visits` |
+| engaged | `Engaged sessions` | `engaged visitors` | `engaged views` |
+| conversions | `Conversions` / `Key events` | `conversions` | `events` / `conversions` |
+
+`--provider auto` usa marcadores distintos de cada exportação; se houver
+ambiguidade, o erro pede `--provider ga4|plausible|umami`.
+
+### 8.3 Saída e leitura
+
+- `totals`: linhas, cobertura (`matchedRows`), tráfego não atribuído, sessões,
+  conversões, CVR e engajamento.
+- `rankings.byChannel`, `rankings.byWave` (`Onda 1 9:16` vs `Onda 2 1:1/16:9`),
+  `rankings.byTenant` e `rankings.byHook` (`Hook A` vs `Hook B`).
+- `unmatchedRows`: tráfego fora da matriz — sinalizado **sem reprovar** a execução;
+  investigar `utm_content` inesperado ou campanha criada fora do calendário.
+- `slots`: detalhe por `slotId`, incluindo CVR e variante de hook usada.
+
+### 8.4 Regras de consistência
+
+1. `--out-dir`, CSV, hook log e calendário precisam ficar dentro da raiz do projeto.
+2. O log de hooks sobrescreve a coluna `hook_variant_used` quando os dois existem.
+3. Linha sem `utm_content` válido cai em `unmatchedRows`; não editar post publicado
+   para "corrigir" UTM — corrigir no próximo slot.
+4. O relatório é insumo de leitura, não autorização de publicação.
+
+---
+
+## 9. Limites deste playbook
 
 - Não publica, agenda nem altera posts já publicados.
 - Não gera áudio, TTS nem faixa sonora (política de vídeo sem áudio do projeto).
@@ -254,10 +331,11 @@ usadas na análise: `slot_id`, `onda`, `semana`, `data_sugerida`, `tenant_id`, `
 - Não substitui a aprovação do titular nem o Release Gate
   (`python tools/release_audit.py --strict --json`).
 
-## 9. Referências
+## 10. Referências
 
 - [Padrão de rastreio UTM](rastreio-utm.md)
 - [Arquitetura da fábrica](arquitetura-fabrica.md)
 - [Guia de novo nicho](guia-novo-nicho.md)
 - `tools/utm_simulator.py`, `tools/tests/test_utm_simulator.py`,
+  `tools/utm_report_importer.py`, `tools/tests/test_utm_report_importer.py`,
   `tools/campaign_calendar.py`, `04-legendas/matriz-utm-consolidada.csv`
