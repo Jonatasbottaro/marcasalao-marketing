@@ -20,11 +20,14 @@ formatos da Onda 2, saida markdown operacional e idempotencia da regeneracao.
 
 from __future__ import annotations
 
+import contextlib
 import datetime
+import io
 import json
 import os
 import sys
 import unittest
+from pathlib import Path
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
@@ -467,6 +470,187 @@ class CampaignCalendarTest(unittest.TestCase):
                 result["outputs"][kind]["sha256"],
                 self.result["outputs"][kind]["sha256"],
             )
+
+    # ------------------------------------------------------------------
+    # 15+. Integracao opcional com o relatorio de analytics UTM (offline)
+    # ------------------------------------------------------------------
+    def _analytics_fixture(self, name: str = "analytics-report.json") -> tuple[str, dict]:
+        """Relatorio local sintetico com um vencedor B para um slot real."""
+        slot = next(
+            item for item in self.slots
+            if item["tenantId"] == "estudio-flow" and item["onda"] == 1
+        )
+        campaign = slot["utmParams"]["utm_campaign"]
+        content = slot["utmParams"]["utm_content"]
+        winner = {
+            "scope": "campaign-content",
+            "tenantId": slot["tenantId"],
+            "utmCampaign": campaign,
+            "utmContent": content,
+            "outcome": "winner_b",
+            "winner": "B",
+            "reason": "CTR 8.00% vs 3.00% (z=6.0, p=0.0, 95% de confiança).",
+            "confidencePct": 95.0,
+            "pValue": 0.0,
+        }
+        pending = {
+            "scope": "campaign",
+            "tenantId": "marca-salao",
+            "utmCampaign": "camp-saas-demo-marca-salao-001",
+            "utmContent": "*",
+            "outcome": "insufficient_sample",
+            "winner": None,
+            "reason": "Amostra insuficiente.",
+            "confidencePct": None,
+            "pValue": None,
+        }
+        payload = {
+            "schemaVersion": 1,
+            "ok": True,
+            "offlineOnly": True,
+            "abTests": {
+                "method": "two_proportion_z_test_normal_approximation",
+                "comparisons": [winner, pending],
+                "summary": {"winner_b": 1, "insufficient_sample": 1},
+                "thresholds": {
+                    "minSessionsPerVariant": 100,
+                    "minConversionsPerVariant": 10,
+                    "zThreshold95": 1.96,
+                    "alpha": 0.05,
+                },
+            },
+        }
+        target = os.path.join(
+            REPO_ROOT, ".workspace", "tmp", "test_campaign_calendar", name
+        )
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+        rel = os.path.relpath(target, REPO_ROOT).replace(os.sep, "/")
+        return rel, slot
+
+    def test_15_analytics_prioritizes_winning_hook_without_changing_dates(self) -> None:
+        rel, source_slot = self._analytics_fixture()
+        enriched = campaign_calendar.build_editorial_calendar(
+            START_DATE, weeks=WEEKS, root=REPO_ROOT, analytics_report=rel
+        )
+        baseline_by_id = {slot["slotId"]: slot for slot in self.slots}
+        self.assertEqual(len(enriched["slots"]), len(self.slots))
+        for slot in enriched["slots"]:
+            original = baseline_by_id[slot["slotId"]]
+            self.assertEqual(slot["dataSugerida"], original["dataSugerida"])
+            self.assertEqual(slot["janelaHorarioBrt"], original["janelaHorarioBrt"])
+            self.assertEqual(slot["hookVarianteA"], original["hookVarianteA"])
+            self.assertEqual(slot["hookVarianteB"], original["hookVarianteB"])
+            self.assertIs(slot["autoPublish"], False)
+            self.assertEqual(slot["statusEditorial"], "aguardando_aprovacao_titular")
+
+        target = next(
+            slot for slot in enriched["slots"] if slot["slotId"] == source_slot["slotId"]
+        )
+        rec = target["hookRecomendado"]
+        self.assertEqual(rec["variant"], "B")
+        self.assertEqual(rec["text"], target["hookVarianteB"])
+        self.assertEqual(rec["source"], "analytics-utm-report")
+        self.assertTrue(rec["requiresHumanReview"])
+        self.assertIs(rec["autoPublish"], False)
+        self.assertEqual(target["prioridadeHook"], "alta")
+        self.assertEqual(target["ajusteCadencia"]["acao"], "manter_data_priorizar_hook_vencedor")
+        self.assertIs(target["ajusteCadencia"]["alteraData"], False)
+
+        # O vencedor e por (tenant, campaign, content): vale para todos os slots
+        # que compartilham essa tupla, inclusive os da Onda 2 com outro formato.
+        same_key = [
+            slot for slot in enriched["slots"]
+            if slot["slotId"] != source_slot["slotId"]
+            and slot["tenantId"] == source_slot["tenantId"]
+            and slot["utmParams"]["utm_campaign"] == source_slot["utmParams"]["utm_campaign"]
+            and slot["utmParams"]["utm_content"] == source_slot["utmParams"]["utm_content"]
+        ]
+        self.assertTrue(same_key)
+        self.assertTrue(all(
+            slot["hookRecomendado"] is not None and slot["prioridadeHook"] == "alta"
+            for slot in same_key
+        ))
+        others = [
+            slot for slot in enriched["slots"]
+            if slot["utmParams"]["utm_campaign"] != source_slot["utmParams"]["utm_campaign"]
+            or slot["utmParams"]["utm_content"] != source_slot["utmParams"]["utm_content"]
+        ]
+        self.assertTrue(all(slot["hookRecomendado"] is None for slot in others))
+        self.assertTrue(all(slot["prioridadeHook"] == "normal" for slot in others))
+
+        cadence = enriched["analyticsDrivenCadence"]
+        self.assertTrue(cadence["enabled"])
+        self.assertIs(cadence["datesUnchanged"], True)
+        self.assertIs(cadence["autoPublish"], False)
+        self.assertTrue(cadence["requiresHumanReview"])
+        self.assertIn(source_slot["slotId"], cadence["byTenant"]["estudio-flow"]["slotsPrioritarios"])
+
+    def test_16_analytics_report_markdown_is_generated_and_only_advisory(self) -> None:
+        rel, _ = self._analytics_fixture("analytics-report-md.json")
+        enriched = campaign_calendar.build_editorial_calendar(
+            START_DATE, weeks=WEEKS, root=REPO_ROOT, analytics_report=rel
+        )
+        md = campaign_calendar._render_md(enriched)
+        self.assertIn("## 5. Recomendações de analytics UTM (revisão humana)", md)
+        self.assertIn("Datas **não alteradas**", md)
+        self.assertIn("`autoPublish: false`", md)
+        self.assertIn("hook b:", md.lower())
+        self.assertIn("hook vencedor", md.lower())
+        self.assertIn("Recomendações são insumo de revisão", md)
+
+    def test_17_analytics_without_report_preserves_original_calendar(self) -> None:
+        plain = campaign_calendar.build_editorial_calendar(
+            START_DATE, weeks=WEEKS, root=REPO_ROOT
+        )
+        self.assertNotIn("analyticsDrivenCadence", plain)
+        self.assertTrue(all("hookRecomendado" not in slot for slot in plain["slots"]))
+
+    def test_18_analytics_report_path_validation(self) -> None:
+        for rel, code in (
+            ("../fora-da-raiz.json", "ANALYTICS_FORA_DA_RAIZ"),
+            (".workspace/tmp/test_campaign_calendar/inexistente.json", "ANALYTICS_REPORT_AUSENTE"),
+        ):
+            with self.subTest(rel=rel):
+                with self.assertRaises(campaign_calendar.CampaignCalendarError) as ctx:
+                    campaign_calendar.build_editorial_calendar(
+                        START_DATE, weeks=WEEKS, root=REPO_ROOT, analytics_report=rel
+                    )
+                self.assertIn(code, str(ctx.exception))
+
+        root = Path(REPO_ROOT)
+        invalid = root / ".workspace" / "tmp" / "test_campaign_calendar" / "invalido.json"
+        invalid.parent.mkdir(parents=True, exist_ok=True)
+        invalid.write_text(json.dumps({"schemaVersion": 1, "ok": True}) + "\n", encoding="utf-8")
+        with self.assertRaises(campaign_calendar.CampaignCalendarError) as ctx_invalid:
+            campaign_calendar.build_editorial_calendar(
+                START_DATE,
+                weeks=WEEKS,
+                root=REPO_ROOT,
+                analytics_report=".workspace/tmp/test_campaign_calendar/invalido.json",
+            )
+        self.assertIn("ANALYTICS_INVALIDO", str(ctx_invalid.exception))
+
+    def test_19_cli_analytics_flag_and_restore_baseline(self) -> None:
+        rel, _ = self._analytics_fixture("analytics-report-cli.json")
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = campaign_calendar.main([
+                    "--start-date", START_DATE, "--weeks", str(WEEKS),
+                    "--root", REPO_ROOT, "--analytics-report", rel, "--json",
+                ])
+            self.assertEqual(rc, 0)
+            with open(CALENDAR_JSON, "r", encoding="utf-8") as handle:
+                generated = json.load(handle)
+            self.assertTrue(generated["analyticsDrivenCadence"]["enabled"])
+        finally:
+            # Restaura as saidas versionadas sem analytics para nao afetar test_14.
+            with contextlib.redirect_stdout(io.StringIO()):
+                campaign_calendar.main([
+                    "--start-date", START_DATE, "--weeks", str(WEEKS),
+                    "--root", REPO_ROOT, "--json",
+                ])
 
 
 if __name__ == "__main__":

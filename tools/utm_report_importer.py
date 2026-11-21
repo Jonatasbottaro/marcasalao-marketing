@@ -19,6 +19,16 @@ manual opcional (`--hook-log`), aceito como:
 Linhas de trafego nao atribuido sao reportadas em `unmatchedRows` sem reprovar a
 execucao. Nenhuma receita financeira e simulada ou inferida.
 
+O comparativo A/B (`compare_hook_variants`) agrupa as linhas casadas por
+`(tenantId, utm_campaign, utm_content)` e por `(tenantId, utm_campaign)`,
+calculando CTR (conversoes/sessoes), sessoes qualificadas (engajadas) e taxa de
+engajamento por variante. Um vencedor so e declarado quando ha amostra minima
+por variante e teste z bilateral de duas proporcoes a 95% com `math.erfc`;
+empates e amostras insuficientes sao sinalizados explicitamente. As
+recomendacoes em `abTests.recommendations` sao insumo de revisao humana:
+`autoPublish` permanece `false` e nada e alterado em producao. Operacao
+integralmente offline, somente a partir de arquivos locais exportados.
+
 CLI:
     python tools/utm_report_importer.py --metrics-csv <arquivo.csv>
         [--provider auto|ga4|plausible|umami] [--hook-log <json>]
@@ -34,6 +44,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -106,6 +117,21 @@ DETECTION_MARKERS: dict[str, dict[str, int]] = {
 }
 
 HOOK_COLUMNS = ("hook_variant_used", "hook variant used", "hook_variant", "hook")
+
+# Comparativo A/B — limites deterministicos e sem dependencia externa.
+# O teste e de duas proporcoes (conversoes/sessoes) com aproximacao normal.
+MIN_SESSIONS_PER_VARIANT = 100
+MIN_CONVERSIONS_PER_VARIANT = 10
+Z_THRESHOLD_95 = 1.959963984540054  # z bilateral de 95% (math.erfc)
+AB_SCOPES = ("campaign-content", "campaign")
+AB_OUTCOMES = (
+    "winner_a",
+    "winner_b",
+    "tie",
+    "insufficient_sample",
+    "single_variant",
+    "no_data",
+)
 
 
 class UtmReportError(Exception):
@@ -181,6 +207,247 @@ def _normalize_variant(value: object) -> str:
 
 def _rate(conversions: float, sessions: float) -> float:
     return round(conversions / sessions * 100, 2) if sessions else 0.0
+
+
+# ---------------------------------------------------------------------------
+# Comparativo determinístico de hooks A/B
+# ---------------------------------------------------------------------------
+def _two_proportion_z(
+    conversions_a: float,
+    sessions_a: float,
+    conversions_b: float,
+    sessions_b: float,
+) -> tuple[float | None, float | None]:
+    """Teste z de duas proporções com `math.erfc` — sem scipy, sem rede.
+
+    A proporção testada é `conversoes/sessoes` (CTR de conversão do link
+    rastreado). A biblioteca padrão `math.erfc` fornece o p-valor bilateral
+    da normal, tornando o resultado reproduzível em qualquer estação.
+    """
+    if sessions_a <= 0 or sessions_b <= 0:
+        return None, None
+    p_a = conversions_a / sessions_a
+    p_b = conversions_b / sessions_b
+    pooled = (conversions_a + conversions_b) / (sessions_a + sessions_b)
+    variance = pooled * (1.0 - pooled) * (1.0 / sessions_a + 1.0 / sessions_b)
+    if variance <= 0:
+        return 0.0, 1.0
+    z = (p_a - p_b) / math.sqrt(variance)
+    p_value = math.erfc(abs(z) / math.sqrt(2.0))
+    return round(z, 4), round(p_value, 6)
+
+
+def _empty_variant_bucket() -> dict:
+    return {"sessions": 0.0, "qualifiedSessions": 0.0, "conversions": 0.0, "observations": 0}
+
+
+def _variant_metrics(bucket: dict | None) -> dict | None:
+    if bucket is None:
+        return None
+    sessions = float(bucket["sessions"])
+    return {
+        "sessions": _to_int(bucket["sessions"]),
+        "qualifiedSessions": _to_int(bucket["qualifiedSessions"]),
+        "conversions": _to_int(bucket["conversions"]),
+        "ctrPct": _rate(bucket["conversions"], sessions),
+        "engagementRatePct": _rate(bucket["qualifiedSessions"], sessions),
+        "observations": int(bucket["observations"]),
+    }
+
+
+def _ab_outcome(
+    metrics_a: dict | None,
+    metrics_b: dict | None,
+    min_sessions: int,
+    min_conversions: int,
+    z_threshold: float,
+) -> tuple[str, str, str | None, float | None, float | None]:
+    """Devolve (desfecho, motivo, vencedor, z, p-valor)."""
+    if not metrics_a and not metrics_b:
+        return "no_data", "Nenhuma observação com variante A ou B identificada.", None, None, None
+    if not metrics_a or not metrics_b:
+        present = "A" if metrics_a else "B"
+        return (
+            "single_variant",
+            f"Apenas a variante {present} foi observada neste escopo; compare somente quando A e B existirem.",
+            None,
+            None,
+            None,
+        )
+    too_small = (
+        float(metrics_a["sessions"]) < min_sessions
+        or float(metrics_b["sessions"]) < min_sessions
+        or float(metrics_a["conversions"]) < min_conversions
+        or float(metrics_b["conversions"]) < min_conversions
+    )
+    if too_small:
+        return (
+            "insufficient_sample",
+            f"Amostra insuficiente: mínimo de {min_sessions} sessões e {min_conversions} "
+            f"conversões por variante (A={metrics_a['sessions']}/{metrics_a['conversions']}, "
+            f"B={metrics_b['sessions']}/{metrics_b['conversions']}).",
+            None,
+            None,
+            None,
+        )
+    z, p_value = _two_proportion_z(
+        float(metrics_a["conversions"]),
+        float(metrics_a["sessions"]),
+        float(metrics_b["conversions"]),
+        float(metrics_b["sessions"]),
+    )
+    ctr_a = float(metrics_a["ctrPct"])
+    ctr_b = float(metrics_b["ctrPct"])
+    if z is None or p_value is None:
+        return "insufficient_sample", "Sem sessões suficientes para o teste z.", None, None, None
+    if ctr_a == ctr_b:
+        return "tie", f"CTR idêntico ({ctr_a:.2f}%) entre A e B; não há vencedor.", None, z, p_value
+    if abs(z) >= z_threshold and p_value < 0.05:
+        winner = "A" if ctr_a > ctr_b else "B"
+        higher, lower = (ctr_a, ctr_b) if winner == "A" else (ctr_b, ctr_a)
+        reason = (
+            f"Diferença estatisticamente consistente: CTR {higher:.2f}% vs {lower:.2f}% "
+            f"(z={z}, p={p_value}, 95% de confiança)."
+        )
+        return f"winner_{winner.lower()}", reason, winner, z, p_value
+    return (
+        "tie",
+        f"Diferença observada (A {ctr_a:.2f}% vs B {ctr_b:.2f}%) não atinge 95% de confiança "
+        f"(z={z}, p={p_value}); manter o teste.",
+        None,
+        z,
+        p_value,
+    )
+
+
+def _ab_recommendation(comparison: dict) -> dict:
+    """Recomendação acionável, sempre sujeita a revisão humana."""
+    winner = comparison["winner"]
+    outcome = comparison["outcome"]
+    scope = comparison["scope"]
+    if outcome == "winner_a" or outcome == "winner_b":
+        action = f"priorizar_hook_{winner}"
+        text = (
+            f"Priorizar o Hook {winner} nos próximos slots de "
+            f"`{comparison['utmCampaign']}` / `{comparison['utmContent']}` "
+            f"(tenant `{comparison['tenantId']}`). {comparison['reason']}"
+        )
+    elif outcome == "tie":
+        action = "manter_teste_ab"
+        text = f"Manter o teste A/B em `{comparison['utmCampaign']}`; {comparison['reason']}"
+    elif outcome == "insufficient_sample":
+        action = "acumular_amostra"
+        text = f"Não declarar vencedor em `{comparison['utmCampaign']}`. {comparison['reason']}"
+    elif outcome == "single_variant":
+        action = "universalizar_variante_observada"
+        text = f"Sem comparação válida em `{comparison['utmCampaign']}`. {comparison['reason']}"
+    else:
+        action = "sem_dados"
+        text = f"Sem dados de hook em `{comparison['utmCampaign']}`. {comparison['reason']}"
+    return {
+        "scope": scope,
+        "tenantId": comparison["tenantId"],
+        "utmCampaign": comparison["utmCampaign"],
+        "utmContent": comparison["utmContent"],
+        "outcome": outcome,
+        "winner": winner,
+        "action": action,
+        "text": text,
+        "requiresHumanReview": True,
+        "autoPublish": False,
+    }
+
+
+def compare_hook_variants(
+    observations: list[dict],
+    min_sessions: int = MIN_SESSIONS_PER_VARIANT,
+    min_conversions: int = MIN_CONVERSIONS_PER_VARIANT,
+    z_threshold: float = Z_THRESHOLD_95,
+) -> dict:
+    """Compara hooks A/B por `utm_content` e por `utm_campaign`, de forma pura.
+
+    `observations` é uma lista de ditos com `tenantId`, `utmCampaign`,
+    `utmContent`, `variant` (``A``/``B``), `sessions`, `engagedSessions` e
+    `conversions`. Nenhuma chamada de rede, nenhum efeito colateral e nenhuma
+    inferência financeira.
+    """
+    grouped: dict[tuple[str, tuple[str, str, str], str], dict] = defaultdict(dict)
+    for obs in observations:
+        variant = obs.get("variant")
+        if variant not in ("A", "B"):
+            continue
+        tenant = str(obs.get("tenantId") or "")
+        campaign = str(obs.get("utmCampaign") or "")
+        content = str(obs.get("utmContent") or "")
+        sessions = float(obs.get("sessions") or 0.0)
+        engaged = float(obs.get("engagedSessions") or 0.0)
+        conversions = float(obs.get("conversions") or 0.0)
+        keys = (
+            ("campaign-content", (tenant, campaign, content)),
+            ("campaign", (tenant, campaign, "*")),
+        )
+        for scope, key in keys:
+            bucket = grouped[(scope, key)].setdefault(variant, _empty_variant_bucket())
+            bucket["sessions"] += sessions
+            bucket["qualifiedSessions"] += engaged
+            bucket["conversions"] += conversions
+            bucket["observations"] += 1
+
+    comparisons: list[dict] = []
+    for (scope, key), buckets in sorted(
+        grouped.items(), key=lambda item: (item[0][0], item[0][1])
+    ):
+        tenant, campaign, content = key
+        metrics_a = _variant_metrics(buckets.get("A"))
+        metrics_b = _variant_metrics(buckets.get("B"))
+        outcome, reason, winner, z, p_value = _ab_outcome(
+            metrics_a, metrics_b, min_sessions, min_conversions, z_threshold
+        )
+        ctr_a = float(metrics_a["ctrPct"]) if metrics_a else 0.0
+        ctr_b = float(metrics_b["ctrPct"]) if metrics_b else 0.0
+        comparison = {
+            "scope": scope,
+            "tenantId": tenant,
+            "utmCampaign": campaign,
+            "utmContent": content,
+            "variantA": metrics_a,
+            "variantB": metrics_b,
+            "outcome": outcome,
+            "winner": winner,
+            "reason": reason,
+            "absoluteDiffPct": round(ctr_b - ctr_a, 2),
+            "relativeDiffPct": round((ctr_b - ctr_a) / ctr_a * 100, 2) if ctr_a else None,
+            "zScore": z,
+            "pValue": p_value,
+            "confidencePct": 95.0 if p_value is not None else None,
+            "requiresHumanReview": True,
+            "autoPublish": False,
+        }
+        comparisons.append(comparison)
+
+    summary = {outcome: 0 for outcome in AB_OUTCOMES}
+    for comparison in comparisons:
+        summary[comparison["outcome"]] += 1
+    return {
+        "method": "two_proportion_z_test_normal_approximation",
+        "metricsDefinitions": {
+            "ctrPct": "conversions / sessions * 100 (taxa de clique-through para o evento de conversão; exports não trazem impressões)",
+            "qualifiedSessions": "sessões engajadas (engagedSessions), usadas como sessões qualificadas",
+            "engagementRatePct": "qualifiedSessions / sessions * 100",
+        },
+        "thresholds": {
+            "minSessionsPerVariant": min_sessions,
+            "minConversionsPerVariant": min_conversions,
+            "zThreshold95": z_threshold,
+            "alpha": 0.05,
+        },
+        "scopes": list(AB_SCOPES),
+        "comparisons": comparisons,
+        "recommendations": [_ab_recommendation(item) for item in comparisons],
+        "summary": summary,
+        "networkCalls": 0,
+        "financialSimulation": False,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +745,7 @@ def analyze_performance(
 
     slot_totals: dict[str, dict] = {}
     unmatched: list[dict] = []
+    observations: list[dict] = []
     matched_rows = 0
     variant_rows = 0
 
@@ -513,7 +781,18 @@ def analyze_performance(
         if variant:
             entry["hookVariant"] = variant
             variant_rows += 1
+        if variant in ("A", "B"):
+            observations.append({
+                "tenantId": slot["tenantId"],
+                "utmCampaign": row["campaign"],
+                "utmContent": row["content"],
+                "variant": variant,
+                "sessions": row["sessions"],
+                "engagedSessions": row["engagedSessions"],
+                "conversions": row["conversions"],
+            })
 
+    ab_tests = compare_hook_variants(observations)
     slot_results = []
     for entry in slot_totals.values():
         entry["sessions"] = _to_int(entry["sessions"])
@@ -605,9 +884,12 @@ def analyze_performance(
             "byWave": _rank(list(by_wave.values())),
             "byHook": hook_rows,
         },
+        "abTests": ab_tests,
+        "recommendations": ab_tests["recommendations"],
         "slots": slot_results,
         "unmatchedRows": unmatched,
         "dataQuality": data_quality,
+        "offlineOnly": True,
         "financialSimulation": False,
     }
 
@@ -676,6 +958,42 @@ def render_markdown(report: dict) -> str:
         ))
     else:
         lines.append("Sem `hook_variant_used` no CSV nem `--hook-log`; comparativo indisponivel.")
+
+    ab_tests = report.get("abTests") or {}
+    comparisons = ab_tests.get("comparisons") or []
+    lines.extend(["", "## Comparativo A/B e recomendacoes (revisao humana)", ""])
+    if comparisons:
+        lines.append(
+            "> CTR = conversoes/sessoes (nao ha impressoes nos exports); "
+            "sessoes qualificadas = sessoes engajadas; vencedor exige minimo de "
+            f"{ab_tests.get('thresholds', {}).get('minSessionsPerVariant', MIN_SESSIONS_PER_VARIANT)} "
+            "sessoes e "
+            f"{ab_tests.get('thresholds', {}).get('minConversionsPerVariant', MIN_CONVERSIONS_PER_VARIANT)} "
+            "conversoes por variante e teste z bilateral a 95%."
+        )
+        lines.append("")
+        lines.extend(_table(
+            ["Escopo", "Tenant", "Campaign / content", "CTR A", "CTR B", "Qualif. A", "Qualif. B", "Desfecho", "Vencedor", "p-valor"],
+            [[
+                item["scope"],
+                f"`{item['tenantId']}`",
+                f"`{item['utmCampaign']}` / `{item['utmContent']}`",
+                f"{(item['variantA'] or {}).get('ctrPct', '-')}%",
+                f"{(item['variantB'] or {}).get('ctrPct', '-')}%",
+                (item["variantA"] or {}).get("qualifiedSessions", "-"),
+                (item["variantB"] or {}).get("qualifiedSessions", "-"),
+                item["outcome"],
+                item["winner"] or "-",
+                item["pValue"] if item["pValue"] is not None else "-",
+            ] for item in comparisons],
+        ))
+        lines.extend(["", "### Acões sugeridas (nao aplicadas automaticamente)", ""])
+        for rec in ab_tests.get("recommendations", []):
+            lines.append(f"- **{rec['action']}** — {rec['text']}")
+    else:
+        lines.append(
+            "Sem observacoes A/B apos o cruzamento UTM; nenhuma recomendacao de hook gerada."
+        )
     lines.extend(["", "## Trafego nao atribuido", ""])
     if report["unmatchedRows"]:
         lines.extend(_table(
@@ -752,6 +1070,15 @@ def _print_human(report: dict) -> None:
         print(
             f"  - {group['channel']}: {group['sessions']} sessoes, {group['conversions']} conversoes "
             f"(CVR {group['conversionRatePct']}%)"
+        )
+    ab_summary = (report.get("abTests") or {}).get("summary") or {}
+    if ab_summary:
+        print(
+            "  A/B: "
+            f"{ab_summary.get('winner_a', 0)} vitoria(s) A, "
+            f"{ab_summary.get('winner_b', 0)} vitoria(s) B, "
+            f"{ab_summary.get('tie', 0)} empate(s), "
+            f"{ab_summary.get('insufficient_sample', 0)} amostra(s) insuficiente(s)"
         )
     print(f"  Nao atribuidas: {totals['unmatchedRows']} linha(s)")
     print(f"Relatorios: {report['reports']['json']} | {report['reports']['markdown']}")

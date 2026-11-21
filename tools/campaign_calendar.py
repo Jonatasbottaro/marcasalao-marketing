@@ -55,8 +55,17 @@ Saidas versionadas (UTF-8, LF, deterministicas — sem timestamps):
 Nenhuma publicacao automatica: `autoPublish: false` e
 `statusEditorial: "aguardando_aprovacao_titular"` em todos os slots.
 
+Integracao opcional com analytics (100% offline): `--analytics-report <json>`
+lee o relatorio local do `tools/utm_report_importer.py`, identifica os hooks A/B
+vencedores por tenant/campanha/content e anota `hookRecomendado`,
+`prioridadeHook` e `ajusteCadencia` nos slots. Datas, janelas, `slotId` e
+`autoPublish` nunca sao alterados: a sugestao de cadencia apenas prioriza o
+hook vencedor nos proximos slots equivalentes e exige aprovacao humana.
+
 Uso (a partir da raiz do checkout):
     python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 --json
+    python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 4 \
+        --analytics-report .workspace/tmp/utm-report/utm-performance-report.json --json
 
 Uso programatico:
     calendar = campaign_calendar.build_editorial_calendar(
@@ -83,6 +92,10 @@ CALENDAR_JSON_REL = os.path.join("04-legendas", "calendario-editorial.json")
 CALENDAR_MD_REL = os.path.join("04-legendas", "calendario-editorial.md")
 UTM_CSV_REL = os.path.join("04-legendas", "matriz-utm-consolidada.csv")
 PUBLICACAO_ROOT = os.path.join("04-legendas", "pacotes-publicacao")
+ANALYTICS_REPORT_REL = os.path.join(
+    ".workspace", "tmp", "utm-report", "utm-performance-report.json"
+)
+ANALYTICS_WINNING_OUTCOMES = ("winner_a", "winner_b")
 
 WEEKS_DEFAULT = 4
 CAMPAIGNS_PER_LANE = 2
@@ -510,7 +523,154 @@ def _build_metrics(campaigns: list[dict], slots: list[dict]) -> dict:
     }
 
 
-def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = ".") -> dict:
+# ---------------------------------------------------------------------------
+# Integração opcional com o relatório de analytics UTM (offline)
+# ---------------------------------------------------------------------------
+def load_analytics_report(root_real: str, report: str | None = None) -> dict:
+    """Lê o relatório consolidado do `utm_report_importer.py` (arquivo local).
+
+    Nenhuma rede é acessada. O caminho precisa estar contido na raiz do projeto.
+    """
+    rel_path = report or ANALYTICS_REPORT_REL
+    abs_path = os.path.realpath(os.path.join(root_real, rel_path))
+    if not render_local.contained(root_real, abs_path):
+        raise CampaignCalendarError(f"ANALYTICS_FORA_DA_RAIZ: {rel_path}")
+    if not os.path.isfile(render_local.fs_path(abs_path)):
+        raise CampaignCalendarError(f"ANALYTICS_REPORT_AUSENTE: {rel_path}")
+    data = _load_json(abs_path)
+    ab_tests = data.get("abTests")
+    if not isinstance(ab_tests, dict):
+        raise CampaignCalendarError(
+            f"ANALYTICS_INVALIDO: {rel_path} sem secao abTests do utm_report_importer"
+        )
+    comparisons = ab_tests.get("comparisons")
+    if not isinstance(comparisons, list):
+        raise CampaignCalendarError(
+            f"ANALYTICS_INVALIDO: {rel_path} sem abTests.comparisons"
+        )
+    return {
+        "path": render_local.rel(root_real, abs_path),
+        "data": data,
+        "comparisons": [item for item in comparisons if isinstance(item, dict)],
+        "summary": ab_tests.get("summary") or {},
+        "thresholds": ab_tests.get("thresholds") or {},
+    }
+
+
+def build_hook_priorities(analytics: dict) -> dict:
+    """Indexa vencedores A/B por `(tenant, campaign, content)` e `(tenant, campaign)`."""
+    by_content: dict[tuple[str, str, str], dict] = {}
+    by_campaign: dict[tuple[str, str], dict] = {}
+    review: list[dict] = []
+    for item in analytics["comparisons"]:
+        if item.get("outcome") not in ANALYTICS_WINNING_OUTCOMES or item.get("winner") not in ("A", "B"):
+            review.append(item)
+            continue
+        key_content = (
+            str(item.get("tenantId") or ""),
+            str(item.get("utmCampaign") or ""),
+            str(item.get("utmContent") or ""),
+        )
+        # Um vencedor por campanha/contente so vale para esse content exato;
+        # um vencedor agregado por campanha vale para todos os slots da campanha.
+        if item.get("scope") == "campaign":
+            by_campaign.setdefault(key_content[:2], item)
+        else:
+            by_content.setdefault(key_content, item)
+    return {"byContent": by_content, "byCampaign": by_campaign, "review": review}
+
+
+def apply_analytics_recommendations(calendar: dict, analytics: dict) -> dict:
+    """Anota os slots com hooks vencedores e notas de cadência, sem mudar datas.
+
+    Esta função é pura em relação ao cronograma: `dataSugerida`, `janelaHorarioBrt`,
+    `slotId`, `autoPublish` e `statusEditorial` permanecem intactos. Nenhuma
+    recomendação é aplicada automaticamente em produção — tudo exige revisão
+    humana e `autoPublish` continua `false`.
+    """
+    priorities = build_hook_priorities(analytics)
+    by_content = priorities["byContent"]
+    by_campaign = priorities["byCampaign"]
+    by_tenant: dict[str, dict] = {
+        tenant: {"slotsPrioritarios": [], "slotsEmRevisao": []}
+        for tenant in calendar["tenants"]
+    }
+
+    for slot in calendar["slots"]:
+        tenant = slot["tenantId"]
+        campaign = slot["utmParams"]["utm_campaign"]
+        content = slot["utmParams"]["utm_content"]
+        winning = by_content.get((tenant, campaign, content)) or by_campaign.get((tenant, campaign))
+        if winning:
+            variant = winning["winner"]
+            text = slot["hookVarianteA"] if variant == "A" else slot["hookVarianteB"]
+            slot["hookRecomendado"] = {
+                "variant": variant,
+                "text": text,
+                "source": "analytics-utm-report",
+                "scope": winning.get("scope"),
+                "utmCampaign": winning.get("utmCampaign"),
+                "utmContent": winning.get("utmContent"),
+                "reason": winning.get("reason"),
+                "confidencePct": winning.get("confidencePct"),
+                "pValue": winning.get("pValue"),
+                "requiresHumanReview": True,
+                "autoPublish": False,
+            }
+            slot["prioridadeHook"] = "alta"
+            slot["ajusteCadencia"] = {
+                "acao": "manter_data_priorizar_hook_vencedor",
+                "motivo": (
+                    f"Hook {variant} venceu com 95% de confiança em "
+                    f"`{campaign}` / `{content}`; aplicar no próximo slot equivalente "
+                    "após aprovação do titular."
+                ),
+                "requerRevisaoHumana": True,
+                "alteraData": False,
+            }
+            by_tenant[tenant]["slotsPrioritarios"].append(slot["slotId"])
+        else:
+            slot["hookRecomendado"] = None
+            slot["prioridadeHook"] = "normal"
+            slot["ajusteCadencia"] = {
+                "acao": "manter",
+                "motivo": "Sem vencedor estatisticamente consistente para este escopo UTM.",
+                "requerRevisaoHumana": True,
+                "alteraData": False,
+            }
+            by_tenant[tenant]["slotsEmRevisao"].append(slot["slotId"])
+
+    calendar["analyticsDrivenCadence"] = {
+        "enabled": True,
+        "sourceReport": analytics["path"],
+        "summary": analytics["summary"],
+        "thresholds": analytics["thresholds"],
+        "strategy": "priorizar_hooks_vencedores_sem_alterar_datas",
+        "datesUnchanged": True,
+        "requiresHumanReview": True,
+        "autoPublish": False,
+        "byTenant": {
+            tenant: {
+                "slotsPrioritarios": entry["slotsPrioritarios"],
+                "slotsEmRevisao": entry["slotsEmRevisao"],
+                "sugestao": (
+                    "Manter o intervalo mínimo de 48h entre canais e as datas aprovadas; "
+                    "usar o hook vencedor nos slots prioritários e revisar os demais. "
+                    "Nenhuma alteração é aplicada sem aprovação expressa do titular."
+                ),
+            }
+            for tenant, entry in sorted(by_tenant.items())
+        },
+    }
+    return calendar
+
+
+def build_editorial_calendar(
+    start_date: str,
+    weeks: int = WEEKS_DEFAULT,
+    root: str = ".",
+    analytics_report: str | None = None,
+) -> dict:
     """Constrói o calendário editorial completo (sem gravar em disco)."""
     root_real = os.path.realpath(root)
     try:
@@ -594,7 +754,7 @@ def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: 
         slot["slotId"] = f"slot-{index:03d}"
 
     tenants_used = sorted({campaign["tenantId"] for campaign in campaigns})
-    return {
+    result = {
         "schemaVersion": 2,
         "generatedBy": "tools/campaign_calendar.py",
         "startDate": start.isoformat(),
@@ -628,6 +788,9 @@ def build_editorial_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: 
         "metrics": _build_metrics(campaigns, slots),
         "slots": slots,
     }
+    if analytics_report:
+        apply_analytics_recommendations(result, load_analytics_report(root_real, analytics_report))
+    return result
 
 
 def _channel_label(slot: dict) -> str:
@@ -819,6 +982,40 @@ def _render_md(calendar: dict) -> str:
         "> nenhum link UTM acima deve ser declarado como ativo em registros de campanha."
     )
     lines.append("")
+
+    cadence = calendar.get("analyticsDrivenCadence")
+    if cadence:
+        lines.append("## 5. Recomendações de analytics UTM (revisão humana)")
+        lines.append("")
+        lines.append(
+            f"> Fonte local: `{cadence['sourceReport']}`. Estratégia: "
+            f"`{cadence['strategy']}`. Datas **não alteradas**. `autoPublish: false`."
+        )
+        lines.append("")
+        lines.append("| Tenant | Slots prioritários | Slots em revisão | Ação de cadência |")
+        lines.append("|---|---|---|---|")
+        for tenant, entry in cadence["byTenant"].items():
+            lines.append(
+                f"| `{tenant}` | {len(entry['slotsPrioritarios'])} "
+                f"| {len(entry['slotsEmRevisao'])} | {entry['sugestao']} |"
+            )
+        lines.append("")
+        lines.append("| Slot | Tenant | Campanha | Hook recomendado | Prioridade |")
+        lines.append("|---|---|---|---|---|")
+        for slot in slots:
+            rec = slot.get("hookRecomendado")
+            if not rec:
+                continue
+            lines.append(
+                f"| {slot['slotId']} | `{slot['tenantId']}` | `{slot['slug']}` "
+                f"| Hook {rec['variant']}: {rec['text']} | {slot['prioridadeHook']} |"
+            )
+        lines.append("")
+        lines.append(
+            "> Recomendações são insumo de revisão: nenhum hook é aplicado automaticamente "
+            "e nenhum post publicado é alterado."
+        )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -883,9 +1080,16 @@ def write_calendar(calendar: dict, root: str = ".") -> dict:
     return outputs
 
 
-def generate_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = ".") -> dict:
+def generate_calendar(
+    start_date: str,
+    weeks: int = WEEKS_DEFAULT,
+    root: str = ".",
+    analytics_report: str | None = None,
+) -> dict:
     """Constrói, audita e grava o calendário editorial. Devolve o resumo."""
-    calendar = build_editorial_calendar(start_date, weeks=weeks, root=root)
+    calendar = build_editorial_calendar(
+        start_date, weeks=weeks, root=root, analytics_report=analytics_report
+    )
     outputs = write_calendar(calendar, root=root)
     return {
         "ok": True,
@@ -898,6 +1102,7 @@ def generate_calendar(start_date: str, weeks: int = WEEKS_DEFAULT, root: str = "
         "totalSlots": calendar["totalSlots"],
         "guardrailsAudited": calendar["guardrailsAudited"],
         "guardrailViolations": calendar["guardrailViolations"],
+        "analyticsDrivenCadence": calendar.get("analyticsDrivenCadence"),
         "outputs": outputs,
     }
 
@@ -913,6 +1118,16 @@ def main(argv: list[str] | None = None) -> int:
         "--weeks", type=int, default=WEEKS_DEFAULT, help="Semanas do cronograma (padrao 4)"
     )
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    parser.add_argument(
+        "--analytics-report",
+        nargs="?",
+        const=ANALYTICS_REPORT_REL,
+        default=None,
+        help=(
+            "Relatorio JSON local do utm_report_importer.py para sugerir hooks vencedores; "
+            f"sem valor usa {ANALYTICS_REPORT_REL}"
+        ),
+    )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
     args = parser.parse_args(argv)
 
@@ -926,7 +1141,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        result = generate_calendar(args.start_date, weeks=args.weeks, root=args.root)
+        result = generate_calendar(
+            args.start_date,
+            weeks=args.weeks,
+            root=args.root,
+            analytics_report=args.analytics_report,
+        )
     except CampaignCalendarError as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1

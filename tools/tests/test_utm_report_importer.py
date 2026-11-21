@@ -8,9 +8,11 @@ import io
 import json
 import os
 import shutil
+import socket
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
@@ -448,6 +450,174 @@ class UtmReportImporterTest(unittest.TestCase):
         rc_missing, out_missing = self._run_main(["--root", str(root), "--json"])
         self.assertEqual(rc_missing, 2)
         self.assertIn("USO_INVALIDO", json.loads(out_missing)["error"])
+
+    # ------------------------------------------------------------------
+    # comparativo A/B — fixtures simuladas dos tres provedores
+    # ------------------------------------------------------------------
+    AB_HEADERS = {
+        "ga4": GA4_HEADER + ["hook_variant_used"],
+        "plausible": [
+            "utm_source", "utm_medium", "utm_campaign", "utm_content",
+            "visitors", "engaged visitors", "conversions", "hook_variant",
+        ],
+        "umami": [
+            "source", "medium", "campaign", "content",
+            "views", "engaged views", "events", "hook_variant",
+        ],
+    }
+
+    def _ab_csv(self, provider: str, scenario: str) -> tuple[list[str], list[list[str]]]:
+        """Dados sinteticos: mesmo UTM observado sob as variantes A e B."""
+        if scenario == "winner":
+            observations = [("A", 1000, 700, 100), ("B", 1000, 500, 30)]
+        elif scenario == "tie":
+            observations = [("A", 1000, 600, 50), ("B", 1000, 600, 50)]
+        elif scenario == "low":
+            observations = [("A", 20, 10, 2), ("B", 20, 8, 1)]
+        else:
+            raise AssertionError(f"cenario desconhecido: {scenario}")
+        rows = []
+        for variant, sessions, engaged, conversions in observations:
+            rows.append([
+                "youtube", "shorts", "camp-marca", "marca-salao",
+                str(sessions), str(engaged), str(conversions), variant,
+            ])
+        return self.AB_HEADERS[provider], rows
+
+    def _ab_comparison(self, root: Path, provider: str, scenario: str) -> dict:
+        header, rows = self._ab_csv(provider, scenario)
+        self._write_csv(root, "metrics.csv", header, rows)
+        report = utm_report_importer.analyze_performance(
+            root=str(root), metrics_csv="metrics.csv", provider=provider, out_dir="out"
+        )
+        matches = [
+            item for item in report["abTests"]["comparisons"]
+            if item["scope"] == "campaign-content"
+            and item["tenantId"] == "marca-salao"
+            and item["utmCampaign"] == "camp-marca"
+            and item["utmContent"] == "marca-salao"
+        ]
+        self.assertEqual(len(matches), 1)
+        return report, matches[0]
+
+    def test_17_ab_clear_winner_is_statistically_consistent(self) -> None:
+        root = self._project("ab-winner")
+        report, comparison = self._ab_comparison(root, "ga4", "winner")
+        self.assertEqual(comparison["outcome"], "winner_a")
+        self.assertEqual(comparison["winner"], "A")
+        self.assertIsNotNone(comparison["zScore"])
+        self.assertGreater(abs(comparison["zScore"]), 1.95)
+        self.assertLess(comparison["pValue"], 0.05)
+        self.assertEqual(comparison["confidencePct"], 95.0)
+        self.assertEqual(comparison["variantA"]["ctrPct"], 10.0)
+        self.assertEqual(comparison["variantB"]["ctrPct"], 3.0)
+        self.assertEqual(comparison["variantA"]["qualifiedSessions"], 700)
+        self.assertEqual(comparison["variantB"]["qualifiedSessions"], 500)
+        self.assertEqual(comparison["variantA"]["engagementRatePct"], 70.0)
+        self.assertEqual(comparison["variantB"]["engagementRatePct"], 50.0)
+        self.assertGreaterEqual(report["abTests"]["summary"]["winner_a"], 1)
+        recommendation = next(
+            rec for rec in report["recommendations"]
+            if rec["scope"] == "campaign-content" and rec["winner"] == "A"
+        )
+        self.assertEqual(recommendation["action"], "priorizar_hook_A")
+        self.assertTrue(recommendation["requiresHumanReview"])
+        self.assertIs(recommendation["autoPublish"], False)
+        markdown = (root / report["reports"]["markdown"]).read_text(encoding="utf-8")
+        self.assertIn("Comparativo A/B", markdown)
+        self.assertIn("priorizar_hook_A", markdown)
+
+    def test_18_ab_tie_is_explicit(self) -> None:
+        root = self._project("ab-tie")
+        report, comparison = self._ab_comparison(root, "ga4", "tie")
+        self.assertEqual(comparison["outcome"], "tie")
+        self.assertIsNone(comparison["winner"])
+        self.assertIn("idêntico", comparison["reason"])
+        self.assertEqual(comparison["variantA"]["ctrPct"], comparison["variantB"]["ctrPct"])
+        self.assertTrue(any(rec["action"] == "manter_teste_ab" for rec in report["recommendations"]))
+        self.assertGreaterEqual(report["abTests"]["summary"]["tie"], 1)
+
+    def test_19_ab_insufficient_sample_is_not_a_winner(self) -> None:
+        root = self._project("ab-low")
+        report, comparison = self._ab_comparison(root, "ga4", "low")
+        self.assertEqual(comparison["outcome"], "insufficient_sample")
+        self.assertIsNone(comparison["winner"])
+        self.assertIn("Amostra insuficiente", comparison["reason"])
+        self.assertTrue(any(
+            rec["action"] == "acumular_amostra" for rec in report["recommendations"]
+        ))
+        self.assertGreaterEqual(report["abTests"]["summary"]["insufficient_sample"], 1)
+
+    def test_20_pure_comparator_handles_single_variant_and_no_data(self) -> None:
+        observation = {
+            "tenantId": "marca-salao",
+            "utmCampaign": "camp-marca",
+            "utmContent": "marca-salao",
+            "variant": "A",
+            "sessions": 1000,
+            "engagedSessions": 700,
+            "conversions": 100,
+        }
+        single = utm_report_importer.compare_hook_variants([observation])
+        # Um observador gera uma comparacao por escopo (campaign-content e campaign).
+        self.assertGreaterEqual(single["summary"]["single_variant"], 1)
+        self.assertTrue(all(
+            item["outcome"] == "single_variant" for item in single["comparisons"]
+        ))
+        empty = utm_report_importer.compare_hook_variants([])
+        self.assertEqual(empty["comparisons"], [])
+        self.assertEqual(empty["summary"]["no_data"], 0)
+        # Com limites menores, a mesma amostra deixa de ser insuficiente.
+        tiny = {**observation, "variant": "B", "sessions": 20, "engagedSessions": 8, "conversions": 2}
+        relaxed = utm_report_importer.compare_hook_variants(
+            [observation, tiny], min_sessions=20, min_conversions=2
+        )
+        content = next(
+            item for item in relaxed["comparisons"] if item["scope"] == "campaign-content"
+        )
+        self.assertIn(content["outcome"], ("winner_a", "tie"))
+
+    def test_21_three_providers_cover_winner_tie_and_low_sample(self) -> None:
+        expected = {
+            "winner": "winner_a",
+            "tie": "tie",
+            "low": "insufficient_sample",
+        }
+        for provider in ("ga4", "plausible", "umami"):
+            for scenario, outcome in expected.items():
+                with self.subTest(provider=provider, scenario=scenario):
+                    root = self._project(f"ab-{provider}-{scenario}")
+                    _, comparison = self._ab_comparison(root, provider, scenario)
+                    self.assertEqual(comparison["outcome"], outcome)
+
+    def test_22_analysis_is_offline_without_network_sockets(self) -> None:
+        root = self._ga4_project("offline-no-network")
+
+        def blocked(*args, **kwargs):
+            raise AssertionError("rede nao deve ser acessada")
+
+        header, rows = self._ab_csv("ga4", "winner")
+        self._write_csv(root, "metrics.csv", header, rows)
+        with mock.patch.object(socket, "socket", side_effect=blocked):
+            report = utm_report_importer.analyze_performance(
+                root=str(root), metrics_csv="metrics.csv", out_dir="out"
+            )
+        self.assertTrue(report["ok"])
+        self.assertTrue(report["offlineOnly"])
+        self.assertEqual(report["abTests"]["networkCalls"], 0)
+        self.assertFalse(report["financialSimulation"])
+
+    def test_23_recommendations_never_authorize_publication(self) -> None:
+        root = self._project("ab-review-only")
+        report, _ = self._ab_comparison(root, "ga4", "winner")
+        self.assertTrue(report["recommendations"])
+        for rec in report["recommendations"]:
+            with self.subTest(action=rec["action"]):
+                self.assertTrue(rec["requiresHumanReview"])
+                self.assertIs(rec["autoPublish"], False)
+                self.assertNotIn("publicar", rec["action"])
+                self.assertNotIn("agendar", rec["action"])
+        self.assertNotIn("autoPublish", report["abTests"])
 
 
 if __name__ == "__main__":
