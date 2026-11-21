@@ -151,17 +151,44 @@ def _is_gitignored(main_root: str, path: str) -> bool:
 # Download / extracao / promocao atomica
 # ---------------------------------------------------------------------------
 def _download(url: str, dest_zip: str) -> str:
-    """Baixa ``url`` para ``dest_zip`` e devolve o SHA-256 dos bytes."""
+    """Baixa ``url`` para ``dest_zip`` e devolve o SHA-256 dos bytes.
+
+    Verifica o ``Content-Length`` (quando informado): uma conexao encerrada cedo
+    gravaria um zip truncado silenciosamente. Levanta ``BootstrapError`` se o
+    tamanho nao conferir.
+    """
     os.makedirs(os.path.dirname(dest_zip), exist_ok=True)
     sha = hashlib.sha256()
+    written = 0
     with urllib.request.urlopen(url, timeout=120) as resp, open(dest_zip, "wb") as out:
+        expected = resp.headers.get("Content-Length")
         while True:
             chunk = resp.read(1 << 20)
             if not chunk:
                 break
             sha.update(chunk)
             out.write(chunk)
+            written += len(chunk)
+    if expected is not None:
+        try:
+            if int(expected) != written:
+                raise BootstrapError(
+                    f"download incompleto: {written} de {expected} bytes"
+                )
+        except ValueError:
+            pass
     return sha.hexdigest()
+
+
+def _verify_zip(zip_path: str) -> None:
+    """Valida a integridade (CRC) do zip antes de extrair qualquer binario."""
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            bad = zf.testzip()
+    except zipfile.BadZipFile as exc:
+        raise BootstrapError(f"pacote zip invalido: {exc}") from exc
+    if bad:
+        raise BootstrapError(f"pacote zip corrompido no membro: {bad}")
 
 
 def _extract_binaries(zip_path: str, staging_dir: str) -> tuple[str, str]:
@@ -260,9 +287,12 @@ def ensure_ffmpeg_tools(root: str | os.PathLike = ".", force: bool = False) -> d
     tmp_root = os.path.join(main_root, ".workspace", "tmp", "ffmpeg-bootstrap")
     os.makedirs(tmp_root, exist_ok=True)
     staging = tempfile.mkdtemp(prefix="staging-", dir=tmp_root)
-    zip_path = os.path.join(tmp_root, "ffmpeg-essentials.zip")
+    # Zip unico por execucao (dentro do staging): evita corrida entre processos
+    # que compartilhariam o mesmo caminho temporario e corromperiam o pacote.
+    zip_path = os.path.join(staging, "ffmpeg-essentials.zip")
     try:
         sha = _download(DOWNLOAD_URL, zip_path)
+        _verify_zip(zip_path)
         ff_src, fp_src = _extract_binaries(zip_path, staging)
         ff_dest, fp_dest = _promote(ff_src, fp_src, tools_dir)
         ok_ff, ver_ff = _probe(ff_dest)
@@ -333,7 +363,7 @@ def main(argv: list[str] | None = None) -> int:
         payload = {"ok": False, "status": "error", "message": str(exc)}
         _emit(payload, args.json)
         return 1
-    except (OSError, urllib.error.URLError) as exc:
+    except (OSError, urllib.error.URLError, zipfile.BadZipFile) as exc:
         payload = {
             "ok": False,
             "status": "error",
