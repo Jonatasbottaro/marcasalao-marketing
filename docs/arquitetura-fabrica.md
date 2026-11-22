@@ -140,7 +140,7 @@ Lê a entrega renderizada + brand-kit (domínio, UTMs) + guardrails e gera os te
 
 > **Efeito colateral conhecido:** re-executar `publish_pack` (ou sua suíte de testes) numa estação **sem** os `.mp4` em disco re-verifica e regrava `sha256_disk_ok: false` nos checklists versionados. Restaure com `git checkout -- 04-legendas/` nesses casos; o valor `true` reflete a estação que renderizou. O `release_audit` trata vídeo ausente como **aviso**, não falha.
 
-### 2.8 `tools/release_audit.py` — gate de release em 7 domínios (Agente 4, Etapa 4)
+### 2.8 `tools/release_audit.py` — gate de release em 8 domínios (Agente 4, Etapa 4)
 
 Auditor final de prontidão em uma passada (`python tools/release_audit.py [--strict] [--json] [--report-out <arquivo>] [--root <raiz>]`; API `run_release_audit(root, strict=False) -> dict`, relatório `schemaVersion: 2` com `domains[]` e `summary`). Cada problema carrega `severity` (`error` | `warning`), `code` e `message`; `error` reprova sempre, `warning` só reprova com `--strict`.
 
@@ -162,11 +162,44 @@ Avisos (`warning`, não reprovam no modo normal; **reprovam com `--strict`**): `
 
 Exit codes: `0` aprovado; `1` reprovado; `2` erro de uso/execução.
 
-### 2.9 `tools/devlog_sync.py` — registro de sessões (Agente 4, Etapa 4)
+### 2.8.1 Domínio 8 — `empacotamento_distribuicao` (Agente 1, Etapa 11)
+
+O `release_audit` inclui um oitavo domínio que varre `.workspace/bundles/<tenantId>/<slug>/` e, para cada `.zip` encontrado, executa `publish_bundler.verify_bundle()`. Quando não há bundles na estação, o domínio emite um aviso (`BUNDLES_AUSENTES`) — não reprova no modo normal, mas reprova com `--strict`. Problemas de hash divergente, manifesto ausente, entrada faltando ou entradas desordenadas aparecem como erros.
+
+### 2.9 `tools/publish_bundler.py` — empacotamento determinístico de distribuição (Agente 1, Etapa 11)
+
+Consolida artefatos aprovados de uma campanha em pacotes `.zip` portáveis e auditáveis por SHA-256, sem violar políticas de versionamento nem publicação manual. Cada pacote pertence a um único `tenant_id` e grava em ``.workspace/bundles/<tenantId>/<slug>/`` (não rastreado pelo Git).
+
+O ZIP é bit-determinístico: entradas ordenadas lexicograficamente, data/hora fixa no `ZipInfo`, permissões normalizadas (`0o600`), JSON em UTF-8 com LF (`\n`). O campo `autoPublish` é sempre `false`.
+
+CLI (a partir da raiz do checkout):
+    python tools/publish_bundler.py pack --tenant <id> --slug <slug>
+        [--allow-unapproved] [--json] [--root <raiz>]
+    python tools/publish_bundler.py verify --bundle <caminho.zip> [--json]
+        [--root <raiz>]
+
+API: `pack_bundle(root, tenant_id, slug, allow_unapproved=False) -> dict` e
+`verify_bundle(bundle_path, root=".") -> dict`; exceção `PublishBundlerError`.
+
+O `pack_bundle` falha fechada: exige decisão `aprovado` em
+`.workspace/tmp/aprovacoes-titular.json` a menos que `--allow-unapproved` (selo
+`PREVIA_NAO_APROVADA`); decisões `ajuste` nunca entram (`SLOT_EM_AJUSTE`). Antes de
+gravar o ZIP, confere o SHA-256 de masters e derivados em `.workspace/archives/`
+contra o manifesto e o `derivatives.json`. Grava, ao lado do ZIP, um
+`<slug>-v<SCHEMA_VERSION>-manifest.json` com `schemaVersion`, `tenantId`,
+`brandName`, `domain`, `slug`, `autoPublish: false`, `approvalStatus`,
+`audioPolicy`, `bundlePath`, `bundleSha256`, `bundleBytes`, `promotionHistory[]`,
+`items[]` e `bundleSummary`.
+
+`verify_bundle` recalcula o SHA-256 do ZIP, confere o manifesto, valida que cada
+item declarado existe no ZIP com o mesmo hash, e confirma que as entradas do ZIP
+estão ordenadas lexicograficamente. Qualquer divergência reprova com `ok: false`.
+
+### 2.10 `tools/devlog_sync.py` — registro de sessões (Agente 4, Etapa 4)
 
 Consolida devlogs `.workspace/devlogs/etapa*-agente*.md` no `contexto_projeto.md` (Seção 1 "Estado atual" + Seção 7 "Histórico de sessões"), com ordenação numérica por `(etapa, agente)`, idempotência por marcador `<!-- devlog-sync:<arquivo> -->` e retrocompatibilidade total com os registros da Etapa 3. `--pattern` restringe a descoberta (padrão `etapa*-agente*.md`); o resultado JSON reporta `pattern` e a etapa/agente de cada entrada. A consolidação é idempotente: re-execuções não duplicam entradas já aplicadas. CLI: `python tools/devlog_sync.py [--pattern <glob>] [--json]`.
 
-### 2.10 `tools/derivative_formats.py` — derivados multiformato (Agente 1, Etapa 4)
+### 2.11 `tools/derivative_formats.py` — derivados multiformato (Agente 1, Etapa 4)
 
 Parte dos MP4s verticais arquivados em `.workspace/archives/<slug>/<slug>.mp4` (mais o `manifest.json` da entrega e o brand-kit do tenant) e gera, por campanha, em `.workspace/archives/<slug>/derivatives/`:
 
@@ -176,25 +209,25 @@ Parte dos MP4s verticais arquivados em `.workspace/archives/<slug>/<slug>.mp4` (
 
 Grava também `derivatives.json` **na entrega versionada** (`02-reels-shorts/deliveries/<tenant>/<slug>/`), declarando `source` (caminho, SHA-256, ffprobe) e os cinco derivados do manifesto v2 (`1x1`, `16x9`, `cover`, `thumb-16x9`, `preview-formats`) com caminho, SHA-256, bytes e comando reproduzível — o domínio 4 do `release_audit` exige as declarações `cover`, `1x1` e `16x9`. CLI: `python tools/derivative_formats.py (--all | --tenant <id> [--campaign <slug>]) [--json]`. Como os MP4s de origem são locais da estação, a geração exige a estação que renderizou; a declaração versionada preserva a integridade para as demais.
 
-### 2.11 `tools/campaign_calendar.py` — calendário editorial e matriz UTM (Agente 3, Etapa 4)
+### 2.12 `tools/campaign_calendar.py` — calendário editorial e matriz UTM (Agente 3, Etapa 4)
 
 Lê os tenants validados e os `checklist-publicacao.json` gerados pelo `publish_pack` e distribui as campanhas num cronograma intercalado: até 2 campanhas por dia, nunca duas do mesmo tenant no mesmo dia (seleção gulosa pelos tenants com mais campanhas restantes), cada campanha cobrindo os 3 canais configurados (Instagram Reels, YouTube Shorts, Facebook Reels) em suas janelas horárias. Todos os slots nascem com `autoPublish: false` e `statusEditorial: "aguardando_aprovacao_titular"` — o calendário é proposta, nunca publicação.
 
 Saídas: `04-legendas/calendario-editorial.json` (estrutura completa dos slots, com `audioPolicy`, `utmUrl` e contagens) e `04-legendas/calendario-editorial.md` (cronograma cronológico, checklist e matriz consolidada das URLs UTM). CLI: `python tools/campaign_calendar.py --start-date YYYY-MM-DD [--json]`.
 
-> **Consolidação concluída:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, já consta no repositório. Com ele presente, o domínio 5 não reporta `MATRIZ_UTM_AUSENTE` e o gate `--strict` aprova 7/7 domínios.
+> **Consolidação concluída:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, já consta no repositório. Com ele presente, o domínio 5 não reporta `MATRIZ_UTM_AUSENTE`. O domínio 8 (`empacotamento_distribuicao`) emite um aviso (`BUNDLES_AUSENTES`) quando não há bundles na estação — não reprova no modo normal, mas reprova com `--strict`.
 
-### 2.12 `tools/review_dashboard.py` — portal de revisão humana (Agente 2, Etapa 4)
+### 2.13 `tools/review_dashboard.py` — portal de revisão humana (Agente 2, Etapa 4)
 
 Consolida tenants (brand-kit + guardrails), entregas (manifesto, SRT, narração, storyboard) e pacotes sociais (checklist + os três textos por rede) num portal estático em `05-review-portal/`: `index.html` (dados embutidos, abre direto via `file://`), `portal-data.json` e `README.md`. O build é determinístico — não grava timestamps e produz bytes idênticos para os mesmos insumos, de modo que o portal versionado é o mesmo em qualquer estação.
 
 CLI: `python tools/review_dashboard.py --build [--json]` para gerar e `python tools/review_dashboard.py --serve [--port 8765]` para revisar no navegador. O portal é somente leitura: nenhuma ação dele publica, agenda ou altera artefato. O domínio 6 do `release_audit` exige os três arquivos e varre o JSON/HTML em busca de caminhos absolutos de estação vazados (`CAMINHO_ABSOLUTO_VAZADO`).
 
-### 2.13 `tools/bootstrap_ffmpeg.py` — bootstrap portátil de FFmpeg (Agente 1, Etapa 5B)
+### 2.14 `tools/bootstrap_ffmpeg.py` — bootstrap portátil de FFmpeg (Agente 1, Etapa 5B)
 
 Instala de forma idempotente o pacote essencial do Windows (gyan.dev) em `<MAIN_ROOT>/.workspace/tools/ffmpeg/` e valida `ffmpeg`/`ffprobe` com `-version`. `MAIN_ROOT` é resolvido por `git rev-parse --git-common-dir`, de modo que a instalação fica no checkout principal e é compartilhada por todas as worktrees. 100% stdlib; nenhum `.exe`/`.zip` é versionado. CLI: `python tools/bootstrap_ffmpeg.py [--check-only] [--force] [--json]`; API: `ensure_ffmpeg_tools(root=".", force=False) -> dict`.
 
-### 2.14 `tools/static_cards.py` — cards estáticos de Stories e Carrossel (Agente 1, Etapa 5)
+### 2.15 `tools/static_cards.py` — cards estáticos de Stories e Carrossel (Agente 1, Etapa 5)
 
 Gera, por campanha, dois kits versionados em `01-insta-stories/deliveries/<tenant>/<slug>/`: `stories/` (3 banners 1080×1920) e `carousel/` (4 slides 1080×1350), mais `static-manifest.json` (schemaVersion 1, `guardrailsAudited`, dimensões, bytes e SHA-256 das 7 lâminas). Usa as mesmas primitivas PNG bitmap 5×7 de `tools/ns002_pilot.py`, sem Pillow, e auditoriza todos os textos contra guardrails **antes** de renderizar qualquer pixel. CLI: `python tools/static_cards.py (--all | --tenant <id> [--campaign <slug>]) [--types stories,carousel] --json`. Não produz áudio.
 
@@ -355,11 +388,11 @@ python tools/release_audit.py --strict --json
 python tools/editorial_qa.py --all --json
 ```
 
-- `test_release_audit.py` (22 testes) cobre o contrato `schemaVersion 2` dos 7 domínios no repositório real, o sandbox que aprova no modo normal e reprova no `--strict` (matriz UTM ausente), o sandbox completo que aprova **7/7 no `--strict`**, e defeitos simulados por domínio: hash corrompido, storyboard/diretório de entrega/pacote/arquivo social ausentes, política de áudio violada nos dois sentidos, `autoPublish: true` e `guardrailsAudited: false`, contagem de slots divergente, declaração de derivado incompleta e derivado com hash divergente, caminho absoluto vazado no portal, artefatos da Etapa 4 ausentes (aviso, não falha), mídia rastreada, `.gitattributes` sem `eol=lf` e sem cobertura por extensão, worktree órfã e worktree registrada sem diretório, além de `--json`/`--report-out`/`PATH_OUTSIDE_ROOT` e da saída UTF-8 do CLI.
+- `test_release_audit.py` (22 testes) cobre o contrato `schemaVersion 2` dos 8 domínios no repositório real, o sandbox que aprova no modo normal e reprova no `--strict` (matriz UTM ausente), o sandbox completo que aprova no `--strict`, e defeitos simulados por domínio: hash corrompido, storyboard/diretório de entrega/pacote/arquivo social ausentes, política de áudio violada nos dois sentidos, `autoPublish: true` e `guardrailsAudited: false`, contagem de slots divergente, declaração de derivado incompleta e derivado com hash divergente, caminho absoluto vazado no portal, artefatos da Etapa 4 ausentes (aviso, não falha), mídia rastreada, `.gitattributes` sem `eol=lf` e sem cobertura por extensão, worktree órfã e worktree registrada sem diretório, além de `--json`/`--report-out`/`PATH_OUTSIDE_ROOT` e da saída UTF-8 do CLI.
 - `test_editorial_qa.py` (13 testes) cobre a auditoria do acervo real (10 campanhas, 5 lentes, nenhum erro) e, em sandbox, linha de SRT longa, U+FFFD e mojibake, violação de guardrail, filtro por tenant, `--strict`, `--json`, divergência de duração, pacote social ausente, bloco vazio, saída humana e determinismo sem efeito colateral.
 - `test_devlog_sync.py` (7 testes) cobre a consolidação da Etapa 3 (retrocompatibilidade byte a byte), a ordenação multi-etapa por `(etapa, agente)`, a atualização da linha `Fase atual`, a idempotência de execuções repetidas e o filtro `--pattern`.
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
-- **Gate `--strict`:** exige 7/7 domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada, `--json` e `--strict` retornam `ok: true` com 7 domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
+- **Gate `--strict`:** exige aprovação de todos os domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada e nenhum bundle adulterado, `--json` e `--strict` retornam `ok: true` com todos os domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
 - **Etapa 6:** as suítes dos módulos de operação do titular são acrescentadas na consolidação da etapa; a contagem de 21 módulos acima refere-se ao estado integrado até a Etapa 5B.
 
 ## 6. Referências

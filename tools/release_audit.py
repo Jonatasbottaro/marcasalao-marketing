@@ -49,9 +49,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import render_local
 import tenant_validator
 import workspace_doctor
+
+import publish_bundler
 
 MIN_VALID_TENANTS = 4
 HISTORICAL_WORKTREES = ("prova-campanha-conclusao", "studio-package-verify2")
@@ -83,6 +87,7 @@ DOMAIN_NAMES = (
     ("calendario_utm", "Calendário Editorial & Matriz UTM"),
     ("portal_revisao", "Portal Visual de Revisão"),
     ("higiene_git", "Higiene Git, EOL e Worktrees"),
+    ("empacotamento_distribuicao", "Empacotamento de Distribuição"),
 )
 
 
@@ -607,6 +612,51 @@ def _check_manifest_integrity(root_real: str) -> tuple[list[dict], list[dict], l
     return _split_integrity_problems(integrity)
 
 
+def _check_empacotamento(root_real: str) -> list[dict]:
+    """Verifica se todos os bundles em .workspace/bundles/ sao validos (domínio 8).
+
+    Retorna [] quando nao ha bundles (dominio informativo: so verifica o que
+    existe). Com --strict, qualquer bundle invalido ou hash divergente reprova.
+    """
+    problems: list[dict] = []
+    bundles_root = os.path.join(root_real, ".workspace", "bundles")
+    if not os.path.isdir(render_local.fs_path(bundles_root)):
+        return []
+
+    for tenant_id in sorted(os.listdir(render_local.fs_path(bundles_root))):
+        tenant_dir = os.path.join(bundles_root, tenant_id)
+        if not os.path.isdir(render_local.fs_path(tenant_dir)):
+            continue
+        for slug in sorted(os.listdir(render_local.fs_path(tenant_dir))):
+            slug_dir = os.path.join(tenant_dir, slug)
+            if not os.path.isdir(render_local.fs_path(slug_dir)):
+                continue
+            for name in sorted(os.listdir(render_local.fs_path(slug_dir))):
+                if not name.endswith(".zip"):
+                    continue
+                bundle_abs = os.path.join(slug_dir, name)
+                try:
+                    result = publish_bundler.verify_bundle(bundle_abs, root=root_real)
+                except publish_bundler.PublishBundlerError as exc:
+                    problems.append(
+                        _error(
+                            "BUNDLE_VERIFICACAO_FALHOU",
+                            f"{tenant_id}/{slug}/{name}: {exc.code} - {exc.detail}",
+                        )
+                    )
+                    continue
+                if not result["ok"]:
+                    for problem in result.get("problems", []):
+                        problems.append(
+                            {
+                                "severity": problem["severity"],
+                                "code": f"BUNDLE_{problem['code']}",
+                                "message": f"{tenant_id}/{slug}/{name}: {problem['message']}",
+                            }
+                        )
+    return problems
+
+
 def run_release_audit(root: str = ".", strict: bool = False) -> dict:
     """Executa a auditoria dos 7 dominios e retorna o relatorio schemaVersion 2."""
     root_real = os.path.realpath(root)
@@ -621,6 +671,7 @@ def run_release_audit(root: str = ".", strict: bool = False) -> dict:
     calendario_problems = _check_calendario(root_real)
     portal_problems = _check_portal(root_real)
     higiene_problems = _check_higiene(root_real)
+    empacotamento_problems = _check_empacotamento(root_real)
 
     # Integridade manifestos <-> binarios locais, distribuida entre os 7 dominios.
     extra_entregas, extra_derivados, extra_higiene = _check_manifest_integrity(root_real)
@@ -636,6 +687,7 @@ def run_release_audit(root: str = ".", strict: bool = False) -> dict:
         calendario_problems,
         portal_problems,
         higiene_problems,
+        empacotamento_problems,
     )
     domains = [
         _domain(domain_id, name, problems)
