@@ -83,6 +83,7 @@ CALENDAR_JSON_REL = os.path.join("04-legendas", "calendario-editorial.json")
 CALENDAR_MD_REL = os.path.join("04-legendas", "calendario-editorial.md")
 UTM_CSV_REL = os.path.join("04-legendas", "matriz-utm-consolidada.csv")
 PUBLICACAO_ROOT = os.path.join("04-legendas", "pacotes-publicacao")
+BUNDLE_ATTRIBUTION_DEFAULT = os.path.join(".workspace", "tmp", "utm-report", "bundle-attribution.json")
 
 # Comparativo de hooks A/B (configurado em utm_report_importer.py).
 HOOK_COMPARISON_KEY = "hookComparison"
@@ -700,19 +701,115 @@ def _apply_utm_recommendations(calendar: dict, utm_report: dict | None) -> dict:
     return calendar
 
 
+def load_bundle_attribution(root_real: str, bundle_attribution: str | None) -> dict | None:
+    """Carrega o arquivo de atribuicao de bundle (Etapa 12).
+
+    Confina o caminho a raiz e valida que o JSON possua a chave ``bundles``.
+    Indexa os atribuicoes por (tenantId, slug) para consulta rapida.
+    """
+    if not bundle_attribution:
+        return None
+    report_path = os.path.realpath(os.path.join(root_real, bundle_attribution))
+    if not render_local.contained(root_real, report_path):
+        raise CampaignCalendarError(
+            f"BUNDLE_ATTRIBUTION_FORA_DA_RAIZ: {bundle_attribution} (fora de {root_real})"
+        )
+    if not os.path.isfile(render_local.fs_path(report_path)):
+        raise CampaignCalendarError(f"BUNDLE_ATTRIBUTION_AUSENTE: {bundle_attribution}")
+    try:
+        with open(render_local.fs_path(report_path), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise CampaignCalendarError(f"BUNDLE_ATTRIBUTION_INVALIDO: {bundle_attribution}: {exc}") from exc
+
+    bundles = data.get("bundles")
+    if not isinstance(bundles, list):
+        raise CampaignCalendarError(
+            f"BUNDLE_ATTRIBUTION_SEM_LISTA: {bundle_attribution} sem 'bundles'"
+        )
+
+    index: dict[tuple[str, str], dict] = {}
+    for entry in bundles:
+        if not isinstance(entry, dict):
+            continue
+        tid = entry.get("tenantId")
+        slug = entry.get("slug")
+        if tid is None or slug is None:
+            continue
+        index[(str(tid), str(slug))] = entry
+
+    return {
+        "path": render_local.rel(root_real, report_path),
+        "byKey": index,
+    }
+
+
+def _apply_bundle_attribution(calendar: dict, bundle_attribution: dict | None) -> dict:
+    """Anexa `bundleAttribution` aos slots do calendario (Etapa 12).
+
+    Para cada slot, cruza (tenantId, slug) com o índice de atribuicoes e
+    anexa status de atribuicao, metricas entregues (impressoes, cliques, CTR,
+    conversoes, conversionRate, observedUpliftPct, winnerSustained) e
+    promotionHistory. Quando ha atribuicao, a justificativa do
+    `hookRecomendadoJustificativa` incorpora a taxa de conversão pós-entrega
+    e a sustentação do vencedor, sem mutar datas, canais, UTMs ou cópia.
+    """
+    if not bundle_attribution:
+        return calendar
+    index = bundle_attribution.get("byKey", {})
+    for slot in calendar["slots"]:
+        key = (slot["tenantId"], slot["slug"])
+        attr = index.get(key)
+        if not attr:
+            continue
+        slot["bundleAttribution"] = {
+            "attributionStatus": attr.get("attributionStatus"),
+            "approvalStatus": attr.get("approvalStatus"),
+            "bundleSha256": attr.get("bundleSha256"),
+            "bundlePath": attr.get("bundlePath"),
+            "metrics": attr.get("metrics"),
+            "promotionHistory": attr.get("promotionHistory", []),
+            "attributionReason": attr.get("attributionReason"),
+        }
+        metrics = attr.get("metrics") or {}
+        conversion_rate = metrics.get("conversionRate")
+        uplift = metrics.get("observedUpliftPct")
+        winner_sustained = metrics.get("winnerSustained")
+        justification = slot.get(HOOK_JUSTIFICATIVA_FIELD, "")
+        parts = [justification]
+        if conversion_rate is not None:
+            parts.append(f"CVR pós-entrega: {conversion_rate}%.")
+        if uplift is not None:
+            parts.append(f"Uplift observado: {uplift}%.")
+        if winner_sustained is not None:
+            parts.append(
+                f"Vencedor sustentado: {'sim' if winner_sustained else 'não'}."
+            )
+        slot[HOOK_JUSTIFICATIVA_FIELD] = " ".join(parts)
+    return calendar
+
+
 def build_editorial_calendar(
     start_date: str,
     weeks: int = WEEKS_DEFAULT,
     root: str = ".",
     utm_report: str | None = None,
+    bundle_attribution: str | None = None,
 ) -> dict:
     """Constrói o calendário editorial completo (sem gravar em disco).
 
-    Quando `utm_report` e informado (caminho relativo a raiz de um
+    Quando `utm_report` é informado (caminho relativo a raiz de um
     `utm-performance-report.json`), cada slot recebe `hookRecomendado`
     (`A`, `B` ou `testar_ab`) e uma justificativa objetiva baseada no
-    comparativo A/B. Sem `utm_report` a saida e deterministicamente
+    comparativo A/B. Sem `utm_report` a saída é deterministicamente
     `testar_ab` para todos os slots.
+
+    Quando `bundle_attribution` é informado (caminho relativo a raiz de um
+    `bundle-attribution.json` produzido pela reconciliação Etapa 12), os slots
+    recebem `bundleAttribution` (status de atribuição, métricas entregues,
+    observedUpliftPct e winnerSustained), e a justificativa do `hookRecomendado`
+    incorpora a taxa de conversão pós-entrega e a sustentação do vencedor quando
+    disponível.
     """
     root_real = os.path.realpath(root)
     try:
@@ -832,7 +929,18 @@ def build_editorial_calendar(
     }
 
     utm_report_data = load_utm_report(root_real, utm_report)
-    return _apply_utm_recommendations(calendar, utm_report_data)
+    bundle_attribution_data = load_bundle_attribution(root_real, bundle_attribution)
+    calendar = _apply_utm_recommendations(calendar, utm_report_data)
+    calendar = _apply_bundle_attribution(calendar, bundle_attribution_data)
+    calendar["bundleAttribution"] = (
+        {
+            "path": bundle_attribution_data["path"],
+            "aplicado": bool(bundle_attribution_data),
+        }
+        if bundle_attribution_data
+        else None
+    )
+    return calendar
 
 
 def _channel_label(slot: dict) -> str:

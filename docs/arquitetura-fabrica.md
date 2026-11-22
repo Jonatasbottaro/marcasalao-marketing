@@ -264,7 +264,7 @@ Fecha o ciclo entre a aprovação humana, a publicação manual e o aprendizado 
 | `tools/srt_formatter.py` | Normalização/quebra de linha das legendas para legibilidade mobile (limite de 48 caracteres por linha do `editorial_qa`), sem alterar timecodes nem duração final | CLI em `tools/srt_formatter.py` |
 | `tools/approval_cli.py` | Leitura e registro das decisões do titular no mesmo arquivo `aprovacoes-titular.json` (schema v2) usado pelo portal: `aguardando` / `aprovado` / `ajuste` e conferência de locução externa | `python tools/approval_cli.py status` · `python tools/approval_cli.py decide ...` |
 | `tools/factory_cli.py handoff` | Empacotamento diário pós-aprovação: ficha `POSTAGEM-MANUAL.md`, `copy-pronta.txt`, `handoff-manifest.json` e mídia local, com `autoPublish: false` | `python tools/factory_cli.py handoff --all-approved --json` |
-| `tools/utm_report_importer.py` | Importação/reconciliação do relatório exportado da ferramenta de analytics contra `04-legendas/matriz-utm-consolidada.csv`, na chave `(tenant_id, slug, utm_source, utm_medium, utm_content)` | `python tools/utm_report_importer.py --json` |
+| `tools/utm_report_importer.py` | Importação/reconciliação do relatório exportado da ferramenta de analytics contra `04-legendas/matriz-utm-consolidada.csv`, na chave `(tenant_id, slug, utm_source, utm_medium, utm_content)`, e reconciliação bundle → UTM (`bundleAttribution`) conectando manifestos de `.workspace/bundles/` aos slots de desempenho | `python tools/utm_report_importer.py --json` · `python tools/utm_report_importer.py --reconcile-bundles --json` |
 | `tools/workspace_doctor.py` | Diagnóstico de saúde do checkout antes do próximo ciclo (estrutura, contratos, artefatos, portabilidade e consistência local) | `python tools/workspace_doctor.py --check` |
 | `uiLabels` no `tenants/<tenantId>/brand-kit.json` | Rótulos de interface exibidos no portal e no handoff (decisões, locução externa, chamadas por rede), substituindo textos fixos por termos configuráveis por marca | objeto `uiLabels` no brand-kit; requer `additionalProperties` do schema actualizado na consolidação |
 | `docs/guia-operacional-titular.md` | Manual único da rotina diária (revisão → handoff → publicação manual) e semanal (métricas UTM + doctor) | documento versionado em `docs/` |
@@ -362,6 +362,7 @@ python tools/srt_formatter.py --help
 
 # 20. Fechamento semanal: importar métricas UTM e checar o workspace
 python tools/utm_report_importer.py --json
+python tools/utm_report_importer.py --reconcile-bundles --json
 python tools/workspace_doctor.py --check
 ```
 
@@ -383,7 +384,7 @@ python -m unittest \
   tools/tests/test_campaign_calendar.py tools/tests/test_release_audit.py \
   tools/tests/test_bootstrap_ffmpeg.py tools/tests/test_static_cards.py \
   tools/tests/test_handoff_bundler.py tools/tests/test_utm_simulator.py \
-  tools/tests/test_editorial_qa.py -v
+  tools/tests/test_bundle_attribution.py tools/tests/test_editorial_qa.py -v
 python tools/release_audit.py --strict --json
 python tools/editorial_qa.py --all --json
 ```

@@ -521,7 +521,8 @@ def _coletar_png_opcional(root: str, delivery_dir: str, filename: str) -> dict |
     }
 
 
-def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict]:
+def _collect_data(root: str, utm_report: dict | None = None,
+                  bundle_attribution_data: dict | None = None) -> tuple[dict, dict]:
     tenants: list[dict] = []
     campaigns: list[dict] = []
     videos_found = 0
@@ -576,6 +577,9 @@ def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict
             bundles = _coletar_bundle_status(root, tenant_id, slug)
             if bundles is not None:
                 campaign["bundleStatus"] = bundles
+            attribution = bundle_attribution_data.get((tenant_id, slug)) if bundle_attribution_data else None
+            if attribution is not None:
+                campaign["bundleAttribution"] = attribution
             campaigns.append(campaign)
             video_abs = os.path.realpath(
                 os.path.join(root, campaign["video"]["archiveRelPath"].replace("/", os.sep))
@@ -611,7 +615,8 @@ def _collect_data(root: str, utm_report: dict | None = None) -> tuple[dict, dict
 # ---------------------------------------------------------------------------
 
 def build_portal(root: str = ".", output_dir: str | None = None,
-                 utm_report: dict | None = None) -> dict:
+                 utm_report: dict | None = None,
+                 bundle_attribution: dict | None = None) -> dict:
     """Gera index.html, portal-data.json e README.md. Devolve o resumo."""
     root_real = os.path.realpath(root)
     if not os.path.isdir(render_local.fs_path(root_real)):
@@ -622,7 +627,7 @@ def build_portal(root: str = ".", output_dir: str | None = None,
         raise ReviewPortalError(f"SAIDA_FORA_DA_RAIZ: {out_rel}")
     os.makedirs(render_local.fs_path(out_abs), exist_ok=True)
 
-    data, stats = _collect_data(root_real, utm_report)
+    data, stats = _collect_data(root_real, utm_report, bundle_attribution)
 
     payload_json = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
     html = render_index_html(data)
@@ -1401,6 +1406,65 @@ function card(c) {
     secaoPromo.appendChild(lista);
     aprovacao.appendChild(secaoPromo);
   }
+
+  // Atribuicao de bundle (Etapa 12): exibe status de atribuicao do pacote entregue.
+  if (c.bundleAttribution) {
+    const secaoAttr = el("div", { class: "linha" });
+    secaoAttr.appendChild(
+      el("strong", {}, [document.createTextNode("Atribuição de bundle (Etapa 12):")])
+    );
+    const m = c.bundleAttribution;
+    const metrica = m.metrics || {};
+    const info = el("ul", { class: "atribuicao-lista" });
+    const liStatus = el("li", {}, [
+      el("strong", {}, [document.createTextNode("Status: ")]),
+      document.createTextNode(m.attributionStatus || "-"),
+    ]);
+    info.appendChild(liStatus);
+    if (m.approvalStatus) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Aprovação: ")]),
+        document.createTextNode(m.approvalStatus),
+      ]));
+    }
+    if (m.bundleSha256) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("SHA-256: ")]),
+        document.createTextNode(m.bundleSha256),
+      ]));
+    }
+    if (metrica.conversionRate != null || metrica.conversions != null || metrica.impressions != null) {
+      const linhaMetrica = el("li", {}, [
+        el("strong", {}, [document.createTextNode("Métricas entregues: ")]),
+        document.createTextNode(
+          "impressões=" + (metrica.impressions != null ? metrica.impressions : "-") +
+          ", cliques=" + (metrica.clicks != null ? metrica.clicks : "-") +
+          ", CTR=" + (metrica.ctr != null ? metrica.ctr + "%" : "-") +
+          ", conversões=" + (metrica.conversions != null ? metrica.conversions : "-") +
+          ", CVR=" + (metrica.conversionRate != null ? metrica.conversionRate + "%" : "-")
+        ),
+      ]);
+      info.appendChild(linhaMetrica);
+    }
+    if (metrica.observedUpliftPct != null) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Uplift observado: ")]),
+        document.createTextNode(metrica.observedUpliftPct + "%"),
+      ]));
+    }
+    if (metrica.winnerSustained != null) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Vencedor sustentado: ")]),
+        document.createTextNode(metrica.winnerSustained ? "sim" : "não"),
+      ]));
+    }
+    if (m.attributionReason) {
+      info.appendChild(el("p", { class: "nota", text: m.attributionReason }));
+    }
+    secaoAttr.appendChild(info);
+    aprovacao.appendChild(secaoAttr);
+  }
+
   cardEl.appendChild(aprovacao);
   return cardEl;
 }
@@ -1656,6 +1720,36 @@ def _load_utm_report_for_portal(root: str, utm_report_rel: str) -> dict | None:
             return json.load(handle)
     except (OSError, ValueError) as exc:
         raise ReviewPortalError(f"UTM_REPORT_INVALIDO: {utm_report_rel}: {exc}") from exc
+
+
+def _load_bundle_attribution_for_portal(root: str, bundle_attribution_rel: str) -> dict | None:
+    """Carrega o arquivo de atribuicao de bundle (Etapa 12) e indexa por (tenantId, slug)."""
+    if not bundle_attribution_rel:
+        return None
+    report_path = os.path.realpath(os.path.join(root, bundle_attribution_rel))
+    if not render_local.contained(root, report_path):
+        raise ReviewPortalError(f"BUNDLE_ATTRIBUTION_FORA_DA_RAIZ: {bundle_attribution_rel}")
+    if not os.path.isfile(render_local.fs_path(report_path)):
+        raise ReviewPortalError(f"BUNDLE_ATTRIBUTION_AUSENTE: {bundle_attribution_rel}")
+    try:
+        with open(render_local.fs_path(report_path), "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise ReviewPortalError(f"BUNDLE_ATTRIBUTION_INVALIDO: {bundle_attribution_rel}: {exc}") from exc
+
+    bundles = data.get("bundles")
+    if not isinstance(bundles, list):
+        return None
+    index: dict[tuple[str, str], dict] = {}
+    for entry in bundles:
+        if not isinstance(entry, dict):
+            continue
+        tid = entry.get("tenantId")
+        slug = entry.get("slug")
+        if tid is None or slug is None:
+            continue
+        index[(str(tid), str(slug))] = entry
+    return index
 
 
 # ---------------------------------------------------------------------------
@@ -2053,6 +2147,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout (apenas --build)")
     parser.add_argument("--utm-report", default=None, help="Caminho do relatorio UTM para indicadores de fadiga/benchmarks")
+    parser.add_argument(
+        "--bundle-attribution",
+        default=None,
+        help="Caminho do arquivo de atribuicao de bundle (Etapa 12) para exibir status de atribuicao no portal",
+    )
     args = parser.parse_args(argv)
 
     modos = [args.build, args.serve, args.export_aprovacoes]
@@ -2068,10 +2167,14 @@ def main(argv: list[str] | None = None) -> int:
             utm_data = None
             if args.utm_report:
                 utm_data = _load_utm_report_for_portal(args.root, args.utm_report)
+            bundle_attr_index = None
+            if args.bundle_attribution:
+                bundle_attr_index = _load_bundle_attribution_for_portal(args.root, args.bundle_attribution)
             resumo = build_portal(
                 root=args.root,
                 output_dir=args.output_dir,
                 utm_report=utm_data,
+                bundle_attribution=bundle_attr_index,
             )
             if args.json:
                 print(json.dumps(resumo, ensure_ascii=False, indent=2))

@@ -35,6 +35,7 @@ import argparse
 import csv
 import json
 import math
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -118,6 +119,19 @@ DEFAULT_MIN_SESSIONS = 100
 DEFAULT_MIN_CONVERSIONS = 5
 DEFAULT_Z_THRESHOLD = 1.96
 SIGNIFICANCE_ALPHA = 0.05
+
+# ---------------------------------------------------------------------------
+# Reconciliacao bundle -> UTM (Etapa 12)
+# ---------------------------------------------------------------------------
+
+BUNDLES_REL = os.path.join(".workspace", "bundles")
+MANIFEST_SUFFIX = "-manifest.json"
+UTM_REPORT_DEFAULT_NAME = "utm-performance-report.json"
+
+ATTR_STATUS_RECONCILIADO = "reconciliado"
+ATTR_STATUS_AGUARDANDO_METRICAS = "aguardando_metricas"
+ATTR_STATUS_DIVERGENCIA_TENANT = "divergencia_tenant"
+ATTR_STATUS_NAO_ELEGIVEL_PREVIA = "nao_elegivel_para_PREVIA_NAO_APROVADA"
 
 
 class UtmReportError(Exception):
@@ -1061,6 +1075,275 @@ def analyze_performance(
     return report
 
 
+# ---------------------------------------------------------------------------
+# Reconciliacao bundle -> UTM (Etapa 12: Closed-Loop Attribution)
+# ---------------------------------------------------------------------------
+
+def _bundles_root(root_real: Path) -> Path:
+    return root_real / BUNDLES_REL
+
+
+def _iter_bundle_manifests(root_real: Path, bundles_abs: Path | None = None) -> list[tuple[Path, dict]]:
+    """Percorre .workspace/bundles/<tenantId>/<slug>/ e carrega cada manifesto.
+
+    Devolve lista de (caminho_absoluto_do_manifesto, dict_carregado). Silenciosamente
+    ignora diretorios/arquivos ausentes e manifestos JSON invalidos (fail-soft
+    para nao quebrar o relatorio quando um bundle esta incompleto).
+    """
+    found: list[tuple[Path, dict]] = []
+    bundles_root = bundles_abs or _bundles_root(root_real)
+    if not bundles_root.is_dir():
+        return found
+    for tenant_dir in sorted(p for p in bundles_root.iterdir() if p.is_dir()):
+        tenant_id = tenant_dir.name
+        for slug_dir in sorted(p for p in tenant_dir.iterdir() if p.is_dir()):
+            slug = slug_dir.name
+            for manifest_path in sorted(slug_dir.glob("*" + MANIFEST_SUFFIX)):
+                try:
+                    data = _read_json(manifest_path)
+                except UtmReportError:
+                    continue
+                if not isinstance(data, dict):
+                    continue
+                data["_manifestAbsPath"] = str(manifest_path)
+                found.append((manifest_path, data))
+    return found
+
+
+def _match_slot_to_manifest(slot: dict, manifest: dict) -> bool:
+    """Verifica se o slot (campanha/tenant) corresponde ao manifesto do bundle."""
+    return (
+        str(slot.get("tenantId") or "") == str(manifest.get("tenantId") or "")
+        and str(slot.get("slug") or "") == str(manifest.get("slug") or "")
+    )
+
+
+def _promotion_history_has_winner(history: list[dict] | None) -> bool:
+    """True quando o historico de promocoes contem um vencedor (A ou B) persistido."""
+    if not isinstance(history, list):
+        return False
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        variant = entry.get("promotedVariant") or entry.get("decisao")
+        if variant in ("A", "B"):
+            return True
+    return False
+
+
+def reconcile_bundles(
+    root: str = ".",
+    utm_report: dict | None = None,
+    bundles_dir: str | None = None,
+) -> dict:
+    """Reconcilia pacotes entregues (.zip + manifesto) com o relatorio de performance UTM.
+
+    Para cada bundle encontrado em ``.workspace/bundles/<tenantId>/<slug>/`` (ou
+    ``bundles_dir`` quando informado) cruza o manifesto com o(s) slot(s) do
+    calendário correspondente no relatorio UTM, produzindo ``bundleAttribution``:
+
+    - ``reconciliado``: manifesto existe e UTM report contem metrica para o
+      (tenantId, slug) correspondente. Anexa impressoes, cliques, conversoes,
+      CTR, conversoes totais, conversionRate, observedUpliftPct e
+      winnerSustained (quando promotionHistory presente).
+    - ``aguardando_metricas``: bundle aprovado mas ainda sem dados de UTM
+      (relatorio ausente ou slot nao encontrado).
+    - ``divergencia_tenant``: tenantId do manifesto nao bate com o do slot UTM.
+    - ``nao_elegivel_para_PREVIA_NAO_APROVADA``: bundle com selo PREVIA_NAO_APROVADA
+      nao pode ser reconciliado ate ser aprovado pelo titular.
+
+    Parametros:
+        root: raiz do checkout (contencao de caminho).
+        utm_report: relatorio UTM ja carregado (dict de analyze_performance).
+        bundles_dir: diretorio de bundles (padrao: <root>/.workspace/bundles).
+
+    Devolve dict com ``bundles[]``, ``summary`` (contadores por status) e
+    ``attributionPath`` (caminho relativo gravado). Nunca modifica .zip nem
+    manifesto (somente leitura).
+    """
+    root_real = _root_real(root)
+    if bundles_dir:
+        bundles_abs = _resolve_contained(root_real, bundles_dir, "bundles-dir")
+    else:
+        bundles_abs = _bundles_root(root_real)
+
+    manifests = _iter_bundle_manifests(root_real, bundles_abs)
+
+    slots_by_key: dict[tuple[str, str], list[dict]] = {}
+    if utm_report:
+        for slot in utm_report.get("slots", []):
+            if not isinstance(slot, dict):
+                continue
+            key = (str(slot.get("tenantId") or ""), str(slot.get("slug") or ""))
+            slots_by_key.setdefault(key, []).append(slot)
+
+    bundle_attributions: list[dict] = []
+    summary = {
+        "total": 0,
+        "reconciliado": 0,
+        "aguardando_metricas": 0,
+        "divergencia_tenant": 0,
+        "nao_elegivel_para_PREVIA_NAO_APROVADA": 0,
+    }
+
+    for manifest_path, manifest in manifests:
+        summary["total"] += 1
+        tenant_id = str(manifest.get("tenantId") or "")
+        slug = str(manifest.get("slug") or "")
+        approval_status = str(manifest.get("approvalStatus") or "")
+        bundle_sha256 = manifest.get("bundleSha256") or ""
+        promotion_history = manifest.get("promotionHistory") or []
+        items = manifest.get("items") or []
+
+        # 1. Nao elegivel: previo sem aprovacao nunca entra na atribuicao.
+        if approval_status == "PREVIA_NAO_APROVADA":
+            bundle_attributions.append(
+                {
+                    "tenantId": tenant_id,
+                    "slug": slug,
+                    "bundlePath": manifest.get("bundlePath"),
+                    "bundleSha256": bundle_sha256,
+                    "approvalStatus": approval_status,
+                    "attributionStatus": ATTR_STATUS_NAO_ELEGIVEL_PREVIA,
+                    "attributionReason": (
+                        "Bundle com selo PREVIA_NAO_APROVADA: so e elegivel para "
+                        "atribuicao apos aprovacao expressa do titular."
+                    ),
+                    "metrics": None,
+                    "promotionHistory": promotion_history,
+                }
+            )
+            summary[ATTR_STATUS_NAO_ELEGIVEL_PREVIA] += 1
+            continue
+
+        # 2. Multi-tenant isolation: tenantId do manifesto deve bater com o slot.
+        matching_slots = slots_by_key.get((tenant_id, slug), [])
+        if not matching_slots:
+            # Nenhum slot UTM para este tenant/slug.
+            if utm_report is None:
+                # Sem relatorio UTM: nao podemos afirmar divergencia, apenas
+                # aguardar metricas.
+                status = ATTR_STATUS_AGUARDANDO_METRICAS
+                reason = (
+                    "Relatorio UTM nao informado: aguardando metricas para este "
+                    "(tenantId, slug)."
+                )
+            else:
+                tenant_appears = any(
+                    str(s.get("tenantId") or "") == tenant_id
+                    for s in utm_report.get("slots", [])
+                )
+                if tenant_appears:
+                    status = ATTR_STATUS_AGUARDANDO_METRICAS
+                    reason = (
+                        "Bundle aprovado, mas ainda sem dados de UTM para este "
+                        "(tenantId, slug)."
+                    )
+                else:
+                    status = ATTR_STATUS_DIVERGENCIA_TENANT
+                    reason = (
+                        "TenantId do manifesto nao corresponde a nenhum tenant no "
+                        "relatorio UTM."
+                    )
+            bundle_attributions.append(
+                {
+                    "tenantId": tenant_id,
+                    "slug": slug,
+                    "bundlePath": manifest.get("bundlePath"),
+                    "bundleSha256": bundle_sha256,
+                    "approvalStatus": approval_status,
+                    "attributionStatus": status,
+                    "attributionReason": reason,
+                    "metrics": None,
+                    "winnerSustained": None,
+                    "promotionHistory": promotion_history,
+                }
+            )
+            summary[status] += 1
+            continue
+
+        # 3. Reconciliado: cruza metrica do(s) slot(s) correspondente(s).
+        # Agrega sessoes/conversoes de todos os slots da campanha (podem haver
+        # varios canais para o mesmo slug).
+        sessions = sum(float(s.get("sessions") or 0) for s in matching_slots)
+        conversions = sum(float(s.get("conversions") or 0) for s in matching_slots)
+        impressions = sum(float(s.get("sessions") or 0) for s in matching_slots)
+        clicks = sum(float(s.get("engagedSessions") or 0) for s in matching_slots)
+        ctr = _rate(clicks, impressions) if impressions else 0.0
+        conversion_rate = _rate(conversions, sessions) if sessions else 0.0
+
+        # observedUpliftPct: lift da conversao observada vs taxa de referencia
+        # (uso a media do tenant como referencia quando disponivel).
+        tenant_ref_rate = None
+        if utm_report:
+            benchmarks = (
+                utm_report.get("rankings", {}).get("tenantBenchmarks", {}) or {}
+            )
+            by_tenant = benchmarks.get("byTenant", []) if isinstance(benchmarks, dict) else []
+            for b in by_tenant:
+                if str(b.get("tenantId") or "") == tenant_id:
+                    tenant_ref_rate = b.get("conversionRatePct")
+                    break
+
+        observed_uplift_pct = None
+        if tenant_ref_rate is not None and tenant_ref_rate:
+            observed_uplift_pct = _rate(conversion_rate - tenant_ref_rate, tenant_ref_rate)
+
+        winner_sustained = None
+        if promotion_history:
+            winner_sustained = _promotion_history_has_winner(promotion_history)
+
+        bundle_attributions.append(
+            {
+                "tenantId": tenant_id,
+                "slug": slug,
+                "bundlePath": manifest.get("bundlePath"),
+                "bundleSha256": bundle_sha256,
+                "approvalStatus": approval_status,
+                "attributionStatus": ATTR_STATUS_RECONCILIADO,
+                "attributionReason": (
+                    "Bundle reconciliado com relatorio UTM: metricas entregues e "
+                    "atribuidas ao pacote distribuido."
+                ),
+                "metrics": {
+                    "impressions": _to_int(impressions),
+                    "clicks": _to_int(clicks),
+                    "ctr": ctr,
+                    "conversions": _to_int(conversions),
+                    "conversionRate": conversion_rate,
+                    "observedUpliftPct": observed_uplift_pct,
+                    "winnerSustained": winner_sustained,
+                },
+                "promotionHistory": promotion_history,
+                "itemsCount": len(items),
+            }
+        )
+        summary[ATTR_STATUS_RECONCILIADO] += 1
+
+    # Ordena por tenantId/slug para determinismo.
+    bundle_attributions.sort(key=lambda b: (b["tenantId"], b["slug"]))
+
+    out_dir = _resolve_contained(root_real, DEFAULT_OUT_DIR, "out-dir")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "bundle-attribution.json"
+    payload = {
+        "schemaVersion": 1,
+        "generatedBy": "tools/utm_report_importer.py",
+        "root": str(root_real),
+        "bundlesDir": str(bundles_abs),
+        "summary": summary,
+        "bundles": bundle_attributions,
+    }
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+    return {
+        "ok": True,
+        "attributionPath": _rel(root_real, out_path),
+        "bundles": bundle_attributions,
+        "summary": summary,
+    }
+
+
 def _table(headers: list[str], rows: list[list[object]]) -> list[str]:
     lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
     for row in rows:
@@ -1256,6 +1539,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--generate-template", default=None, help="Gera CSV modelo preenchivel neste caminho"
     )
+    parser.add_argument(
+        "--reconcile-bundles",
+        action="store_true",
+        default=False,
+        help="Executa a reconciliacao bundle -> UTM (atribuicao de pacotes entregues)",
+    )
+    parser.add_argument(
+        "--bundles-dir",
+        default=None,
+        help=f"Diretorio de bundles (padrao: <root>/{BUNDLES_REL})",
+    )
+    parser.add_argument(
+        "--utm-report",
+        default=None,
+        help="Caminho do relatorio UTM JSON (padrao: <root>/.workspace/tmp/utm-report/utm-performance-report.json)",
+    )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
     args = parser.parse_args(argv)
 
@@ -1266,6 +1565,49 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(result, ensure_ascii=False, indent=2))
             else:
                 print(f"Template gerado: {result['templatePath']} ({result['rows']} linha(s))")
+            return 0
+
+        if args.reconcile_bundles:
+            utm_report = None
+            utm_path = args.utm_report
+            if utm_path is None:
+                # Descobre o relatorio UTM: primeiro o default, depois busca
+                # recursiva em .workspace/tmp/ para relatorios gerados por
+                # --generate-template ou analyze_performance.
+                default_path = _resolve_contained(
+                    _root_real(args.root), DEFAULT_OUT_DIR, "out-dir"
+                ) / REPORT_JSON
+                if os.path.isfile(default_path):
+                    utm_path = str(default_path)
+                else:
+                    tmp_root = _root_real(args.root) / ".workspace" / "tmp"
+                    found = None
+                    if tmp_root.is_dir():
+                        for cand in tmp_root.rglob("*.json"):
+                            name = cand.name.lower()
+                            if "utm" in name and cand.is_file():
+                                found = str(cand)
+                                break
+                    utm_path = found
+            if utm_path and os.path.isfile(utm_path):
+                utm_report = _read_json(Path(utm_path))
+            result = reconcile_bundles(
+                root=args.root,
+                utm_report=utm_report,
+                bundles_dir=args.bundles_dir,
+            )
+            if args.json:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+            else:
+                summary = result["summary"]
+                print(
+                    f"Reconciliacao bundle->UTM: {summary['total']} bundle(s), "
+                    f"{summary['reconciliado']} reconciliado(s), "
+                    f"{summary['aguardando_metricas']} aguardando metricas, "
+                    f"{summary['divergencia_tenant']} divergencia(s) de tenant, "
+                    f"{summary['nao_elegivel_para_PREVIA_NAO_APROVADA']} nao elegivel(is) para PREVIA."
+                )
+                print(f"Saida: {result['attributionPath']}")
             return 0
 
         if not args.metrics_csv:

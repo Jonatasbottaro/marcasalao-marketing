@@ -398,6 +398,43 @@ O portal de revisão (`review_dashboard.py --build`) expõe `promotionHistory` p
 
 ---
 
+### 8.8 Reconciliação pós-publicação e atribuição de pacotes (`bundleAttribution`)
+
+A Etapa 12 fecha o ciclo de atribuição (closed-loop attribution) conectando os pacotes entregues pelo `publish_bundler` (manifestos `*-manifest.json` em `.workspace/bundles/<tenantId>/<slug>/`) aos dados de performance UTM do `utm_report_importer`, produzindo um `bundleAttribution` persistido em `.workspace/tmp/utm-report/bundle-attribution.json`. É uma leitura complementar: nunca modifica `.zip` nem manifesto entregue (somente leitura), e `autoPublish: false` permanece preservado — a publicação continua estritamente manual.
+
+**CLI:**
+```bash
+python tools/utm_report_importer.py --reconcile-bundles [--json] \
+  [--root <raiz>] [--bundles-dir <dir>] [--utm-report <caminho.json>]
+```
+
+- `--reconcile-bundles`: executa a cruzamento bundle → UTM.
+- `--bundles-dir`: sobrescreve o diretório padrão de bundles (`.workspace/bundles`).
+- `--utm-report`: caminho do relatório UTM JSON (padrão: `.workspace/tmp/utm-report/utm-performance-report.json`). Quando omitido, descobre recursivamente um relatório `utm*.json` em `.workspace/tmp/`.
+- `--json`: emite JSON no stdout.
+
+**Estados de `bundleAttribution` (status):**
+
+| Status | Significado |
+|--------|-------------|
+| `reconciliado` | Manifesto existe e o relatório UTM contém metrica para o `(tenantId, slug)` correspondente. Anexa impressões, cliques, CTR, conversões, conversionRate, observedUpliftPct e winnerSustained (quando `promotionHistory` presente). |
+| `aguardando_metricas` | Bundle aprovado mas ainda sem dados de UTM (relatório ausente ou slot não encontrado para o `(tenantId, slug)`). `metrics` e `winnerSustained` são `null`. |
+| `divergencia_tenant` | `tenantId` do manifesto não corresponde a nenhum tenant no relatório UTM (isolamento multi-tenant violado). |
+| `não_elegível_para_PREVIA_NAO_APROVADA` | Bundle com selo `PREVIA_NAO_APROVADA` não é elegível para atribuição até aprovação expressa do titular. |
+
+**Requisitos de segurança (todos obrigatórios):**
+
+1. **Imutabilidade dos pacotes:** nunca modifica `.zip` nem `*-manifest.json` em `.workspace/bundles/` (somente leitura).
+2. **Isolamento multi-tenant:** `tenantId` do manifesto deve bater com o tenant do slot UTM. Caso contrário, atribui `divergencia_tenant`.
+3. **autoPublish: false:** preservado; a publicação continua estritamente manual (o titular aprova antes de distribuir).
+4. **Portabilidade:** todos os caminhos são validados para ficarem dentro da raiz do checkout (`git rev-parse --show-toplevel`); temporários ficam somente em `.workspace/`; comportamento idêntico no Windows e Linux.
+
+**Consumo no portal de revisão:** `review_dashboard.py --build` expõe o `bundleAttribution` por campanha no `portal-data.json` e o renderiza no card da campanha (status de atribuição, status de aprovação, SHA-256 do bundle, métricas, uplift observado e vencedor sustentado), mantendo a rastreabilidade do pacote entregue até o dado de performance.
+
+**Consumo no calendário editorial:** `campaign_calendar.py` anexa a `bundleAttribution` aos slots quando disponível, para que o titular veja, ao mesmo tempo, a recomendação de hook e o estado de atribuição do pacote já distribuído.
+
+---
+
 ## 9. Limites deste playbook
 
 - Não publica, agenda nem altera posts já publicados.
@@ -414,5 +451,6 @@ O portal de revisão (`review_dashboard.py --build`) expõe `promotionHistory` p
 - [Guia de novo nicho](guia-novo-nicho.md)
 - `tools/utm_simulator.py`, `tools/tests/test_utm_simulator.py`,
   `tools/utm_report_importer.py`, `tools/tests/test_utm_report_importer.py`,
-  `tools/approval_cli.py`, `tools/tests/test_hook_promotion_cli.py`,
+  `tools/tests/test_bundle_attribution.py`, `tools/approval_cli.py`,
+  `tools/tests/test_hook_promotion_cli.py`,
   `tools/campaign_calendar.py`, `04-legendas/matriz-utm-consolidada.csv`
