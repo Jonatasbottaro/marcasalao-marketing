@@ -1532,6 +1532,8 @@ def main(argv: list[str] | None = None) -> int:
                       help="repara midia local divergente (dry-run sem --apply)")
     parser.add_argument("--apply", action="store_true",
                         help="executa o plano de reparo em disco (padrao: dry-run)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="explicita o padrao: lista o plano sem gravar nada")
     parser.add_argument("--slug", default=None, help="restringe o reparo a um slug de campanha")
     parser.add_argument("--tenant", default=None, help="restringe o reparo a um tenant")
     _add_common_args(parser, suppress=False)
@@ -1552,6 +1554,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     as_json = getattr(args, "json", False)
     root = getattr(args, "root", ".")
+
+    if getattr(args, "apply", False) and getattr(args, "dry_run", False):
+        message = "USO_INVALIDO: --apply e --dry-run sao mutuamente exclusivos"
+        if as_json:
+            print(json.dumps({"ok": False, "error": message}, ensure_ascii=False, indent=2))
+        else:
+            print(f"Erro: {message}", file=sys.stderr)
+        return 2
 
     try:
         if args.command == "snapshot":

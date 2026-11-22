@@ -497,6 +497,28 @@ class RepairCliTest(RepairFixture):
         self.assertIn("DRY-RUN", text)
         self.assertIn("--apply", text)
 
+    def test_24_cli_dry_run_explicito_nao_muta(self) -> None:
+        slot = self.slots["camp-alfa-001"]
+        self._corrupt(slot["master"])
+        corrupted = self._hash(slot["master"])
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = wd.main(["--repair", "--dry-run", "--json", "--root", str(self.root)])
+        self.assertEqual(rc, 0)
+        payload = json.loads(buf.getvalue())
+        self.assertTrue(payload["dryRun"])
+        self.assertFalse(payload["applied"])
+        self.assertEqual(len(payload["plannedItems"]), 1)
+        self.assertEqual(payload["repairedItems"], [])
+        self.assertEqual(self._hash(slot["master"]), corrupted)
+
+    def test_25_apply_e_dry_run_sao_exclusivos(self) -> None:
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            rc = wd.main(["--repair", "--apply", "--dry-run", "--root", str(self.root)])
+        self.assertEqual(rc, 2)
+        self.assertIn("mutuamente exclusivos", err.getvalue())
+
 
 def tearDownModule() -> None:
     shutil.rmtree(TMP_PARENT, ignore_errors=True)
