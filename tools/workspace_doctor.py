@@ -22,14 +22,22 @@ Sem git disponivel, cai para o diretorio informado (util em testes isolados).
 
 CLI:
     python tools/workspace_doctor.py [--check | --clean-tmp] [--json] [--root DIR]
+    python tools/workspace_doctor.py --repair [--apply] [--slug S] [--tenant T] [--json]
     python tools/workspace_doctor.py snapshot export [--out DIR/ARQUIVO.zip] [--json] [--root DIR]
     python tools/workspace_doctor.py snapshot verify [--archive ARQUIVO.zip] [--json] [--root DIR]
 
 API:
     run_workspace_doctor(root=".", clean_tmp=False) -> dict
+    repair_media(root=".", apply=False, slug=None, tenant=None) -> dict
     audit_manifest_integrity(root=".", source_root=None) -> dict
     export_snapshot(root=".", out=None) -> dict
     verify_snapshot(root=".", archive=None) -> dict
+
+O modo ``--repair`` e dry-run por padrao: lista o plano sem gravar. Com
+``--apply``, restaura o master da copia versionada intacta quando o SHA-256
+confere, ou re-renderiza o slot em staging isolado pelo pipeline canonico,
+promovendo somente apos validar SHA-256 e ffprobe. Derivados sao regenerados
+apenas para o slot cujo master esta integro. Nenhuma etapa publica ou agenda.
 
 O snapshot e gravado somente sob ``<MAIN_ROOT>/.workspace/snapshots/``, nunca
 no indice do Git; o indice ``snapshot-index.json`` usa apenas caminhos relativos.
@@ -47,6 +55,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from datetime import datetime, timezone
 
@@ -826,6 +835,396 @@ def audit_manifest_integrity(
 
 
 # ---------------------------------------------------------------------------
+# Reparo cirurgico de midia local (--repair)
+# ---------------------------------------------------------------------------
+REPAIR_TMP_PREFIX = "doctor-repair-"
+MASTER_KIND = "9:16"
+
+
+def _repair_item_state(path: str, expected_sha: str) -> tuple[str, str | None]:
+    """Classifica um alvo declarado como ok / ausente / divergente."""
+    if not os.path.isfile(_fs_path(path)):
+        return "ausente", None
+    if os.path.islink(_fs_path(path)):
+        return "divergente", None
+    try:
+        actual = _sha256_file(path)
+    except OSError:
+        return "ilegivel", None
+    return ("ok" if actual == expected_sha else "divergente"), actual
+
+
+def _collect_repair_slots(
+    source_root: str, resolution_root: str, archives_real: str
+) -> tuple[list[dict], list[dict]]:
+    """Indexa por slot (tenant/slug) o master e os derivados declarados.
+
+    Reusa ``_resolve_archive_target``, portanto qualquer declaracao que aponte
+    para fora de ``.workspace/archives/`` e recusada em vez de seguida.
+    """
+    slots: list[dict] = []
+    problems: list[dict] = []
+    deliveries = os.path.join(source_root, *DELIVERIES_REL)
+    if not os.path.isdir(_fs_path(deliveries)):
+        return slots, problems
+
+    def target(declared: object, label: str) -> str | None:
+        if not isinstance(declared, str) or not declared:
+            problems.append(_error("DECLARACAO_INCOMPLETA", f"{label}: path ausente"))
+            return None
+        resolved = _resolve_archive_target(resolution_root, archives_real, declared)
+        if resolved is None:
+            problems.append(
+                _error("PATH_OUTSIDE_ARCHIVES", f"{label}: '{declared}' fora de .workspace/archives/")
+            )
+        return resolved
+
+    for tenant in sorted(os.listdir(_fs_path(deliveries))):
+        tenant_dir = os.path.join(deliveries, tenant)
+        if not os.path.isdir(_fs_path(tenant_dir)):
+            continue
+        for slug in sorted(os.listdir(_fs_path(tenant_dir))):
+            delivery_dir = os.path.join(tenant_dir, slug)
+            manifest_path = os.path.join(delivery_dir, "manifest.json")
+            if not os.path.isfile(_fs_path(manifest_path)):
+                continue
+            label_base = f"{tenant}/{slug}"
+            try:
+                manifest = _read_json(manifest_path)
+            except (OSError, ValueError) as exc:
+                problems.append(_error("MANIFEST_INVALIDO", f"{label_base}: {exc}"))
+                continue
+
+            video = (manifest.get("artifacts") or {}).get("video") or {}
+            expected = video.get("sha256")
+            master_path = target(video.get("archivePath") or video.get("path"), f"{label_base}:manifest.video")
+            if master_path is None or not isinstance(expected, str) or not expected:
+                problems.append(_error("DECLARACAO_INCOMPLETA", f"{label_base}: master sem sha256"))
+                continue
+            versioned = video.get("path")
+            versioned_abs = (
+                os.path.realpath(_join_rel(resolution_root, versioned))
+                if isinstance(versioned, str) and versioned
+                else None
+            )
+            if versioned_abs is not None and not _contained(delivery_dir, versioned_abs):
+                versioned_abs = None
+            slot = {
+                "tenantId": tenant,
+                "slug": slug,
+                "deliveryDir": delivery_dir,
+                "configPath": manifest.get("config"),
+                "master": {
+                    "path": master_path,
+                    "rel": os.path.relpath(master_path, resolution_root).replace(os.sep, "/"),
+                    "expectedSha256": expected.lower(),
+                    "ffprobe": video.get("ffprobe") if isinstance(video.get("ffprobe"), dict) else None,
+                    "versionedPath": versioned_abs,
+                },
+                "derivatives": [],
+            }
+
+            derivatives_path = os.path.join(delivery_dir, "derivatives.json")
+            if os.path.isfile(_fs_path(derivatives_path)):
+                try:
+                    data = _read_json(derivatives_path)
+                except (OSError, ValueError) as exc:
+                    problems.append(_error("DERIVATIVES_INVALIDO", f"{label_base}: {exc}"))
+                else:
+                    for key, entry in (data.get("derivatives") or {}).items():
+                        if not isinstance(entry, dict):
+                            continue
+                        label = f"{label_base}:derivatives.{key}"
+                        path = target(entry.get("path"), label)
+                        sha = entry.get("sha256")
+                        if path is None or not isinstance(sha, str) or not sha:
+                            problems.append(_error("DECLARACAO_INCOMPLETA", f"{label}: path/sha256 ausente"))
+                            continue
+                        copy_rel = entry.get("versionedCopy")
+                        copy_abs = (
+                            os.path.realpath(_join_rel(resolution_root, copy_rel))
+                            if isinstance(copy_rel, str) and copy_rel
+                            else None
+                        )
+                        if copy_abs is not None and not _contained(delivery_dir, copy_abs):
+                            copy_abs = None
+                        slot["derivatives"].append({
+                            "format": key,
+                            "kind": _classify_derivative(key, entry),
+                            "path": path,
+                            "rel": os.path.relpath(path, resolution_root).replace(os.sep, "/"),
+                            "expectedSha256": sha.lower(),
+                            "ffprobe": entry.get("ffprobe") if isinstance(entry.get("ffprobe"), dict) else None,
+                            "versionedPath": copy_abs,
+                        })
+            slots.append(slot)
+    return slots, problems
+
+
+def _restore_from_versioned(item: str, expected: str, dest: str) -> bool:
+    """Copia a midia versionada intacta para archives quando o SHA-256 confere."""
+    if not item or not os.path.isfile(_fs_path(item)):
+        return False
+    if _sha256_file(item) != expected:
+        return False
+    os.makedirs(_fs_path(os.path.dirname(dest)), exist_ok=True)
+    shutil.copyfile(_fs_path(item), _fs_path(dest))
+    return _sha256_file(dest) == expected
+
+
+def _probe_conforms(workspace_root: str, path: str, declared: dict | None) -> list[str]:
+    """Divergencias de ffprobe contra o declarado; lista vazia quando conforma."""
+    if not declared:
+        return []
+    actual = _ffprobe_metadata(workspace_root, path)
+    if actual is None:
+        return ["ffprobe indisponivel para validar o reparo"]
+    return _compare_ffprobe(declared, actual)
+
+
+def _rerender_master(
+    slot: dict, main_root: str, workspace_root: str, tmp_root: str
+) -> tuple[bool, str, str | None]:
+    """Re-renderiza o slot em staging isolado e promove somente se o SHA conferir.
+
+    Nunca escreve direto nos masters compartilhados: o pipeline canonico recebe
+    ``output_dir`` e ``archives_dir`` descartaveis sob ``.workspace/tmp/``.
+    """
+    import preset_runner
+    import render_local
+
+    config_rel = slot.get("configPath")
+    if not isinstance(config_rel, str) or not config_rel:
+        return False, "INSUMO_AUSENTE", None
+    config_abs = os.path.realpath(_join_rel(main_root, config_rel))
+    if not _contained(main_root, config_abs) or not os.path.isfile(_fs_path(config_abs)):
+        return False, "INSUMO_AUSENTE", None
+
+    render_local.ensure_video_tools(main_root)
+    staging = tempfile.mkdtemp(prefix=REPAIR_TMP_PREFIX, dir=tmp_root)
+    out_dir = os.path.join(staging, "delivery")
+    archives_dir = os.path.join(staging, "archives")
+    os.makedirs(_fs_path(out_dir), exist_ok=True)
+    os.makedirs(_fs_path(archives_dir), exist_ok=True)
+    master = slot["master"]
+    try:
+        manifest = preset_runner.run_preset_pipeline(
+            slot["tenantId"], config_rel, out_dir,
+            audio_path=None, root=main_root, archives_dir=archives_dir,
+        )
+        produced = ((manifest.get("artifacts") or {}).get("video") or {})
+        produced_sha = str(produced.get("sha256") or "").lower()
+        candidate = os.path.join(archives_dir, slot["slug"], f"{slot['slug']}.mp4")
+        if produced_sha != master["expectedSha256"]:
+            return False, "MASTER_NAO_REPRODUTIVEL", produced_sha or None
+        if not os.path.isfile(_fs_path(candidate)) or _sha256_file(candidate) != produced_sha:
+            return False, "MASTER_NAO_REPRODUTIVEL", produced_sha or None
+        diffs = _probe_conforms(workspace_root, candidate, master.get("ffprobe"))
+        if diffs:
+            return False, "FFPROBE_DIVERGENTE_POS_REPARO", produced_sha
+        os.makedirs(_fs_path(os.path.dirname(master["path"])), exist_ok=True)
+        shutil.copyfile(_fs_path(candidate), _fs_path(master["path"]))
+        if _sha256_file(master["path"]) != master["expectedSha256"]:
+            return False, "FALHA_AO_PROMOVER", produced_sha
+        return True, "rerender", produced_sha
+    except Exception as exc:  # noqa: BLE001 - qualquer falha do pipeline e fail-closed
+        return False, "RENDER_FALHOU", f"{type(exc).__name__}: {exc}"
+    finally:
+        shutil.rmtree(_fs_path(staging), ignore_errors=True)
+
+
+def _repair_derivatives(
+    slot: dict, affected: list[dict], main_root: str, workspace_root: str
+) -> tuple[list[dict], list[dict]]:
+    """Regenera somente os formatos afetados e revalida o SHA-256 declarado."""
+    import derivative_formats
+
+    formats = [item["format"] for item in affected]
+    try:
+        derivative_formats.generate_campaign_derivatives(
+            slot["tenantId"], slot["slug"], root=main_root, formats=formats
+        )
+    except Exception as exc:  # noqa: BLE001 - fail-closed por slot
+        return [], [
+            {**_item_payload(slot, item, "derivado"),
+             "action": "falhou", "reason": f"DERIVADO_FALHOU: {type(exc).__name__}: {exc}"}
+            for item in affected
+        ]
+
+    repaired: list[dict] = []
+    failed: list[dict] = []
+    for item in affected:
+        state, actual = _repair_item_state(item["path"], item["expectedSha256"])
+        payload = _item_payload(slot, item, "derivado")
+        payload["actualSha256"] = actual
+        if state != "ok":
+            failed.append({**payload, "action": "falhou", "reason": "DERIVADO_NAO_REPRODUTIVEL"})
+            continue
+        diffs = _probe_conforms(workspace_root, item["path"], item.get("ffprobe"))
+        if diffs:
+            failed.append({
+                **payload, "action": "falhou",
+                "reason": "FFPROBE_DIVERGENTE_POS_REPARO: " + "; ".join(diffs),
+            })
+            continue
+        repaired.append({**payload, "action": "regenerado", "strategy": "derivative-formats"})
+    return repaired, failed
+
+
+def _item_payload(slot: dict, item: dict, kind: str) -> dict:
+    return {
+        "tenantId": slot["tenantId"],
+        "slug": slot["slug"],
+        "kind": kind,
+        "format": item.get("format") or MASTER_KIND,
+        "path": item["rel"],
+        "expectedSha256": item["expectedSha256"],
+    }
+
+
+def repair_media(
+    root: str | os.PathLike = ".",
+    apply: bool = False,
+    slug: str | None = None,
+    tenant: str | None = None,
+) -> dict:
+    """Repara midia local divergente, por slot, sem tocar em other tenants.
+
+    Padrao e dry-run: o plano e devolvido sem nenhuma escrita em disco. Com
+    ``apply=True`` o reparo e executado e revalidado por SHA-256 + ffprobe.
+
+    Ordem de estrategia para o master:
+      1. restaurar da copia versionada intacta em ``02-reels-shorts/deliveries/``
+         quando o SHA-256 dela confere com o declarado (byte-exato, sem render);
+      2. re-renderizar o slot pelo pipeline canonico em staging isolado e
+         promover somente se o SHA-256 produzido conferir com o declarado.
+    Derivados so sao regenerados quando o master do slot esta integro.
+    """
+    root_real = os.path.realpath(str(root or "."))
+    if not os.path.isdir(_fs_path(root_real)):
+        raise WorkspaceDoctorError(f"raiz ausente: {root_real}")
+    main_root = os.path.realpath(_resolve_main_root(root_real))
+    workspace_root = os.path.join(main_root, *WORKSPACE_REL)
+    archives_real = os.path.realpath(os.path.join(workspace_root, "archives"))
+
+    slots, problems = _collect_repair_slots(root_real, main_root, archives_real)
+    if tenant:
+        slots = [s for s in slots if s["tenantId"] == tenant]
+    if slug:
+        slots = [s for s in slots if s["slug"] == slug]
+    if not slots:
+        detail = ", ".join(filter(None, (tenant, slug))) or "nenhum slot"
+        raise WorkspaceDoctorError(f"FILTRO_SEM_CORRESPONDENCIA: {detail}")
+
+    tmp_root = os.path.join(workspace_root, *TMP_REL[1:])
+    os.makedirs(_fs_path(tmp_root), exist_ok=True)
+
+    planned: list[dict] = []
+    repaired: list[dict] = []
+    skipped: list[dict] = []
+    errors: list[dict] = list(problems)
+
+    for slot in slots:
+        master = slot["master"]
+        state, actual = _repair_item_state(master["path"], master["expectedSha256"])
+        master_payload = _item_payload(slot, master, "master")
+        master_payload["state"] = state
+        master_payload["actualSha256"] = actual
+
+        if state == "ok":
+            master_ok = True
+        else:
+            versioned = master.get("versionedPath")
+            restorable = bool(
+                versioned
+                and os.path.isfile(_fs_path(versioned))
+                and _sha256_file(versioned) == master["expectedSha256"]
+            )
+            if restorable:
+                strategy = "restore-from-delivery"
+            elif slot.get("configPath"):
+                strategy = "rerender"
+            else:
+                strategy = None
+            master_payload["strategy"] = strategy
+            if strategy is None:
+                skipped.append({**master_payload, "action": "pulado", "reason": "INSUMO_AUSENTE"})
+                errors.append(_error("INSUMO_AUSENTE", f"{master['rel']}: sem copia intacta nem config de render"))
+                master_ok = False
+            elif not apply:
+                planned.append({**master_payload, "action": "planejado"})
+                master_ok = False
+            else:
+                if strategy == "restore-from-delivery":
+                    done = _restore_from_versioned(versioned, master["expectedSha256"], master["path"])
+                    reason = None if done else "FALHA_AO_RESTAURAR"
+                else:
+                    done, reason, produced = _rerender_master(slot, main_root, workspace_root, tmp_root)
+                    master_payload["renderedSha256"] = produced
+                if done:
+                    diffs = _probe_conforms(workspace_root, master["path"], master.get("ffprobe"))
+                    if diffs:
+                        done = False
+                        reason = "FFPROBE_DIVERGENTE_POS_REPARO: " + "; ".join(diffs)
+                if done:
+                    repaired.append({**master_payload, "action": "reparado"})
+                    master_ok = True
+                else:
+                    skipped.append({**master_payload, "action": "falhou", "reason": reason})
+                    errors.append(_error(reason or "REPARO_FALHOU", f"{master['rel']}: {reason}"))
+                    master_ok = False
+
+        affected: list[dict] = []
+        for item in slot["derivatives"]:
+            d_state, d_actual = _repair_item_state(item["path"], item["expectedSha256"])
+            if d_state == "ok":
+                continue
+            payload = _item_payload(slot, item, "derivado")
+            payload["state"] = d_state
+            payload["actualSha256"] = d_actual
+            if not master_ok:
+                skipped.append({
+                    **payload, "action": "pulado",
+                    "reason": "MASTER_NAO_INTEGRO",
+                })
+                continue
+            affected.append(item)
+            if not apply:
+                planned.append({**payload, "action": "planejado", "strategy": "derivative-formats"})
+
+        if affected and apply:
+            done, failed = _repair_derivatives(slot, affected, main_root, workspace_root)
+            repaired.extend(done)
+            skipped.extend(failed)
+            for entry in failed:
+                errors.append(_error(entry["reason"], f"{entry['path']}: {entry['reason']}"))
+
+    return {
+        "schemaVersion": 1,
+        "generatedBy": "tools/workspace_doctor.py",
+        "ok": not errors,
+        "mode": "repair",
+        "applied": bool(apply),
+        "dryRun": not apply,
+        "autoPublish": False,
+        "mainRoot": main_root,
+        "workspaceRoot": workspace_root,
+        "filters": {"tenant": tenant, "slug": slug},
+        "plannedItems": planned,
+        "repairedItems": repaired,
+        "skippedItems": skipped,
+        "remainingErrors": errors,
+        "summary": {
+            "slotsInspecionados": len(slots),
+            "planejados": len(planned),
+            "reparados": len(repaired),
+            "pulados": len(skipped),
+            "errosRestantes": len(errors),
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Snapshot local (export / verify) — nunca versionado no Git
 # ---------------------------------------------------------------------------
 def _safe_snapshot_rel(rel: object) -> bool:
@@ -1086,6 +1485,33 @@ def _print_snapshot_human(result: dict) -> None:
     print(f"Resultado: {'OK' if result['ok'] else 'REPROVADO'}")
 
 
+def _print_repair_human(result: dict) -> None:
+    mode = "APLICADO" if result["applied"] else "DRY-RUN (nada gravado)"
+    print(f"Reparo cirurgico de midia local — {mode}")
+    print("=" * 48)
+    filters = result["filters"]
+    active = ", ".join(f"{k}={v}" for k, v in filters.items() if v) or "nenhum"
+    print(f"Filtros: {active} | slots inspecionados: {result['summary']['slotsInspecionados']}")
+    for item in result["plannedItems"]:
+        print(f"  [PLANO]   {item['path']} ({item['kind']}, {item.get('strategy', '?')})")
+    for item in result["repairedItems"]:
+        print(f"  [REPARO]  {item['path']} via {item.get('strategy', '?')}")
+    for item in result["skippedItems"]:
+        print(f"  [PULADO]  {item['path']}: {item.get('reason', '?')}")
+    for problem in result["remainingErrors"]:
+        print(f"  [ERRO]    {problem['code']}: {problem['message']}")
+    print("-" * 48)
+    summary = result["summary"]
+    verdict = "CONFORME" if result["ok"] else "PENDENTE"
+    print(
+        f"Resultado: {verdict} — {summary['reparados']} reparados, "
+        f"{summary['planejados']} planejados, {summary['pulados']} pulados, "
+        f"{summary['errosRestantes']} erros restantes"
+    )
+    if not result["applied"] and result["plannedItems"]:
+        print("Use --apply para executar o plano acima.")
+
+
 def _add_common_args(parser: argparse.ArgumentParser, *, suppress: bool) -> None:
     """Adiciona --json/--root ao subcomando sem sobrescrever valores do topo."""
     json_default = argparse.SUPPRESS if suppress else False
@@ -1102,6 +1528,12 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="apenas diagnostica (padrao)")
     mode.add_argument("--clean-tmp", action="store_true", help="remove subdiretorios descartaveis de tmp/")
+    mode.add_argument("--repair", action="store_true",
+                      help="repara midia local divergente (dry-run sem --apply)")
+    parser.add_argument("--apply", action="store_true",
+                        help="executa o plano de reparo em disco (padrao: dry-run)")
+    parser.add_argument("--slug", default=None, help="restringe o reparo a um slug de campanha")
+    parser.add_argument("--tenant", default=None, help="restringe o reparo a um tenant")
     _add_common_args(parser, suppress=False)
 
     commands = parser.add_subparsers(dest="command")
@@ -1127,6 +1559,11 @@ def main(argv: list[str] | None = None) -> int:
                 result = export_snapshot(root=root, out=getattr(args, "out", None))
             else:
                 result = verify_snapshot(root=root, archive=getattr(args, "archive", None))
+        elif args.repair:
+            result = repair_media(
+                root=root, apply=args.apply,
+                slug=getattr(args, "slug", None), tenant=getattr(args, "tenant", None),
+            )
         else:
             result = run_workspace_doctor(root=root, clean_tmp=args.clean_tmp)
     except WorkspaceDoctorError as exc:
@@ -1140,6 +1577,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     elif args.command == "snapshot":
         _print_snapshot_human(result)
+    elif args.repair:
+        _print_repair_human(result)
     else:
         _print_human(result)
     return 0 if result["ok"] else 1
