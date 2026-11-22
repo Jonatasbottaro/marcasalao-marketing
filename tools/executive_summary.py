@@ -506,6 +506,7 @@ def build_executive_summary(
             },
             "readOnly": True,
         },
+        "capacityStatus": _capacity_section(data, tenant_id, campaigns),
         "editorial": editorial,
         "abIntelligence": ab,
         "delivery": delivery,
@@ -519,6 +520,70 @@ def build_executive_summary(
             "bundleAttribution": data["attributionPath"],
             "approvals": data["approvals"]["approvalsFile"],
         },
+    }
+
+
+def _capacity_section(inputs: dict, tenant_id: str, campaigns: list[dict]) -> dict:
+    """Inclui o bloco capacityStatus no relatorio executivo usando campaign_calendar.simulate_calendar_capacity."""
+    registry = inputs.get("registry") or campaign_calendar.discover_campaigns(inputs["root"])
+    current_campaigns = [c for c in registry if c["tenantId"] == tenant_id]
+    current_total = len(current_campaigns)
+    current_tenants = len({c["tenantId"] for c in registry})
+
+    o1_current = max(1, -(-current_total // 4))
+    o2_current = max(1, -(-current_total // 6))
+    min_weeks_current = o1_current + o2_current
+
+    simulated = campaign_calendar.simulate_calendar_capacity(
+        root=inputs["root"],
+        extra_campaigns=0,
+        extra_tenants=0,
+        start_date=None,
+    )
+    simulated_total = simulated["simulated"]["campaigns"]
+    simulated_weeks = simulated["simulated"]["minRequiredWeeks"]
+    week_delta = simulated["simulated"]["weekDelta"]
+    headroom_current = max(0, 16 - current_total)
+
+    thresholds = [
+        {"campanhas": 16, "semanasMinimas": 7, "nota": "ate 16 campanhas = 7 semanas"},
+        {"campanhas": 18, "semanasMinimas": 8, "nota": "17-18 campanhas = 8 semanas"},
+        {"campanhas": 20, "semanasMinimas": 9, "nota": "19-20 campanhas = 9 semanas"},
+    ]
+
+    capacity_threshold_idx = 2
+    for i, t in enumerate(thresholds):
+        if simulated_total <= t["campanhas"]:
+            capacity_threshold_idx = i
+            break
+
+    recommendations: list[str] = []
+    if week_delta > 0:
+        recommendations.append(
+            f"Apos onboarding, o minimo de semanas sobe de {min_weeks_current} para {simulated_weeks} "
+            f"(delta +{week_delta}). Rode campaign_calendar.py com --weeks igual ao novo minimo "
+            "para evitar SEMANAS_INSUFICIENTES."
+        )
+    else:
+        recommendations.append(
+            f"Cenario cabe no horizonte atual de {min_weeks_current} semanas "
+            f"(headroom: {headroom_current} campanha(s) ate o proximo degrau de 16)."
+        )
+
+    return {
+        "current": {
+            "campaigns": current_total,
+            "tenants": current_tenants,
+            "minRequiredWeeks": min_weeks_current,
+            "headroomCurrent": headroom_current,
+        },
+        "simulated": {
+            "campaigns": simulated_total,
+            "minRequiredWeeks": simulated_weeks,
+            "weekDelta": week_delta,
+        },
+        "threshold": thresholds[capacity_threshold_idx],
+        "recommendations": recommendations,
     }
 
 
@@ -555,6 +620,22 @@ def render_markdown(summary: dict) -> str:
     add(f"| Semanas disponiveis | {', '.join(str(w) for w in janela['weeksAvailable']) or NO_DATA} |")
     add(f"| Periodo | {_fmt(janela['startDate'])} a {_fmt(janela['endDate'])} |")
     add(f"| Slots na janela | {janela['slots']} de {janela['slotsTotalTenant']} do tenant |")
+    add("")
+    add("## 1.5 Capacidade Editorial (planejamento)")
+    add("")
+    add(f"Campanhas atuais: **{summary['capacityStatus']['current']['campaigns']}** em "
+         f"{summary['capacityStatus']['current']['tenants']} tenants, "
+         f"{summary['capacityStatus']['current']['minRequiredWeeks']} semana(s) minima(s)")
+    add(f"Headroom atual: {summary['capacityStatus']['current']['headroomCurrent']} campanha(s) ate o proximo degrau de 16")
+    add(f"Simulacao: {summary['capacityStatus']['simulated']['campaigns']} campanhas -> "
+         f"{summary['capacityStatus']['simulated']['minRequiredWeeks']} semana(s) "
+         f"(delta {summary['capacityStatus']['simulated']['weekDelta']:+d})")
+    add("")
+    add("**Threshold:** " + summary["capacityStatus"]["threshold"]["nota"])
+    add("")
+    add("**Recomendacoes:**")
+    for rec in summary["capacityStatus"]["recommendations"]:
+        add(f"- {rec}")
     add("")
     add("## 2. Saude editorial e aprovacoes")
     add("")

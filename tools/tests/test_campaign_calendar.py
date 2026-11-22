@@ -90,6 +90,90 @@ SLOT_FIELDS = (
 )
 
 
+class SimulateCapacityTest(unittest.TestCase):
+    """Tests for simulate_calendar_capacity (Etapa 14 - Frente B)."""
+
+    def test_14_campaigns_minimum_7_weeks(self) -> None:
+        """14 campanhas minimo = 7 semanas (headroom = 2 ate 16)."""
+        result = campaign_calendar.simulate_calendar_capacity(root=REPO_ROOT)
+        current = result["current"]
+        simulated = result["simulated"]
+        # Com 14 campanhas no repo, minRequiredWeeks deve ser calculado
+        # Onda1: ceil(14/4) = 4 semanas, Onda2: ceil(14/6) = 3 semanas, total = 7
+        self.assertEqual(current["minRequiredWeeks"], 7)
+        self.assertEqual(simulated["minRequiredWeeks"], 7)
+        # Headroom ate o proximo degrau (16) = 2 campanhas
+        headroom = 16 - current["campaigns"]
+        self.assertEqual(headroom, 2)
+        self.assertEqual(result["capacityThresholds"][0]["semanasMinimas"], 7)
+        self.assertEqual(
+            result["capacityThresholds"][0]["nota"], "ate 16 campanhas = 7 semanas"
+        )
+
+    def test_17_campaigns_rises_to_8_weeks(self) -> None:
+        """+3 campanhas (17 total) sobe para 8 semanas (weekDelta=+1)."""
+        result = campaign_calendar.simulate_calendar_capacity(
+            root=REPO_ROOT, extra_campaigns=3, extra_tenants=0
+        )
+        current = result["current"]
+        simulated = result["simulated"]
+        # Com 14 + 3 = 17 campanhas, Onda1: ceil(17/4) = 5, Onda2: ceil(17/6) = 3, total = 8
+        self.assertEqual(simulated["minRequiredWeeks"], 8)
+        self.assertEqual(simulated["weekDelta"], 1)
+
+    def test_19_campaigns_rises_to_9_weeks(self) -> None:
+        """+5 campanhas (19 total) sobe para 9 semanas."""
+        result = campaign_calendar.simulate_calendar_capacity(
+            root=REPO_ROOT, extra_campaigns=5, extra_tenants=0
+        )
+        self.assertEqual(result["simulated"]["minRequiredWeeks"], 9)
+        self.assertEqual(result["simulated"]["weekDelta"], 2)
+
+    def test_simulate_capacity_no_writes(self) -> None:
+        """Simulacao e 100% read-only: nao cria/modifica arquivos em 04-legendas/."""
+        dir_before = os.path.join(REPO_ROOT, "04-legendas")
+        before_files = set()
+        if os.path.isdir(dir_before):
+            before_files = {
+                f for f in os.listdir(dir_before)
+                if os.path.isfile(os.path.join(dir_before, f))
+            }
+        result = campaign_calendar.simulate_calendar_capacity(root=REPO_ROOT)
+        self.assertIn("current", result)
+        dir_after = os.path.join(REPO_ROOT, "04-legendas")
+        after_files = set()
+        if os.path.isdir(dir_after):
+            after_files = {
+                f for f in os.listdir(dir_after)
+                if os.path.isfile(os.path.join(dir_after, f))
+            }
+        self.assertEqual(before_files, after_files)
+
+    def test_simulate_capacity_cli(self) -> None:
+        """CLI --simulate-capacity responde com exit 0 e JSON valido."""
+        rc = campaign_calendar.main(
+            [
+                "--simulate-capacity",
+                "--extra-campaigns", "3",
+                "--extra-tenants", "0",
+                "--json",
+                "--root", REPO_ROOT,
+            ]
+        )
+        self.assertEqual(rc, 0)
+
+    def test_simulate_capacity_cli_no_start_date(self) -> None:
+        """--simulate-capacity sem --start-date deve aceitar (usa hoje)."""
+        rc = campaign_calendar.main(
+            [
+                "--simulate-capacity",
+                "--json",
+                "--root", REPO_ROOT,
+            ]
+        )
+        self.assertEqual(rc, 0)
+
+
 class CampaignCalendarTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

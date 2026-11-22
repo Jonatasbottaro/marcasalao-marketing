@@ -425,8 +425,8 @@ class SmokePartitionTest(unittest.TestCase):
         )
 
     def test_31_fast_preserva_28_modulos_e_smoke_24(self) -> None:
-        self.assertEqual(len(self.partition["fast"]), 28, "retrocompat: fast deve ter 28 modulos")
-        self.assertEqual(len(self.partition["smoke"]), 24, "smoke deve ter 24 modulos")
+        self.assertEqual(len(self.partition["fast"]), 29, "retrocompat: fast deve ter 29 modulos")
+        self.assertEqual(len(self.partition["smoke"]), 25, "smoke deve ter 25 modulos")
 
     def test_32_resolve_groups_smoke(self) -> None:
         self.assertEqual(run_tests.resolve_groups({"smoke": True}), ("smoke",))
