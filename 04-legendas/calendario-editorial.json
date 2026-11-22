@@ -2705,5 +2705,6 @@
       "fatigueDetected": false
     }
   ],
-  "utmReport": null
+  "utmReport": null,
+  "bundleAttribution": null
 }
