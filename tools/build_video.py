@@ -19,15 +19,36 @@ class DeliveryError(Exception):
     """Falha de validacao ou renderizacao; mensagem sanitizada, sem stack trace."""
 
 
+def _portable_ffmpeg_dir():
+    """Diretorio do FFmpeg portavel do checkout principal (compartilhado por worktrees)."""
+    proc = subprocess.run(
+        ["git", "rev-parse", "--git-common-dir"],
+        cwd=os.getcwd(), capture_output=True, text=True,
+    )
+    if proc.returncode != 0 or not proc.stdout.strip():
+        return None
+    common = os.path.realpath(os.path.join(os.getcwd(), proc.stdout.strip()))
+    return os.path.join(os.path.dirname(common), ".workspace", "tools", "ffmpeg")
+
+
+def _portable_binary(name):
+    candidate_dir = _portable_ffmpeg_dir()
+    if not candidate_dir:
+        return None
+    exe = name + (".exe" if os.name == "nt" else "")
+    path = os.path.join(candidate_dir, exe)
+    return path if os.path.isfile(path) else None
+
+
 def get_ffmpeg():
-    cmd = shutil.which("ffmpeg")
+    cmd = shutil.which("ffmpeg") or _portable_binary("ffmpeg")
     if not cmd:
         raise DeliveryError("ffmpeg nao encontrado no PATH; instale ou exponha o binario antes de exportar")
     return cmd
 
 
 def get_ffprobe():
-    cmd = shutil.which("ffprobe")
+    cmd = shutil.which("ffprobe") or _portable_binary("ffprobe")
     if not cmd:
         raise DeliveryError("ffprobe nao encontrado no PATH; instale ou exponha o binario antes de inspecionar")
     return cmd

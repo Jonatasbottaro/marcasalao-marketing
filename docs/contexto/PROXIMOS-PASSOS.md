@@ -1,5 +1,33 @@
 # Próximos passos
 
+## Fechamento P1 de código — 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`)
+
+Concluídos e medidos nesta branch (base `05ca7fa`, commit de código `7572c77`);
+detalhes e resultado literal dos gates em
+[ESTADO-ATUAL.md](ESTADO-ATUAL.md) ("Fechamento dos bloqueios P1 de código"):
+
+1. **Gate 7 (`bundling`)** — `verify_all_bundles` + CLI `verify --all`; gate
+   invoca o modo correto. *Fechado, executado.*
+2. **E2E 8 domínios** — expectativa `{"ok": 8, ...}` com `strict=True`; sandbox
+   compartilhado para evitar MAX_PATH. *Fechado, executado (5/5, 8/8 strict).*
+3. **Scaffolder fail-closed com rollback** — validação pós-gravação, rollback
+   sem tocar tenants preexistentes, dry-run com pré-validação fiel. *Fechado,
+   executado (15/15).*
+
+**Resultado:** `python tools/release_check.py --json` → exit 0, 9/9 gates ok, em
+22/11/2026 na worktree `fix-p1`. **Integração na `main` pendente de autorização
+própria** (merge/PR); até lá, a `main` continua com os gates vermelhos pelos
+mesmos motivos.
+
+**Permanecem abertos (não eram escopo desta rodada):** backlog P2/P3 da
+consolidação documental (branch `docs/alinhamento-doc-2026-11-22`), incluindo o
+escopo misto de `capacityStatus` em `executive_summary`, os testes órfãos do
+guard ComfyUI/Postiz, o workflow `video-preview.yml` morto em push, a proposta
+de verificação documental no CI e a limpeza autorizada de `.workspace/tmp`.
+A faixa `--render` e o CI remoto seguem sem medição nesta rodada.
+
+---
+
 Antes de escolher uma tarefa, reconfira [ESTADO-ATUAL.md](ESTADO-ATUAL.md), a main remota e as PRs. A lista abaixo organiza trabalho possível; não autoriza produção, publicação ou a execução automática de todas as etapas.
 
 A **regra permanente de armazenamento** em [AGENTS.md](../../AGENTS.md) é normativa para toda tarefa: a raiz oficial é o próprio checkout principal (`<RAIZ>` = `git rev-parse --show-toplevel`, qualquer que seja o caminho nesta estação), artefatos auxiliares somente em `.workspace/` por categoria e tarefa, validação de contenção antes de criar arquivo, limpeza ao final e handoff com confirmação textual. A orientação de segurança de worktrees (conferir sessão ativa, `git worktree move`/`remove`, nunca `rm -rf` em worktree registrada, autorização do titular para mover ou remover) faz parte dessa regra.

@@ -1,5 +1,68 @@
 # Estado atual do projeto
 
+## Fechamento dos bloqueios P1 de código — 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`)
+
+Seção aditiva da rodada P1 autorizada em 22/11/2026. **Base:** `main` @
+`05ca7fa10209c648c5ea9cfb5d8a358214c8c396`; trabalho em worktree
+`<RAIZ>/.workspace/worktrees/fix-p1`; commit de código+testes `7572c77`
+(+ commits de teste/documentação subsequentes da mesma branch). **Nenhum merge
+na `main` foi feito.** As seções abaixo permanecem como registro histórico de
+cada marco.
+
+- **Gate 7 (`bundling`):** `tools/publish_bundler.py` ganhou `verify_all_bundles()`
+  e a CLI `verify` aceita `--all` (padrão) ou `--bundle` (retrocompatível);
+  `tools/release_check.py:gate_bundling` invoca `verify --all --json` e expõe
+  `checkedCount`. Antes, `verify` sem `--bundle` era erro de uso e o gate falhava
+  em qualquer estação, interrompendo os gates 8 e 9.
+- **E2E 8 domínios:** `tests/e2e/test_factory_e2e.py` valida
+  `{"ok": 8, "warn": 0, "fail": 0}` com `strict=True`; `tests/e2e/_support.py`
+  documenta o 8º domínio e monta os sandboxes no `.workspace/tmp` do checkout
+  principal (worktrees estouram MAX_PATH do Windows nos arquivos mais longos do
+  acervo copiado).
+- **Scaffolder fail-closed:** `tools/tenant_scaffolder.py` valida após gravar e,
+  em qualquer falha (contrato strict, violação de guardrails ou validador
+  indisponível), executa rollback do que gravou (sem tocar tenants preexistentes)
+  e levanta `SCAFFOLD_VALIDACAO_FALHOU` (CLI exit 1, `ok: false`). `--dry-run`
+  pré-valida em staging descartável sob
+  `<RAIZ>/.workspace/tmp/tenant-scaffolder-preview/` e reporta `validation` fiel.
+  Corrigido também o `start` da cena 6 (somava 34 s contra `duration` 30).
+- **`campaign_calendar.simulate_calendar_capacity`:** o bloco `current` passou a
+  usar totais atuais em `totalSlotsEstimate`/`slotsPerWeekAvg` (antes usava os
+  simulados). O escopo misto de `capacityStatus` em `executive_summary`
+  (tenant × global) **permanece aberto** como P2 no backlog da consolidação
+  documental (branch `docs/alinhamento-doc-2026-11-22`).
+- **Isolamento de testes (necessário para os gates passarem fora do CI):**
+  `test_studio_work_backup` copia `tenants/`, `schemas/` e acervo versionado para
+  o workspace do aceite (o preflight editorial auditava root sem entregas);
+  `test_video_studio` ignora artefatos transientes SQLite (`-wal`/`-shm`) no
+  snapshot; `test_executive_summary` lê relatórios no `.workspace` compartilhado
+  (invariante 5) em vez de assumir a raiz própria; `test_review_dashboard`
+  aceita `..` somente quando resolve dentro de `<RAIZ>` (referência legítima ao
+  workspace compartilhado), mantendo a proteção contra vazamento;
+  `test_tenant_scaffolder` restaura o CWD original e usa
+  `<RAIZ>/.workspace/tmp` (antes `tempfile.mkdtemp()` sem `dir=` e
+  `os.chdir("/")`, que contaminavam módulos seguintes no mesmo processo);
+  `tools/build_video.py` passou a resolver o FFmpeg portátil de
+  `<checkout principal>/.workspace/tools/ffmpeg` quando ausente do PATH.
+
+**Resultado literal dos gates (estação Windows, worktree `fix-p1`, 22/11/2026):**
+`python tools/release_check.py --json` → **exit 0, `ok: true`, 9/9 gates ok**
+(`higiene_git`, `typescript` — com `npm ci` local de 8 pacotes na worktree —,
+`tenant_validator`, `editorial_qa`, `workspace_doctor`, `release_audit`,
+`bundling`, `unit_tests`, `e2e`). Suítes de apoio executadas na mesma base:
+`run_tests.py --fast` 448/448 (exit 0, `archivesGuard.ok: true`, 84 mídias
+fotografadas/restauradas); `unittest discover -s tests/e2e` 5/5 com
+`release_audit:8/8 strict`; `test_publish_bundler` 14/14; `test_tenant_scaffolder`
+15/15; `test_review_dashboard` 26/26; `test_executive_summary` 30/30;
+`test_studio_work_backup` 36/36; `test_video_studio` 47/47; `test_run_tests`
+45/45; `verify_egm_install.py` OK (8 skills, 10 agents, 5 standards);
+`tenant_validator --all` 5/5; `workspace_doctor --check` 0 erros.
+
+**Limitações:** resultados valem para esta estação e esta base; o CI remoto não
+foi consultado após o push; a faixa `--render` não foi executada nesta rodada
+(exige FFmpeg e não concorre com gates); nenhum dado de analytics real foi
+produzido; nada foi publicado, agendado ou criado em rascunhos remotos.
+
 ## Validação da Etapa 6 na main — 21/11/2026
 
 O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).
