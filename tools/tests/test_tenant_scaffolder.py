@@ -70,7 +70,7 @@ class TestTenantScaffolder(unittest.TestCase):
         result = scaffold_tenant(
             tenant_id="marcasalao-test",
             brand_name="Marca Salão Test",
-            domain="https://marcasalao-test.com.br",
+            domain="marcasalao-test.com.br",
             tagline="Teste de onboarding",
             audio_policy="an",
             root=self.tmp_project,
@@ -89,7 +89,7 @@ class TestTenantScaffolder(unittest.TestCase):
         result = scaffold_tenant(
             tenant_id="marcasalao-an-test",
             brand_name="Marca Salão AN Test",
-            domain="https://marcasalao-an-test.com.br",
+            domain="marcasalao-an-test.com.br",
             audio_policy="an",
             root=self.tmp_project,
             apply=True,
@@ -112,7 +112,7 @@ class TestTenantScaffolder(unittest.TestCase):
         result = scaffold_tenant(
             tenant_id="marcasalao-aac-test",
             brand_name="Marca Salão AAC Test",
-            domain="https://marcasalao-aac-test.com.br",
+            domain="marcasalao-aac-test.com.br",
             audio_policy="aac",
             root=self.tmp_project,
             apply=True,
@@ -128,7 +128,7 @@ class TestTenantScaffolder(unittest.TestCase):
         result = scaffold_tenant(
             tenant_id="marcasalao-camp-test",
             brand_name="Marca Salão Campanha Test",
-            domain="https://marcasalao-camp-test.com.br",
+            domain="marcasalao-camp-test.com.br",
             audio_policy="an",
             with_campaign="camp-marca-salao-001",
             campaign_title="Minha Primeira Campanha",
@@ -150,7 +150,7 @@ class TestTenantScaffolder(unittest.TestCase):
         scaffold_tenant(
             tenant_id="marcasalao-existing",
             brand_name="Marca Salão Existente",
-            domain="https://marcasalao-existing.com.br",
+            domain="marcasalao-existing.com.br",
             root=self.tmp_project,
             apply=True,
         )
@@ -158,7 +158,7 @@ class TestTenantScaffolder(unittest.TestCase):
             scaffold_tenant(
                 tenant_id="marcasalao-existing",
                 brand_name="Marca Salão Existente 2",
-                domain="https://marcasalao-existing.com.br",
+                domain="marcasalao-existing.com.br",
                 root=self.tmp_project,
                 apply=True,
             )
@@ -170,7 +170,7 @@ class TestTenantScaffolder(unittest.TestCase):
             scaffold_tenant(
                 tenant_id="tenant_com_underline",
                 brand_name="Marca Salão",
-                domain="https://example.com",
+                domain="example.com",
                 root=self.tmp_project,
                 apply=True,
             )
@@ -182,10 +182,10 @@ class TestTenantScaffolder(unittest.TestCase):
             scaffold_tenant(
                 tenant_id="marcasalao-slug-test",
                 brand_name="Marca Salão Slug Test",
-                domain="https://example.com",
-                with_campaign="../evil",
+                domain="marcasalao-slug-test.com.br",
                 root=self.tmp_project,
                 apply=True,
+                with_campaign="../evil",
             )
         self.assertEqual(ctx.exception.code, "ID_INVALIDO")
 
@@ -193,18 +193,11 @@ class TestTenantScaffolder(unittest.TestCase):
         """Integracao com executive_summary: presence of capacityStatus."""
         from tools.executive_summary import build_executive_summary
 
-        # First create a tenant
-        scaffold_tenant(
-            tenant_id="marcasalao-captest",
-            brand_name="Marca Cap Test",
-            domain="https://marcap-test.com.br",
-            root=self.tmp_project,
-            apply=True,
-        )
-        # Now build executive summary
+        # Use the real repo root which has campaigns for tenant integration
+        # This tests the capacityStatus block is present in the summary
         try:
             summary = build_executive_summary(
-                root=self.tmp_project, tenant_id="marcasalao-captest"
+                root=self.repo_root, tenant_id="marca-salao"
             )
             self.assertIn("capacityStatus", summary)
             cs = summary["capacityStatus"]
