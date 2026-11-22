@@ -535,6 +535,104 @@ def _build_metrics(campaigns: list[dict], slots: list[dict]) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Planejador de capacidade editorial (Etapa 14) - simulacao sem mutacao
+# ---------------------------------------------------------------------------
+
+def simulate_calendar_capacity(
+    root: str = ".",
+    extra_campaigns: int = 0,
+    extra_tenants: int = 0,
+    start_date: str | None = None,
+) -> dict:
+    """Simula o impacto de novos tenants/campanhas no calendario sem gravar nada.
+
+    Operacao 100% read-only: nunca escreve `04-legendas/`. Descobre o estado
+    atual via `discover_campaigns` e compara com o cenario simulado
+    (`current_campaigns + extra_campaigns`).
+
+    Deve ser chamada com dados reais do checkout (os tenants existentes com
+    pacotes de publicacao validos). Para 14 campanhas o minimo e 7 semanas
+    (headroom = 2 ate 16); com +3 campanhas (17 total) sobe para 8 semanas.
+    """
+    root_real = os.path.realpath(root)
+    campaigns = discover_campaigns(root_real)
+    current_total = len(campaigns)
+    current_tenants = len({c["tenantId"] for c in campaigns})
+
+    o1_weeks_current = max(1, -(-current_total // 4))
+    o2_weeks_current = max(1, -(-current_total // 6))
+    min_weeks_current = o1_weeks_current + o2_weeks_current
+
+    simulated_total = current_total + extra_campaigns
+    simulated_tenants = current_tenants + extra_tenants
+
+    o1_weeks_sim = max(1, -(-simulated_total // 4))
+    o2_weeks_sim = max(1, -(-simulated_total // 6))
+    min_weeks_sim = o1_weeks_sim + o2_weeks_sim
+
+    week_delta = min_weeks_sim - min_weeks_current
+
+    slots_per_week_avg = round(simulated_total * 4 / max(min_weeks_sim, 1), 2)
+    total_slots_estimate = simulated_total * 4
+
+    headroom_current = max(0, 16 - current_total)
+
+    thresholds = [
+        {"campanhas": 16, "semanasMinimas": 7, "nota": "ate 16 campanhas = 7 semanas"},
+        {"campanhas": 18, "semanasMinimas": 8, "nota": "17-18 campanhas = 8 semanas"},
+        {"campanhas": 20, "semanasMinimas": 9, "nota": "19-20 campanhas = 9 semanas"},
+    ]
+
+    recommendations: list[str] = []
+    if week_delta > 0:
+        recommendations.append(
+            f"Apos onboarding de {extra_campaigns} campanha(oes), o minimo de semanas "
+            f"sube de {min_weeks_current} para {min_weeks_sim} (delta +{week_delta})."
+        )
+        recommendations.append(
+            "Rode campaign_calendar.py com --weeks igual ao novo minimo para evitar "
+            "SEMANAS_INSUFICIENTES."
+        )
+    else:
+        recommendations.append(
+            f"Cenario cabe no horizonte atual de {min_weeks_current} semanas "
+            f"(headroom: {headroom_current} campanha(oes) ate o proximo degrau de 16)."
+        )
+
+    if extra_tenants > 0:
+        recommendations.append(
+            f"Novo(s) tenant(s): {extra_tenants}; confirme --tenant-id unico e "
+            f"validate com tenant_validator --all antes de render."
+        )
+
+    return {
+        "root": root_real,
+        "startDate": start_date or "semana de referencia atual",
+        "current": {
+            "tenants": current_tenants,
+            "campaigns": current_total,
+            "onda1Weeks": o1_weeks_current,
+            "onda2Weeks": o2_weeks_current,
+            "minRequiredWeeks": min_weeks_current,
+            "totalSlotsEstimate": total_slots_estimate,
+            "slotsPerWeekAvg": slots_per_week_avg,
+        },
+        "simulated": {
+            "tenants": simulated_tenants,
+            "campaigns": simulated_total,
+            "onda1Weeks": o1_weeks_sim,
+            "onda2Weeks": o2_weeks_sim,
+            "minRequiredWeeks": min_weeks_sim,
+            "totalSlotsEstimate": round(simulated_total * 4 / max(min_weeks_sim, 1) * min_weeks_sim),
+            "slotsPerWeekAvg": slots_per_week_avg,
+            "weekDelta": week_delta,
+        },
+        "capacityThresholds": thresholds,
+        "recommendations": recommendations,
+    }
+
+
 def load_utm_report(root_real: str, utm_report: str | None) -> dict | None:
     """Carrega um relatorio UTM (`utm-performance-report.json`) confinado a raiz.
 
@@ -1232,13 +1330,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Gerador de calendario editorial 4 semanas e matriz UTM multi-tenant"
     )
-    parser.add_argument(
-        "--start-date", required=True, help="Data inicial do cronograma (YYYY-MM-DD)"
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--start-date", help="Data inicial do cronograma (YYYY-MM-DD)"
+    )
+    mode.add_argument(
+        "--simulate-capacity", action="store_true",
+        help="Simula impacto de novos tenants/campanhas (read-only, nao grava)"
     )
     parser.add_argument(
         "--weeks", type=int, default=WEEKS_DEFAULT, help="Semanas do cronograma (padrao 4)"
     )
     parser.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
+    parser.add_argument(
+        "--extra-campaigns", type=int, default=0,
+        help="Campanhas extras para simulacao de capacidade"
+    )
+    parser.add_argument(
+        "--extra-tenants", type=int, default=0,
+        help="Tenants extras para simulacao de capacidade"
+    )
     parser.add_argument(
         "--utm-report",
         default=None,
@@ -1246,6 +1357,47 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--json", action="store_true", help="Emite JSON no stdout")
     args = parser.parse_args(argv)
+
+    if args.simulate_capacity:
+        try:
+            if args.start_date:
+                start_date = args.start_date
+            else:
+                start_date = datetime.date.today().isoformat()
+            datetime.date.fromisoformat(start_date)
+        except ValueError:
+            print(
+                f"Erro: --start-date invalida: {start_date} (esperado YYYY-MM-DD)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            result = simulate_calendar_capacity(
+                root=args.root,
+                extra_campaigns=args.extra_campaigns,
+                extra_tenants=args.extra_tenants,
+                start_date=start_date,
+            )
+        except CampaignCalendarError as exc:
+            print(f"Erro: {exc}", file=sys.stderr)
+            return 1
+        except (OSError, ValueError, KeyError) as exc:
+            print(f"Erro: entrada invalida ({type(exc).__name__}: {exc})", file=sys.stderr)
+            return 2
+
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            current = result["current"]
+            simulated = result["simulated"]
+            print(
+                f"Capacidade simulada: {current['campaigns']} -> {simulated['campaigns']} campanhas, "
+                f"{current['minRequiredWeeks']} -> {simulated['minRequiredWeeks']} semanas "
+                f"(delta {simulated['weekDelta']:+d})"
+            )
+            for rec in result["recommendations"]:
+                print(f"  - {rec}")
+        return 0
 
     try:
         datetime.date.fromisoformat(args.start_date)

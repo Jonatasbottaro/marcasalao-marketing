@@ -65,6 +65,7 @@ FAST_MODULES = (
     "test_bundle_attribution",
     "test_campaign_calendar",
     "test_delivery_verify",
+    "test_tenant_scaffolder",
     "test_devlog_sync",
     "test_editorial_qa",
     "test_executive_summary",
