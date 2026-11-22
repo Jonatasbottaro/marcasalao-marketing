@@ -25,6 +25,75 @@ escopo misto de `capacityStatus` em `executive_summary`, os testes órfãos do
 guard ComfyUI/Postiz, o workflow `video-preview.yml` morto em push, a proposta
 de verificação documental no CI e a limpeza autorizada de `.workspace/tmp`.
 A faixa `--render` e o CI remoto seguem sem medição nesta rodada.
+## Backlog consolidado da auditoria de 22/11/2026 — propostas, não implementações
+
+Lista aditiva da consolidação documental de 22/11/2026, derivada de
+[../auditorias/AUDITORIA-PROJETO-2026-11-22.md](../auditorias/AUDITORIA-PROJETO-2026-11-22.md)
+e reconferida por leitura de código na base `main` @ `05ca7fa`. **Nenhum item foi
+implementado.** Cada item que toca código, teste ou CI exige autorização própria; itens
+documentais já executados nesta consolidação estão marcados.
+
+**P1 — gates e regras permanentes**
+> **Nota de 22/11/2026:** os itens 1–3 do P1 abaixo foram fechados pela branch
+> `fix/release-gates-p1-2026-11-22` (commits `7572c77` e `181cb20`), com gates 9/9
+> medidos; ver a seção 'Fechamento P1 de código' acima e o ESTADO-ATUAL.
+
+1. **Corrigir o gate 7 (`bundling`) do `release_check`:** `tools/release_check.py:229-234`
+   chama `publish_bundler.py verify` sem `--bundle`, o que é erro de uso (exit 2) e reprova o
+   gate em qualquer estação, impedindo os gates 8 e 9 de rodarem. Medido em 22/11/2026 na
+   base `7e3d710`. Aceite: `release_check --skip-ts` avançando além do gate 7 em execução
+   identificada por SHA/data. *(código)*
+2. Atualizar `tests/e2e/test_factory_e2e.py:185,367` para 8 domínios e rodar o gate 9
+   isolado; hoje a expectativa de 7 domínios é obsoleta desde `cd2f8ed` (21/11). Aceite:
+   `release_check` gate 9 verde em execução identificada por SHA/data. *(código/teste)*
+3. Tornar `tenant_scaffolder.py` fail-closed: validar antes de gravar, rollback em falha,
+   `ok` derivado da validação, timing de cenas coerente com `format.duration`, remover
+   código morto e docstring que promete artefatos não gravados. *(código)*
+4. Confinar `tools/tests/test_tenant_scaffolder.py` a `<RAIZ>/.workspace/tmp/` (`mkdtemp`
+   com `dir=`) e remover `os.chdir("/")`; redirecionar para sandbox os builds de
+   `test_review_dashboard.py` e `test_campaign_calendar.py` que hoje escrevem em
+   `05-review-portal/` e `04-legendas/` na raiz real. *(testes)*
+5. Commitar/integrar, com autorização própria, a branch documental
+   `docs/consolidacao-documental-2026-11-22` (worktree `.workspace/worktrees/consol-doc`).
+
+**P2 — números que orientam decisão**
+5. Unificar escopo do `capacityStatus` (global ou por tenant, nunca misturado) e corrigir
+   `current.totalSlotsEstimate`/`slotsPerWeekAvg` alimentados com total simulado
+   (`tools/campaign_calendar.py:576-577,618-619`); adicionar asserts de valor. *(código)*
+6. Calcular fadiga/benchmarks por tenant ou rotular explicitamente como global
+   (`tools/utm_report_importer.py:855-888`); rotular `impressions/clicks/ctr` como sessões
+   web; corrigir docstring do sinal do z (:527) e mensagem de amostra mínima (:613-616).
+   *(código)*
+7. Default de semanas do calendário derivado do acervo, ou documentar `--weeks 7`
+   (`WEEKS_DEFAULT=4` falha com 14 campanhas). *(código ou doc; doc já corrigido)*
+8. Quarentena ou correção de `tools/edit_link_reel.py` (faixa AAC silenciosa, `shell=True`,
+   FFmpeg fora do projeto, escrita em `scratch/`). *(código)*
+9. Decidir escopo do guard Postiz para tipos não-draft e ligar os testes órfãos de
+   `marcas/marcasalao/comfyui/{guard_tests,tests}/` a algum gate; documentar o requisito de
+   estação Linux. *(decisão + código)*
+
+**P3 — higiene e documentação**
+10. Regenerar os índices `tenants/*/campaigns/README.md` (listam subconjunto das campanhas).
+    *(doc de contrato; tarefa própria)*
+11. Completar o bloco de `.git/info/exclude` portável no guia de novo nicho (proposta
+    documentada em `docs/guia-novo-nicho.md`; aplicação por estação exige decisão).
+12. Limpeza autorizada de `.workspace/tmp` (426 MB nesta estação) e works demo; rebuild de
+    portal e relatórios executivos após a Etapa 14. *(exige autorização; não feito)*
+13. Documentar determinismo por tipo de ZIP e limites de render nos guias (parcialmente
+    feito nesta consolidação); decidir constante de marca no núcleo TS
+    (`AUDIO_PERMITTED_TENANTS`) e destino da ponte de tenant policy sem consumidor.
+14. Revisar uso público da captura NS-001 que mostra marca de instância E2E ("Meu Salão").
+    *(decisão editorial do titular)*
+
+**Já executado nesta consolidação (documental):** entrada central `docs/README.md`;
+governança (`DOCUMENTACAO.md`, `MAPA-DOCUMENTAL.md`); correção de contagens/comandos em
+`README.md`, `docs/arquitetura-fabrica.md`, `docs/guia-operacional-titular.md`; banners de
+classificação histórica em `contexto_projeto*.md`, `docs/decisoes/*` e
+`docs/planejamento/TEMPORAL-*`; atualização de contexto/handoff.
+
+**Itens que exigem autorização explícita do titular:** qualquer commit/push/integração;
+execução de gates/testes de render; limpeza de `.workspace/`; publicação, agendamento ou
+rascunhos; produção de mídia real; deploy; nova fatia de TEMPORAL-02.
 
 ---
 

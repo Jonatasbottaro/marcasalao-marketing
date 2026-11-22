@@ -2,6 +2,12 @@
 
 - Status: decisão arquitetural futura
 - Implementação: não iniciada
+
+> **Nota de classificação (22/11/2026):** registro histórico de intenção. A expressão
+> "Implementação: não iniciada" descreve o momento da decisão, não o estado atual: partes
+> deste desenho existem hoje em `platform/` e `tools/` (ver
+> [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md) e
+> [../../platform/README.md](../../platform/README.md)). Nada aqui autoriza implementação.
 - Prioridade atual: posterior à validação da primeira campanha
 - Primeiro caso de uso: Marca Salão
 

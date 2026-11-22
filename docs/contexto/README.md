@@ -4,6 +4,9 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 
 ## Ordem de leitura
 
+0. [../README.md](../README.md): **ponto de entrada central** da documentação, com mapa do
+   projeto e fontes canônicas por assunto. Este diretório continua sendo a fonte do estado
+   técnico e da retomada.
 1. [AGENTS.md](../../AGENTS.md): regras de operação, memória, dados e publicação.
 2. [ESTADO-ATUAL.md](ESTADO-ATUAL.md): referência consultada, código integrado, alterações em revisão e pendências.
 3. [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md): ordem sugerida de trabalho e critérios de conclusão.
@@ -21,6 +24,8 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 | Conteúdo e estado editorial de uma campanha | Briefing, hooks, roteiro e registros de aprovação da própria campanha |
 | Resultado de teste ou CI | Execução identificada por commit, ambiente e link/log |
 | Estado técnico consolidado do projeto | ESTADO-ATUAL.md, reconferido no Git e no GitHub |
+| Inventário e situação de cada documento | [../governanca/MAPA-DOCUMENTAL.md](../governanca/MAPA-DOCUMENTAL.md) |
+| Regras de manutenção documental | [../governanca/DOCUMENTACAO.md](../governanca/DOCUMENTACAO.md) |
 | Estado do piloto de orquestração | orchestration/temporal/README.md e docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md |
 | Próxima tarefa | PROXIMOS-PASSOS.md, confrontado com as branches existentes |
 | Publicações e rascunhos atuais | Estado remoto real, consultado quando a tarefa envolver conteúdo |

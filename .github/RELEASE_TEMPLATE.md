@@ -20,16 +20,18 @@
 - Ver `04-legendas/` para textos de narração
 
 ## 🛠️ Como editar
-1. **CapCut**: Importe imagens de `01-insta-stories/`, adicione áudio e exporte 1080x1920
+1. **CapCut**: Importe imagens de `01-insta-stories/` e exporte 1080x1920 **sem adicionar áudio** (a entrega padrão é muda; a locução é gerada fora do editor a partir de `04-legendas/*_narracao.txt`)
 2. **Drift**: Importe via UI ou MCP Agent Access
-3. **FFmpeg**: Automação em lote via scripts
+3. **FFmpeg**: Automação em lote via scripts, mapeando somente vídeo (`-an`)
 
 ## 🔗 Links úteis
 - Portal: https://marcasalao.com.br
 - Demonstração: https://marcasalao.com.br/gestor (credenciais não ficam neste repositório; solicite acesso ao responsável pelo projeto)
 
 ## 📋 Checklist
-- [ ] Áudio gravado
+- [ ] Vídeo sem faixa de áudio (conferido com `ffprobe`)
+- [ ] `.srt` sincronizado entregue
+- [ ] Texto de narração separado em `04-legendas/`
 - [ ] Legendas revisadas
 - [ ] Vídeos exportados
 - [ ] Testado em Instagram/YouTube

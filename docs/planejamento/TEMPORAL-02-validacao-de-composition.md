@@ -2,6 +2,13 @@
 
 - Status: PRD em revisão
 - Implementação: não iniciada
+
+> **Nota de classificação (22/11/2026):** PRD permanece em revisão, mas **fatias específicas
+> já foram integradas** (fronteira pública, input/preflight, Activity, Workflow em escopo
+> estrito ratificado em 11/11, execução local com replay e gate Elephant–Goldfish).
+> "Implementação: não iniciada" refere-se ao PRD completo no momento da escrita. Estado
+> real, escopos ratificados e bloqueios: [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md).
+> Este documento não autoriza nova fatia.
 - Autorização de implementação: não concedida
 - Primeiro consumidor previsto: exemplos técnicos integrados do núcleo
 - Dependência: TEMPORAL-01, ProjectManifest e Composition v1

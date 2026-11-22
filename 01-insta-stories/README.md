@@ -11,4 +11,6 @@ Arquivos:
 - 06_meu_salao.png - Meu Salão
 - 07_novo_servico.png - Criar novo serviço
 
-Próximos passos: adicionar áudios e exportar MP4 via Drift/FFmpeg.
+Próximos passos: exportar MP4 via Drift/FFmpeg **sem faixa de áudio**; a narração permanece
+em texto separado em `04-legendas/*_narracao.txt` e as legendas no `.srt` correspondente
+(regra permanente em [WORKFLOW.md](../WORKFLOW.md) e [AGENTS.md](../AGENTS.md)).

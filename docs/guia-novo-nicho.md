@@ -2,6 +2,15 @@
 
 Este guia mostra como adicionar um **4º, 5º ou N-ésimo projeto/nicho** na fábrica de vídeo programático em `tenants/<novo-nicho>/`, mantendo validação automática por schema, proteção de guardrails e renderização em lote via `tools/factory_cli.py`.
 
+> **Nota de 22/11/2026:** existe também o onboarding automatizado
+> `tools/tenant_scaffolder.py` (Etapa 14), com `--dry-run`/`--apply`. Ele **ainda não é
+> fail-closed**: grava antes de validar, retorna `ok: true` mesmo com validação falha e não
+> roda `editorial_qa`; o timing das cenas geradas também diverge do `format.duration`.
+> Prefira este guia manual até as correções do backlog
+> ([docs/contexto/PROXIMOS-PASSOS.md](contexto/PROXIMOS-PASSOS.md)) serem implementadas.
+> Lembrete: adicionar tenant/campanha muda o mínimo estrutural de semanas do calendário
+> (`ceil(n/4) + ceil(n/6)`); use `--weeks` adequado ou `--simulate-capacity` para planejar.
+
 ---
 
 ## Pré-requisitos locais
@@ -166,7 +175,7 @@ python tools/derivative_formats.py --tenant estudio-fitness --json
 python tools/publish_pack.py --all --json
 
 # 5. Calendário editorial de 4 semanas e matriz UTM
-python tools/campaign_calendar.py --start-date 2026-11-23 --json
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 7 --json
 
 # 6. Portal de revisão humana (somente leitura) e auditoria de release
 python tools/review_dashboard.py --build --json
@@ -239,9 +248,38 @@ python tools/factory_cli.py render --tenant clinica-vital --report .workspace/tm
 python tools/static_cards.py --tenant clinica-vital --types stories,carousel --json
 python tools/derivative_formats.py --tenant clinica-vital --json
 python tools/publish_pack.py --all --json
-python tools/campaign_calendar.py --start-date 2026-11-23 --json
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 7 --json
 python tools/review_dashboard.py --build --json
 python tools/release_audit.py --strict --json
 ```
 
 > **Consolidação pós-bootstrap:** ao integrar o 5º tenant, ajuste as contagens fixas em `tools/tests/test_factory_cli.py` (`totalTenants`, `totalCampaigns` e o número de entregas) para o novo total e re-execute `python tools/factory_cli.py render --all --json` com `ffmpeg`/`ffprobe` disponíveis. Em `tools/tests/test_tenant_contracts.py`, as contagens globais usam `>= 4` para valer antes e depois do merge; a validação dos contratos clínicos é feita em memória e a checagem do tenant e das 2 campanhas no disco é condicional à existência de `tenants/clinica-vital/`.
+
+---
+
+## Apêndice (proposta documentada em 22/11/2026, não aplicada): exclude portável por estação
+
+A higiene de `.workspace/` vive em `<RAIZ>/.git/info/exclude`, **local por estação**. Nesta
+estação o bloco cobre `worktrees/`, `tools/`, `tmp/`, `archives/`, `logs/`, `studio/`,
+`reports/`, `__pycache__/` e `*.pyc`, mas **não** cobre `bundles/` nem `snapshots/`; noutra
+máquina esses diretórios apareceriam em `git status`. Proposta para decisão do titular:
+adotar em toda estação nova o bloco completo abaixo (sem alterar o `.gitignore` versionado):
+
+```gitignore
+# Marca Salao: artefatos locais por estacao (nao versionar)
+# Devlogs permanecem rastreaveis (usados em consolidacao via devlog_sync).
+.workspace/worktrees/
+.workspace/tools/
+.workspace/tmp/
+.workspace/archives/
+.workspace/logs/
+.workspace/studio/
+.workspace/reports/
+.workspace/bundles/
+.workspace/snapshots/
+__pycache__/
+*.pyc
+```
+
+Aplicação por estação é operação local de configuração, fora do escopo desta consolidação
+documental; registrar a decisão em `docs/contexto/ESTADO-ATUAL.md` quando tomada.
