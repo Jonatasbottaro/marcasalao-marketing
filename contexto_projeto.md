@@ -1,5 +1,12 @@
 # contexto_projeto.md — Devlog acumulativo — Marca Salão Content Factory
 
+> **Classificação (22/11/2026): devlog histórico.** A seção 1 abaixo reflete a base
+> `babfc60` (21/11/2026) e está **desatualizada** quanto a gates (hoje 9), domínios (hoje 8)
+> e HEAD da main. O estado vigente vive em
+> [docs/contexto/ESTADO-ATUAL.md](docs/contexto/ESTADO-ATUAL.md); este arquivo permanece
+> como registro acumulativo de sessões, consolidado por `tools/devlog_sync.py`. Entradas
+> anteriores não são apagadas nem reescritas retroativamente.
+
 > Este arquivo é um devlog permanente. **Nunca apagar entradas anteriores.**
 > Novas sessões adicionam entradas ao final da seção "Histórico de sessões".
 > O topo (seção 1) é sempre atualizado para refletir o estado atual.

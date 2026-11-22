@@ -1,5 +1,15 @@
 # Contexto do projeto — consolidação v6 (pós-Etapa 13 + Ajuste Fino 13.1)
 
+> **Classificação (22/11/2026): snapshot histórico.** Este documento descreve a base
+> `642f570` / branch `feat/etapa-13-1-smoke-tests-and-context-v6` (Etapa 13.1), com medições
+> reais daquela entrega. Ele **não** descreve a base atual: a Etapa 14 acrescentou
+> `test_tenant_scaffolder` ao `fast` (29 módulos / smoke 25 / all 51) e entregou
+> `tenant_scaffolder.py`, `--simulate-capacity` e `capacityStatus` — itens que o §7 daqui
+> lista como "não implementadas". Para o estado vigente, consulte
+> [docs/contexto/ESTADO-ATUAL.md](docs/contexto/ESTADO-ATUAL.md) e
+> [docs/README.md](docs/README.md). Números e resultados abaixo permanecem como registro
+> daquela base; não foram reexecutados nem alterados retroativamente.
+
 Referência técnica definitiva da fábrica de campanhas multi-tenant até esta entrega.
 Documento gerado a partir do código e de execuções reais nesta estação, não de
 handoffs anteriores. Onde um número não foi medido nesta execução, está marcado

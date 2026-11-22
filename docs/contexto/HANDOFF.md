@@ -1,5 +1,35 @@
 # Handoff: retomar o projeto
 
+## Última tarefa relevante — consolidação documental (22/11/2026)
+
+- **Base utilizada:** `main` @ `05ca7fa10209c648c5ea9cfb5d8a358214c8c396`; trabalho isolado
+  na worktree `<RAIZ>/.workspace/worktrees/consol-doc`, branch
+  `docs/consolidacao-documental-2026-11-22`, **sem commit** (integração exige autorização
+  própria). `origin/main` local = `276ee41`, possivelmente desatualizado.
+- **Mudanças realizadas:** somente documentação — entrada central `docs/README.md`;
+  `docs/governanca/{DOCUMENTACAO,MAPA-DOCUMENTAL}.md`; atualização de
+  `docs/contexto/{README,ESTADO-ATUAL,PROXIMOS-PASSOS,HANDOFF}.md`, `README.md` raiz,
+  `CLAUDE.md`, `WORKFLOW.md`, `docs/arquitetura-fabrica.md`,
+  `docs/guia-operacional-titular.md`, `docs/guia-novo-nicho.md`; banners históricos em
+  `contexto_projeto.md`, `contexto_projeto_6.md`, `docs/decisoes/*`,
+  `docs/planejamento/TEMPORAL-{01,02}-*.md`; relatório
+  `docs/auditorias/CONSOLIDACAO-DOCUMENTAL-2026-11-22.md`. Nenhum arquivo movido ou apagado.
+- **Validações realmente executadas:** somente leitura — varredura de links relativos,
+  conferência de contagens por tuplas/código, `git status`/`diff`, contenção de caminhos por
+  realpath. **Nenhum teste, gate, render ou CLI do projeto foi executado.**
+- **Alterações pendentes de outras sessões:** no checkout principal, a sessão concorrente
+  commitou a Etapa 14 (`5058a94`, `05ca7fa`) e alternou a branch para `main`; ao início
+  desta tarefa havia edições não commitadas em `tools/tests/test_run_tests.py` e
+  `test_tenant_scaffolder.py`, depois commitadas por aquela sessão. Nada disso foi tocado
+  aqui.
+- **Próxima ação segura:** revisar o diff da branch documental e decidir integração
+  (autorização própria); em seguida atacar P1 do backlog em
+  [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md) (E2E de 8 domínios e scaffolder fail-closed),
+  cada um com autorização e execução de gate identificada por SHA/data.
+- **Limites:** esta consolidação não autoriza implementar backlog, produzir mídia,
+  publicar/agendar, limpar `.workspace/` ou remover worktrees. A worktree com mudanças
+  **foi preservada**.
+
 Este arquivo descreve a retomada. Os fatos que mudam ficam em [ESTADO-ATUAL.md](ESTADO-ATUAL.md); as prioridades ficam em [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md). Não copiar suas tabelas para cá.
 
 ## 1. Recuperar a referência correta

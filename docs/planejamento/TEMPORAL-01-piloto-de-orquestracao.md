@@ -2,6 +2,12 @@
 
 - Status: especificação canônica do incremento; implementada nesta branch
 - Branch: `codex/temporal-01-piloto-orquestracao`, base `0c97c2a` (= `origin/main`)
+
+> **Nota de classificação (22/11/2026):** o piloto foi integrado à main (merge `07e38f4`
+> e sucessores; ver [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md)). A branch
+> citada acima é referência histórica. Este documento permanece como especificação do
+> incremento; o estado vigente e os bloqueios de produção vivem no ESTADO-ATUAL e em
+> [../../orchestration/temporal/README.md](../../orchestration/temporal/README.md).
 - Escopo: o piloto técnico mínimo descrito abaixo. Nada além disso.
 - Dependências de decisão: `docs/decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md` (portabilidade e determinismo) e `docs/decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md` (núcleo multiprojeto sem fornecedor)
 

@@ -2,6 +2,11 @@
 
 Documento mestre do pipeline de produção de vídeo programático multi-tenant (Etapas 2 a 6). Público: operadores e agentes que executam, estendem ou auditam a fábrica. A fonte da verdade é o código; este documento descreve o comportamento comprovado pelos testes e pelo CI. O fluxo para o titular está resumido em [docs/guia-operacional-titular.md](guia-operacional-titular.md).
 
+> **Fonte canônica da arquitetura da fábrica.** Contagens, gates, lentes e comandos foram
+> reconferidos por leitura de código em 22/11/2026 na base `main` @ `05ca7fa` (consolidação
+> documental; sem execução de testes). Medições de tempo e de testes citadas adiante são
+> **históricas**, com a base original indicada. Entrada central: [README.md](README.md).
+
 ## Sumário
 
 1. [Visão geral](#1-visão-geral)
@@ -48,7 +53,7 @@ tenants/ ──┘            │                                               
                         └──────────────────────────────> review_dashboard (portal de revisão humana)
                                                                                 │
                                                                                 v
-                                                        release_audit (gate de release, 7 domínios)
+                                                        release_audit (gate de release, 8 domínios)
 
 Etapa 5/5B (camada de acabamento, transversal):
     bootstrap_ffmpeg ──> factory_cli pipeline ──> static_cards ──> utm_simulator
@@ -90,11 +95,11 @@ Os 5 tenants atuais (14 campanhas, calendário de 7 semanas / 56 slots):
 
 | Tenant | Marca | Preset | Domínio | Faixa de áudio | Campanhas |
 | --- | --- | --- | --- | --- | --- |
-| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibida (`-an`, narração externa obrigatória) | 3 |
-| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitida (trilha opcional via `audio_tts`) | 5 |
-| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibida | 4 |
-| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibida | 3 |
-| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibida | 4 |
+| `marca-salao` | Marca Salão | `saas-demo` | marcasalao.com.br | Proibida (`-an`, narração externa obrigatória) | 2 |
+| `multitrack-hub` | Multitrack Hub | `shorts-completo` | multitrackhub.com.br | Permitida (trilha opcional via `audio_tts`) | 4 |
+| `meu-salao` | Meu Salão | `saas-demo` | meusalao.com.br | Proibida | 3 |
+| `estudio-flow` | Estúdio Flow | `saas-demo` | estudioflow.com.br | Proibida | 2 |
+| `clinica-vital` | Clínica Vital | `saas-demo` | clinicavital.com.br | Proibida | 3 |
 
 Presets: `saas-demo` (cenas de app B2B/agenda/booking) e `shorts-completo` (hook, catálogo/projetos, métricas, cards e CTA). Fixtures não podem conter placeholders de teste técnico e, no preset `saas-demo`, devem manter as chaves estruturais lidas pelo motor (`profissionais`, `servicos`, `agenda.atendimentos`, `booking.rota`) mesmo quando adotam nomes próprios do nicho.
 
@@ -164,7 +169,7 @@ Exit codes: `0` aprovado; `1` reprovado; `2` erro de uso/execução.
 
 ### 2.8.1 Domínio 8 — `empacotamento_distribuicao` (Agente 1, Etapa 11)
 
-O `release_audit` inclui um oitavo domínio que varre `.workspace/bundles/<tenantId>/<slug>/` e, para cada `.zip` encontrado, executa `publish_bundler.verify_bundle()`. Quando não há bundles na estação, o domínio emite um aviso (`BUNDLES_AUSENTES`) — não reprova no modo normal, mas reprova com `--strict`. Problemas de hash divergente, manifesto ausente, entrada faltando ou entradas desordenadas aparecem como erros.
+O `release_audit` inclui um oitavo domínio que varre `.workspace/bundles/<tenantId>/<slug>/` e, para cada `.zip` encontrado, executa `publish_bundler.verify_bundle()`. Quando não há bundles na estação, o domínio retorna **sem problemas** (`status: ok`) — é informativo: só verifica o que existe (`tools/release_audit.py:615-624`). Portanto a ausência de bundles **não reprova**, nem mesmo com `--strict`; problemas de hash divergente, manifesto ausente, entrada faltando ou entradas desordenadas em bundles existentes aparecem como erros. (Registros anteriores citavam um aviso `BUNDLES_AUSENTES`; esse código não existe na implementação.)
 
 ### 2.9 `tools/publish_bundler.py` — empacotamento determinístico de distribuição (Agente 1, Etapa 11)
 
@@ -215,7 +220,7 @@ Lê os tenants validados e os `checklist-publicacao.json` gerados pelo `publish_
 
 Saídas: `04-legendas/calendario-editorial.json` (estrutura completa dos slots, com `audioPolicy`, `utmUrl` e contagens) e `04-legendas/calendario-editorial.md` (cronograma cronológico, checklist e matriz consolidada das URLs UTM). CLI: `python tools/campaign_calendar.py --start-date YYYY-MM-DD [--json]`.
 
-> **Consolidação concluída:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, já consta no repositório. Com ele presente, o domínio 5 não reporta `MATRIZ_UTM_AUSENTE`. O domínio 8 (`empacotamento_distribuicao`) emite um aviso (`BUNDLES_AUSENTES`) quando não há bundles na estação — não reprova no modo normal, mas reprova com `--strict`.
+> **Consolidação concluída:** o arquivo separado `04-legendas/matriz-utm-consolidada.csv`, esperado pelo domínio 5 do `release_audit`, já consta no repositório. Com ele presente, o domínio 5 não reporta `MATRIZ_UTM_AUSENTE`. O domínio 8 (`empacotamento_distribuicao`) retorna `ok` quando não há bundles na estação (domínio informativo); bundles existentes com defeito reprovariam como erro.
 
 ### 2.13 `tools/review_dashboard.py` — portal de revisão humana (Agente 2, Etapa 4)
 
@@ -284,9 +289,9 @@ Três frentes integradas que fecham o ciclo semanal sem ampliar a superfície de
 | `tools/release_check.py` (gate 8) | Gate da suíte particionada: `run_tests.py --fast` por padrão; `--smoke-tests` troca para `--smoke` (pré-commit local) e `--full-tests` para `--all` (fast + render). As duas flags são mutuamente exclusivas | `python tools/release_check.py [--smoke-tests \| --full-tests]` |
 | `executiveSummary` em `portal-data.json` | Digest por tenant no portal de revisão: indicadores-chave e caminho/status (`gerado` / `ausente`) do relatório. O portal apenas lê os relatórios já gerados | painel `#resumo-executivo` em `05-review-portal/index.html` |
 | **Etapa 14 — onboarding automatizado de tenants e planejador de capacidade** (estań atual) | | |
-| `tools/tenant_scaffolder.py` | Onboarding automatizado: gera brand-kit.json, guardrails.json, fixture editorial e campanha inicial com validação de guardrails e editorial QA. CLI com flags `--dry-run`/`-apply`, `--tenant-id`, `--brand-name`, `--domain`, `--audio-policy`, `--with-campaign`, `--campaign-title`. API `scaffold_tenant(tenant_id, brand_name, domain, audio_policy, tagline, palette, with_campaign, campaign_title, root, apply)`. | `python tools/tenant_scaffolder.py --tenant-id X --brand-name "Y" --domain Z --dry-run` · API `scaffold_tenant(...)` |
-| `tools/campaign_calendar.py --simulate-capacity` | Planejador de capacidade editorial: simula impacto de novos tenants/campanhas no horizonte atual sem gravar nada. Retorna current/threshold/simulated/weekDelta. CLI com flags `--simulate-capacity`, `--extra-campaigns N`, `--extra-tenants N`, `--start-date YYYY-MM-DD`. | `python tools/campaign_calendar.py --simulate-capacity --extra-campaigns 3 --json` |
-| `tools/executive_summary.py --capacityStatus` | Inclui bloco `capacityStatus` no relatório executivo com campanhasAtivas, semanasMinimas, espacoLivreNoHorizonteAtual via campaign_calendar.simulate_calendar_capacity(root). | `python tools/executive_summary.py --tenant X --json` |
+| `tools/tenant_scaffolder.py` | Onboarding automatizado: gera brand-kit.json, guardrails.json, fixture editorial e campanha inicial. **Ressalvas verificadas em 22/11/2026:** grava antes de validar e retorna `ok: true` mesmo com validação falha; não roda `editorial_qa`; não gera SRT/narração/checklist (o docstring antigo prometia); timing das cenas geradas soma 34 s contra `duration` 30. CLI com flags `--dry-run`/`--apply` (**modo explícito obrigatório**), `--tenant-id`, `--brand-name`, `--domain`, `--audio-policy`, `--with-campaign`, `--campaign-title`. API `scaffold_tenant(tenant_id, brand_name, domain, audio_policy, tagline, palette, with_campaign, campaign_title, root, apply)`. | `python tools/tenant_scaffolder.py --tenant-id X --brand-name "Y" --domain Z --dry-run` · API `scaffold_tenant(...)` |
+| `tools/campaign_calendar.py --simulate-capacity` | Planejador de capacidade editorial: simula impacto de novos tenants/campanhas no horizonte atual sem gravar nada. Retorna current/threshold/simulated/weekDelta. **Ressalva:** o bloco `current` de slots usa o total simulado; `extra_tenants` não altera semanas. CLI com flags `--simulate-capacity`, `--extra-campaigns N`, `--extra-tenants N`, `--start-date YYYY-MM-DD`. | `python tools/campaign_calendar.py --simulate-capacity --extra-campaigns 3 --json` |
+| `tools/executive_summary.py` (bloco `capacityStatus`) | Inclui o bloco de saída `capacityStatus` no relatório executivo via `campaign_calendar.simulate_calendar_capacity(root)`. **Não é uma flag de CLI.** **Ressalva:** mistura escopo por tenant (`current`) com escopo global (`simulated`); `weekDelta` é estruturalmente 0. | `python tools/executive_summary.py --tenant X --json` |
 
 **Blindagem de `.workspace/archives/`.** Dois testes de render chamavam o pipeline canônico sem `archives_dir` isolado e sobrescreviam os masters reais (`test_audio_tts.py` com bed de áudio externo e `test_factory_cli.py` via `factory_cli render`). `factory_cli.cmd_render` e `cmd_pipeline` passaram a aceitar `archives_dir` / `--archives-dir`; os dois testes usam diretório isolado e instalam `ArchivesGuard` em `setUpModule`, de modo que a proteção vale tanto via `run_tests.py` quanto por `unittest` direto.
 
@@ -335,7 +340,9 @@ python tools/derivative_formats.py --all --json
 python tools/publish_pack.py --all
 
 # 6. Calendário editorial e matriz UTM (proposta; nada publica)
-python tools/campaign_calendar.py --start-date 2026-11-23 --json
+#    Com 14 campanhas o mínimo estrutural é 7 semanas; o default da CLI é 4 e falha
+#    com SEMANAS_INSUFICIENTES. Informe --weeks 7 (ou o mínimo do acervo).
+python tools/campaign_calendar.py --start-date 2026-11-23 --weeks 7 --json
 
 # 7. Portal de revisão humana (build determinístico + servidor local)
 python tools/review_dashboard.py --build --json
@@ -347,7 +354,7 @@ python tools/static_cards.py --all --json
 # 9. Auditoria de URLs UTM (Etapa 5B; --simulate-traffic opcional)
 python tools/utm_simulator.py --json
 
-# 10. Auditoria editorial transversal (5 lentes; --strict também reprova avisos)
+# 10. Auditoria editorial transversal (7 lentes; --strict também reprova avisos)
 python tools/editorial_qa.py --all --json
 python tools/editorial_qa.py --all --strict --json
 
@@ -371,7 +378,7 @@ python tools/release_check.py --json        # relatório JSON no stdout
 python tools/release_check.py --full-tests  # gate de testes com fast + render
 python tools/release_check.py --smoke-tests # gate de testes rapido (pre-commit local)
 
-# 15. Gate de release (7 domínios; avisos também reprovam)
+# 15. Gate de release (8 domínios; avisos também reprovam)
 python tools/release_audit.py --strict --json
 
 # 16. Consolidar o registro de sessões no contexto do projeto (idempotente)
@@ -406,17 +413,17 @@ python tools/executive_summary.py --tenant <id> --week 3
 #   o portal de revisão passa a exibir o digest por tenant
 
 # 23. Suíte Python particionada (Etapa 13 / 13.1) — faixas mutuamente exclusivas
-python tools/run_tests.py --smoke --json   # loop de dev: 24 modulos, sem contratos pesados
-python tools/run_tests.py --fast --json    # gate oficial: 28 modulos, sem render
-python tools/run_tests.py --render --json  # testes que usam FFmpeg/FFprobe
-python tools/run_tests.py --all --json     # fast + render
+python tools/run_tests.py --smoke --json   # loop de dev: 25 modulos, sem contratos pesados
+python tools/run_tests.py --fast --json    # gate oficial: 29 modulos, sem render
+python tools/run_tests.py --render --json  # testes que usam FFmpeg/FFprobe (22 modulos)
+python tools/run_tests.py --all --json     # fast + render (51 modulos)
 ```
 
 Para cadastrar um novo nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-nicho.md) (estrutura, schemas, fixture, campanha, validação e render em menos de 10 minutos).
 
 ## 5. Testes e CI
 
-Suíte consolidada da fábrica — **21 módulos** (6 do núcleo de render, 3 da Etapa 2, 3 da Etapa 3, 4 da Etapa 4 e 5 da Etapa 5/5B), executada no CI (`.github/workflows/local-render-validation.yml`) em `ubuntu-latest` e `windows-latest`. O workflow roda, após compilar `platform/` (`npm run build && npm test`): (1) a verificação única `python tools/release_check.py --skip-ts --json`, que orquestra higiene Git + `autoPublish: false`, contratos (5 tenants), editorial `--all --strict` (14 campanhas/7 lentes), `workspace_doctor --check`, `release_audit --strict` (7/7 domínios) e a suíte E2E; e (2) a suíte `unittest` canônica da fábrica e o `discover -s tests/e2e`. Os módulos também são apanhados pela descoberta `python -m unittest discover -s tools/tests -v`:
+Suíte consolidada da fábrica — **51 módulos em 4 faixas** (`smoke` 25, `fast` 29, `render` 22, `all` 51; contagem de módulos verificada em `tools/run_tests.py:61-134` na base `05ca7fa`, 22/11/2026), executada no CI (`.github/workflows/local-render-validation.yml`) em `ubuntu-latest` e `windows-latest`. O workflow roda, após compilar `platform/` (`npm run build && npm test`): (1) a verificação única `python tools/release_check.py --skip-ts --json`, que orquestra higiene Git + `autoPublish: false`, contratos (5 tenants), editorial `--all --strict` (14 campanhas/7 lentes), `workspace_doctor --check`, `release_audit --strict` (**8 domínios**), empacotamento, a suíte particionada (`--fast`) e a suíte E2E; e (2) a suíte `unittest` canônica da fábrica, o `discover -s tests/e2e` e um laço com `REQUIRE_RENDER=1` sobre todos os `tools/tests/test*.py`. Os módulos também são apanhados pela descoberta `python -m unittest discover -s tools/tests -v`:
 
 ```bash
 python -m unittest \
@@ -436,11 +443,11 @@ python tools/editorial_qa.py --all --json
 ```
 
 - `test_release_audit.py` (22 testes) cobre o contrato `schemaVersion 2` dos 8 domínios no repositório real, o sandbox que aprova no modo normal e reprova no `--strict` (matriz UTM ausente), o sandbox completo que aprova no `--strict`, e defeitos simulados por domínio: hash corrompido, storyboard/diretório de entrega/pacote/arquivo social ausentes, política de áudio violada nos dois sentidos, `autoPublish: true` e `guardrailsAudited: false`, contagem de slots divergente, declaração de derivado incompleta e derivado com hash divergente, caminho absoluto vazado no portal, artefatos da Etapa 4 ausentes (aviso, não falha), mídia rastreada, `.gitattributes` sem `eol=lf` e sem cobertura por extensão, worktree órfã e worktree registrada sem diretório, além de `--json`/`--report-out`/`PATH_OUTSIDE_ROOT` e da saída UTF-8 do CLI.
-- `test_editorial_qa.py` (13 testes) cobre a auditoria do acervo real (10 campanhas, 5 lentes, nenhum erro) e, em sandbox, linha de SRT longa, U+FFFD e mojibake, violação de guardrail, filtro por tenant, `--strict`, `--json`, divergência de duração, pacote social ausente, bloco vazio, saída humana e determinismo sem efeito colateral.
+- `test_editorial_qa.py` (13 testes) cobre a auditoria do acervo real (14 campanhas, 7 lentes, nenhum erro) e, em sandbox, linha de SRT longa, U+FFFD e mojibake, violação de guardrail, filtro por tenant, `--strict`, `--json`, divergência de duração, pacote social ausente, bloco vazio, saída humana e determinismo sem efeito colateral.
 - `test_devlog_sync.py` (7 testes) cobre a consolidação da Etapa 3 (retrocompatibilidade byte a byte), a ordenação multi-etapa por `(etapa, agente)`, a atualização da linha `Fase atual`, a idempotência de execuções repetidas e o filtro `--pattern`.
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
 - **Gate `--strict`:** exige aprovação de todos os domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada e nenhum bundle adulterado, `--json` e `--strict` retornam `ok: true` com todos os domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
-- **Etapa 6:** as suítes dos módulos de operação do titular são acrescentadas na consolidação da etapa; a contagem de 21 módulos acima refere-se ao estado integrado até a Etapa 5B.
+- **Etapa 6:** as suítes dos módulos de operação do titular foram acrescentadas na consolidação da etapa; a contagem histórica de 21 módulos referia-se ao estado integrado até a Etapa 5B e está superada pela partição atual (51 módulos).
 - **Etapa 13 — partição da suíte:** `tools/run_tests.py` classifica explicitamente os módulos de `tools/tests/` em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: um módulo novo não classificado reprova o runner com erro de uso, em vez de cair num grupo padrão. `--fast` é o padrão quando nenhuma flag de grupo é passada e é o gate 8 de `release_check.py`. A saída `--json` traz `ok`, `mode` (`smoke` / `fast` / `render` / `all`), `total`, `passed`, `failed`, `errors`, `skipped`, `durationSeconds`, `modules[]`, `results[]` e `archivesGuard`.
 
 #### 5.1 Matriz de execução da suíte (Etapa 13.1)
@@ -449,16 +456,16 @@ As quatro faixas são **mutuamente exclusivas** na CLI; combinar duas retorna ex
 
 | Faixa | Composição | Módulos | Uso recomendado |
 | --- | --- | --- | --- |
-| `--smoke` | `fast` menos `HEAVY_CONTRACT_MODULES` | 24 | loop de desenvolvimento iterativo e pré-commit local |
-| `--fast` | unitários e de contrato, sem render — **gate oficial** | 28 | gate 8 de `release_check.py`; CI sem FFmpeg |
+| `--smoke` | `fast` menos `HEAVY_CONTRACT_MODULES` | 25 | loop de desenvolvimento iterativo e pré-commit local |
+| `--fast` | unitários e de contrato, sem render — **gate oficial** | 29 | gate 8 de `release_check.py`; CI sem FFmpeg |
 | `--render` | módulos que renderizam via FFmpeg/FFprobe | 22 | validar o pipeline de mídia com as ferramentas portáteis instaladas |
-| `--all` | `fast` + `render` | 50 | bateria integral antes de release |
+| `--all` | `fast` + `render` | 51 | bateria integral antes de release |
 
 `HEAVY_CONTRACT_MODULES` são os 4 módulos que **não renderizam mídia** mas dominam o tempo do gate completo, por criarem sandboxes Git completos, inicializarem ponte Node/MCP ou subirem servidores HTTP locais: `test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`. Eles permanecem em `fast` (o gate oficial continua cobrindo esses contratos) e ficam fora de `smoke`.
 
 `smoke` é **derivado** de `FAST_MODULES` (`SMOKE_MODULES = tuple(m for m in FAST_MODULES if m not in HEAVY_CONTRACT_MODULES)`), portanto nunca diverge quando a classificação muda. Invariantes verificadas por `test_run_tests.py`: `smoke ⊂ fast` estritamente, `fast − smoke == HEAVY_CONTRACT_MODULES`, `smoke ∩ render == ∅` e nenhum `test_*.py` órfão fora de `fast ∪ render`.
 
-**Custo medido nesta estação (Windows, FFmpeg 9.1 portátil):** `--smoke` 24 módulos / 354 testes / **53,4 s**; `--fast` 28 módulos / 422 testes / **375,4 s**. A meta de 15–20 s para `smoke` **não foi atingida** com a partição especificada: mesmo sem os 4 pesados, restam `test_executive_summary` (~10 s, geração real de relatórios e portais), `test_static_cards` (~10 s, desenho real de PNG em stdlib), `test_run_tests` (~5 s, subprocessos) e `test_review_dashboard` (~5 s). Atingir 15–20 s exigiria esvaziar testes legítimos ou redefinir a faixa, o que quebraria o contrato de composição. O ganho real de `smoke` sobre `fast` é de ~7×.
+**Custo medido — registro histórico da Etapa 13.1** (estação Windows, FFmpeg 9.1 portátil, base `642f570`/`276ee41`; **não reexecutado** na consolidação de 22/11/2026): `--smoke` 24 módulos / 354 testes / **53,4 s**; `--fast` 28 módulos / 422 testes / **375,4 s**. Na base atual as faixas têm 25 e 29 módulos (a Etapa 14 acrescentou `test_tenant_scaffolder` ao `fast`); os tempos acima não valem para ela sem nova medição. A meta de 15–20 s para `smoke` **não foi atingida** com a partição especificada: mesmo sem os 4 pesados, restam `test_executive_summary` (~10 s, geração real de relatórios e portais), `test_static_cards` (~10 s, desenho real de PNG em stdlib), `test_run_tests` (~5 s, subprocessos) e `test_review_dashboard` (~5 s). Atingir 15–20 s exigiria esvaziar testes legítimos ou redefinir a faixa, o que quebraria o contrato de composição. O ganho real de `smoke` sobre `fast` é de ~7×.
 
 - **Etapa 13 — blindagem de masters:** toda execução do runner, em qualquer faixa, roda dentro de `archives_guard.ArchivesGuard`, que fotografa os SHA-256 de `.workspace/archives/` e restaura qualquer arquivo alterado ou removido, descartando mídia nova criada pelo teste. Os dois testes que historicamente sobrescreviam os masters (`test_audio_tts.py` e `test_factory_cli.py`) passaram a usar `archives_dir` isolado e instalam o guard em `setUpModule`, valendo também para `unittest` direto. `test_run_tests.py` cobre a partição, a saída `--json`, o restauro automático e a regressão do vazamento.
 - **Etapa 13 — reparo e relatório executivo:** `test_workspace_doctor_repair.py` cobre dry-run sem mutação, detecção de mídia corrompida/ausente, restauração de conformidade SHA-256 com `--apply`, fail-closed por insumo ausente e por hash não reprodutível, regeneração apenas do derivado afetado, filtros por tenant/slug e recusa de path traversal. `test_executive_summary.py` cobre geração de JSON/Markdown, isolamento estrito entre os 5 tenants reais, selo `autoPublish: false`, incorporação de `bundleAttribution` / `promotionHistory` / fadiga com `zScore` e `pValue`, contenção de saída e integração com o portal.

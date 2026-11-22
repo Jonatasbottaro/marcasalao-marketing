@@ -252,10 +252,10 @@ python tools/release_audit.py --strict --json
 python tools/devlog_sync.py --json
 
 # 4. Suíte de testes particionada (faixas mutuamente exclusivas)
-python tools/run_tests.py --smoke --json     # loop de dev / pré-commit (24 módulos)
-python tools/run_tests.py --fast --json      # gate oficial de contratos (28 módulos)
+python tools/run_tests.py --smoke --json     # loop de dev / pré-commit (25 módulos)
+python tools/run_tests.py --fast --json      # gate oficial de contratos (29 módulos)
 python tools/run_tests.py --render --json    # pipeline FFmpeg isolado (22 módulos)
-python tools/run_tests.py --all --json       # bateria integral (50 módulos)
+python tools/run_tests.py --all --json       # bateria integral (51 módulos)
 python tools/release_check.py --smoke-tests  # checklist rápido com o gate de testes em smoke
 ```
 
@@ -263,10 +263,10 @@ python tools/release_check.py --smoke-tests  # checklist rápido com o gate de t
 
 | Faixa | Quando usar | Módulos | Tempo medido nesta estação |
 | --- | --- | --- | --- |
-| `--smoke` | a cada iteração de código, antes de commitar | 24 | ~53 s |
-| `--fast` | gate oficial de contratos, sem render — é o que o CI roda | 28 | ~6 min |
+| `--smoke` | a cada iteração de código, antes de commitar | 25 | ~53 s (medição histórica da Etapa 13.1, base `276ee41`; não reexecutada em 22/11) |
+| `--fast` | gate oficial de contratos, sem render — é o que o CI roda | 29 | ~6 min (idem) |
 | `--render` | depois de mexer no pipeline de mídia, com FFmpeg portátil instalado | 22 | depende do hardware |
-| `--all` | antes de fechar release | 50 | soma das duas |
+| `--all` | antes de fechar release | 51 | soma das duas |
 
 `--smoke` é `--fast` menos os 4 módulos de contrato mais caros (`test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`), que montam sandboxes Git, ponte Node/MCP e servidores HTTP. Eles **não** deixam de ser verificados: continuam no `--fast`, que é o gate oficial. Use `--smoke` para iterar rápido e rode `--fast` antes de considerar a entrega pronta.
 

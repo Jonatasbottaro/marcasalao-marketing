@@ -73,3 +73,18 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 - [ ] Vídeo sem áudio original, narração, música ou efeitos
 - [ ] Vídeo exportado
 - [ ] Commit + push no repo
+
+## Fontes canônicas deste fluxo
+
+Este arquivo mantém as regras essenciais do fluxo de marketing; o detalhe operacional vive
+nas fontes canônicas, indexadas em [docs/README.md](docs/README.md):
+
+- Regras de operação, autorizações e armazenamento: [AGENTS.md](AGENTS.md).
+- Briefing → hooks → roteiro → legendas: [00-briefings/README.md](00-briefings/README.md),
+  [02-hooks/README.md](02-hooks/README.md), [03-roteiros/README.md](03-roteiros/README.md).
+- Produção programática (fábrica multi-tenant): [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md).
+- Produção pelo painel/CLI (Video Studio, carrossel, Motion, cortes, ZIP):
+  [tools/produce/README.md](tools/produce/README.md).
+- Aprovação, handoff e publicação manual: [docs/guia-operacional-titular.md](docs/guia-operacional-titular.md).
+- Mensuração e UTM: [docs/analytics-utm-playbook.md](docs/analytics-utm-playbook.md).
+- Estado verificado e pendências: [docs/contexto/ESTADO-ATUAL.md](docs/contexto/ESTADO-ATUAL.md).
