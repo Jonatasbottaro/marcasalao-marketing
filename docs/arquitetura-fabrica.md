@@ -177,6 +177,10 @@ CLI (a partir da raiz do checkout):
         [--allow-unapproved] [--json] [--root <raiz>]
     python tools/publish_bundler.py verify --bundle <caminho.zip> [--json]
         [--root <raiz>]
+    python tools/publish_bundler.py verify --all [--json] [--root <raiz>]
+        # verifica todos os bundles de .workspace/bundles/ (padrao sem --bundle);
+        # estacao sem bundles e' ok (checkedCount 0); e' o modo usado pelo gate 7
+        # do release_check
 
 API: `pack_bundle(root, tenant_id, slug, allow_unapproved=False) -> dict` e
 `verify_bundle(bundle_path, root=".") -> dict`; exceção `PublishBundlerError`.

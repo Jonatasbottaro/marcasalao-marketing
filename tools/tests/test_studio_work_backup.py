@@ -188,14 +188,25 @@ def _make_args(command: str, **kwargs):
 
 
 def _copy_repo_subdirs(worktree: str, target_ws: str) -> None:
-    """Copia tools/ e platform/ para workspace isolado suportando caminhos longos no Windows."""
-    for sub in ('tools', 'platform'):
+    """Copia tools/, platform/, tenants/ e schemas/ para workspace isolado.
+
+    tenants/ e schemas/ sao necessarios para que o preflight do Studio resolva
+    o tenant do projeto (``_resolve_tenant_id``/``tenant_ids`` leem
+    ``<root>/tenants/``) e para a validacao de contratos; sem eles o aceite
+    falha com "nenhum tenant disponivel para o preflight" em qualquer estacao.
+    """
+    for sub in (
+        'tools', 'platform', 'tenants', 'schemas',
+        # Acervo versionado auditado pelas lentes do editorial_qa no preflight:
+        # sem ele, um workspace isolado reprova com ENTREGA_AUSENTE etc.
+        '02-reels-shorts', '01-insta-stories', '04-legendas',
+    ):
         src = render_local.fs_path(os.path.join(worktree, sub), force=True)
         dst = render_local.fs_path(os.path.join(target_ws, sub), force=True)
         ignore_fn = (
             shutil.ignore_patterns('node_modules', '__pycache__')
             if sub == 'tools'
-            else shutil.ignore_patterns('__pycache__')
+            else shutil.ignore_patterns('__pycache__', '*.mp4', '*.wav')
         )
         shutil.copytree(
             src,

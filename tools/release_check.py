@@ -228,9 +228,9 @@ def gate_release_audit(root: str) -> dict:
 
 def gate_bundling(root: str) -> dict:
     proc = _run(
-        [sys.executable, "tools/publish_bundler.py", "verify", "--json"], cwd=root
+        [sys.executable, "tools/publish_bundler.py", "verify", "--all", "--json"], cwd=root
     )
-    return _wrap_tool("BUNDLING", "publish_bundler verify", proc)
+    return _wrap_tool("BUNDLING", "publish_bundler verify --all", proc)
 
 
 def gate_e2e(root: str) -> dict:
@@ -293,6 +293,8 @@ def _summarize_report(payload: dict) -> dict:
         summary["tenants"] = len(payload["tenants"])
     if "summary" in payload and isinstance(payload["summary"], dict):
         summary["checks"] = payload["summary"].get("checks") or payload["summary"].get("domains")
+    if "checkedCount" in payload:
+        summary["checkedCount"] = payload["checkedCount"]
     return summary
 
 

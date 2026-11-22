@@ -290,3 +290,118 @@ class PublishBundlerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerifyAllBundlesTest(unittest.TestCase):
+    """Cobertura da rodada P1 (22/11/2026): verify --all e gate_bundling."""
+
+    SLUG = "camp-saas-demo-marca-salao-001"
+    TENANT = "marca-salao"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        tmp_root = os.path.join(REPO_ROOT, ".workspace", "tmp")
+        os.makedirs(tmp_root, exist_ok=True)
+        cls._tmp = tempfile.TemporaryDirectory(prefix="publish-bundler-all-", dir=tmp_root)
+        cls.root = os.path.realpath(cls._tmp.name)
+        _build_fixture(cls.root)
+        # tools/ no sandbox para que release_check.gate_bundling execute o CLI lá.
+        shutil.copytree(
+            render_local.fs_path(os.path.join(REPO_ROOT, "tools")),
+            render_local.fs_path(os.path.join(cls.root, "tools")),
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._tmp.cleanup()
+
+    def setUp(self) -> None:
+        aprova = os.path.join(self.root, ".workspace", "tmp", "aprovacoes-titular.json")
+        if os.path.isfile(render_local.fs_path(aprova)):
+            os.remove(render_local.fs_path(aprova))
+        bundles_root = os.path.join(self.root, ".workspace", "bundles")
+        if os.path.isdir(render_local.fs_path(bundles_root)):
+            shutil.rmtree(render_local.fs_path(bundles_root))
+
+    def _pack_aprovado(self) -> dict:
+        _write_approvals(
+            self.root,
+            [{"tenantId": self.TENANT, "slug": self.SLUG, "decisao": "aprovado"}],
+        )
+        return publish_bundler.pack_bundle(root=self.root, tenant_id=self.TENANT, slug=self.SLUG)
+
+    def test_10_verify_all_estacao_vazia_ok(self) -> None:
+        payload = publish_bundler.verify_all_bundles(root=self.root)
+        self.assertTrue(payload["ok"])
+        self.assertIs(payload["autoPublish"], False)
+        self.assertEqual(payload["checkedCount"], 0)
+        self.assertEqual(payload["bundles"], [])
+        self.assertEqual(payload["problems"], [])
+
+    def test_11_verify_all_bundle_valido_e_cli(self) -> None:
+        pack = self._pack_aprovado()
+        payload = publish_bundler.verify_all_bundles(root=self.root)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["checkedCount"], 1)
+        self.assertEqual(payload["bundles"][0]["bundleSha256"], pack["bundleSha256"])
+
+        proc = subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "publish_bundler.py"),
+             "verify", "--all", "--json", "--root", self.root],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        cli = json.loads(proc.stdout)
+        self.assertTrue(cli["ok"])
+        self.assertEqual(cli["checkedCount"], 1)
+
+    def test_12_verify_all_bundle_adulterado_reprova_e_cli_exit_1(self) -> None:
+        pack = self._pack_aprovado()
+        bundle_abs = os.path.join(self.root, pack["bundlePath"])
+        with open(render_local.fs_path(bundle_abs), "ab") as handle:
+            handle.write(b"X")
+        payload = publish_bundler.verify_all_bundles(root=self.root)
+        self.assertFalse(payload["ok"])
+        self.assertEqual(payload["checkedCount"], 1)
+        self.assertTrue(
+            any(p["code"] == "HASH_DIVERGENTE" for p in payload["problems"]),
+            payload["problems"],
+        )
+
+        proc = subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "publish_bundler.py"),
+             "verify", "--all", "--json", "--root", self.root],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout)
+
+    def test_13_verify_bundle_retrocompativel(self) -> None:
+        pack = self._pack_aprovado()
+        bundle_abs = os.path.join(self.root, pack["bundlePath"])
+        proc = subprocess.run(
+            [sys.executable, os.path.join(TOOLS_DIR, "publish_bundler.py"),
+             "verify", "--bundle", bundle_abs, "--json", "--root", self.root],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertTrue(json.loads(proc.stdout)["ok"])
+
+    def test_14_gate_bundling_ok_e_falha(self) -> None:
+        import release_check
+
+        gate = release_check.gate_bundling(self.root)
+        self.assertTrue(gate["ok"])
+        self.assertEqual(gate["report"]["checkedCount"], 0)
+
+        self._pack_aprovado()
+        gate = release_check.gate_bundling(self.root)
+        self.assertTrue(gate["ok"])
+        self.assertEqual(gate["report"]["checkedCount"], 1)
+
+        pack = publish_bundler.verify_all_bundles(root=self.root)
+        bundle_abs = os.path.join(self.root, pack["bundles"][0]["bundlePath"])
+        with open(render_local.fs_path(bundle_abs), "ab") as handle:
+            handle.write(b"X")
+        with self.assertRaises(release_check.GateError):
+            release_check.gate_bundling(self.root)

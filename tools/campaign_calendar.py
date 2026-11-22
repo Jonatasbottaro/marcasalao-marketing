@@ -573,8 +573,10 @@ def simulate_calendar_capacity(
 
     week_delta = min_weeks_sim - min_weeks_current
 
-    slots_per_week_avg = round(simulated_total * 4 / max(min_weeks_sim, 1), 2)
-    total_slots_estimate = simulated_total * 4
+    current_slots_estimate = current_total * 4
+    current_slots_per_week = round(current_total * 4 / max(min_weeks_current, 1), 2)
+    simulated_slots_estimate = simulated_total * 4
+    simulated_slots_per_week = round(simulated_total * 4 / max(min_weeks_sim, 1), 2)
 
     headroom_current = max(0, 16 - current_total)
 
@@ -615,8 +617,8 @@ def simulate_calendar_capacity(
             "onda1Weeks": o1_weeks_current,
             "onda2Weeks": o2_weeks_current,
             "minRequiredWeeks": min_weeks_current,
-            "totalSlotsEstimate": total_slots_estimate,
-            "slotsPerWeekAvg": slots_per_week_avg,
+            "totalSlotsEstimate": current_slots_estimate,
+            "slotsPerWeekAvg": current_slots_per_week,
         },
         "simulated": {
             "tenants": simulated_tenants,
@@ -624,8 +626,8 @@ def simulate_calendar_capacity(
             "onda1Weeks": o1_weeks_sim,
             "onda2Weeks": o2_weeks_sim,
             "minRequiredWeeks": min_weeks_sim,
-            "totalSlotsEstimate": round(simulated_total * 4 / max(min_weeks_sim, 1) * min_weeks_sim),
-            "slotsPerWeekAvg": slots_per_week_avg,
+            "totalSlotsEstimate": simulated_slots_estimate,
+            "slotsPerWeekAvg": simulated_slots_per_week,
             "weekDelta": week_delta,
         },
         "capacityThresholds": thresholds,

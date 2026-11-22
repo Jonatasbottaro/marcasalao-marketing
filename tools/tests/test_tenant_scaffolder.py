@@ -243,3 +243,114 @@ class TestSlugValidation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestScaffolderFailClosed(unittest.TestCase):
+    """Rodada P1 (22/11/2026): fail-closed com rollback e pre-validacao no dry-run."""
+
+    def setUp(self):
+        import shutil
+
+        self.repo_root = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=TOOLS_DIR, capture_output=True, text=True,
+        ).stdout.strip()
+        tmp_base = os.path.join(self.repo_root, ".workspace", "tmp")
+        os.makedirs(tmp_base, exist_ok=True)
+        self._tmp = tempfile.TemporaryDirectory(prefix="scaffold-failclosed-", dir=tmp_base)
+        self.root = os.path.realpath(self._tmp.name)
+        shutil.copytree(
+            os.path.join(self.repo_root, "schemas"),
+            os.path.join(self.root, "schemas"),
+        )
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _args(self, **extra):
+        params = dict(
+            tenant_id="falha-test",
+            brand_name="Falha Test",
+            domain="falha-test.com.br",
+            root=self.root,
+        )
+        params.update(extra)
+        return params
+
+    def test_apply_rollback_quando_contrato_invalido(self):
+        from unittest import mock
+
+        original = tenant_scaffolder._build_brand_kit
+
+        def quebrado(*args, **kwargs):
+            brand = original(*args, **kwargs)
+            brand.pop("brandName", None)
+            return brand
+
+        with mock.patch.object(tenant_scaffolder, "_build_brand_kit", quebrado):
+            with self.assertRaises(ScaffolderError) as ctx:
+                scaffold_tenant(apply=True, **self._args())
+        self.assertEqual(ctx.exception.code, "SCAFFOLD_VALIDACAO_FALHOU")
+        self.assertFalse(os.path.exists(os.path.join(self.root, "tenants", "falha-test")))
+        self.assertFalse(os.path.exists(os.path.join(self.root, "tenants")))
+
+    def test_apply_rollback_quando_guardrail_violado(self):
+        with self.assertRaises(ScaffolderError) as ctx:
+            scaffold_tenant(
+                apply=True,
+                tagline="agenda sempre cheia",
+                with_campaign="camp-falha-test-001",
+                **self._args(),
+            )
+        self.assertEqual(ctx.exception.code, "SCAFFOLD_VALIDACAO_FALHOU")
+        self.assertFalse(os.path.exists(os.path.join(self.root, "tenants", "falha-test")))
+
+    def test_apply_valido_grava_e_valida(self):
+        result = scaffold_tenant(
+            apply=True, with_campaign="camp-falha-test-001", **self._args()
+        )
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["validation"]["tenantValidatorOk"])
+        self.assertTrue(result["validation"]["editorialQaPreview"])
+        self.assertEqual(len(result["writtenFiles"]), 4)
+        self.assertTrue(
+            os.path.isfile(
+                os.path.join(self.root, "tenants", "falha-test", "brand-kit.json")
+            )
+        )
+
+    def test_dry_run_pre_valida_sem_gravar_e_limpa_staging(self):
+        result = scaffold_tenant(
+            apply=False, with_campaign="camp-falha-test-001", **self._args()
+        )
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["dryRun"])
+        self.assertTrue(result["validation"]["tenantValidatorOk"])
+        self.assertTrue(result["validation"]["editorialQaPreview"])
+        self.assertEqual(len(result["plannedFiles"]), 4)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "tenants")))
+        staging = os.path.join(self.root, ".workspace", "tmp", "tenant-scaffolder-preview")
+        restantes = []
+        if os.path.isdir(staging):
+            restantes = os.listdir(staging)
+        self.assertEqual(restantes, [])
+
+    def test_cli_apply_fail_closed_exit_1(self):
+        from unittest import mock
+
+        original = tenant_scaffolder._build_brand_kit
+
+        def quebrado(*args, **kwargs):
+            brand = original(*args, **kwargs)
+            brand.pop("domain", None)
+            return brand
+
+        argv = [
+            "--tenant-id", "falha-cli",
+            "--brand-name", "Falha CLI",
+            "--domain", "falha-cli.com.br",
+            "--apply", "--json", "--root", self.root,
+        ]
+        with mock.patch.object(tenant_scaffolder, "_build_brand_kit", quebrado):
+            code = tenant_scaffolder.main(argv)
+        self.assertEqual(code, 1)
+        self.assertFalse(os.path.exists(os.path.join(self.root, "tenants", "falha-cli")))
