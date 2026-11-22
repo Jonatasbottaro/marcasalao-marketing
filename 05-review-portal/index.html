@@ -84,6 +84,7 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
     <div class="metrica"><span class="metrica-valor" id="metrica-aprovados">—</span><span class="metrica-rotulo">Aprovados</span></div>
     <div class="metrica"><span class="metrica-valor" id="metrica-pendentes">—</span><span class="metrica-rotulo">Pendentes</span></div>
     <div class="metrica"><span class="metrica-valor" id="metrica-ajustes">—</span><span class="metrica-rotulo">Ajustes</span></div>
+    <div class="metrica"><span class="metrica-valor" id="metrica-fadiga">—</span><span class="metrica-rotulo">Fadiga de Hook</span></div>
   </div>
   <div class="filtros">
     <label>Tenant <select id="filtro-tenant"><option value="">Todos</option></select></label>
@@ -2531,6 +2532,31 @@ function card(c) {
   obs.value = e0.observacoes;
   obs.addEventListener("input", function () { registrar(c, "observacoes", obs.value); });
   aprovacao.appendChild(obs);
+
+  // Historico de promocoes de hook (Etapa 10): exibe cada entrada persistida.
+  if (c.promotionHistory && c.promotionHistory.length) {
+    const secaoPromo = el("div", { class: "linha" });
+    secaoPromo.appendChild(
+      el("strong", {}, [document.createTextNode("Promoção de hook (auditoria):")])
+    );
+    const lista = el("ul", { class: "promocao-lista" });
+    c.promotionHistory.forEach(function (e) {
+      const item = el("li", {}, [
+        el("strong", {}, [document.createTextNode("Variante promovida: " + e.promotedVariant)]),
+        el("span", { text: " · Revisor: " + (e.promotedBy || "-") }),
+        el("span", { text: " · Em: " + (e.promotedAt || "-") }),
+        el("span", { text: " · z=" + (e.zScore != null ? e.zScore : "-") + ", p=" + (e.pValue != null ? e.pValue : "-") }),
+        el("span", { text: " · Fadiga: " + (e.fatigueDetected ? "DETECTADA (" + (e.fatigueStatus || "-") + ")" : "não detectada") }),
+        el("span", { text: " · Fonte: " + (e.sourceReport || "-") }),
+      ]);
+      if (e.classificationReason) {
+        item.appendChild(el("p", { class: "nota", text: e.classificationReason }));
+      }
+      lista.appendChild(item);
+    });
+    secaoPromo.appendChild(lista);
+    aprovacao.appendChild(secaoPromo);
+  }
   cardEl.appendChild(aprovacao);
   return cardEl;
 }
@@ -2568,6 +2594,11 @@ function atualizarPainel() {
   document.getElementById("metrica-aprovados").textContent = contagens.aprovado;
   document.getElementById("metrica-ajustes").textContent = contagens.ajuste;
   document.getElementById("metrica-pendentes").textContent = contagens.aguardando;
+  const fadiga = DATA.hookBenchmarks && DATA.hookBenchmarks.byTenant
+    ? DATA.hookBenchmarks.byTenant.filter(function (b) { return b.hooksComFadiga; }).length
+    : 0;
+  document.getElementById("metrica-fadiga").textContent =
+    fadiga ? fadiga + " tenant(s) com fadiga" : "sem fadiga detectada";
 }
 
 function render() {

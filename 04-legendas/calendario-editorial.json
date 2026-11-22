@@ -184,7 +184,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-002",
@@ -225,7 +229,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-003",
@@ -267,7 +275,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-004",
@@ -308,7 +320,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-005",
@@ -350,7 +366,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-006",
@@ -391,7 +411,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-007",
@@ -433,7 +457,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-008",
@@ -474,7 +502,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-009",
@@ -516,7 +548,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-010",
@@ -557,7 +593,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-011",
@@ -599,7 +639,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-012",
@@ -640,7 +684,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-013",
@@ -682,7 +730,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-014",
@@ -723,7 +775,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-015",
@@ -765,7 +821,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-016",
@@ -806,7 +866,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-017",
@@ -848,7 +912,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-018",
@@ -889,7 +957,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-019",
@@ -931,7 +1003,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-020",
@@ -972,7 +1048,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-021",
@@ -1014,7 +1094,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-022",
@@ -1055,7 +1139,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-023",
@@ -1097,7 +1185,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-024",
@@ -1138,7 +1230,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-025",
@@ -1180,7 +1276,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-026",
@@ -1222,7 +1322,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-027",
@@ -1264,7 +1368,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-028",
@@ -1306,7 +1414,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-029",
@@ -1348,7 +1460,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-030",
@@ -1390,7 +1506,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-031",
@@ -1432,7 +1552,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-032",
@@ -1474,7 +1598,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-033",
@@ -1516,7 +1644,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-034",
@@ -1558,7 +1690,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-035",
@@ -1600,7 +1736,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-036",
@@ -1642,7 +1782,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-037",
@@ -1684,7 +1828,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-038",
@@ -1726,7 +1874,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-039",
@@ -1768,7 +1920,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-040",
@@ -1810,7 +1966,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-041",
@@ -1852,7 +2012,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-042",
@@ -1894,7 +2058,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-043",
@@ -1936,7 +2104,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-044",
@@ -1978,7 +2150,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-045",
@@ -2019,7 +2195,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-046",
@@ -2061,7 +2241,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-047",
@@ -2103,7 +2287,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-048",
@@ -2145,7 +2333,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-049",
@@ -2187,7 +2379,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-050",
@@ -2229,7 +2425,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-051",
@@ -2271,7 +2471,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-052",
@@ -2313,7 +2517,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-053",
@@ -2355,7 +2563,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-054",
@@ -2396,7 +2608,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-055",
@@ -2437,7 +2653,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     },
     {
       "slotId": "slot-056",
@@ -2478,7 +2698,11 @@
       "statusEditorial": "aguardando_aprovacao_titular",
       "autoPublish": false,
       "hookRecomendado": "testar_ab",
-      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B."
+      "hookRecomendadoJustificativa": "Sem comparativo A/B consolidado para este tenant/campanha no relatorio UTM; manter teste A/B.",
+      "fatigueStatus": "sem_dados",
+      "fatigueZScore": null,
+      "fatiguePValue": null,
+      "fatigueDetected": false
     }
   ],
   "utmReport": null
