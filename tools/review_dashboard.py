@@ -521,6 +521,75 @@ def _coletar_png_opcional(root: str, delivery_dir: str, filename: str) -> dict |
     }
 
 
+def _coletar_resumo_executivo(root: str, tenants: list[dict], campaigns: list[dict]) -> dict:
+    """Digest do relatorio executivo por tenant, lido de ``.workspace/reports/``.
+
+    Somente leitura: o portal exibe os indicadores e o caminho/status do
+    relatorio ja gerado por ``tools/executive_summary.py``. Quando o relatorio
+    ainda nao existe nesta estacao, o status e ``ausente`` e apenas a contagem
+    de campanhas do proprio portal e informada.
+    """
+    workspace = resolve_workspace_dir(root)
+    reports_root = os.path.join(workspace, "reports")
+    rows: list[dict] = []
+    for tenant in tenants:
+        tid = tenant["tenantId"]
+        base = f"relatorio-executivo-{tid}"
+        json_abs = os.path.join(reports_root, tid, f"{base}.json")
+        md_abs = os.path.join(reports_root, tid, f"{base}.md")
+        row = {
+            "tenantId": tid,
+            "brandName": tenant["brandName"],
+            "status": "ausente",
+            "reportPath": render_local.rel(root, json_abs),
+            "markdownPath": render_local.rel(root, md_abs),
+            "generatedAtUtc": None,
+            "week": None,
+            "campaigns": sum(1 for c in campaigns if c["tenantId"] == tid),
+            "byStatus": None,
+            "qaOk": None,
+            "fatigueAlerts": None,
+            "abWinRatePct": None,
+            "bundlesTotal": None,
+            "bundlesVerified": None,
+            "reconciliados": None,
+            "actions": None,
+        }
+        if os.path.isfile(render_local.fs_path(json_abs)):
+            try:
+                report = _load_json(json_abs)
+            except (OSError, ValueError):
+                report = {}
+            governance = report.get("governance") or {}
+            editorial = report.get("editorial") or {}
+            ab = report.get("abIntelligence") or {}
+            delivery = report.get("delivery") or {}
+            attribution = delivery.get("attribution") or {}
+            by_status = attribution.get("byStatus") or {}
+            if governance.get("tenantId") == tid:
+                row.update({
+                    "status": "gerado",
+                    "generatedAtUtc": governance.get("generatedAtUtc"),
+                    "week": (governance.get("janela") or {}).get("week"),
+                    "campaigns": editorial.get("totalCampaigns", row["campaigns"]),
+                    "byStatus": editorial.get("byStatus"),
+                    "qaOk": (editorial.get("qa") or {}).get("ok"),
+                    "fatigueAlerts": len(ab.get("fatigueAlerts") or []),
+                    "abWinRatePct": (ab.get("hookTests") or {}).get("winRatePct"),
+                    "bundlesTotal": delivery.get("bundlesTotal"),
+                    "bundlesVerified": delivery.get("bundlesVerified"),
+                    "reconciliados": by_status.get("reconciliado"),
+                    "actions": len(report.get("actionPlan") or []),
+                })
+        rows.append(row)
+    return {
+        "reportsDir": render_local.rel(root, reports_root),
+        "generatedBy": "tools/executive_summary.py",
+        "autoPublish": False,
+        "byTenant": rows,
+    }
+
+
 def _collect_data(root: str, utm_report: dict | None = None,
                   bundle_attribution_data: dict | None = None) -> tuple[dict, dict]:
     tenants: list[dict] = []
@@ -601,6 +670,7 @@ def _collect_data(root: str, utm_report: dict | None = None,
         "totals": {"tenants": len(tenants), "campaigns": len(campaigns)},
         "tenants": tenants,
         "campaigns": campaigns,
+        "executiveSummary": _coletar_resumo_executivo(root, tenants, campaigns),
     }
     if hook_benchmarks:
         data["hookBenchmarks"] = {
@@ -791,6 +861,13 @@ h1{margin:0 0 2px;font-size:19px}
 .metrica{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:104px}
 .metrica-valor{display:block;font-size:17px;font-weight:700}
 .metrica-rotulo{display:block;font-size:11px;color:var(--muted)}
+#resumo-executivo{padding:0 22px 6px}
+#resumo-executivo h2{font-size:14px;margin:0 0 8px}
+#resumo-executivo .aviso{color:var(--muted);font-size:12px;margin:0 0 8px}
+#tabela-executiva{border-collapse:collapse;font-size:12px;width:100%}
+#tabela-executiva th,#tabela-executiva td{border:1px solid var(--border);padding:5px 8px;text-align:left}
+#tabela-executiva th{background:var(--surface);color:var(--muted);font-weight:600}
+#tabela-executiva code{font-size:11px;color:var(--muted)}
 .filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .filtros label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
 select,button,input,textarea{background:#0b0f14;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit}
@@ -875,6 +952,20 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
     <input id="input-importar" type="file" accept=".json,application/json" hidden>
   </div>
 </header>
+<section id="resumo-executivo" hidden>
+  <h2>Resumo executivo por tenant</h2>
+  <p class="aviso">Gerado por <code>tools/executive_summary.py</code> · autoPublish: false · nenhuma acao e executada automaticamente.</p>
+  <table id="tabela-executiva">
+    <thead>
+      <tr>
+        <th>Tenant</th><th>Campanhas</th><th>Aprovadas</th><th>Pendentes</th><th>QA</th>
+        <th>Fadiga</th><th>Vitoria A/B</th><th>Pacotes</th><th>Reconciliados</th>
+        <th>Acoes</th><th>Relatorio</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 <main id="grid"></main>
 <p id="vazio" hidden>Nenhuma campanha corresponde aos filtros.</p>
 <div id="lightbox" hidden>
@@ -1507,6 +1598,55 @@ function atualizarPainel() {
     : 0;
   document.getElementById("metrica-fadiga").textContent =
     fadiga ? fadiga + " tenant(s) com fadiga" : "sem fadiga detectada";
+  renderResumoExecutivo();
+}
+
+function renderResumoExecutivo() {
+  const secao = document.getElementById("resumo-executivo");
+  const resumo = DATA.executiveSummary;
+  if (!resumo || !resumo.byTenant || !resumo.byTenant.length) {
+    secao.hidden = true;
+    return;
+  }
+  secao.hidden = false;
+  const corpo = document.querySelector("#tabela-executiva tbody");
+  corpo.replaceChildren();
+  const valor = function (v, sufixo) {
+    return v === null || v === undefined ? "—" : v + (sufixo || "");
+  };
+  resumo.byTenant.forEach(function (linha) {
+    const tr = document.createElement("tr");
+    const status = linha.byStatus || {};
+    const celulas = [
+      linha.brandName + " (" + linha.tenantId + ")",
+      valor(linha.campaigns),
+      valor(status.aprovado),
+      valor(status.aguardando),
+      linha.qaOk === null ? "—" : (linha.qaOk ? "OK" : "FALHOU"),
+      valor(linha.fatigueAlerts),
+      valor(linha.abWinRatePct, "%"),
+      linha.bundlesTotal === null ? "—" : linha.bundlesVerified + "/" + linha.bundlesTotal,
+      valor(linha.reconciliados),
+      valor(linha.actions)
+    ];
+    celulas.forEach(function (texto) {
+      const td = document.createElement("td");
+      td.textContent = texto;
+      tr.appendChild(td);
+    });
+    const tdRel = document.createElement("td");
+    if (linha.status === "gerado") {
+      const code = document.createElement("code");
+      code.textContent = linha.markdownPath;
+      tdRel.appendChild(code);
+      tdRel.title = "Gerado em " + linha.generatedAtUtc;
+    } else {
+      tdRel.textContent = "ausente — rode executive_summary.py";
+      tdRel.title = linha.markdownPath;
+    }
+    tr.appendChild(tdRel);
+    corpo.appendChild(tr);
+  });
 }
 
 function render() {

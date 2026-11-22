@@ -271,6 +271,25 @@ Fecha o ciclo entre a aprovação humana, a publicação manual e o aprendizado 
 
 **Estado de consolidação:** estes módulos são desenvolvidos em paralelo por outros agentes da Etapa 6. No commit em que esta seção foi escrita, ainda não constavam na `main`; as interfaces acima seguem o contrato do pedido e devem ser reconferidas contra o código e o `--help` de cada ferramenta na integração. Nenhuma delas publica, agenda ou cria rascunho, e nenhuma gera áudio.
 
+### 2.19 Resiliência da suíte, auto-reparo de mídia e relatório executivo (Etapa 13)
+
+Três frentes integradas que fecham o ciclo semanal sem ampliar a superfície de publicação.
+
+| Módulo / contrato | Papel na operação | Ponto de entrada |
+| --- | --- | --- |
+| `tools/run_tests.py` | Runner determinístico da suíte Python, particionada em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: módulo `test_*.py` novo sem classificação reprova com erro de uso. Toda execução roda sob blindagem de `.workspace/archives/` | `python tools/run_tests.py --fast --json` · `--render` · `--all` |
+| `tools/archives_guard.py` | `ArchivesGuard` fotografa os SHA-256 dos masters antes do run e restaura qualquer arquivo alterado/removido ao final, descartando mídia nova criada pelo teste. `isolated_archives()` fornece `archives_dir` descartável. Temporários sempre sob `<RAIZ>/.workspace/tmp/` | `ArchivesGuard(root)` · `isolated_archives(root)` |
+| `tools/workspace_doctor.py --repair` | Reparo cirúrgico de mídia local por slot. Dry-run por padrão; `--apply` grava. Restaura o master da cópia versionada intacta quando o SHA-256 confere, ou re-renderiza o slot em staging isolado pelo pipeline canônico, promovendo só após validar SHA-256 + ffprobe. Derivados são regenerados apenas com master íntegro | `python tools/workspace_doctor.py --repair [--apply] [--slug S] [--tenant T] [--json]` |
+| `tools/executive_summary.py` | Relatório executivo semanal por tenant, somente leitura, reutilizando `editorial_qa`, `approval_cli`, `campaign_calendar`, `utm_report_importer` e `publish_bundler` sem duplicar fórmulas. Gera JSON + Markdown em `.workspace/reports/<tenantId>/` | `python tools/executive_summary.py (--tenant <id> \| --all) [--week 1..7] [--json]` |
+| `tools/release_check.py` (gate 8) | Gate da suíte particionada: `run_tests.py --fast` por padrão; `--full-tests` troca para `--all` (fast + render) | `python tools/release_check.py [--full-tests]` |
+| `executiveSummary` em `portal-data.json` | Digest por tenant no portal de revisão: indicadores-chave e caminho/status (`gerado` / `ausente`) do relatório. O portal apenas lê os relatórios já gerados | painel `#resumo-executivo` em `05-review-portal/index.html` |
+
+**Blindagem de `.workspace/archives/`.** Dois testes de render chamavam o pipeline canônico sem `archives_dir` isolado e sobrescreviam os masters reais (`test_audio_tts.py` com bed de áudio externo e `test_factory_cli.py` via `factory_cli render`). `factory_cli.cmd_render` e `cmd_pipeline` passaram a aceitar `archives_dir` / `--archives-dir`; os dois testes usam diretório isolado e instalam `ArchivesGuard` em `setUpModule`, de modo que a proteção vale tanto via `run_tests.py` quanto por `unittest` direto.
+
+**Limites do reparo.** O reparo é local e não re-declara manifestos versionados. Quando a cópia versionada está intacta, a restauração é byte-exata. Quando não está, o slot é re-renderizado em staging e só é promovido se o SHA-256 produzido for igual ao declarado; caso contrário o item é reportado como `MASTER_NAO_REPRODUTIVEL` e nada é gravado (fail-closed). Insumo ausente → `INSUMO_AUSENTE`; divergência de ffprobe após o reparo → `FFPROBE_DIVERGENTE_POS_REPARO`. O relatório traz `plannedItems`, `repairedItems`, `skippedItems` e `remainingErrors`.
+
+**Ausência de dados é explícita.** Sem relatório UTM ou sem bundles na estação, as seções de A/B, fadiga e atribuição declaram `sem dados` com o motivo, em vez de recalcular estatística. O relatório nunca publica, agenda, aprova ou altera datas, canais e UTMs; `autoPublish: false` aparece no JSON e no Markdown.
+
 ## 3. Regras operacionais e guardrails
 
 - **Vídeo sem áudio (regra do titular):** para Marca Salão (e tenants com `allowAudioTrack: false`), exportar **sem faixa de áudio** (`-an`), com legendas queimadas e sincronizadas, SRT e narração TXT separados para geração de áudio em ferramenta externa. Vídeos de demonstração/teste não são campanhas aprovadas.
@@ -337,10 +356,11 @@ python tools/factory_cli.py pipeline --all --skip-render --json
 python tools/release_audit.py --json
 
 # 14a. Gate único de release: orquestra higiene Git, TS, contratos, editorial,
-#      workspace_doctor, release_audit --strict e a suíte E2E num só comando
+#      workspace_doctor, release_audit --strict, suíte particionada e E2E
 python tools/release_check.py
-python tools/release_check.py --skip-ts   # quando platform/ já foi compilado
-python tools/release_check.py --json      # relatório JSON no stdout
+python tools/release_check.py --skip-ts     # quando platform/ já foi compilado
+python tools/release_check.py --json        # relatório JSON no stdout
+python tools/release_check.py --full-tests  # gate de testes com fast + render
 
 # 15. Gate de release (7 domínios; avisos também reprovam)
 python tools/release_audit.py --strict --json
@@ -364,6 +384,22 @@ python tools/srt_formatter.py --help
 python tools/utm_report_importer.py --json
 python tools/utm_report_importer.py --reconcile-bundles --json
 python tools/workspace_doctor.py --check
+
+# 21. Reparo cirúrgico de mídia local quando houver divergência de SHA-256
+python tools/workspace_doctor.py --repair --json          # dry-run: só o plano
+python tools/workspace_doctor.py --repair --apply --json  # executa e revalida
+python tools/workspace_doctor.py --repair --apply --slug <slug> --json
+
+# 22. Relatório executivo semanal por tenant (somente leitura)
+python tools/executive_summary.py --all --json
+python tools/executive_summary.py --tenant <id> --week 3
+#   -> .workspace/reports/<tenantId>/relatorio-executivo-<tenantId>.{json,md}
+#   o portal de revisão passa a exibir o digest por tenant
+
+# 23. Suíte Python particionada (Etapa 13)
+python tools/run_tests.py --fast --json    # gate padrão, sem render
+python tools/run_tests.py --render --json  # testes que usam FFmpeg/FFprobe
+python tools/run_tests.py --all --json     # fast + render
 ```
 
 Para cadastrar um novo nicho/tenant, siga [docs/guia-novo-nicho.md](guia-novo-nicho.md) (estrutura, schemas, fixture, campanha, validação e render em menos de 10 minutos).
@@ -395,6 +431,10 @@ python tools/editorial_qa.py --all --json
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
 - **Gate `--strict`:** exige aprovação de todos os domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada e nenhum bundle adulterado, `--json` e `--strict` retornam `ok: true` com todos os domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
 - **Etapa 6:** as suítes dos módulos de operação do titular são acrescentadas na consolidação da etapa; a contagem de 21 módulos acima refere-se ao estado integrado até a Etapa 5B.
+- **Etapa 13 — partição da suíte:** `tools/run_tests.py` classifica explicitamente os módulos de `tools/tests/` em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: um módulo novo não classificado reprova o runner com erro de uso, em vez de cair num grupo padrão. `--fast` é o padrão quando nenhuma flag de grupo é passada e é o gate 8 de `release_check.py`; `--full-tests` nesse gate troca para `--all`. A saída `--json` traz `testsRun`, `passed`, `failures`, `errors`, `skipped`, `durationSeconds`, `modules[]` e `archivesGuard`.
+- **Etapa 13 — blindagem de masters:** toda execução do runner roda dentro de `archives_guard.ArchivesGuard`, que fotografa os SHA-256 de `.workspace/archives/` e restaura qualquer arquivo alterado ou removido, descartando mídia nova criada pelo teste. Os dois testes que historicamente sobrescreviam os masters (`test_audio_tts.py` e `test_factory_cli.py`) passaram a usar `archives_dir` isolado e instalam o guard em `setUpModule`, valendo também para `unittest` direto. `test_run_tests.py` cobre a partição, a saída `--json`, o restauro automático e a regressão do vazamento.
+- **Etapa 13 — reparo e relatório executivo:** `test_workspace_doctor_repair.py` cobre dry-run sem mutação, detecção de mídia corrompida/ausente, restauração de conformidade SHA-256 com `--apply`, fail-closed por insumo ausente e por hash não reprodutível, regeneração apenas do derivado afetado, filtros por tenant/slug e recusa de path traversal. `test_executive_summary.py` cobre geração de JSON/Markdown, isolamento estrito entre os 5 tenants reais, selo `autoPublish: false`, incorporação de `bundleAttribution` / `promotionHistory` / fadiga com `zScore` e `pValue`, contenção de saída e integração com o portal.
+- **Custo medido do gate `fast`:** na estação Windows de referência, o grupo `fast` roda em ~6 min; quatro módulos de contrato concentram ~90% do tempo (`test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`), por sandboxes Git, ponte Node e servidores HTTP — não por render. `test_studio_media` foi classificado em `render` porque renderiza de fato e sonda com ffprobe. O grupo `render` é adicional e exige as ferramentas portáteis instaladas.
 
 ## 6. Referências
 

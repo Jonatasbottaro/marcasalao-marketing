@@ -22,7 +22,7 @@ python tools/release_check.py --skip-ts      # gate único: contratos + editoria
 python tools/review_dashboard.py --build --json
 ```
 
-> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` com 8 domínios, `publish_bundler verify` do empacotamento e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
+> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` com 8 domínios, `publish_bundler verify` do empacotamento, a suíte Python particionada via `run_tests.py --fast` e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado, `--full-tests` para incluir os testes de render e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
 
 O `--build` reconstrói `05-review-portal/index.html`, `portal-data.json` e o `README.md` do portal. O build é determinístico e verifica os hashes SHA-256 de SRT, narração e storyboard contra o `manifest.json` de cada entrega; qualquer divergência aborta com `HASH_DIVERGENTE`. Detalhes em [05-review-portal/README.md](../05-review-portal/README.md).
 
@@ -155,6 +155,68 @@ A rotina semanal está detalhada em [docs/analytics-utm-playbook.md](analytics-u
 
 Checklist de saída: tabela curta por tenant (campanha, canal, formato, sessões, conversões, CVR), top 3 e bottom 3 de `utm_content`, e lista de anomalias com `slot_id` e ação para o próximo ciclo.
 
+### 3.1 Relatório executivo semanal por tenant (Etapa 13)
+
+Depois de importar as métricas, gere o relatório executivo. Ele consolida, **por tenant e sem misturar nichos**, a saúde editorial, a inteligência A/B, a fadiga criativa, os pacotes gerados e a atribuição pós-publicação, e termina com um plano de ação priorizado.
+
+```bash
+# todos os tenants da estação
+python tools/executive_summary.py --all --json
+
+# um tenant específico, recortado por semana do calendário (1..7)
+python tools/executive_summary.py --tenant marca-salao --week 3
+```
+
+Saída em `.workspace/reports/<tenantId>/` (local por estação, nunca versionada):
+
+- `relatorio-executivo-<tenantId>.json` — dados estruturados para auditoria;
+- `relatorio-executivo-<tenantId>.md` — leitura executiva, com as seções: janela analisada, saúde editorial e aprovações, inteligência A/B e fadiga criativa, entregas e atribuição closed-loop, plano de ação priorizado e fontes.
+
+Como ler:
+
+- **Cabeçalho de governança** — `tenantId`, marca, data/hora UTC, janela e o selo `autoPublish: false`. O relatório é somente leitura: não aprova, não agenda, não publica e não altera datas, canais ou UTMs.
+- **Saúde editorial** — total de campanhas do tenant, distribuição `aprovado` / `aguardando` / `ajuste` e o resultado do QA editorial (erros e avisos).
+- **Inteligência A/B e fadiga** — taxa de vitória dos testes de hook (`vencedor_A` / `vencedor_B` contra `empate_tecnico`), alertas de `fadiga_detectada` com `zScore` e `pValue`, ranking interno de canais e formatos e as promoções auditadas (`promotionHistory`).
+- **Entregas e atribuição** — pacotes com SHA-256 verificado, status `reconciliado` contra `aguardando_metricas`, CTR, conversão realizada, `observedUpliftPct` e `winnerSustained`.
+- **Plano de ação** — recomendações priorizadas (P1 mais urgente). Nenhuma é executada automaticamente; todas exigem a sua decisão.
+
+Sem relatório UTM ou sem pacotes nesta estação, as seções correspondentes declaram `sem dados` com o motivo — o relatório não inventa métrica nem recalcula estatística. Para habilitá-las, rode antes `utm_report_importer.py --json` e `--reconcile-bundles --json`, ou aponte os artefatos com `--utm-report` e `--bundle-attribution`.
+
+O portal de revisão passa a mostrar o resumo consolidado por tenant (indicadores-chave e caminho/status do relatório). Reconstrua o portal depois de gerar os relatórios:
+
+```bash
+python tools/review_dashboard.py --build --json
+```
+
+### 3.2 Reparo de mídia local quando o doctor apontar divergência
+
+Se `workspace_doctor --check` reportar `ARCHIVE_HASH_DIVERGENTE`, a mídia local em `.workspace/archives/` divergiu do SHA-256 declarado no manifesto. Isso é local da estação: o vídeo não é versionado, e a cópia de referência fica em `02-reels-shorts/deliveries/<tenant>/<slug>/`.
+
+```bash
+# 1. Ver o plano SEM gravar nada (padrão é dry-run)
+python tools/workspace_doctor.py --repair --json
+
+# 2. Aplicar o reparo e revalidar SHA-256 + ffprobe
+python tools/workspace_doctor.py --repair --apply --json
+
+# 3. Ou restringir a um tenant / campanha
+python tools/workspace_doctor.py --repair --apply --tenant meu-salao --json
+python tools/workspace_doctor.py --repair --apply --slug camp-saas-demo-meu-salao-001 --json
+
+# 4. Confirmar que não sobrou erro
+python tools/workspace_doctor.py --check --json
+```
+
+O que a ferramenta faz, por slot:
+
+- **Master divergente com cópia versionada intacta** → restaura a cópia byte a byte (`restore-from-delivery`). É o caso mais comum e não re-renderiza nada.
+- **Master divergente sem cópia intacta** → re-renderiza apenas aquele slot pelo pipeline canônico em diretório temporário isolado e só promove se o SHA-256 produzido for igual ao declarado.
+- **Apenas derivados divergentes** (`1:1`, `16:9`, `cover.png`, thumb, grid) → regenera somente os formatos afetados, e apenas se o master do slot estiver íntegro.
+
+Quando não é possível reparar com segurança, a ferramenta **não grava nada** e reporta o motivo em `skippedItems` / `remainingErrors`: `INSUMO_AUSENTE` (sem cópia intacta nem configuração de render), `MASTER_NAO_REPRODUTIVEL` (o render atual não reproduz o hash declarado), `FFPROBE_DIVERGENTE_POS_REPARO` ou `DERIVADO_NAO_REPRODUTIVEL`. Nesses casos o manifesto versionado é a referência e a divergência deve ser tratada como re-release planejado, não como reparo local — decida com o responsável técnico antes de alterar declarações versionadas.
+
+O reparo nunca altera manifesto, calendário, aprovação ou UTM, e nunca publica nem agenda.
+
 ---
 
 ## 4. Checklist rápido (copiar e colar)
@@ -178,9 +240,19 @@ python tools/factory_cli.py handoff --all-approved --json
 
 # 3. Fechar a semana
 python tools/utm_report_importer.py --json
+python tools/utm_report_importer.py --reconcile-bundles --json
 python tools/workspace_doctor.py --check
+#   se houver ARCHIVE_HASH_DIVERGENTE:
+python tools/workspace_doctor.py --repair --json          # plano, sem gravar
+python tools/workspace_doctor.py --repair --apply --json  # reparo + revalidação
+python tools/executive_summary.py --all --json            # relatório por tenant
+python tools/review_dashboard.py --build --json           # portal com o digest
 python tools/release_audit.py --strict --json
 python tools/devlog_sync.py --json
+
+# 4. Suíte de testes particionada
+python tools/run_tests.py --fast --json     # gate rápido (padrão)
+python tools/run_tests.py --all --json      # inclui render via FFmpeg
 ```
 
 ---

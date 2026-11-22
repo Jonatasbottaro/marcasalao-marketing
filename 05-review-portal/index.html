@@ -15,6 +15,13 @@ h1{margin:0 0 2px;font-size:19px}
 .metrica{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:104px}
 .metrica-valor{display:block;font-size:17px;font-weight:700}
 .metrica-rotulo{display:block;font-size:11px;color:var(--muted)}
+#resumo-executivo{padding:0 22px 6px}
+#resumo-executivo h2{font-size:14px;margin:0 0 8px}
+#resumo-executivo .aviso{color:var(--muted);font-size:12px;margin:0 0 8px}
+#tabela-executiva{border-collapse:collapse;font-size:12px;width:100%}
+#tabela-executiva th,#tabela-executiva td{border:1px solid var(--border);padding:5px 8px;text-align:left}
+#tabela-executiva th{background:var(--surface);color:var(--muted);font-weight:600}
+#tabela-executiva code{font-size:11px;color:var(--muted)}
 .filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .filtros label{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
 select,button,input,textarea{background:#0b0f14;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit}
@@ -99,6 +106,20 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
     <input id="input-importar" type="file" accept=".json,application/json" hidden>
   </div>
 </header>
+<section id="resumo-executivo" hidden>
+  <h2>Resumo executivo por tenant</h2>
+  <p class="aviso">Gerado por <code>tools/executive_summary.py</code> · autoPublish: false · nenhuma acao e executada automaticamente.</p>
+  <table id="tabela-executiva">
+    <thead>
+      <tr>
+        <th>Tenant</th><th>Campanhas</th><th>Aprovadas</th><th>Pendentes</th><th>QA</th>
+        <th>Fadiga</th><th>Vitoria A/B</th><th>Pacotes</th><th>Reconciliados</th>
+        <th>Acoes</th><th>Relatorio</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
 <main id="grid"></main>
 <p id="vazio" hidden>Nenhuma campanha corresponde aos filtros.</p>
 <div id="lightbox" hidden>
@@ -2032,7 +2053,124 @@ footer{padding:14px 22px;color:var(--muted);font-size:12px}
         "autoPublish": false
       }
     }
-  ]
+  ],
+  "executiveSummary": {
+    "reportsDir": ".workspace/reports",
+    "generatedBy": "tools/executive_summary.py",
+    "autoPublish": false,
+    "byTenant": [
+      {
+        "tenantId": "clinica-vital",
+        "brandName": "Clínica Vital",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.json",
+        "markdownPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.md",
+        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "week": null,
+        "campaigns": 3,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 3,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "estudio-flow",
+        "brandName": "Estúdio Flow",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.json",
+        "markdownPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.md",
+        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "week": null,
+        "campaigns": 2,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 2,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "marca-salao",
+        "brandName": "Marca Salão",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.json",
+        "markdownPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.md",
+        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "week": null,
+        "campaigns": 2,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 2,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "meu-salao",
+        "brandName": "Meu Salão",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.json",
+        "markdownPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.md",
+        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "week": null,
+        "campaigns": 3,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 3,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "multitrack-hub",
+        "brandName": "Multitrack Hub",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.json",
+        "markdownPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.md",
+        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "week": null,
+        "campaigns": 4,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 4,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      }
+    ]
+  }
 }</script>
 <script>
 "use strict";
@@ -2658,6 +2796,55 @@ function atualizarPainel() {
     : 0;
   document.getElementById("metrica-fadiga").textContent =
     fadiga ? fadiga + " tenant(s) com fadiga" : "sem fadiga detectada";
+  renderResumoExecutivo();
+}
+
+function renderResumoExecutivo() {
+  const secao = document.getElementById("resumo-executivo");
+  const resumo = DATA.executiveSummary;
+  if (!resumo || !resumo.byTenant || !resumo.byTenant.length) {
+    secao.hidden = true;
+    return;
+  }
+  secao.hidden = false;
+  const corpo = document.querySelector("#tabela-executiva tbody");
+  corpo.replaceChildren();
+  const valor = function (v, sufixo) {
+    return v === null || v === undefined ? "—" : v + (sufixo || "");
+  };
+  resumo.byTenant.forEach(function (linha) {
+    const tr = document.createElement("tr");
+    const status = linha.byStatus || {};
+    const celulas = [
+      linha.brandName + " (" + linha.tenantId + ")",
+      valor(linha.campaigns),
+      valor(status.aprovado),
+      valor(status.aguardando),
+      linha.qaOk === null ? "—" : (linha.qaOk ? "OK" : "FALHOU"),
+      valor(linha.fatigueAlerts),
+      valor(linha.abWinRatePct, "%"),
+      linha.bundlesTotal === null ? "—" : linha.bundlesVerified + "/" + linha.bundlesTotal,
+      valor(linha.reconciliados),
+      valor(linha.actions)
+    ];
+    celulas.forEach(function (texto) {
+      const td = document.createElement("td");
+      td.textContent = texto;
+      tr.appendChild(td);
+    });
+    const tdRel = document.createElement("td");
+    if (linha.status === "gerado") {
+      const code = document.createElement("code");
+      code.textContent = linha.markdownPath;
+      tdRel.appendChild(code);
+      tdRel.title = "Gerado em " + linha.generatedAtUtc;
+    } else {
+      tdRel.textContent = "ausente — rode executive_summary.py";
+      tdRel.title = linha.markdownPath;
+    }
+    tr.appendChild(tdRel);
+    corpo.appendChild(tr);
+  });
 }
 
 function render() {
