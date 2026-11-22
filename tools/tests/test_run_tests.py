@@ -142,14 +142,14 @@ class RunTestsJsonTest(unittest.TestCase):
         self.assertEqual(report["schemaVersion"], 1)
         self.assertEqual(report["generatedBy"], "tools/run_tests.py")
         self.assertTrue(report["ok"])
-        self.assertEqual(report["groups"], ["fast"])
+        self.assertEqual(report["mode"], "fast")
         self.assertEqual(report["modules"], [CHEAP_MODULE])
-        self.assertGreater(report["testsRun"], 0)
-        self.assertEqual(report["failures"], 0)
+        self.assertGreater(report["total"], 0)
+        self.assertEqual(report["failed"], 0)
         self.assertEqual(report["errors"], 0)
         self.assertEqual(
             report["passed"],
-            report["testsRun"] - report["failures"] - report["errors"] - report["skipped"],
+            report["total"] - report["failed"] - report["errors"] - report["skipped"],
         )
         self.assertIsInstance(report["durationSeconds"], float)
         self.assertGreaterEqual(report["durationSeconds"], 0.0)
@@ -163,7 +163,29 @@ class RunTestsJsonTest(unittest.TestCase):
                 rc = run_tests.main(["--all", "--json", "--root", REPO_ROOT])
         self.assertEqual(rc, 0)
         report = json.loads(buf.getvalue())
-        self.assertEqual(report["groups"], ["fast", "render"])
+        self.assertEqual(report["mode"], "all")
+
+    def test_08b_json_expoe_o_contrato_de_chaves_pedido(self) -> None:
+        with mock.patch.object(run_tests, "partition_modules", self._tiny_partition):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                run_tests.main(["--fast", "--json", "--root", REPO_ROOT])
+        report = json.loads(buf.getvalue())
+        for key in ("ok", "mode", "total", "passed", "failed", "errors", "durationSeconds", "modules"):
+            self.assertIn(key, report, f"chave obrigatoria ausente: {key}")
+        self.assertIsInstance(report["ok"], bool)
+        self.assertIsInstance(report["mode"], str)
+        self.assertIsInstance(report["total"], int)
+        self.assertIsInstance(report["modules"], list)
+
+    def test_08c_mode_render_quando_so_o_grupo_pesado(self) -> None:
+        with mock.patch.object(
+            run_tests, "partition_modules",
+            lambda *_a, **_k: {"fast": [], "render": [CHEAP_MODULE], "unclassified": [], "absent": []},
+        ):
+            report = run_tests.run_tests(REPO_ROOT, ("render",))
+        self.assertEqual(report["mode"], "render")
+        self.assertEqual(report["modules"], [CHEAP_MODULE])
 
     def test_09_failing_module_reproves_runner(self) -> None:
         sandbox = tempfile.mkdtemp(prefix="failing-", dir=TEST_TMP_ROOT)
@@ -189,8 +211,8 @@ class RunTestsJsonTest(unittest.TestCase):
             ):
                 report = run_tests.run_tests(sandbox, ("fast",))
             self.assertFalse(report["ok"])
-            self.assertEqual(report["testsRun"], 1)
-            self.assertEqual(report["failures"], 1)
+            self.assertEqual(report["total"], 1)
+            self.assertEqual(report["failed"], 1)
             self.assertEqual(report["passed"], 0)
         finally:
             shutil.rmtree(sandbox, ignore_errors=True)
@@ -315,7 +337,7 @@ class ReleaseCheckGateTest(unittest.TestCase):
 
     def test_20_gate_usa_fast_por_padrao(self) -> None:
         payload = {
-            "ok": True, "testsRun": 12, "passed": 12, "failures": 0, "errors": 0,
+            "ok": True, "total": 12, "passed": 12, "failed": 0, "errors": 0,
             "skipped": 0, "durationSeconds": 1.5, "modules": ["test_a", "test_b"],
             "archivesGuard": {"ok": True, "restored": [], "discarded": []},
         }
@@ -326,19 +348,19 @@ class ReleaseCheckGateTest(unittest.TestCase):
         self.assertEqual(detail["group"], "--fast")
         self.assertIn("--fast", calls[0])
         self.assertNotIn("--all", calls[0])
-        self.assertEqual(detail["tests"]["testsRun"], 12)
+        self.assertEqual(detail["tests"]["total"], 12)
         self.assertEqual(detail["tests"]["passed"], 12)
         self.assertEqual(detail["totalModules"], 2)
 
     def test_21_gate_full_tests_usa_all(self) -> None:
-        runner, calls = self._fake_run({"ok": True, "testsRun": 1, "modules": []})
+        runner, calls = self._fake_run({"ok": True, "total": 1, "modules": []})
         with mock.patch.object(release_check, "_run", runner):
             detail = release_check.gate_unit_tests(REPO_ROOT, full=True)
         self.assertEqual(detail["group"], "--all")
         self.assertIn("--all", calls[0])
 
     def test_22_gate_reprova_quando_runner_falha(self) -> None:
-        runner, _ = self._fake_run({"ok": False, "failures": 2}, returncode=1)
+        runner, _ = self._fake_run({"ok": False, "failed": 2}, returncode=1)
         with mock.patch.object(release_check, "_run", runner):
             with self.assertRaises(release_check.GateError) as ctx:
                 release_check.gate_unit_tests(REPO_ROOT)

@@ -20,6 +20,8 @@ CLI:
     python tools/run_tests.py [--fast | --render | --all] [--json] [--root DIR]
 
 Sem flag de grupo, o padrao e ``--fast``. ``--fast --render`` equivale a ``--all``.
+O payload JSON traz ``ok``, ``mode`` (fast/render/all), ``total``, ``passed``,
+``failed``, ``errors``, ``skipped``, ``durationSeconds`` e ``modules``.
 
 API:
     partition_modules(tests_dir=None) -> dict
@@ -146,8 +148,8 @@ def _worker(names: list[str], directory: str) -> int:
     suite = unittest.TestLoader().loadTestsFromNames(names)
     result = unittest.TextTestRunner(stream=sys.stderr, verbosity=2).run(suite)
     payload = {
-        "testsRun": result.testsRun,
-        "failures": len(result.failures),
+        "total": result.testsRun,
+        "failed": len(result.failures),
         "errors": len(result.errors),
         "skipped": len(result.skipped),
         "expectedFailures": len(result.expectedFailures),
@@ -182,8 +184,8 @@ def _run_group(group: str, names: list[str], root: str) -> dict:
             break
     if not payload:
         payload = {
-            "testsRun": 0,
-            "failures": 0,
+            "total": 0,
+            "failed": 0,
             "errors": 1,
             "skipped": 0,
             "durationSeconds": 0.0,
@@ -227,18 +229,19 @@ def run_tests(root: str = ".", groups: tuple[str, ...] = DEFAULT_GROUPS) -> dict
 
     totals = {
         key: sum(r.get(key, 0) for r in results)
-        for key in ("testsRun", "failures", "errors", "skipped")
+        for key in ("total", "failed", "errors", "skipped")
     }
-    passed = totals["testsRun"] - totals["failures"] - totals["errors"] - totals["skipped"]
+    passed = totals["total"] - totals["failed"] - totals["errors"] - totals["skipped"]
+    selected = [g for g in GROUPS if g in groups]
     return {
         "schemaVersion": SCHEMA_VERSION,
         "generatedBy": GENERATED_BY,
         "ok": all(r.get("ok") for r in results) and guard.report["ok"],
         "root": root_real,
-        "groups": [g for g in GROUPS if g in groups],
-        "testsRun": totals["testsRun"],
+        "mode": "all" if len(selected) == len(GROUPS) else selected[0],
+        "total": totals["total"],
         "passed": passed,
-        "failures": totals["failures"],
+        "failed": totals["failed"],
         "errors": totals["errors"],
         "skipped": totals["skipped"],
         "durationSeconds": round(time.perf_counter() - started, 3),
@@ -256,8 +259,8 @@ def _print_human(report: dict) -> None:
         verdict = "OK" if result.get("ok") else "FALHOU"
         print(
             f"[{verdict:6}] {result['group']:6} "
-            f"{result.get('testsRun', 0)} testes, "
-            f"{result.get('failures', 0)} falhas, "
+            f"{result.get('total', 0)} testes, "
+            f"{result.get('failed', 0)} falhas, "
             f"{result.get('errors', 0)} erros, "
             f"{result.get('skipped', 0)} pulados "
             f"({result.get('durationSeconds', 0)}s, {result['totalModules']} modulos)"
@@ -275,7 +278,7 @@ def _print_human(report: dict) -> None:
         print(f"          restaurado: {rel}")
     verdict = "APROVADO" if report["ok"] else "REPROVADO"
     print(
-        f"Resultado: {verdict} — {report['passed']}/{report['testsRun']} aprovados "
+        f"Resultado: {verdict} — {report['passed']}/{report['total']} aprovados "
         f"em {report['durationSeconds']}s"
     )
 

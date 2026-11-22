@@ -257,7 +257,7 @@ def gate_unit_tests(root: str, full: bool = False) -> dict:
     if payload is not None:
         result["tests"] = {
             key: payload.get(key)
-            for key in ("testsRun", "passed", "failures", "errors", "skipped", "durationSeconds")
+            for key in ("total", "passed", "failed", "errors", "skipped", "durationSeconds")
         }
         result["totalModules"] = len(payload.get("modules") or [])
         result["archivesGuard"] = payload.get("archivesGuard")
