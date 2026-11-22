@@ -277,11 +277,11 @@ Três frentes integradas que fecham o ciclo semanal sem ampliar a superfície de
 
 | Módulo / contrato | Papel na operação | Ponto de entrada |
 | --- | --- | --- |
-| `tools/run_tests.py` | Runner determinístico da suíte Python, particionada em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: módulo `test_*.py` novo sem classificação reprova com erro de uso. Toda execução roda sob blindagem de `.workspace/archives/` | `python tools/run_tests.py --fast --json` · `--render` · `--all` |
+| `tools/run_tests.py` | Runner determinístico da suíte Python em quatro faixas mutuamente exclusivas: `smoke` (loop de dev), `fast` (unitários e de contrato, sem render — gate oficial), `render` (FFmpeg/FFprobe reais) e `all` (fast + render). A partição é fechada: módulo `test_*.py` novo sem classificação reprova com erro de uso. Toda execução roda sob blindagem de `.workspace/archives/` | `python tools/run_tests.py --smoke --json` · `--fast` · `--render` · `--all` |
 | `tools/archives_guard.py` | `ArchivesGuard` fotografa os SHA-256 dos masters antes do run e restaura qualquer arquivo alterado/removido ao final, descartando mídia nova criada pelo teste. `isolated_archives()` fornece `archives_dir` descartável. Temporários sempre sob `<RAIZ>/.workspace/tmp/` | `ArchivesGuard(root)` · `isolated_archives(root)` |
 | `tools/workspace_doctor.py --repair` | Reparo cirúrgico de mídia local por slot. Dry-run por padrão (`--dry-run` explicita); `--apply` grava. Restaura o master da cópia versionada intacta quando o SHA-256 confere, ou re-renderiza o slot em staging isolado pelo pipeline canônico, promovendo só após validar SHA-256 + ffprobe. Derivados são regenerados apenas com master íntegro | `python tools/workspace_doctor.py --repair [--dry-run \| --apply] [--slug S] [--tenant T] [--json]` |
 | `tools/executive_summary.py` | Relatório executivo semanal por tenant, somente leitura, reutilizando `editorial_qa` (por tenant, com filtro nativo), `approval_cli`, `campaign_calendar`, `utm_report_importer` e `publish_bundler` sem duplicar fórmulas. Gera JSON + Markdown em `.workspace/reports/<tenantId>/` | `python tools/executive_summary.py (--tenant <id> \| --all) [--week 1..7] [--json]` · API `build_executive_summary(root, tenant_id, week=None, inputs=None)` |
-| `tools/release_check.py` (gate 8) | Gate da suíte particionada: `run_tests.py --fast` por padrão; `--full-tests` troca para `--all` (fast + render) | `python tools/release_check.py [--full-tests]` |
+| `tools/release_check.py` (gate 8) | Gate da suíte particionada: `run_tests.py --fast` por padrão; `--smoke-tests` troca para `--smoke` (pré-commit local) e `--full-tests` para `--all` (fast + render). As duas flags são mutuamente exclusivas | `python tools/release_check.py [--smoke-tests \| --full-tests]` |
 | `executiveSummary` em `portal-data.json` | Digest por tenant no portal de revisão: indicadores-chave e caminho/status (`gerado` / `ausente`) do relatório. O portal apenas lê os relatórios já gerados | painel `#resumo-executivo` em `05-review-portal/index.html` |
 
 **Blindagem de `.workspace/archives/`.** Dois testes de render chamavam o pipeline canônico sem `archives_dir` isolado e sobrescreviam os masters reais (`test_audio_tts.py` com bed de áudio externo e `test_factory_cli.py` via `factory_cli render`). `factory_cli.cmd_render` e `cmd_pipeline` passaram a aceitar `archives_dir` / `--archives-dir`; os dois testes usam diretório isolado e instalam `ArchivesGuard` em `setUpModule`, de modo que a proteção vale tanto via `run_tests.py` quanto por `unittest` direto.
@@ -365,6 +365,7 @@ python tools/release_check.py
 python tools/release_check.py --skip-ts     # quando platform/ já foi compilado
 python tools/release_check.py --json        # relatório JSON no stdout
 python tools/release_check.py --full-tests  # gate de testes com fast + render
+python tools/release_check.py --smoke-tests # gate de testes rapido (pre-commit local)
 
 # 15. Gate de release (7 domínios; avisos também reprovam)
 python tools/release_audit.py --strict --json
@@ -400,8 +401,9 @@ python tools/executive_summary.py --tenant <id> --week 3
 #   -> .workspace/reports/<tenantId>/relatorio-executivo-<tenantId>.{json,md}
 #   o portal de revisão passa a exibir o digest por tenant
 
-# 23. Suíte Python particionada (Etapa 13)
-python tools/run_tests.py --fast --json    # gate padrão, sem render
+# 23. Suíte Python particionada (Etapa 13 / 13.1) — faixas mutuamente exclusivas
+python tools/run_tests.py --smoke --json   # loop de dev: 24 modulos, sem contratos pesados
+python tools/run_tests.py --fast --json    # gate oficial: 28 modulos, sem render
 python tools/run_tests.py --render --json  # testes que usam FFmpeg/FFprobe
 python tools/run_tests.py --all --json     # fast + render
 ```
@@ -435,8 +437,26 @@ python tools/editorial_qa.py --all --json
 - O CI também dispara com alterações em `05-review-portal/**`, `04-legendas/calendario-editorial.*`, `04-legendas/matriz-utm-consolidada.csv` e `docs/**`.
 - **Gate `--strict`:** exige aprovação de todos os domínios. Com `04-legendas/matriz-utm-consolidada.csv` consolidada e nenhum bundle adulterado, `--json` e `--strict` retornam `ok: true` com todos os domínios ok e nenhum aviso. A auditoria editorial complementar (`editorial_qa.py`) é independente: no modo normal o acervo é aprovado com avisos de legibilidade, e `--strict` reprova enquanto houver linha de SRT acima de 48 caracteres.
 - **Etapa 6:** as suítes dos módulos de operação do titular são acrescentadas na consolidação da etapa; a contagem de 21 módulos acima refere-se ao estado integrado até a Etapa 5B.
-- **Etapa 13 — partição da suíte:** `tools/run_tests.py` classifica explicitamente os módulos de `tools/tests/` em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: um módulo novo não classificado reprova o runner com erro de uso, em vez de cair num grupo padrão. `--fast` é o padrão quando nenhuma flag de grupo é passada e é o gate 8 de `release_check.py`; `--full-tests` nesse gate troca para `--all`. A saída `--json` traz `ok`, `mode` (`fast` / `render` / `all`), `total`, `passed`, `failed`, `errors`, `skipped`, `durationSeconds`, `modules[]`, `results[]` e `archivesGuard`.
-- **Etapa 13 — blindagem de masters:** toda execução do runner roda dentro de `archives_guard.ArchivesGuard`, que fotografa os SHA-256 de `.workspace/archives/` e restaura qualquer arquivo alterado ou removido, descartando mídia nova criada pelo teste. Os dois testes que historicamente sobrescreviam os masters (`test_audio_tts.py` e `test_factory_cli.py`) passaram a usar `archives_dir` isolado e instalam o guard em `setUpModule`, valendo também para `unittest` direto. `test_run_tests.py` cobre a partição, a saída `--json`, o restauro automático e a regressão do vazamento.
+- **Etapa 13 — partição da suíte:** `tools/run_tests.py` classifica explicitamente os módulos de `tools/tests/` em `fast` (unitários e de contrato, sem render) e `render` (FFmpeg/FFprobe reais). A partição é fechada: um módulo novo não classificado reprova o runner com erro de uso, em vez de cair num grupo padrão. `--fast` é o padrão quando nenhuma flag de grupo é passada e é o gate 8 de `release_check.py`. A saída `--json` traz `ok`, `mode` (`smoke` / `fast` / `render` / `all`), `total`, `passed`, `failed`, `errors`, `skipped`, `durationSeconds`, `modules[]`, `results[]` e `archivesGuard`.
+
+#### 5.1 Matriz de execução da suíte (Etapa 13.1)
+
+As quatro faixas são **mutuamente exclusivas** na CLI; combinar duas retorna exit 2.
+
+| Faixa | Composição | Módulos | Uso recomendado |
+| --- | --- | --- | --- |
+| `--smoke` | `fast` menos `HEAVY_CONTRACT_MODULES` | 24 | loop de desenvolvimento iterativo e pré-commit local |
+| `--fast` | unitários e de contrato, sem render — **gate oficial** | 28 | gate 8 de `release_check.py`; CI sem FFmpeg |
+| `--render` | módulos que renderizam via FFmpeg/FFprobe | 22 | validar o pipeline de mídia com as ferramentas portáteis instaladas |
+| `--all` | `fast` + `render` | 50 | bateria integral antes de release |
+
+`HEAVY_CONTRACT_MODULES` são os 4 módulos que **não renderizam mídia** mas dominam o tempo do gate completo, por criarem sandboxes Git completos, inicializarem ponte Node/MCP ou subirem servidores HTTP locais: `test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`. Eles permanecem em `fast` (o gate oficial continua cobrindo esses contratos) e ficam fora de `smoke`.
+
+`smoke` é **derivado** de `FAST_MODULES` (`SMOKE_MODULES = tuple(m for m in FAST_MODULES if m not in HEAVY_CONTRACT_MODULES)`), portanto nunca diverge quando a classificação muda. Invariantes verificadas por `test_run_tests.py`: `smoke ⊂ fast` estritamente, `fast − smoke == HEAVY_CONTRACT_MODULES`, `smoke ∩ render == ∅` e nenhum `test_*.py` órfão fora de `fast ∪ render`.
+
+**Custo medido nesta estação (Windows, FFmpeg 9.1 portátil):** `--smoke` 24 módulos / 354 testes / **53,4 s**; `--fast` 28 módulos / 422 testes / **375,4 s**. A meta de 15–20 s para `smoke` **não foi atingida** com a partição especificada: mesmo sem os 4 pesados, restam `test_executive_summary` (~10 s, geração real de relatórios e portais), `test_static_cards` (~10 s, desenho real de PNG em stdlib), `test_run_tests` (~5 s, subprocessos) e `test_review_dashboard` (~5 s). Atingir 15–20 s exigiria esvaziar testes legítimos ou redefinir a faixa, o que quebraria o contrato de composição. O ganho real de `smoke` sobre `fast` é de ~7×.
+
+- **Etapa 13 — blindagem de masters:** toda execução do runner, em qualquer faixa, roda dentro de `archives_guard.ArchivesGuard`, que fotografa os SHA-256 de `.workspace/archives/` e restaura qualquer arquivo alterado ou removido, descartando mídia nova criada pelo teste. Os dois testes que historicamente sobrescreviam os masters (`test_audio_tts.py` e `test_factory_cli.py`) passaram a usar `archives_dir` isolado e instalam o guard em `setUpModule`, valendo também para `unittest` direto. `test_run_tests.py` cobre a partição, a saída `--json`, o restauro automático e a regressão do vazamento.
 - **Etapa 13 — reparo e relatório executivo:** `test_workspace_doctor_repair.py` cobre dry-run sem mutação, detecção de mídia corrompida/ausente, restauração de conformidade SHA-256 com `--apply`, fail-closed por insumo ausente e por hash não reprodutível, regeneração apenas do derivado afetado, filtros por tenant/slug e recusa de path traversal. `test_executive_summary.py` cobre geração de JSON/Markdown, isolamento estrito entre os 5 tenants reais, selo `autoPublish: false`, incorporação de `bundleAttribution` / `promotionHistory` / fadiga com `zScore` e `pValue`, contenção de saída e integração com o portal.
 - **Custo medido do gate `fast`:** na estação Windows de referência, o grupo `fast` roda em ~6 min; quatro módulos de contrato concentram ~90% do tempo (`test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`), por sandboxes Git, ponte Node e servidores HTTP — não por render. `test_studio_media` foi classificado em `render` porque renderiza de fato e sonda com ffprobe. O grupo `render` é adicional e exige as ferramentas portáteis instaladas.
 

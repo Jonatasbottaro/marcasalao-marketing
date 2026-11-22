@@ -22,7 +22,7 @@ python tools/release_check.py --skip-ts      # gate único: contratos + editoria
 python tools/review_dashboard.py --build --json
 ```
 
-> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` com 8 domínios, `publish_bundler verify` do empacotamento, a suíte Python particionada via `run_tests.py --fast` e a suíte E2E). Use `--skip-ts` quando o `platform/` já estiver compilado, `--full-tests` para incluir os testes de render e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
+> **Verificação de release em um comando:** `python tools/release_check.py` orquestra todos os gates oficiais (higiene Git + `autoPublish: false`, TypeScript, 5 tenants, editorial `--strict` de 14 campanhas/7 lentes, `workspace_doctor`, `release_audit --strict` com 8 domínios, `publish_bundler verify` do empacotamento, a suíte Python particionada via `run_tests.py --fast` e a suíte E2E — **9 gates**). Use `--skip-ts` quando o `platform/` já estiver compilado, `--smoke-tests` para o gate de testes rápido, `--full-tests` para incluir os testes de render (as duas são exclusivas entre si) e `--json` para registrar o resultado. Ele nunca publica, agenda ou gera áudio.
 
 O `--build` reconstrói `05-review-portal/index.html`, `portal-data.json` e o `README.md` do portal. O build é determinístico e verifica os hashes SHA-256 de SRT, narração e storyboard contra o `manifest.json` de cada entrega; qualquer divergência aborta com `HASH_DIVERGENTE`. Detalhes em [05-review-portal/README.md](../05-review-portal/README.md).
 
@@ -251,10 +251,28 @@ python tools/review_dashboard.py --build --json           # portal com o digest
 python tools/release_audit.py --strict --json
 python tools/devlog_sync.py --json
 
-# 4. Suíte de testes particionada
-python tools/run_tests.py --fast --json     # gate rápido (padrão)
-python tools/run_tests.py --all --json      # inclui render via FFmpeg
+# 4. Suíte de testes particionada (faixas mutuamente exclusivas)
+python tools/run_tests.py --smoke --json     # loop de dev / pré-commit (24 módulos)
+python tools/run_tests.py --fast --json      # gate oficial de contratos (28 módulos)
+python tools/run_tests.py --render --json    # pipeline FFmpeg isolado (22 módulos)
+python tools/run_tests.py --all --json       # bateria integral (50 módulos)
+python tools/release_check.py --smoke-tests  # checklist rápido com o gate de testes em smoke
 ```
+
+### 4.1 Qual faixa usar
+
+| Faixa | Quando usar | Módulos | Tempo medido nesta estação |
+| --- | --- | --- | --- |
+| `--smoke` | a cada iteração de código, antes de commitar | 24 | ~53 s |
+| `--fast` | gate oficial de contratos, sem render — é o que o CI roda | 28 | ~6 min |
+| `--render` | depois de mexer no pipeline de mídia, com FFmpeg portátil instalado | 22 | depende do hardware |
+| `--all` | antes de fechar release | 50 | soma das duas |
+
+`--smoke` é `--fast` menos os 4 módulos de contrato mais caros (`test_release_audit`, `test_studio_mcp`, `test_studio_connections`, `test_editorial_qa`), que montam sandboxes Git, ponte Node/MCP e servidores HTTP. Eles **não** deixam de ser verificados: continuam no `--fast`, que é o gate oficial. Use `--smoke` para iterar rápido e rode `--fast` antes de considerar a entrega pronta.
+
+As quatro flags são mutuamente exclusivas: `--smoke --fast` retorna erro de uso (exit 2). Sem flag, o padrão é `--fast`.
+
+Em todas as faixas os masters de `.workspace/archives/` são fotografados antes do run e restaurados se algum teste os alterar — nenhum teste pode corromper a mídia local.
 
 ---
 
