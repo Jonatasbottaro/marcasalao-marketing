@@ -1,5 +1,10 @@
 # Multitrack Hub — ComfyUI, Gemini e Postiz
 
+> **Escopo de estação (nota de 22/11/2026):** runbook operacional do Servidor02; os caminhos
+> absolutos (`/dados/aplicacoes/...`) são referências de runtime daquele servidor.
+> Equivalentes portáteis versionados: `marcas/multitrackhub/comfyui/`. Não reproduzir esses
+> caminhos em documentos genéricos nem em `AGENTS.md`.
+
 Configuração exclusiva de Multitrack Hub, aprovada em 22/10/2026. Uma arte quadrada por campanha, compartilhada entre Facebook e Instagram; duas legendas. Sem modelos locais. Configurar o fluxo não cria campanhas, rascunhos, agendamentos ou publicações.
 
 ## Identidade e fatos

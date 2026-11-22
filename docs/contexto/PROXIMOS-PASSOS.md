@@ -9,17 +9,22 @@ implementado.** Cada item que toca código, teste ou CI exige autorização pró
 documentais já executados nesta consolidação estão marcados.
 
 **P1 — gates e regras permanentes**
-1. Atualizar `tests/e2e/test_factory_e2e.py:185,367` para 8 domínios e rodar o gate 9
+1. **Corrigir o gate 7 (`bundling`) do `release_check`:** `tools/release_check.py:229-234`
+   chama `publish_bundler.py verify` sem `--bundle`, o que é erro de uso (exit 2) e reprova o
+   gate em qualquer estação, impedindo os gates 8 e 9 de rodarem. Medido em 22/11/2026 na
+   base `7e3d710`. Aceite: `release_check --skip-ts` avançando além do gate 7 em execução
+   identificada por SHA/data. *(código)*
+2. Atualizar `tests/e2e/test_factory_e2e.py:185,367` para 8 domínios e rodar o gate 9
    isolado; hoje a expectativa de 7 domínios é obsoleta desde `cd2f8ed` (21/11). Aceite:
    `release_check` gate 9 verde em execução identificada por SHA/data. *(código/teste)*
-2. Tornar `tenant_scaffolder.py` fail-closed: validar antes de gravar, rollback em falha,
+3. Tornar `tenant_scaffolder.py` fail-closed: validar antes de gravar, rollback em falha,
    `ok` derivado da validação, timing de cenas coerente com `format.duration`, remover
    código morto e docstring que promete artefatos não gravados. *(código)*
-3. Confinar `tools/tests/test_tenant_scaffolder.py` a `<RAIZ>/.workspace/tmp/` (`mkdtemp`
+4. Confinar `tools/tests/test_tenant_scaffolder.py` a `<RAIZ>/.workspace/tmp/` (`mkdtemp`
    com `dir=`) e remover `os.chdir("/")`; redirecionar para sandbox os builds de
    `test_review_dashboard.py` e `test_campaign_calendar.py` que hoje escrevem em
    `05-review-portal/` e `04-legendas/` na raiz real. *(testes)*
-4. Commitar/integrar, com autorização própria, a branch documental
+5. Commitar/integrar, com autorização própria, a branch documental
    `docs/consolidacao-documental-2026-11-22` (worktree `.workspace/worktrees/consol-doc`).
 
 **P2 — números que orientam decisão**

@@ -10,6 +10,21 @@ curta do repositório.
 - Estado técnico verificado, backlog e retomada: [docs/contexto/](docs/contexto/README.md).
 - Inventário e manutenção documental: [docs/governanca/](docs/governanca/MAPA-DOCUMENTAL.md).
 
+## As quatro frentes do projeto
+
+1. **Fluxo editorial de campanhas** (`00-briefings/` a `06-validacao-destinos/`): evidência,
+   briefing, hooks, roteiro, legendas, aprovação e mensuração.
+2. **Fábrica multi-tenant** (`tenants/` + `tools/` + `schemas/`): contratos → render →
+   pacotes → calendário → portal → gates, para N marcas sem alterar o motor.
+3. **Núcleo reutilizável** (`platform/`): contratos puros, validação e CLIs internas em
+   TypeScript; e **orquestração experimental** (`orchestration/temporal/`), piloto local.
+4. **Video Studio local** (`tools/video_studio.py` + `tools/studio/`): criação, revisão e
+   entrega interativas, com biblioteca de mídia e fila de produção.
+
+As integrações de marca (ComfyUI/Postiz/Hermes) são uma camada à parte, com escopo e
+estação próprios: [docs/hermes/README.md](docs/hermes/README.md). Mapa completo e fontes
+canônicas por assunto: [docs/README.md](docs/README.md).
+
 ## Estrutura
 
 - `00-briefings/` — briefings de campanha: dor, impacto, evidência e limites de promessa.

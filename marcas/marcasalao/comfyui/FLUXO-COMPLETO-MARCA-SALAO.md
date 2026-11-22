@@ -1,5 +1,12 @@
 # Marca Salão — fluxo completo sob demanda até rascunho
 
+> **Escopo de estação (nota de 22/11/2026):** este é um runbook operacional do Servidor02.
+> Os caminhos absolutos abaixo (`/home/swn/...`, `/dados/aplicacoes/...`) são referências de
+> **runtime daquele servidor** e não devem ser reproduzidos em documentos genéricos nem em
+> `AGENTS.md`. Os equivalentes portáteis versionados estão nesta pasta
+> (`marcas/marcasalao/comfyui/`); em outra estação, resolva o diretório de runtime do
+> serviço localmente. As autorizações e proibições do texto permanecem vigentes.
+
 Autorização do titular em22/10/2026 para o Hermes do Servidor02 e bot @MsalaohermesBot: escolher temas ainda não postados, gerar uma arte no padrão aprovado e as legendas de cada rede e criar rascunhos no Postiz, SEM publicar. Esta é a orientação vigente para pedidos de conteúdo novo desta marca.
 
 ## Acionamento e limites

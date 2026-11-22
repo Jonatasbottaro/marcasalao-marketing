@@ -21,9 +21,9 @@ Situação: `vigente` · `historico` · `proposta` · `duplicado` · `conflitant
 | Caminho | Finalidade | Categoria | Situação | Canônico related | Ação |
 | --- | --- | --- | --- | --- | --- |
 | `README.md` | Apresentação e entrada | propria | vigente (contagens corrigidas nesta consolidação) | `docs/README.md` | atualizado: resumo + links; tabela de campanhas corrigida; matriz de formatos mantida com nota de data |
-| `AGENTS.md` | Contrato operacional dos agentes | propria | vigente | — | mantido integralmente (IDEs carregam) |
-| `WORKFLOW.md` | Fluxo de marketing + vídeo sem áudio | propria | vigente | `docs/README.md` §3 | atualizado: links para guias canônicos |
-| `CLAUDE.md` | Entrada de IDE alternativa | propria | vigente (duplicado parcial de regras) | `AGENTS.md` | atualizado: encaminha às mesmas fontes |
+| `AGENTS.md` | Contrato operacional dos agentes | propria | vigente | — | atualizado (rodada de alinhamento): caminhos de servidor substituídos por referências portáteis versionadas + nota de runtime; referências a `docs/README.md` e governança na continuidade técnica |
+| `CLAUDE.md` | Entrada de IDE alternativa | propria | vigente (espelho enxuto) | `AGENTS.md` | atualizado: encaminha às mesmas fontes; diretiva `EGM artifact directory: .workspace/tmp/egm` preservada |
+| `WORKFLOW.md` | Fluxo de marketing + vídeo sem áudio | propria | vigente | `docs/README.md` §3 | atualizado: fluxo atual ponta a ponta em 6 passos + caminho manual legado rebaixado; links canônicos |
 | `contexto_projeto.md` | Devlog acumulativo de sessões | historico | histórico (topo desatualizado) | `docs/contexto/ESTADO-ATUAL.md` | banner de classificação; conteúdo preservado |
 | `contexto_projeto_6.md` | Consolidação v6 pós-Etapa 13.1 | historico | histórico (snapshot de `642f570`) | `docs/contexto/ESTADO-ATUAL.md` | banner de snapshot com base/data; números preservados como medição daquela base |
 
@@ -37,6 +37,7 @@ Situação: `vigente` · `historico` · `proposta` · `duplicado` · `conflitant
 | `docs/contexto/HANDOFF.md` | Retomada entre sessões | propria | vigente | atualizado: resumo da consolidação e da auditoria |
 | `docs/governanca/DOCUMENTACAO.md` | Política de manutenção | propria | **novo** | criado |
 | `docs/governanca/MAPA-DOCUMENTAL.md` | Este inventário | propria | **novo** | criado |
+| `docs/governanca/CI-E-PRS.md` | Mapa de CI, gates locais e padrão de PRs | propria | **novo** (rodada de alinhamento de 22/11/2026) | criado |
 | `docs/README.md` | Entrada central | propria | **novo** | criado |
 
 ## 3. Guias operacionais e arquitetura (`docs/`)
@@ -84,13 +85,15 @@ Situação: `vigente` · `historico` · `proposta` · `duplicado` · `conflitant
 | `tools/produce/README.md` (646 l.) + `studio-preflight.md`, `studio-delivery-verification.md`, `studio-work-backup.md` | propria | vigente | mantidos; canônico do Studio |
 | `tools/render/README.md` | propria | vigente | mantido; canônico do render local |
 | `tenants/*/campaigns/README.md` (5) | propria | **conflitante** (listam subconjunto das campanhas) | registrados como pendência de índice; não editados nesta consolidação (índices de contrato exigem tarefa própria) |
-| `marcas/marcasalao/comfyui/{README,HERMES-POSTIZ,FLUXO-COMPLETO-MARCA-SALAO}.md` | propria | vigente (escopo Servidor02) | mantidos |
-| `marcas/multitrackhub/comfyui/{README,HERMES-POSTIZ-MULTITRACKHUB,POSTIZ-LIMPEZA-POS-PUBLICACAO}.md` | propria/historico | vigente + histórico de limpeza | mantidos |
+| `marcas/marcasalao/comfyui/{README,HERMES-POSTIZ,FLUXO-COMPLETO-MARCA-SALAO}.md` | propria | vigente (runbooks do Servidor02) | banners de escopo de estação adicionados na rodada de alinhamento (caminhos absolutos são runtime do servidor; equivalentes portáteis versionados nesta pasta) |
+| `marcas/multitrackhub/comfyui/{README,HERMES-POSTIZ-MULTITRACKHUB,POSTIZ-LIMPEZA-POS-PUBLICACAO}.md` | propria/historico | vigente + histórico de limpeza | banner de escopo de estação em `HERMES-POSTIZ-MULTITRACKHUB.md`; demais mantidos |
 | `marcas/multitrackhub/identidade-visual/README.md` | propria | vigente | mantido |
 | `05-review-portal/README.md` | **gerado** | vigente | não editar à mão |
-| `01-insta-stories/{README,EDITAR_CAPCUT}.md`, `02-hooks/README.md`, `03-roteiros/README.md`, `03-youtube-pdf/README.md`, `04-legendas/README.md`, `02-reels-shorts/README.md`, `videos_brutos/README.md` | propria | vigente (guias de pasta) | mantidos |
+| `01-insta-stories/{README,EDITAR_CAPCUT}.md`, `02-hooks/README.md`, `03-roteiros/README.md`, `03-youtube-pdf/README.md`, `04-legendas/README.md`, `02-reels-shorts/README.md`, `videos_brutos/README.md` | propria | vigente (guias de pasta) | `01-insta-stories/README.md` e `02-reels-shorts/README.md` corrigidos na rodada de alinhamento (instrução de "adicionar áudio" removida; caminho absoluto de AppImage removido); demais mantidos |
 | `templates/CAMPAIGN_TEMPLATE.md` | propria | vigente | mantido |
-| `.github/RELEASE_TEMPLATE.md` | propria | vigente | mantido |
+| `.github/RELEASE_TEMPLATE.md` | propria | **corrigido** na rodada de alinhamento (instrução de adicionar áudio e item "Áudio gravado" removidos; checklist de entrega muda) | mantido no caminho (template do GitHub) |
+| `.github/PULL_REQUEST_TEMPLATE.md` | propria | **novo** na rodada de alinhamento | criado |
+| `docs/historico/README.md` | propria | vigente | índice ampliado para os 15 registros da pasta |
 | `memory/common/_rules/referencias-publicadas-recentes.md` | propria | vigente (regra de referências) | mantido |
 
 ## 6. Conteúdo editorial e evidências (não reorganizar)

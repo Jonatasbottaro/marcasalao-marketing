@@ -32,35 +32,63 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 
 ## Fluxo completo
 
-### 1. Captura
+### Fluxo atual ponta a ponta (fábrica multi-tenant e Video Studio)
+
+1. **Briefing, hooks e roteiro** (`00-briefings/` → `02-hooks/` → `03-roteiros/`): a dor, a
+   evidência e os limites de promessa vêm antes de qualquer produção; sem briefing aprovado
+   não se produz.
+2. **Produção**: programática pela fábrica multi-tenant (`tools/factory_cli.py render`,
+   `tools/preset_runner.py`, contratos em `tenants/`) ou interativa pelo Video Studio
+   (`python tools/video_studio.py --port 8765`, guia em `tools/produce/README.md`). Sempre
+   MP4 sem faixa de áudio para tenants `-an`, com legendas queimadas.
+3. **Legendas, pacotes e calendário** (`04-legendas/`): `.srt` sincronizado,
+   `<slug>_narracao.txt` separado, pacotes sociais por rede com `autoPublish: false`
+   (`tools/publish_pack.py`) e calendário editorial proposto (`tools/campaign_calendar.py`).
+4. **Revisão e aprovação humana** (`05-review-portal/` via `tools/review_dashboard.py`,
+   ou `tools/approval_cli.py`): o titular decide `aprovado` / `ajuste`; para tenants `-an`,
+   confere a locução externa.
+5. **Validação de destinos e publicação manual** (`06-validacao-destinos/`): a ficha
+   `POSTAGEM-MANUAL.md` e a `copy-pronta.txt` saem de `tools/factory_cli.py handoff
+   --all-approved`; a publicação nas redes é feita manualmente pelo titular.
+6. **Mensuração e higiene** (`05-mensuracao/`): importação semanal de métricas UTM
+   (`tools/utm_report_importer.py`), relatório executivo por tenant
+   (`tools/executive_summary.py`) e saúde do checkout (`tools/workspace_doctor.py --check`).
+
+Detalhes operacionais, comandos e gates: [docs/arquitetura-fabrica.md](docs/arquitetura-fabrica.md),
+[docs/guia-operacional-titular.md](docs/guia-operacional-titular.md) e
+[docs/governanca/CI-E-PRS.md](docs/governanca/CI-E-PRS.md).
+
+### Caminho manual legado (CapCut / Drift / FFmpeg)
+
+#### 1. Captura
 - Painel de demonstração: https://marcasalao.com.br/gestor. As credenciais não ficam neste repositório; solicite acesso ao responsável pelo projeto.
 - Navegue nas seções e capture telas via browser
 
-### 2. Artes
+#### 2. Artes
 - Salve PNG 1080x1920 em `01-insta-stories/`
 - Adicione README por pasta
 
-### 3. Legendas
+#### 3. Legendas
 - Escreva textos curtos em `04-legendas/`
 - Formato: título + 3-5 bullets + CTA
 - Entregue `.srt` sincronizado e texto de narração separado por cenas e tempos, para geração de áudio fora do editor
 
-### 4. Edição
-#### CapCut
+#### 4. Edição
+##### CapCut
 - Importe imagens e vídeos, sem áudio original e sem adicionar áudio
 - Adicione texto dinâmico
 - Exporte 1080x1920, 30fps
 
-#### Drift
+##### Drift
 - Importe mídia via UI ou MCP Agent
 - Use Look Templates para consistência
 - Exporte vertical e horizontal, sem áudio
 
-#### FFmpeg
+##### FFmpeg
 - Automação de lote
 - Sobreposição de texto e exportação sem áudio (`-an`)
 
-### 5. Publicação
+#### 5. Publicação
 - Instagram/Reels: `02-reels-shorts/`
 - YouTube/PDF: `03-youtube-pdf/`
 - GitHub Releases para distribuição

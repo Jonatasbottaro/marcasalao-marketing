@@ -179,3 +179,34 @@ aprovações e mídia local não sincronizam por Git.
   fora de `<RAIZ>` (o checkout principal desta estação).
 - Esta consolidação **não** autoriza implementar o backlog, produzir mídia, publicar,
   agendar, limpar `.workspace/` ou integrar branches.
+---
+
+## Adendo — rodada de alinhamento documental e de governança de PRs (22/11/2026, após `7e3d710`)
+
+Executada na branch `docs/alinhamento-doc-2026-11-22` (worktree `<RAIZ>/.workspace/worktrees/alinh-doc`),
+sobre a consolidação acima, a pedido do titular com análise externa de dispersão documental.
+Somente documentação e templates; nenhum código, teste ou workflow alterado.
+
+**Arquivos desta rodada:** criados `docs/governanca/CI-E-PRS.md` e
+`.github/PULL_REQUEST_TEMPLATE.md`; corrigido `.github/RELEASE_TEMPLATE.md` (removidas a
+instrução "adicione áudio" no CapCut e o item "Áudio gravado"; checklist alinhado à entrega
+muda); `AGENTS.md` (caminhos de servidor `/home/swn/...` e `/dados/aplicacoes/...`
+substituídos por referências portáteis versionadas com nota de runtime; referências a
+`docs/README.md` e governança na continuidade técnica); `WORKFLOW.md` (fluxo atual ponta a
+ponta em 6 passos, caminho manual legado rebaixado); `docs/historico/README.md` (índice dos
+15 registros, incluindo os 9 aceites de 14–15/11); `01-insta-stories/README.md` e
+`02-reels-shorts/README.md` (removidas instrução de adicionar áudio e caminho absoluto de
+AppImage); banners de escopo de estação nos runbooks `marcas/*/comfyui/` que preservam os
+caminhos de runtime do Servidor02; `README.md` raiz com as quatro frentes; `docs/README.md`
+e `MAPA-DOCUMENTAL.md` com as novas entradas.
+
+**Validações literais executadas nesta rodada (base `7e3d710`, estação Windows):**
+- `python tools/verify_egm_install.py` → `EGM verification OK: 8 skills, 10 agents, 5 standards, manifests and workspace wiring verified.` exit 0.
+- `python tools/tenant_validator.py --all --json` → 5 tenants, `errors: []` em todos.
+- `python tools/workspace_doctor.py --check --json` → ok; `aprovacoesPresente: false`, `removidos: []` (estado por estação).
+- `python tools/release_check.py --skip-ts --json` → **exit 1**: gates `higiene_git`, `tenant_validator`, `editorial_qa` (7/7), `workspace_doctor`, `release_audit` (8/8) ok; `typescript` skipped; **`bundling` fail** com `usage: publish_bundler.py verify ... error: the following arguments are required: --bundle` — o gate 7 (`tools/release_check.py:229-234`) invoca `verify` sem o argumento obrigatório, falha em qualquer estação e interrompe os gates 8 e 9. Achado novo, registrado como P1 em `docs/contexto/PROXIMOS-PASSOS.md` e em `docs/governanca/CI-E-PRS.md` §4. Correção é de código: não executada aqui.
+- Links relativos: 216 documentos próprios, 696 links, **0 quebrados**.
+- Caminhos absolutos: **0 em documentos normativos ativos**; ocorrências remanescentes confinadas a devlogs versionados, registros históricos, runbooks de estação com banner e às menções ilustrativas/proibitivas do próprio `AGENTS.md` (tabela de instâncias e lista de diretórios proibidos), que são a redação portável da regra. Exceção documentada: confirmações de handoff/auditoria citam o caminho medido da estação porque `AGENTS.md` exige a frase com o caminho real substituído.
+
+**Não executado/não verificado nesta rodada:** testes das faixas `fast`/`render` e E2E (o
+gate 7 interrompe antes); CI remoto; PRs ao vivo; integrações Postiz/ComfyUI/Hermes.

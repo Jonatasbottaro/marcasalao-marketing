@@ -10,6 +10,8 @@ continuam em [AGENTS.md](../AGENTS.md); este índice organiza o resto.
 - **Estado técnico consolidado:** [contexto/ESTADO-ATUAL.md](contexto/ESTADO-ATUAL.md).
 - **Inventário e situação de cada documento:** [governanca/MAPA-DOCUMENTAL.md](governanca/MAPA-DOCUMENTAL.md).
 - **Regras de manutenção documental:** [governanca/DOCUMENTACAO.md](governanca/DOCUMENTACAO.md).
+- **CI, gates locais e padrão de Pull Requests:** [governanca/CI-E-PRS.md](governanca/CI-E-PRS.md)
+  (template em [.github/PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md)).
 
 > Números, contagens e comandos abaixo foram reconferidos por leitura de código na base
 > indicada. Resultados de testes citados em outros documentos são **históricos**, com data
@@ -55,6 +57,7 @@ Fontes: [../platform/README.md](../platform/README.md) e
 | Fluxo de marketing e vídeo sem áudio | [WORKFLOW.md](../WORKFLOW.md) | Regra essencial; detalhes de produção nos guias abaixo |
 | Estado técnico / integração / pendências | [contexto/ESTADO-ATUAL.md](contexto/ESTADO-ATUAL.md) | Único lugar para "o que está na main" |
 | Backlog e critérios de aceite | [contexto/PROXIMOS-PASSOS.md](contexto/PROXIMOS-PASSOS.md) | Propostas nunca como implementação |
+| CI, gates locais e padrão de PRs | [governanca/CI-E-PRS.md](governanca/CI-E-PRS.md) | 5 workflows reais + checklist de PR |
 | Retomada entre sessões/estações | [contexto/HANDOFF.md](contexto/HANDOFF.md) | Handoff ≠ autorização |
 | Arquitetura da fábrica, gates, lentes, manifests | [arquitetura-fabrica.md](arquitetura-fabrica.md) | Contagens reconferidas na base deste índice |
 | Rotina diária/semanal do titular | [guia-operacional-titular.md](guia-operacional-titular.md) | Aprovação, handoff, publicação manual, reparo |
