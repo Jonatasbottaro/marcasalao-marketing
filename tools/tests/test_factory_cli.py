@@ -22,8 +22,23 @@ if shutil.which("ffmpeg") is None:
 import factory_cli  # noqa: E402
 import render_local  # noqa: E402
 import srt_validate  # noqa: E402
+import archives_guard  # noqa: E402
 
 TEST_TMP_ROOT = os.path.join(REPO_ROOT, ".workspace", "tmp", "test_factory_cli")
+
+# Rede de seguranca para execucao direta via unittest: mesmo que um render futuro
+# esqueca --archives-dir, os masters compartilhados sao restaurados ao final.
+_GUARD = None
+
+
+def setUpModule() -> None:
+    global _GUARD
+    _GUARD = archives_guard.ArchivesGuard(REPO_ROOT, name="test_factory_cli").__enter__()
+
+
+def tearDownModule() -> None:
+    if _GUARD is not None:
+        _GUARD.__exit__(None, None, None)
 
 
 class FactoryCliTest(unittest.TestCase):
@@ -82,6 +97,7 @@ class FactoryCliTest(unittest.TestCase):
     def test_02_render_filtered_by_tenant_and_campaign_writes_report(self) -> None:
         out_deliveries = ".workspace/tmp/test_factory_cli/deliveries"
         report_rel = ".workspace/tmp/test_factory_cli/factory-report.json"
+        archives_rel = ".workspace/tmp/test_factory_cli/archives"
         if os.path.isdir(os.path.join(REPO_ROOT, ".workspace", "tmp", "test_factory_cli")):
             shutil.rmtree(os.path.join(REPO_ROOT, ".workspace", "tmp", "test_factory_cli"), ignore_errors=True)
 
@@ -92,6 +108,7 @@ class FactoryCliTest(unittest.TestCase):
                 "--campaign", "camp-saas-demo-meu-salao-001",
                 "--deliveries-dir", out_deliveries,
                 "--report", report_rel,
+                "--archives-dir", archives_rel,
                 "--root", REPO_ROOT,
                 "--json",
             ])
@@ -118,6 +135,10 @@ class FactoryCliTest(unittest.TestCase):
         self.assertEqual(
             srt_validate.validate_srt_file(self._path(delivery["artifacts"]["srt"]["path"]), duration=30.0),
             [],
+        )
+        self.assertTrue(
+            delivery["artifacts"]["video"]["archivePath"].startswith(archives_rel),
+            "render de teste precisa gravar em archives isolado, nunca nos masters compartilhados",
         )
 
     def test_03_committed_deliveries_and_factory_report_integrity(self) -> None:
