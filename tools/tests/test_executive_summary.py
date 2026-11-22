@@ -554,7 +554,36 @@ class ExecutiveSummaryPortalTest(ExecutiveSummaryBase):
                     self.assertNotIn(other, row["markdownPath"])
 
 
+_QA_PATCH = None
+
+
+def setUpModule() -> None:
+    """Memoiza o QA editorial do acervo real, que e somente leitura e invariante.
+
+    ``collect_inputs`` roda ``run_editorial_qa`` uma vez por tenant; sem cache,
+    cada teste que gera relatorios repete as mesmas 5 auditorias identicas. O
+    cache guarda o resultado REAL (nao um stub), portanto as assercoes sobre
+    lentes, ``tenantFilter`` e contagens continuam verificando o acervo verdadeiro.
+    """
+    global _QA_PATCH
+    import editorial_qa
+
+    real = editorial_qa.run_editorial_qa
+    cache: dict = {}
+
+    def cached(root=".", strict=False, tenant=None):
+        key = (os.path.realpath(str(root)), bool(strict), tenant)
+        if key not in cache:
+            cache[key] = real(root, strict=strict, tenant=tenant)
+        return cache[key]
+
+    _QA_PATCH = mock.patch.object(editorial_qa, "run_editorial_qa", cached)
+    _QA_PATCH.start()
+
+
 def tearDownModule() -> None:
+    if _QA_PATCH is not None:
+        _QA_PATCH.stop()
     shutil.rmtree(TMP_PARENT, ignore_errors=True)
 
 

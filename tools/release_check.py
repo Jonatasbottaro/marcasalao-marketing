@@ -25,11 +25,13 @@ Gates orquestrados (nesta ordem):
                           nao houver bundles nesta estacao).
   8. Suite Python       - ``python tools/run_tests.py --fast --json`` (testes
                           unitarios e de contrato). Com ``--full-tests``, roda
-                          ``--all`` e inclui os testes de render via FFmpeg.
+                          ``--all`` e inclui os testes de render via FFmpeg;
+                          com ``--smoke-tests``, roda ``--smoke`` (loop de dev).
   9. E2E da fabrica     - ``python -m unittest discover -s tests/e2e -v``.
 
 CLI:
-    python tools/release_check.py [--json] [--skip-ts] [--full-tests] [--root <raiz>]
+    python tools/release_check.py [--json] [--skip-ts] [--root <raiz>]
+                                 [--full-tests | --smoke-tests]
 
 Exit codes: 0 todos os gates aprovados; 1 algum gate reprovou; 2 erro de uso.
 """
@@ -241,9 +243,9 @@ def gate_e2e(root: str) -> dict:
     return result
 
 
-def gate_unit_tests(root: str, full: bool = False) -> dict:
-    """Gate da suite Python particionada: ``--fast`` por padrao, ``--all`` com --full-tests."""
-    group = "--all" if full else "--fast"
+def gate_unit_tests(root: str, full: bool = False, smoke: bool = False) -> dict:
+    """Gate da suite Python: ``--fast`` por padrao, ``--smoke`` ou ``--all`` por flag."""
+    group = "--all" if full else ("--smoke" if smoke else "--fast")
     proc = _run([sys.executable, "tools/run_tests.py", group, "--json"], cwd=root)
     payload = None
     stdout = proc.stdout.strip()
@@ -322,7 +324,8 @@ GATE_LABELS = {
 }
 
 
-def run_all(root: str, skip_ts: bool = False, full_tests: bool = False) -> dict:
+def run_all(root: str, skip_ts: bool = False, full_tests: bool = False,
+            smoke_tests: bool = False) -> dict:
     results: list[dict] = []
     overall_ok = True
     for gate_id, gate_fn in GATES:
@@ -330,7 +333,10 @@ def run_all(root: str, skip_ts: bool = False, full_tests: bool = False) -> dict:
             results.append({"id": gate_id, "name": GATE_LABELS[gate_id], "status": "skipped"})
             continue
         try:
-            detail = gate_fn(root, full=full_tests) if gate_id == "unit_tests" else gate_fn(root)
+            detail = (
+                gate_fn(root, full=full_tests, smoke=smoke_tests)
+                if gate_id == "unit_tests" else gate_fn(root)
+            )
             results.append({"id": gate_id, "name": GATE_LABELS[gate_id], "status": "ok", "detail": detail})
         except GateError as exc:
             overall_ok = False
@@ -363,6 +369,7 @@ def run_all(root: str, skip_ts: bool = False, full_tests: bool = False) -> dict:
         "root": root,
         "skipTs": skip_ts,
         "fullTests": full_tests,
+        "smokeTests": smoke_tests,
         "gates": results,
         "totalGates": len(GATES),
         "passedGates": sum(1 for r in results if r["status"] in ("ok", "skipped")),
@@ -398,16 +405,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="pula build e testes TypeScript em platform/",
     )
-    parser.add_argument(
+    tests_group = parser.add_mutually_exclusive_group()
+    tests_group.add_argument(
         "--full-tests",
         action="store_true",
         help="roda run_tests.py --all (fast + render) em vez do gate rapido --fast",
+    )
+    tests_group.add_argument(
+        "--smoke-tests",
+        action="store_true",
+        help="roda run_tests.py --smoke (checklist de pre-commit local, sem os contratos pesados)",
     )
     parser.add_argument("--root", default=os.getcwd(), help="raiz do checkout")
     args = parser.parse_args(argv)
 
     root = _resolve_root(args.root)
-    report = run_all(root, skip_ts=args.skip_ts, full_tests=args.full_tests)
+    report = run_all(
+        root, skip_ts=args.skip_ts,
+        full_tests=args.full_tests, smoke_tests=args.smoke_tests,
+    )
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))

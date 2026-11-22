@@ -3,28 +3,36 @@
 Os modulos de ``tools/tests/`` sao classificados explicitamente em dois grupos:
 
   ``fast``    testes unitarios e de contrato puros. Nao invocam FFmpeg/FFprobe
-              para renderizar midia; rodam em poucos segundos e sao o gate
-              padrao de ``release_check.py``.
+              para renderizar midia; sao o gate padrao de ``release_check.py``.
   ``render``  testes que renderizam video/audio de verdade via FFmpeg/FFprobe.
               Sao lentos e exigem as ferramentas portateis instaladas.
 
+Dentro de ``fast`` ha uma faixa mais estreita para o loop de desenvolvimento:
+
+  ``smoke``   ``fast`` menos ``HEAVY_CONTRACT_MODULES`` — os modulos que criam
+              sandboxes Git completos, inicializam ponte Node/MCP ou sobem
+              servidores HTTP locais. Nao renderizam midia, mas dominam o tempo
+              do gate completo; ficam fora do ``smoke`` e dentro do ``fast``.
+
 A partição é fechada: um modulo ``test_*.py`` novo e nao classificado reprova o
 runner com erro de uso, em vez de cair silenciosamente em um grupo padrao.
+``smoke`` e derivado de ``fast``, portanto nunca diverge da classificacao.
 
-Blindagem de ``.workspace/archives/``: toda execucao roda dentro de
-``archives_guard.ArchivesGuard``, que fotografa os SHA-256 dos masters antes do
-run e restaura qualquer arquivo alterado ao final. Assim, mesmo um teste que
-esqueca ``archives_dir`` isolado nao corrompe a midia real do checkout.
+Blindagem de ``.workspace/archives/``: toda execucao — em qualquer faixa — roda
+dentro de ``archives_guard.ArchivesGuard``, que fotografa os SHA-256 dos masters
+antes do run e restaura qualquer arquivo alterado ao final. Assim, mesmo um
+teste que esqueca ``archives_dir`` isolado nao corrompe a midia real.
 
-CLI:
-    python tools/run_tests.py [--fast | --render | --all] [--json] [--root DIR]
+CLI (as quatro faixas sao mutuamente exclusivas):
+    python tools/run_tests.py [--smoke | --fast | --render | --all] [--json] [--root DIR]
 
-Sem flag de grupo, o padrao e ``--fast``. ``--fast --render`` equivale a ``--all``.
-O payload JSON traz ``ok``, ``mode`` (fast/render/all), ``total``, ``passed``,
-``failed``, ``errors``, ``skipped``, ``durationSeconds`` e ``modules``.
+Sem flag de grupo, o padrao e ``--fast``. ``--all`` equivale a ``fast + render``.
+O payload JSON traz ``ok``, ``mode`` (smoke/fast/render/all), ``total``,
+``passed``, ``failed``, ``errors``, ``skipped``, ``durationSeconds`` e ``modules``.
 
 API:
-    partition_modules(tests_dir=None) -> dict
+    partition_modules(root=".") -> dict   # smoke/fast/render/unclassified/absent
+    resolve_groups(flags) -> tuple
     run_tests(root=".", groups=("fast",)) -> dict
 
 Exit codes: 0 todos os testes aprovados; 1 falha/erro de teste; 2 erro de uso.
@@ -111,6 +119,22 @@ class RunTestsError(Exception):
     """Erro de uso do runner (particao incompleta, grupo invalido)."""
 
 
+# Modulos de contrato que, apesar de nao renderizarem midia, sao caros: criam
+# sandboxes Git completos, inicializam ponte Node/MCP ou sobem servidores HTTP
+# locais. Ficam em ``fast`` (gate oficial) mas fora de ``smoke`` (loop de dev).
+HEAVY_CONTRACT_MODULES = (
+    "test_release_audit",
+    "test_studio_mcp",
+    "test_studio_connections",
+    "test_editorial_qa",
+)
+
+# Derivada de FAST_MODULES para nunca divergir quando a classificacao mudar.
+SMOKE_MODULES = tuple(m for m in FAST_MODULES if m not in HEAVY_CONTRACT_MODULES)
+
+SELECTABLE = ("smoke",) + GROUPS
+
+
 def tests_dir(root: str = ".") -> str:
     return os.path.join(os.path.realpath(root), *TESTS_REL)
 
@@ -125,6 +149,7 @@ def partition_modules(root: str = ".") -> dict:
     )
     known = set(FAST_MODULES) | set(RENDER_MODULES)
     return {
+        "smoke": [m for m in present if m in SMOKE_MODULES],
         "fast": [m for m in present if m in FAST_MODULES],
         "render": [m for m in present if m in RENDER_MODULES],
         "unclassified": [m for m in present if m not in known],
@@ -135,6 +160,8 @@ def partition_modules(root: str = ".") -> dict:
 def resolve_groups(flags: dict) -> tuple[str, ...]:
     if flags.get("all"):
         return GROUPS
+    if flags.get("smoke"):
+        return ("smoke",)
     selected = tuple(g for g in GROUPS if flags.get(g))
     return selected or DEFAULT_GROUPS
 
@@ -206,7 +233,7 @@ def _run_group(group: str, names: list[str], root: str) -> dict:
 def run_tests(root: str = ".", groups: tuple[str, ...] = DEFAULT_GROUPS) -> dict:
     """Executa os grupos escolhidos sob blindagem de ``.workspace/archives/``."""
     root_real = os.path.realpath(root)
-    unknown = [g for g in groups if g not in GROUPS]
+    unknown = [g for g in groups if g not in SELECTABLE]
     if unknown:
         raise RunTestsError(f"grupo invalido: {', '.join(unknown)}")
     partition = partition_modules(root_real)
@@ -219,7 +246,7 @@ def run_tests(root: str = ".", groups: tuple[str, ...] = DEFAULT_GROUPS) -> dict
     started = time.perf_counter()
     results: list[dict] = []
     with archives_guard.ArchivesGuard(root_real, name="run-tests") as guard:
-        for group in GROUPS:
+        for group in SELECTABLE:
             if group not in groups:
                 continue
             names = partition[group]
@@ -232,13 +259,13 @@ def run_tests(root: str = ".", groups: tuple[str, ...] = DEFAULT_GROUPS) -> dict
         for key in ("total", "failed", "errors", "skipped")
     }
     passed = totals["total"] - totals["failed"] - totals["errors"] - totals["skipped"]
-    selected = [g for g in GROUPS if g in groups]
+    selected = [g for g in SELECTABLE if g in groups]
     return {
         "schemaVersion": SCHEMA_VERSION,
         "generatedBy": GENERATED_BY,
         "ok": all(r.get("ok") for r in results) and guard.report["ok"],
         "root": root_real,
-        "mode": "all" if len(selected) == len(GROUPS) else selected[0],
+        "mode": "all" if set(selected) == set(GROUPS) else "+".join(selected),
         "total": totals["total"],
         "passed": passed,
         "failed": totals["failed"],
@@ -248,7 +275,7 @@ def run_tests(root: str = ".", groups: tuple[str, ...] = DEFAULT_GROUPS) -> dict
         "modules": [m for r in results for m in r["modules"]],
         "results": results,
         "archivesGuard": guard.report,
-        "partition": {g: partition[g] for g in GROUPS},
+        "partition": {g: partition[g] for g in SELECTABLE},
     }
 
 
@@ -289,16 +316,21 @@ def main(argv: list[str] | None = None) -> int:
         return _worker(argv[1:], os.path.join(os.getcwd(), *TESTS_REL))
 
     parser = argparse.ArgumentParser(
-        description="Runner deterministico da suite (fast/render), 100% stdlib"
+        description="Runner deterministico da suite (smoke/fast/render/all), 100% stdlib"
     )
-    parser.add_argument("--fast", action="store_true", help="testes unitarios e de contrato (padrao)")
-    parser.add_argument("--render", action="store_true", help="testes que renderizam via FFmpeg")
-    parser.add_argument("--all", action="store_true", help="fast + render")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--smoke", action="store_true",
+                      help="loop de dev: fast sem os 4 modulos de contrato pesados")
+    mode.add_argument("--fast", action="store_true", help="testes unitarios e de contrato (padrao)")
+    mode.add_argument("--render", action="store_true", help="testes que renderizam via FFmpeg")
+    mode.add_argument("--all", action="store_true", help="fast + render")
     parser.add_argument("--json", action="store_true", help="emite o relatorio em JSON no stdout")
     parser.add_argument("--root", default=os.getcwd(), help="raiz do checkout")
     args = parser.parse_args(argv)
 
-    groups = resolve_groups({"fast": args.fast, "render": args.render, "all": args.all})
+    groups = resolve_groups({
+        "smoke": args.smoke, "fast": args.fast, "render": args.render, "all": args.all,
+    })
     try:
         report = run_tests(args.root, groups)
     except RunTestsError as exc:

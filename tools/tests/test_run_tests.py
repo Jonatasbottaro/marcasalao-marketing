@@ -1,19 +1,23 @@
 """Testes do runner particionado tools/run_tests.py e da blindagem de archives.
 
 Cobre obrigatoriamente:
-  1. Particao explicita fast vs render: todo modulo test_*.py classificado,
-     sem sobreposicao e sem modulo orfao.
-  2. Resolucao de grupos: --fast e o padrao; --render e --all selecionam o
-     grupo pesado; flags combinadas equivalem a --all.
-  3. Saida --json com contagem de testes, aprovados, falhas, duracao e modulos.
-  4. Garantia de que a execucao nao altera os SHA-256 de .workspace/archives/,
+  1. Particao explicita smoke/fast/render: todo modulo test_*.py classificado,
+     sem sobreposicao e sem modulo orfao; smoke e subconjunto estrito de fast.
+  2. Resolucao de grupos: --fast e o padrao; --smoke exclui os contratos
+     pesados; --render e --all selecionam o grupo de render.
+  3. Saida --json com o contrato {ok, mode, total, passed, failed, errors,
+     skipped, durationSeconds, modules} e mode correto por faixa.
+  4. Conflito de flags de faixa (mutuamente exclusivas) retorna exit 2.
+  5. Garantia de que a execucao nao altera os SHA-256 de .workspace/archives/,
      tanto pelo runner quanto por restauro automatico do ArchivesGuard.
-  5. Regressao do vazamento real: os testes de render que chamam o pipeline
+  6. Regressao do vazamento real: os testes de render que chamam o pipeline
      canonico precisam passar archives_dir isolado.
+  7. Integracao com release_check: --smoke-tests, --full-tests e o conflito.
 
-O runner nunca e invocado sobre o grupo fast completo aqui: test_run_tests
-pertence a esse grupo e a chamada seria recursiva. Os casos usam subconjuntos
-explicitos de modulos baratos.
+O runner nunca e invocado sobre a faixa real completa aqui: test_run_tests
+pertence a smoke e a fast, e a chamada seria recursiva. Os casos de CLI usam
+subconjuntos explicitos de modulos baratos; a composicao da faixa real e
+verificada estaticamente sobre partition_modules().
 """
 
 from __future__ import annotations
@@ -129,7 +133,8 @@ class RunTestsPartitionTest(unittest.TestCase):
 
 class RunTestsJsonTest(unittest.TestCase):
     def _tiny_partition(self, *_args, **_kwargs) -> dict:
-        return {"fast": [CHEAP_MODULE], "render": [], "unclassified": [], "absent": []}
+        return {"smoke": [CHEAP_MODULE], "fast": [CHEAP_MODULE], "render": [],
+                "unclassified": [], "absent": []}
 
     def test_07_json_report_has_counts_duration_and_modules(self) -> None:
         with mock.patch.object(run_tests, "partition_modules", self._tiny_partition):
@@ -181,7 +186,8 @@ class RunTestsJsonTest(unittest.TestCase):
     def test_08c_mode_render_quando_so_o_grupo_pesado(self) -> None:
         with mock.patch.object(
             run_tests, "partition_modules",
-            lambda *_a, **_k: {"fast": [], "render": [CHEAP_MODULE], "unclassified": [], "absent": []},
+            lambda *_a, **_k: {"smoke": [], "fast": [], "render": [CHEAP_MODULE],
+                               "unclassified": [], "absent": []},
         ):
             report = run_tests.run_tests(REPO_ROOT, ("render",))
         self.assertEqual(report["mode"], "render")
@@ -203,6 +209,7 @@ class RunTestsJsonTest(unittest.TestCase):
                 run_tests,
                 "partition_modules",
                 lambda *_a, **_k: {
+                    "smoke": ["test_sempre_falha"],
                     "fast": ["test_sempre_falha"],
                     "render": [],
                     "unclassified": [],
@@ -294,6 +301,7 @@ class SharedArchivesIntegrityTest(unittest.TestCase):
             run_tests,
             "partition_modules",
             lambda *_a, **_k: {
+                "smoke": [CHEAP_MODULE],
                 "fast": [CHEAP_MODULE],
                 "render": [],
                 "unclassified": [],
@@ -371,6 +379,217 @@ class ReleaseCheckGateTest(unittest.TestCase):
         self.assertIn("unit_tests", ids)
         self.assertIn("unit_tests", release_check.GATE_LABELS)
         self.assertEqual(ids.index("unit_tests"), ids.index("e2e") - 1)
+
+
+class SmokePartitionTest(unittest.TestCase):
+    """Invariantes da faixa smoke: subconjunto estrito de fast, sem os pesados."""
+
+    def setUp(self) -> None:
+        self.partition = run_tests.partition_modules(REPO_ROOT)
+
+    def test_26_smoke_e_subconjunto_estrito_de_fast(self) -> None:
+        smoke, fast = set(self.partition["smoke"]), set(self.partition["fast"])
+        self.assertTrue(smoke < fast, "smoke deve ser subconjunto ESTRITO de fast")
+        self.assertEqual(fast - smoke, set(run_tests.HEAVY_CONTRACT_MODULES))
+
+    def test_27_heavy_contract_modules_em_fast_e_fora_de_smoke(self) -> None:
+        self.assertEqual(
+            set(run_tests.HEAVY_CONTRACT_MODULES),
+            {"test_release_audit", "test_studio_mcp", "test_studio_connections", "test_editorial_qa"},
+        )
+        for name in run_tests.HEAVY_CONTRACT_MODULES:
+            self.assertIn(name, self.partition["fast"], f"{name} deve estar em fast")
+            self.assertNotIn(name, self.partition["smoke"], f"{name} nao pode estar em smoke")
+            self.assertIn(name, run_tests.FAST_MODULES)
+            self.assertNotIn(name, run_tests.SMOKE_MODULES)
+
+    def test_28_smoke_e_render_sao_disjuntos(self) -> None:
+        self.assertEqual(
+            set(self.partition["smoke"]) & set(self.partition["render"]), set()
+        )
+
+    def test_29_nenhum_modulo_orfao_fora_de_fast_ou_render(self) -> None:
+        directory = run_tests.tests_dir(REPO_ROOT)
+        present = {
+            name[:-3]
+            for name in os.listdir(directory)
+            if name.startswith("test_") and name.endswith(".py")
+        }
+        self.assertEqual(present, set(self.partition["fast"]) | set(self.partition["render"]))
+        self.assertEqual(self.partition["unclassified"], [])
+
+    def test_30_smoke_derivado_de_fast_nunca_diverge(self) -> None:
+        self.assertEqual(
+            run_tests.SMOKE_MODULES,
+            tuple(m for m in run_tests.FAST_MODULES if m not in run_tests.HEAVY_CONTRACT_MODULES),
+        )
+
+    def test_31_fast_preserva_28_modulos_e_smoke_24(self) -> None:
+        self.assertEqual(len(self.partition["fast"]), 28, "retrocompat: fast deve ter 28 modulos")
+        self.assertEqual(len(self.partition["smoke"]), 24, "smoke deve ter 24 modulos")
+
+    def test_32_resolve_groups_smoke(self) -> None:
+        self.assertEqual(run_tests.resolve_groups({"smoke": True}), ("smoke",))
+        self.assertEqual(run_tests.resolve_groups({}), ("fast",))
+        self.assertEqual(run_tests.resolve_groups({"fast": True}), ("fast",))
+        self.assertEqual(run_tests.resolve_groups({"all": True}), ("fast", "render"))
+
+    def test_33_smoke_aceito_e_grupo_invalido_rejeitado(self) -> None:
+        self.assertIn("smoke", run_tests.SELECTABLE)
+        with self.assertRaises(run_tests.RunTestsError):
+            run_tests.run_tests(REPO_ROOT, ("turbo",))
+
+
+class SmokeCliTest(unittest.TestCase):
+    def _tiny(self, *_a, **_k) -> dict:
+        return {"smoke": [CHEAP_MODULE], "fast": [CHEAP_MODULE], "render": [],
+                "unclassified": [], "absent": []}
+
+    def test_34_cli_smoke_json_mode_e_ok(self) -> None:
+        with mock.patch.object(run_tests, "partition_modules", self._tiny):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = run_tests.main(["--smoke", "--json", "--root", REPO_ROOT])
+        self.assertEqual(rc, 0)
+        report = json.loads(buf.getvalue())
+        self.assertEqual(report["mode"], "smoke")
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["failed"], 0)
+        self.assertEqual(report["errors"], 0)
+        self.assertGreater(report["total"], 0)
+        self.assertEqual(report["passed"], report["total"])
+        for key in ("ok", "mode", "total", "passed", "failed", "errors",
+                    "skipped", "durationSeconds", "modules"):
+            self.assertIn(key, report)
+
+    def test_35_cli_smoke_nao_lista_os_pesados(self) -> None:
+        real = run_tests.partition_modules(REPO_ROOT)
+        with mock.patch.object(
+            run_tests, "partition_modules",
+            lambda *_a, **_k: {**real, "smoke": [CHEAP_MODULE]},
+        ):
+            report = run_tests.run_tests(REPO_ROOT, ("smoke",))
+        self.assertEqual(report["mode"], "smoke")
+        for name in run_tests.HEAVY_CONTRACT_MODULES:
+            self.assertNotIn(name, report["modules"])
+            self.assertNotIn(name, report["partition"]["smoke"])
+
+    def test_36_faixa_real_smoke_exclui_pesados_e_protege_archives(self) -> None:
+        before = archives_guard.snapshot(REPO_ROOT)
+        real = run_tests.partition_modules(REPO_ROOT)
+        with mock.patch.object(
+            run_tests, "partition_modules",
+            lambda *_a, **_k: {**real, "smoke": [CHEAP_MODULE]},
+        ):
+            report = run_tests.run_tests(REPO_ROOT, ("smoke",))
+        self.assertTrue(report["ok"])
+        self.assertTrue(report["archivesGuard"]["ok"], report["archivesGuard"])
+        self.assertEqual(report["archivesGuard"]["restored"], [])
+        self.assertEqual(archives_guard.snapshot(REPO_ROOT), before)
+
+    def test_37_flags_de_faixa_conflitantes_retornam_dois(self) -> None:
+        for combo in (
+            ["--smoke", "--fast"], ["--smoke", "--render"], ["--smoke", "--all"],
+            ["--fast", "--render"], ["--fast", "--all"], ["--render", "--all"],
+        ):
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                with self.assertRaises(SystemExit) as ctx:
+                    run_tests.main([*combo, "--root", REPO_ROOT])
+            self.assertEqual(ctx.exception.code, 2, combo)
+            self.assertIn("not allowed with", err.getvalue())
+
+    def test_38_sem_flag_mantem_fast_como_padrao(self) -> None:
+        with mock.patch.object(run_tests, "partition_modules", self._tiny):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = run_tests.main(["--json", "--root", REPO_ROOT])
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads(buf.getvalue())["mode"], "fast")
+
+
+class ReleaseCheckSmokeGateTest(unittest.TestCase):
+    def _capture(self, payload=None):
+        calls: list[list[str]] = []
+        body = payload if payload is not None else {"ok": True, "total": 5, "modules": ["test_a"]}
+
+        def runner(cmd, cwd=None):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, json.dumps(body), "")
+
+        return runner, calls
+
+    def test_39_gate_smoke_usa_smoke(self) -> None:
+        runner, calls = self._capture()
+        with mock.patch.object(release_check, "_run", runner):
+            detail = release_check.gate_unit_tests(REPO_ROOT, smoke=True)
+        self.assertEqual(detail["group"], "--smoke")
+        self.assertIn("--smoke", calls[0])
+        self.assertNotIn("--fast", calls[0])
+        self.assertNotIn("--all", calls[0])
+
+    def test_40_gate_padrao_continua_fast(self) -> None:
+        runner, calls = self._capture()
+        with mock.patch.object(release_check, "_run", runner):
+            detail = release_check.gate_unit_tests(REPO_ROOT)
+        self.assertEqual(detail["group"], "--fast")
+        self.assertIn("--fast", calls[0])
+
+    def test_41_gate_full_continua_all(self) -> None:
+        runner, calls = self._capture()
+        with mock.patch.object(release_check, "_run", runner):
+            detail = release_check.gate_unit_tests(REPO_ROOT, full=True)
+        self.assertEqual(detail["group"], "--all")
+        self.assertIn("--all", calls[0])
+
+    def test_42_cli_smoke_tests_repassa_ao_run_all(self) -> None:
+        seen: dict = {}
+
+        def fake_run_all(root, skip_ts=False, full_tests=False, smoke_tests=False):
+            seen.update(skip_ts=skip_ts, full_tests=full_tests, smoke_tests=smoke_tests)
+            return {"ok": True, "gates": [], "passedGates": 0, "totalGates": 0}
+
+        with mock.patch.object(release_check, "run_all", fake_run_all):
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = release_check.main(["--smoke-tests", "--json", "--root", REPO_ROOT])
+        self.assertEqual(rc, 0)
+        self.assertTrue(seen["smoke_tests"])
+        self.assertFalse(seen["full_tests"])
+
+    def test_43_cli_full_tests_repassa_ao_run_all(self) -> None:
+        seen: dict = {}
+
+        def fake_run_all(root, skip_ts=False, full_tests=False, smoke_tests=False):
+            seen.update(full_tests=full_tests, smoke_tests=smoke_tests)
+            return {"ok": True, "gates": [], "passedGates": 0, "totalGates": 0}
+
+        with mock.patch.object(release_check, "run_all", fake_run_all):
+            with contextlib.redirect_stdout(io.StringIO()):
+                rc = release_check.main(["--full-tests", "--json", "--root", REPO_ROOT])
+        self.assertEqual(rc, 0)
+        self.assertTrue(seen["full_tests"])
+        self.assertFalse(seen["smoke_tests"])
+
+    def test_44_cli_smoke_e_full_juntos_retornam_dois(self) -> None:
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            with self.assertRaises(SystemExit) as ctx:
+                release_check.main(["--smoke-tests", "--full-tests", "--root", REPO_ROOT])
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("not allowed with", err.getvalue())
+
+    def test_45_cli_sem_flag_de_teste_mantem_fast(self) -> None:
+        seen: dict = {}
+
+        def fake_run_all(root, skip_ts=False, full_tests=False, smoke_tests=False):
+            seen.update(full_tests=full_tests, smoke_tests=smoke_tests)
+            return {"ok": True, "gates": [], "passedGates": 0, "totalGates": 0}
+
+        with mock.patch.object(release_check, "run_all", fake_run_all):
+            with contextlib.redirect_stdout(io.StringIO()):
+                release_check.main(["--json", "--root", REPO_ROOT])
+        self.assertFalse(seen["full_tests"])
+        self.assertFalse(seen["smoke_tests"])
 
 
 def setUpModule() -> None:
