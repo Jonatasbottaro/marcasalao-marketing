@@ -543,7 +543,7 @@ def _coletar_resumo_executivo(root: str, tenants: list[dict], campaigns: list[di
             "status": "ausente",
             "reportPath": render_local.rel(root, json_abs),
             "markdownPath": render_local.rel(root, md_abs),
-            "generatedAtUtc": None,
+            "generatedAt": None,
             "week": None,
             "campaigns": sum(1 for c in campaigns if c["tenantId"] == tid),
             "byStatus": None,
@@ -569,7 +569,7 @@ def _coletar_resumo_executivo(root: str, tenants: list[dict], campaigns: list[di
             if governance.get("tenantId") == tid:
                 row.update({
                     "status": "gerado",
-                    "generatedAtUtc": governance.get("generatedAtUtc"),
+                    "generatedAt": governance.get("generatedAt"),
                     "week": (governance.get("janela") or {}).get("week"),
                     "campaigns": editorial.get("totalCampaigns", row["campaigns"]),
                     "byStatus": editorial.get("byStatus"),
@@ -670,12 +670,12 @@ def _collect_data(root: str, utm_report: dict | None = None,
         "totals": {"tenants": len(tenants), "campaigns": len(campaigns)},
         "tenants": tenants,
         "campaigns": campaigns,
-        "executiveSummary": _coletar_resumo_executivo(root, tenants, campaigns),
     }
     if hook_benchmarks:
         data["hookBenchmarks"] = {
             "byTenant": [hook_benchmarks[tid] for tid in sorted(hook_benchmarks)],
         }
+    data["executiveSummary"] = _coletar_resumo_executivo(root, tenants, campaigns)
     stats = {"encontrados": videos_found, "ausentes": videos_missing}
     return data, stats
 
@@ -1639,7 +1639,7 @@ function renderResumoExecutivo() {
       const code = document.createElement("code");
       code.textContent = linha.markdownPath;
       tdRel.appendChild(code);
-      tdRel.title = "Gerado em " + linha.generatedAtUtc;
+      tdRel.title = "Gerado em " + linha.generatedAt;
     } else {
       tdRel.textContent = "ausente — rode executive_summary.py";
       tdRel.title = linha.markdownPath;

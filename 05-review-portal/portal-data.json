@@ -1936,7 +1936,7 @@
         "status": "gerado",
         "reportPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.json",
         "markdownPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.md",
-        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "generatedAt": "2026-11-22T13:51:39Z",
         "week": null,
         "campaigns": 3,
         "byStatus": {
@@ -1958,7 +1958,7 @@
         "status": "gerado",
         "reportPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.json",
         "markdownPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.md",
-        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "generatedAt": "2026-11-22T13:51:39Z",
         "week": null,
         "campaigns": 2,
         "byStatus": {
@@ -1980,7 +1980,7 @@
         "status": "gerado",
         "reportPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.json",
         "markdownPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.md",
-        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "generatedAt": "2026-11-22T13:51:39Z",
         "week": null,
         "campaigns": 2,
         "byStatus": {
@@ -2002,7 +2002,7 @@
         "status": "gerado",
         "reportPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.json",
         "markdownPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.md",
-        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "generatedAt": "2026-11-22T13:51:39Z",
         "week": null,
         "campaigns": 3,
         "byStatus": {
@@ -2024,7 +2024,7 @@
         "status": "gerado",
         "reportPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.json",
         "markdownPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.md",
-        "generatedAtUtc": "2026-11-22T03:41:15Z",
+        "generatedAt": "2026-11-22T13:51:39Z",
         "week": null,
         "campaigns": 4,
         "byStatus": {

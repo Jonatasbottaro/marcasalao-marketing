@@ -174,9 +174,9 @@ Saída em `.workspace/reports/<tenantId>/` (local por estação, nunca versionad
 
 Como ler:
 
-- **Cabeçalho de governança** — `tenantId`, marca, data/hora UTC, janela e o selo `autoPublish: false`. O relatório é somente leitura: não aprova, não agenda, não publica e não altera datas, canais ou UTMs.
+- **Cabeçalho de governança** — `tenantId`, marca, `generatedAt` em UTC, `weekFilter` e o selo `autoPublish: false`. O relatório é somente leitura: não aprova, não agenda, não publica e não altera datas, canais ou UTMs.
 - **Saúde editorial** — total de campanhas do tenant, distribuição `aprovado` / `aguardando` / `ajuste` e o resultado do QA editorial (erros e avisos).
-- **Inteligência A/B e fadiga** — taxa de vitória dos testes de hook (`vencedor_A` / `vencedor_B` contra `empate_tecnico`), alertas de `fadiga_detectada` com `zScore` e `pValue`, ranking interno de canais e formatos e as promoções auditadas (`promotionHistory`).
+- **Inteligência A/B e fadiga** — taxa de vitória dos testes de hook (`vencedor_A` / `vencedor_B` contra `empate_tecnico`), alertas de `fadiga_detectada` com `zScore` e `pValue`, ranking interno de canais e formatos e as promoções auditadas (`promotionHistory`). Atenção a uma armadilha de unidade: no `tenantBenchmarks`, o campo `abWinRatePct` vem do importer como **fração 0..1**; o relatório mostra a fração e o percentual lado a lado para não haver leitura errada.
 - **Entregas e atribuição** — pacotes com SHA-256 verificado, status `reconciliado` contra `aguardando_metricas`, CTR, conversão realizada, `observedUpliftPct` e `winnerSustained`.
 - **Plano de ação** — recomendações priorizadas (P1 mais urgente). Nenhuma é executada automaticamente; todas exigem a sua decisão.
 
@@ -195,6 +195,7 @@ Se `workspace_doctor --check` reportar `ARCHIVE_HASH_DIVERGENTE`, a mídia local
 ```bash
 # 1. Ver o plano SEM gravar nada (padrão é dry-run)
 python tools/workspace_doctor.py --repair --json
+python tools/workspace_doctor.py --repair --dry-run --json   # equivalente, explícito
 
 # 2. Aplicar o reparo e revalidar SHA-256 + ffprobe
 python tools/workspace_doctor.py --repair --apply --json

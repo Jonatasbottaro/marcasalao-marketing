@@ -99,7 +99,7 @@ class ExecutiveSummaryGenerationTest(ExecutiveSummaryBase):
             self.assertEqual(gov["brandName"], grouped[tid][0]["brandName"])
             self.assertIs(gov["autoPublish"], False)
             self.assertIs(gov["readOnly"], True)
-            self.assertRegex(gov["generatedAtUtc"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+            self.assertRegex(gov["generatedAt"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
             self.assertEqual(gov["statusEditorial"], campaign_calendar.STATUS_EDITORIAL)
             self.assertIn("janela", gov)
             self.assertEqual(gov["janela"]["calendarWeeks"], 7)
@@ -336,7 +336,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
             approval_cli, "cmd_status",
             lambda root=".": real_status(root, approvals_file=str(self.store_path)),
         ), mock.patch.object(
-            approval_cli, "approvals_store_path", lambda root=".": str(self.store_path)
+            review_dashboard, "approvals_store_path", lambda root: str(self.store_path)
         ):
             inputs = es.collect_inputs(
                 str(REPO_ROOT),
@@ -356,7 +356,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
         return inputs
 
     def test_15_hook_ab_incorpora_classificacao_z_e_p(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
         hooks = summary["abIntelligence"]["hookTests"]
         self.assertTrue(summary["abIntelligence"]["hasData"])
         self.assertEqual(hooks["total"], 1)
@@ -368,7 +368,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
         self.assertEqual(row["pValue"], 0.0159)
 
     def test_16_fadiga_detectada_com_zscore_e_pvalue(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
         alerts = summary["abIntelligence"]["fatigueAlerts"]
         self.assertTrue(alerts)
         for alert in alerts:
@@ -384,14 +384,45 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
         self.assertIn("0.0331", text)
 
     def test_17_tenant_benchmarks_isolado(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
         bench = summary["abIntelligence"]["tenantBenchmarks"]
         self.assertEqual(bench["tenantId"], self.tid)
         self.assertEqual(bench["sessions"], 780)
         self.assertEqual(bench["conversionRatePct"], 5.0)
 
+    def test_17b_ab_win_rate_tratado_como_fracao(self) -> None:
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        win = summary["abIntelligence"]["benchmarkAbWinRate"]
+        self.assertEqual(win["fraction"], 0.5)
+        self.assertEqual(win["percent"], 50.0)
+        text = es.render_markdown(summary)
+        self.assertIn("fracao 0..1", text)
+        self.assertIn("50.0%", text)
+
+    def test_17c_fadiga_do_benchmark_lida_de_hooks_com_fadiga(self) -> None:
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        fatigue = summary["abIntelligence"]["benchmarkFatigue"]
+        self.assertIs(fatigue["detected"], True)
+        self.assertIn("hooksComFadiga", es.render_markdown(summary))
+
+    def test_17d_governanca_expoe_generated_at_e_week_filter(self) -> None:
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, week=2, inputs=self._inputs())
+        gov = summary["governance"]
+        self.assertEqual(gov["weekFilter"], 2)
+        self.assertRegex(gov["generatedAt"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertIs(gov["autoPublish"], False)
+        self.assertEqual(gov["tenantId"], self.tid)
+
+    def test_17e_qa_rodado_por_tenant_com_filtro_nativo(self) -> None:
+        inputs = self._inputs()
+        self.assertEqual(set(inputs["qaByTenant"]), set(EXPECTED_TENANTS))
+        for tid, qa in inputs["qaByTenant"].items():
+            self.assertEqual(qa["tenantFilter"], tid)
+            for row in qa["campaigns"]:
+                self.assertEqual(row["tenant"], tid)
+
     def test_18_promotion_history_incorporado(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
         history = summary["abIntelligence"]["promotionHistory"]
         self.assertEqual(len(history), 1)
         self.assertEqual(history[0]["promotedVariant"], "A")
@@ -403,7 +434,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
         self.assertNotIn("outro-titular", text)
 
     def test_19_bundle_attribution_closed_loop(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=self._inputs())
         attr = summary["delivery"]["attribution"]
         self.assertEqual(attr["total"], 2)
         self.assertEqual(attr["byStatus"][utm.ATTR_STATUS_RECONCILIADO], 1)
@@ -424,7 +455,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
 
     def test_20_fixture_de_outro_tenant_nao_vaza(self) -> None:
         inputs = self._inputs()
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid, inputs=inputs)
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid, inputs=inputs)
         text = json.dumps(summary, ensure_ascii=False) + es.render_markdown(summary)
         self.assertNotIn(self.other, text)
         self.assertNotIn(self.other_slug, text)
@@ -437,7 +468,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
             approval_cli, "cmd_status",
             lambda root=".": real_status(root, approvals_file=str(self.store_path)),
         ), mock.patch.object(
-            approval_cli, "approvals_store_path", lambda root=".": str(self.store_path)
+            review_dashboard, "approvals_store_path", lambda root: str(self.store_path)
         ):
             result = es.generate_reports(
                 root=str(REPO_ROOT), tenant=self.tid, output_dir=self.out_rel,
@@ -453,7 +484,7 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
         self.assertIsNotNone(doc["sources"]["bundleAttribution"])
 
     def test_22_sem_relatorio_utm_declara_sem_dados(self) -> None:
-        summary = es.build_tenant_summary(str(REPO_ROOT), self.tid)
+        summary = es.build_executive_summary(str(REPO_ROOT), self.tid)
         ab = summary["abIntelligence"]
         self.assertFalse(ab["hasData"])
         self.assertEqual(ab["hookTests"]["total"], 0)
@@ -478,7 +509,7 @@ class ExecutiveSummaryPortalTest(ExecutiveSummaryBase):
         for row in digest["byTenant"]:
             self.assertEqual(row["status"], "gerado", row["tenantId"])
             self.assertTrue(row["markdownPath"].endswith(f"relatorio-executivo-{row['tenantId']}.md"))
-            self.assertIsNotNone(row["generatedAtUtc"])
+            self.assertIsNotNone(row["generatedAt"])
             self.assertTrue(row["qaOk"])
             self.assertGreaterEqual(row["actions"], 1)
 
@@ -493,7 +524,7 @@ class ExecutiveSummaryPortalTest(ExecutiveSummaryBase):
         self.assertEqual(len(digest["byTenant"]), 5)
         for row in digest["byTenant"]:
             self.assertEqual(row["status"], "ausente", row["tenantId"])
-            self.assertIsNone(row["generatedAtUtc"])
+            self.assertIsNone(row["generatedAt"])
             self.assertIsNone(row["qaOk"])
             self.assertGreaterEqual(row["campaigns"], 1)
 

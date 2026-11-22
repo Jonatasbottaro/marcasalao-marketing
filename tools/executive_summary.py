@@ -30,7 +30,7 @@ CLI:
         [--json] [--root DIR]
 
 API:
-    build_tenant_summary(root, tenant_id, week=None, ...) -> dict
+    build_executive_summary(root, tenant_id, week=None, ...) -> dict
     render_markdown(summary) -> str
     generate_reports(root=".", tenant=None, all_tenants=False, week=None, ...) -> dict
 
@@ -53,6 +53,7 @@ import editorial_qa  # noqa: E402
 import publish_bundler  # noqa: E402
 import render_local  # noqa: E402
 import review_dashboard  # noqa: E402
+import tenant_validator  # noqa: E402
 import utm_report_importer as utm  # noqa: E402
 
 SCHEMA_VERSION = 1
@@ -110,11 +111,17 @@ def collect_inputs(
     attribution, attr_rel = _resolve_input(root_real, bundle_attribution_path, attr_default)
 
     calendar = _load_json(os.path.join(root_real, campaign_calendar.CALENDAR_JSON_REL))
-    qa = editorial_qa.run_editorial_qa(root_real, strict=True)
+    tenants = tenant_validator.list_tenants(root_real)
+    # QA por tenant: o filtro nativo do editorial_qa garante que nenhuma lente
+    # transversal traga problema de outro nicho para o relatorio deste tenant.
+    qa_by_tenant = {
+        tid: editorial_qa.run_editorial_qa(root_real, strict=True, tenant=tid)
+        for tid in tenants
+    }
     approvals = approval_cli.cmd_status(root_real)
 
     promotions: dict[tuple[str, str], list] = {}
-    store_path = approval_cli.approvals_store_path(root_real)
+    store_path = review_dashboard.approvals_store_path(root_real)
     store = _load_json(store_path)
     if store:
         for item in store.get("campanhas") or []:
@@ -132,8 +139,10 @@ def collect_inputs(
         "attribution": attribution,
         "attributionPath": attr_rel,
         "calendar": calendar,
-        "qa": qa,
+        "tenants": tenants,
+        "qaByTenant": qa_by_tenant,
         "approvals": approvals,
+        "approvalsStorePath": store_path,
         "promotions": promotions,
         "registry": registry,
     }
@@ -150,16 +159,11 @@ def _editorial_section(inputs: dict, tenant_id: str, campaigns: list[dict]) -> d
         if row["decision"] in by_status:
             by_status[row["decision"]] += 1
 
-    prefix = f"{tenant_id}/"
-    problems = [
-        problem
-        for check in inputs["qa"]["checks"]
-        for problem in check["problems"]
-        if problem["message"].startswith(prefix)
-    ]
+    qa = inputs["qaByTenant"][tenant_id]
+    problems = [problem for check in qa["checks"] for problem in check["problems"]]
     errors = sum(1 for p in problems if p["severity"] == "error")
     warnings = sum(1 for p in problems if p["severity"] == "warning")
-    qa_rows = [c for c in inputs["qa"]["campaigns"] if c["tenant"] == tenant_id]
+    qa_rows = qa["campaigns"]
     pending = [
         {"slug": r["slug"], "decision": r["decision"]}
         for r in rows
@@ -180,7 +184,7 @@ def _editorial_section(inputs: dict, tenant_id: str, campaigns: list[dict]) -> d
             "warnings": warnings,
             "campaignsAudited": len(qa_rows),
             "campaignsWithProblems": sum(1 for c in qa_rows if not c["ok"]),
-            "lenses": len(inputs["qa"]["checks"]),
+            "lenses": len(qa["checks"]),
             "problems": problems,
         },
     }
@@ -248,9 +252,42 @@ def _ab_section(inputs: dict, tenant_id: str, campaigns: list[dict], slots: list
         },
         "fatigueAlerts": alerts,
         "tenantBenchmarks": benchmark,
+        "benchmarkAbWinRate": _benchmark_win_rate(benchmark),
+        "benchmarkFatigue": _benchmark_fatigue(benchmark),
         "channelRanking": sorted(by_channel.items(), key=lambda kv: (-kv[1], kv[0])),
         "formatRanking": sorted(by_format.items(), key=lambda kv: (-kv[1], kv[0])),
         "promotionHistory": promotions,
+    }
+
+
+def _benchmark_win_rate(benchmark: dict | None) -> dict | None:
+    """Normaliza ``abWinRatePct``, que o importer entrega como fracao 0..1.
+
+    O sufixo ``Pct`` no nome do campo e enganoso: ``_tenant_benchmarks`` grava
+    ``round(wins/total, 4)``. Expor a fracao e o percentual lado a lado evita
+    que o leitor executivo interprete 0.5 como 0.5%.
+    """
+    if not benchmark or benchmark.get("abWinRatePct") is None:
+        return None
+    fraction = benchmark["abWinRatePct"]
+    return {
+        "fraction": fraction,
+        "percent": round(fraction * 100, 2),
+        "campaignsTotal": benchmark.get("abCampaignsTotal"),
+        "wins": benchmark.get("abCampaignsWins"),
+    }
+
+
+def _benchmark_fatigue(benchmark: dict | None) -> dict | None:
+    """Le os campos ``hooksComFadiga*`` do benchmark (nao os ``fatigue*`` do slot)."""
+    if not benchmark or "hooksComFadiga" not in benchmark:
+        return None
+    return {
+        "detected": bool(benchmark.get("hooksComFadiga")),
+        "status": benchmark.get("hooksComFadigaStatus"),
+        "zScore": benchmark.get("hooksComFadigaZScore"),
+        "pValue": benchmark.get("hooksComFadigaPValue"),
+        "reason": benchmark.get("hooksComFadigaReason"),
     }
 
 
@@ -418,7 +455,7 @@ def _action_plan(editorial: dict, ab: dict, delivery: dict) -> list[dict]:
     return actions
 
 
-def build_tenant_summary(
+def build_executive_summary(
     root: str = ".",
     tenant_id: str = "",
     week: int | None = None,
@@ -430,9 +467,11 @@ def build_tenant_summary(
     if week is not None and not (WEEK_MIN <= week <= WEEK_MAX):
         raise ExecutiveSummaryError(f"SEMANA_INVALIDA: use {WEEK_MIN}..{WEEK_MAX}")
     data = inputs if inputs is not None else collect_inputs(root)
+    if tenant_id not in data["tenants"]:
+        raise ExecutiveSummaryError(f"TENANT_DESCONHECIDO: {tenant_id}")
     campaigns = _tenant_campaigns(data, tenant_id)
     if not campaigns:
-        raise ExecutiveSummaryError(f"TENANT_DESCONHECIDO: {tenant_id}")
+        raise ExecutiveSummaryError(f"TENANT_SEM_CAMPANHAS: {tenant_id}")
 
     calendar = data["calendar"] or {}
     all_slots = [s for s in (calendar.get("slots") or []) if s.get("tenantId") == tenant_id]
@@ -452,7 +491,8 @@ def build_tenant_summary(
             "tenantId": tenant_id,
             "brandName": campaigns[0]["brandName"],
             "domain": campaigns[0].get("domain"),
-            "generatedAtUtc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "weekFilter": week,
             "autoPublish": AUTO_PUBLISH,
             "statusEditorial": campaign_calendar.STATUS_EDITORIAL,
             "janela": {
@@ -500,7 +540,7 @@ def render_markdown(summary: dict) -> str:
 
     add(f"# Relatorio executivo — {gov['brandName']} (`{gov['tenantId']}`)")
     add("")
-    add(f"- Gerado em (UTC): {gov['generatedAtUtc']}")
+    add(f"- Gerado em (UTC): {gov['generatedAt']}")
     add(f"- Dominio: {_fmt(gov.get('domain'))}")
     add(f"- **autoPublish: false** — publicacao exclusivamente manual")
     add(f"- Status editorial: `{gov['statusEditorial']}`")
@@ -587,9 +627,24 @@ def render_markdown(summary: dict) -> str:
         add("")
         add("| Indicador | Valor |")
         add("| --- | --- |")
-        for key in ("sessions", "conversions", "conversionRatePct", "engagedRatePct", "abWinRatePct", "slots"):
+        for key in ("sessions", "conversions", "conversionRatePct", "engagedRatePct", "slots"):
             if key in bench:
                 add(f"| {key} | {_fmt(bench[key])} |")
+        win = ab["benchmarkAbWinRate"]
+        if win:
+            add(
+                f"| abWinRatePct (fracao 0..1) | {win['fraction']} "
+                f"= {_fmt(win['percent'], '%')} de vitorias |"
+            )
+        add("")
+    bench_fatigue = ab["benchmarkFatigue"]
+    if bench_fatigue:
+        add(
+            "Fadiga no benchmark do tenant (`hooksComFadiga*`): "
+            f"{'detectada' if bench_fatigue['detected'] else 'nao detectada'} "
+            f"({_fmt(bench_fatigue['status'])}, zScore {_fmt(bench_fatigue['zScore'])}, "
+            f"pValue {_fmt(bench_fatigue['pValue'])})"
+        )
         add("")
     if ab["channelRanking"]:
         add("Ranking interno de canais: " + ", ".join(f"{c} ({n})" for c, n in ab["channelRanking"]))
@@ -678,7 +733,7 @@ def generate_reports(
     root_real = os.path.realpath(root)
     inputs = collect_inputs(root_real, utm_report_path, bundle_attribution_path)
 
-    available = sorted({c["tenantId"] for c in inputs["registry"]})
+    available = list(inputs["tenants"])
     targets = available if all_tenants else [tenant]
     for tid in targets:
         if tid not in available:
@@ -702,7 +757,7 @@ def generate_reports(
 
     reports: list[dict] = []
     for tid in targets:
-        summary = build_tenant_summary(root_real, tid, week=week, inputs=inputs)
+        summary = build_executive_summary(root_real, tid, week=week, inputs=inputs)
         tenant_dir = os.path.join(out_abs, tid)
         os.makedirs(render_local.fs_path(tenant_dir), exist_ok=True)
         base = f"{REPORT_PREFIX}{tid}"
