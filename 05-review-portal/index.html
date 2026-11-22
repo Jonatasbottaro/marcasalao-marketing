@@ -2557,6 +2557,65 @@ function card(c) {
     secaoPromo.appendChild(lista);
     aprovacao.appendChild(secaoPromo);
   }
+
+  // Atribuicao de bundle (Etapa 12): exibe status de atribuicao do pacote entregue.
+  if (c.bundleAttribution) {
+    const secaoAttr = el("div", { class: "linha" });
+    secaoAttr.appendChild(
+      el("strong", {}, [document.createTextNode("Atribuição de bundle (Etapa 12):")])
+    );
+    const m = c.bundleAttribution;
+    const metrica = m.metrics || {};
+    const info = el("ul", { class: "atribuicao-lista" });
+    const liStatus = el("li", {}, [
+      el("strong", {}, [document.createTextNode("Status: ")]),
+      document.createTextNode(m.attributionStatus || "-"),
+    ]);
+    info.appendChild(liStatus);
+    if (m.approvalStatus) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Aprovação: ")]),
+        document.createTextNode(m.approvalStatus),
+      ]));
+    }
+    if (m.bundleSha256) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("SHA-256: ")]),
+        document.createTextNode(m.bundleSha256),
+      ]));
+    }
+    if (metrica.conversionRate != null || metrica.conversions != null || metrica.impressions != null) {
+      const linhaMetrica = el("li", {}, [
+        el("strong", {}, [document.createTextNode("Métricas entregues: ")]),
+        document.createTextNode(
+          "impressões=" + (metrica.impressions != null ? metrica.impressions : "-") +
+          ", cliques=" + (metrica.clicks != null ? metrica.clicks : "-") +
+          ", CTR=" + (metrica.ctr != null ? metrica.ctr + "%" : "-") +
+          ", conversões=" + (metrica.conversions != null ? metrica.conversions : "-") +
+          ", CVR=" + (metrica.conversionRate != null ? metrica.conversionRate + "%" : "-")
+        ),
+      ]);
+      info.appendChild(linhaMetrica);
+    }
+    if (metrica.observedUpliftPct != null) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Uplift observado: ")]),
+        document.createTextNode(metrica.observedUpliftPct + "%"),
+      ]));
+    }
+    if (metrica.winnerSustained != null) {
+      info.appendChild(el("li", {}, [
+        el("strong", {}, [document.createTextNode("Vencedor sustentado: ")]),
+        document.createTextNode(metrica.winnerSustained ? "sim" : "não"),
+      ]));
+    }
+    if (m.attributionReason) {
+      info.appendChild(el("p", { class: "nota", text: m.attributionReason }));
+    }
+    secaoAttr.appendChild(info);
+    aprovacao.appendChild(secaoAttr);
+  }
+
   cardEl.appendChild(aprovacao);
   return cardEl;
 }
