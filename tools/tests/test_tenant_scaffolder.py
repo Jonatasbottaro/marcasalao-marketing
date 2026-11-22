@@ -18,17 +18,19 @@ import sys
 import tempfile
 import unittest
 
-# Adiciona o root do checkout ao sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Adiciona tools/ ao sys.path (mesma convencao dos demais testes)
+TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, TOOLS_DIR)
 
-from tools.tenant_scaffolder import (
+import tenant_scaffolder
+import tenant_validator
+from tenant_scaffolder import (
     scaffold_tenant,
     ScaffolderError,
     _validate_slug,
     _validate_tenant_id,
 )
-from tools import tenant_validator
-import tools.campaign_calendar as cc
+import campaign_calendar
 
 
 class TestTenantScaffolder(unittest.TestCase):
@@ -191,7 +193,7 @@ class TestTenantScaffolder(unittest.TestCase):
 
     def test_capacity_status_in_executive_summary(self):
         """Integracao com executive_summary: presence of capacityStatus."""
-        from tools.executive_summary import build_executive_summary
+        from executive_summary import build_executive_summary
 
         # Use the real repo root which has campaigns for tenant integration
         # This tests the capacityStatus block is present in the summary
