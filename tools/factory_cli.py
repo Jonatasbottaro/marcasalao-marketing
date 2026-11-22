@@ -297,6 +297,7 @@ def cmd_render(
     render_all: bool = False,
     deliveries_dir: str = DEFAULT_DELIVERIES_DIR,
     report_path: str | None = None,
+    archives_dir: str | None = None,
 ) -> dict[str, Any]:
     """Valida e renderiza campanhas em lote e grava `factory-report.json`."""
     if not render_all and not tenant_id:
@@ -338,7 +339,8 @@ def cmd_render(
             )
             with contextlib.redirect_stdout(sys.stderr):
                 manifest = preset_runner.run_preset_pipeline(
-                    tid, camp["configPath"], out_dir, audio_path=None, root=root_real
+                    tid, camp["configPath"], out_dir, audio_path=None, root=root_real,
+                    archives_dir=archives_dir,
                 )
             arts = manifest["artifacts"]
             video_art = arts["video"]
@@ -496,6 +498,7 @@ def cmd_pipeline(
     strict_audit: bool = False,
     simulate_traffic: bool = False,
     utm_out_dir: str = DEFAULT_UTM_OUT_DIR,
+    archives_dir: str | None = None,
 ) -> dict[str, Any]:
     """Executa o pipeline mestre e devolve o relatorio com status por estagio."""
     pipeline_started = time.perf_counter()
@@ -559,7 +562,8 @@ def cmd_pipeline(
             os.makedirs(render_local.fs_path(out_dir), exist_ok=True)
             with contextlib.redirect_stdout(sys.stderr):
                 manifest = preset_runner.run_preset_pipeline(
-                    tid, target["configPath"], out_dir, audio_path=None, root=root_real
+                    tid, target["configPath"], out_dir, audio_path=None, root=root_real,
+                    archives_dir=archives_dir,
                 )
             video = manifest["artifacts"]["video"]
             deliveries.append(
@@ -588,7 +592,9 @@ def cmd_pipeline(
         for target in targets:
             tid, slug = target["tenantId"], target["slug"]
             if not skip_render:
-                derivatives_mod.generate_campaign_derivatives(tid, slug, root=root_real)
+                derivatives_mod.generate_campaign_derivatives(
+                    tid, slug, root=root_real, archives_dir=archives_dir
+                )
             derivatives_path = os.path.join(delivery_dir(target), "derivatives.json")
             if not os.path.isfile(render_local.fs_path(derivatives_path)):
                 failures.append(f"{tid}/{slug}: derivatives.json ausente")
@@ -1140,6 +1146,11 @@ def main(argv: list[str] | None = None) -> int:
     p_render.add_argument("--campaign", default=None, help="Slug da campanha dentro do tenant")
     p_render.add_argument("--deliveries-dir", default=DEFAULT_DELIVERIES_DIR, help="Diretorio raiz das entregas")
     p_render.add_argument("--report", default=None, help="Caminho para factory-report.json")
+    p_render.add_argument(
+        "--archives-dir",
+        default=None,
+        help="Raiz alternativa de archives (isola os masters compartilhados em testes)",
+    )
     p_render.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_render.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
@@ -1164,6 +1175,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_pipeline.add_argument(
         "--utm-out-dir", default=DEFAULT_UTM_OUT_DIR, help="Diretorio da simulacao UTM"
+    )
+    p_pipeline.add_argument(
+        "--archives-dir",
+        default=None,
+        help="Raiz alternativa de archives (isola os masters compartilhados em testes)",
     )
     p_pipeline.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_pipeline.add_argument("--json", action="store_true", help="Emite JSON no stdout")
@@ -1223,6 +1239,7 @@ def main(argv: list[str] | None = None) -> int:
                 strict_audit=bool(args.strict_audit),
                 simulate_traffic=bool(args.simulate_traffic),
                 utm_out_dir=args.utm_out_dir,
+                archives_dir=args.archives_dir,
             )
             if args.json:
                 print(json.dumps(pipeline_report, ensure_ascii=False, indent=2))
@@ -1286,6 +1303,7 @@ def main(argv: list[str] | None = None) -> int:
             render_all=bool(args.all),
             deliveries_dir=args.deliveries_dir,
             report_path=args.report,
+            archives_dir=args.archives_dir,
         )
     except (
         FactoryError,

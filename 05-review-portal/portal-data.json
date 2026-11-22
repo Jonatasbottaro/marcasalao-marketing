@@ -1924,5 +1924,122 @@
         "autoPublish": false
       }
     }
-  ]
+  ],
+  "executiveSummary": {
+    "reportsDir": ".workspace/reports",
+    "generatedBy": "tools/executive_summary.py",
+    "autoPublish": false,
+    "byTenant": [
+      {
+        "tenantId": "clinica-vital",
+        "brandName": "Clínica Vital",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.json",
+        "markdownPath": ".workspace/reports/clinica-vital/relatorio-executivo-clinica-vital.md",
+        "generatedAt": "2026-11-22T13:51:39Z",
+        "week": null,
+        "campaigns": 3,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 3,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "estudio-flow",
+        "brandName": "Estúdio Flow",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.json",
+        "markdownPath": ".workspace/reports/estudio-flow/relatorio-executivo-estudio-flow.md",
+        "generatedAt": "2026-11-22T13:51:39Z",
+        "week": null,
+        "campaigns": 2,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 2,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "marca-salao",
+        "brandName": "Marca Salão",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.json",
+        "markdownPath": ".workspace/reports/marca-salao/relatorio-executivo-marca-salao.md",
+        "generatedAt": "2026-11-22T13:51:39Z",
+        "week": null,
+        "campaigns": 2,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 2,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "meu-salao",
+        "brandName": "Meu Salão",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.json",
+        "markdownPath": ".workspace/reports/meu-salao/relatorio-executivo-meu-salao.md",
+        "generatedAt": "2026-11-22T13:51:39Z",
+        "week": null,
+        "campaigns": 3,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 3,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      },
+      {
+        "tenantId": "multitrack-hub",
+        "brandName": "Multitrack Hub",
+        "status": "gerado",
+        "reportPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.json",
+        "markdownPath": ".workspace/reports/multitrack-hub/relatorio-executivo-multitrack-hub.md",
+        "generatedAt": "2026-11-22T13:51:39Z",
+        "week": null,
+        "campaigns": 4,
+        "byStatus": {
+          "aprovado": 0,
+          "aguardando": 4,
+          "ajuste": 0
+        },
+        "qaOk": true,
+        "fatigueAlerts": 0,
+        "abWinRatePct": null,
+        "bundlesTotal": 0,
+        "bundlesVerified": 0,
+        "reconciliados": 0,
+        "actions": 2
+      }
+    ]
+  }
 }

@@ -23,10 +23,13 @@ Gates orquestrados (nesta ordem):
   7. Empacotamento      - ``python tools/publish_bundler.py verify`` sobre todos
                           os bundles em ``.workspace/bundles/`` (nao reprova se
                           nao houver bundles nesta estacao).
-  8. E2E da fabrica     - ``python -m unittest discover -s tests/e2e -v``.
+  8. Suite Python       - ``python tools/run_tests.py --fast --json`` (testes
+                          unitarios e de contrato). Com ``--full-tests``, roda
+                          ``--all`` e inclui os testes de render via FFmpeg.
+  9. E2E da fabrica     - ``python -m unittest discover -s tests/e2e -v``.
 
 CLI:
-    python tools/release_check.py [--json] [--skip-ts] [--root <raiz>]
+    python tools/release_check.py [--json] [--skip-ts] [--full-tests] [--root <raiz>]
 
 Exit codes: 0 todos os gates aprovados; 1 algum gate reprovou; 2 erro de uso.
 """
@@ -238,6 +241,32 @@ def gate_e2e(root: str) -> dict:
     return result
 
 
+def gate_unit_tests(root: str, full: bool = False) -> dict:
+    """Gate da suite Python particionada: ``--fast`` por padrao, ``--all`` com --full-tests."""
+    group = "--all" if full else "--fast"
+    proc = _run([sys.executable, "tools/run_tests.py", group, "--json"], cwd=root)
+    payload = None
+    stdout = proc.stdout.strip()
+    if stdout:
+        try:
+            payload = json.loads(stdout)
+        except ValueError:
+            payload = None
+    ok = proc.returncode == 0 and (payload is None or payload.get("ok") is not False)
+    result = {"ok": ok, "returncode": proc.returncode, "group": group}
+    if payload is not None:
+        result["tests"] = {
+            key: payload.get(key)
+            for key in ("total", "passed", "failed", "errors", "skipped", "durationSeconds")
+        }
+        result["totalModules"] = len(payload.get("modules") or [])
+        result["archivesGuard"] = payload.get("archivesGuard")
+    if not ok:
+        tail = (proc.stdout + proc.stderr).strip().splitlines()[-8:]
+        raise GateError("TESTES_FALHARAM", f"run_tests.py {group} reprovou", tail)
+    return result
+
+
 def _wrap_tool(error_code: str, name: str, proc: subprocess.CompletedProcess) -> dict:
     payload = None
     stdout = proc.stdout.strip()
@@ -276,6 +305,7 @@ GATES = (
     ("workspace_doctor", gate_workspace_doctor),
     ("release_audit", gate_release_audit),
     ("bundling", gate_bundling),
+    ("unit_tests", gate_unit_tests),
     ("e2e", gate_e2e),
 )
 
@@ -287,11 +317,12 @@ GATE_LABELS = {
     "workspace_doctor": "Saude do workspace",
     "release_audit": "Auditoria de release (8 dominios)",
     "bundling": "Empacotamento de distribuicao (.workspace/bundles)",
+    "unit_tests": "Suite Python particionada (run_tests.py)",
     "e2e": "Suite E2E da fabrica",
 }
 
 
-def run_all(root: str, skip_ts: bool = False) -> dict:
+def run_all(root: str, skip_ts: bool = False, full_tests: bool = False) -> dict:
     results: list[dict] = []
     overall_ok = True
     for gate_id, gate_fn in GATES:
@@ -299,7 +330,7 @@ def run_all(root: str, skip_ts: bool = False) -> dict:
             results.append({"id": gate_id, "name": GATE_LABELS[gate_id], "status": "skipped"})
             continue
         try:
-            detail = gate_fn(root)
+            detail = gate_fn(root, full=full_tests) if gate_id == "unit_tests" else gate_fn(root)
             results.append({"id": gate_id, "name": GATE_LABELS[gate_id], "status": "ok", "detail": detail})
         except GateError as exc:
             overall_ok = False
@@ -331,6 +362,7 @@ def run_all(root: str, skip_ts: bool = False) -> dict:
         "ok": overall_ok,
         "root": root,
         "skipTs": skip_ts,
+        "fullTests": full_tests,
         "gates": results,
         "totalGates": len(GATES),
         "passedGates": sum(1 for r in results if r["status"] in ("ok", "skipped")),
@@ -358,7 +390,7 @@ def _print_human(report: dict) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Comando unico de verificacao de release (7 gates, 100% stdlib)"
+        description="Comando unico de verificacao de release (9 gates, 100% stdlib)"
     )
     parser.add_argument("--json", action="store_true", help="emite o relatorio em JSON no stdout")
     parser.add_argument(
@@ -366,11 +398,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="pula build e testes TypeScript em platform/",
     )
+    parser.add_argument(
+        "--full-tests",
+        action="store_true",
+        help="roda run_tests.py --all (fast + render) em vez do gate rapido --fast",
+    )
     parser.add_argument("--root", default=os.getcwd(), help="raiz do checkout")
     args = parser.parse_args(argv)
 
     root = _resolve_root(args.root)
-    report = run_all(root, skip_ts=args.skip_ts)
+    report = run_all(root, skip_ts=args.skip_ts, full_tests=args.full_tests)
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))

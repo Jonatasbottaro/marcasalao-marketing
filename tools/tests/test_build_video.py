@@ -1,8 +1,19 @@
 import os
+import shutil
 import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# get_ffmpeg()/get_ffprobe() resolvem o caminho do binario mesmo quando run_cmd e
+# simulado; sem isto o modulo falha isolado numa estacao sem ffmpeg no PATH global.
+if shutil.which("ffmpeg") is None:
+    _ffmpeg_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        ".workspace", "tools", "ffmpeg",
+    )
+    if os.path.isdir(_ffmpeg_dir):
+        os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
 import build_video
 

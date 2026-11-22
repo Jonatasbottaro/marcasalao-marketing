@@ -38,8 +38,23 @@ import build_video  # noqa: E402
 import preset_runner  # noqa: E402
 import render_local  # noqa: E402
 import tenant_validator  # noqa: E402
+import archives_guard  # noqa: E402
 
 TEST_TMP_ROOT = os.path.join(REPO_ROOT, ".workspace", "tmp", "test_audio_tts")
+
+# Rede de seguranca para execucao direta via unittest: o render de integracao
+# nunca pode deixar o master compartilhado com o bed de audio externo do teste.
+_GUARD = None
+
+
+def setUpModule() -> None:
+    global _GUARD
+    _GUARD = archives_guard.ArchivesGuard(REPO_ROOT, name="test_audio_tts").__enter__()
+
+
+def tearDownModule() -> None:
+    if _GUARD is not None:
+        _GUARD.__exit__(None, None, None)
 
 MTH_TENANT = "multitrack-hub"
 MS_TENANT = "marca-salao"
@@ -202,11 +217,19 @@ class AudioTtsTest(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_08_wav_feeds_preset_runner_audio_track(self) -> None:
         out_dir = _clean_dir(os.path.join(TEST_TMP_ROOT, "integration-render"))
+        archives_dir = _clean_dir(os.path.join(TEST_TMP_ROOT, "integration-archives"))
         wav_abs = os.path.join(REPO_ROOT, self.integration["path"])
         manifest = preset_runner.run_preset_pipeline(
             MTH_TENANT, MS_CONFIG, out_dir, audio_path=wav_abs, root=REPO_ROOT,
+            archives_dir=archives_dir,
         )
         self.assertEqual(manifest["audio"]["source"], "external")
+        self.assertTrue(
+            manifest["artifacts"]["video"]["archivePath"].startswith(
+                ".workspace/tmp/test_audio_tts/integration-archives"
+            ),
+            "render de teste precisa gravar em archives isolado, nunca nos masters compartilhados",
+        )
         fp = manifest["artifacts"]["video"]["ffprobe"]
         self.assertEqual(fp["width"], 1080)
         self.assertEqual(fp["height"], 1920)
