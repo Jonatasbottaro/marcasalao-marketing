@@ -1,5 +1,50 @@
 # Estado atual do projeto
 
+## Estabilização final do PR #29 — 23/11/2026 (branch `fix/release-check-portabilidade`)
+
+Seção aditiva da rodada de estabilização do PR #29. **Base:** `main` @ `423f720`; branch
+`fix/release-check-portabilidade`; commit de correção `de91076` (posterior a `1149a03`).
+**Nenhum merge na `main` foi feito; o PR permanece em rascunho.** As seções abaixo
+permanecem como registro histórico.
+
+- **Diagnóstico original (run `45242091211`, SHA `1149a03`, Ubuntu + Windows):** gate 8
+  (`unit_tests`) reprovava nos dois sistemas com **uma única falha**:
+  `test_09_ffmpeg_ausente` (`tools/tests/test_workspace_doctor.py`). Causa: o teste
+  removia do PATH as entradas cujo nome continha "ffmpeg"; na estação isso isolava o
+  binário portátil (pasta `.workspace/tools/ffmpeg/`), mas no runner o FFmpeg é instalado
+  por ação oficial (`FedericoCarboni/setup-ffmpeg`) num diretório de cache cujo basename
+  é `bin` — o filtro não removia nada, o `workspace_doctor` enxergava o ffmpeg real do
+  PATH e o teste falhava com `AssertionError: True is not false`. Os 7 gates anteriores
+  passaram; gate 9 e as provas seguintes não foram alcançados.
+- **Correções (commit `de91076`):**
+  1. `test_09_ffmpeg_ausente`: passa a isolar o PATH removendo **somente a entrada que
+     expõe o ffmpeg real** (via `shutil.which`), preservando as demais entradas (git etc.)
+     — funciona no runner e na estação, sem quebrar o doutor.
+  2. `test_25_ffprobe_metadata_encontra_ffprobe_real`: usa a descoberta efetiva
+     (PATH primeiro, cópia portátil depois) sem mock de `shutil.which`; com
+     `REQUIRE_RENDER=1` e nenhum ffprobe disponível, **falha** em vez de skipar; sem
+     render obrigatório e sem ferramenta, registra skip de cobertura ausente.
+  3. `test_executive_summary.test_23`: gera relatórios e portal em **sandbox próprio**
+     (patch de `review_dashboard.resolve_workspace_dir`), sem apagar
+     `.workspace/reports/<tenant>/` compartilhado.
+  4. `test_release_audit` (25/26): fixture **sintética** de archives no sandbox, sem
+     depender de acervo real não versionado da estação.
+  5. `test_run_tests.test_17`: roda em **sandbox sintético** com archives de brinquedo,
+     sem depender de `.workspace/archives` real.
+- **Verificação local (estação Windows, PATH estilo runner com ffmpeg real em diretório
+  `bin`, Python 3.13.15):** `release_check.py --skip-ts --json` **9/9 gates, exit 0**
+  (higiene_git, typescript skipped, tenant_validator, editorial_qa, workspace_doctor,
+  release_audit, bundling, unit_tests **456/456 passed / 0 failed / 0 errors / 0 skipped**,
+  e2e). `workspace_doctor --check` ok (ffmpeg/ffprobe origem `PATH`, 0 erros);
+  `test_workspace_doctor` + `test_workspace_doctor_repair` 51/51; `tenant_validator`,
+  `factory_cli list/pipeline`, `utm_simulator`, `release_audit --strict` (8/8) e
+  `unittest discover -s tests/e2e` aprovados; `git diff --check` limpo.
+- **CI:** novo run do `local-render-validation.yml` disparado sobre `de91076` (runs
+  `45257399186` e `45257382687`, Ubuntu + Windows) — **resultadopendente de consulta
+  ao vivo no fechamento desta seção**; atualizar com o veredito e os links ao concluir.
+- **Pendências:** confirmar CI verde nos dois sistemas; atualizar este registro com o
+  resultado dos runs; PR #29 segue em rascunho aguardando revisão/integração do titular.
+
 ## Base verificada em 22/11/2026 — consolidação documental
 
 Seção aditiva da consolidação documental de 22/11/2026. **Método:** leitura de código,

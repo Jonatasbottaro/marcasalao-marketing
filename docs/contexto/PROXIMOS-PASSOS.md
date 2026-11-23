@@ -1,21 +1,37 @@
 # Próximos passos
 
-## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `eb3c064`, push em `origin`)
+## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `de91076`, push em `origin`)
 
-**9/9 gates do `release_check.py --json` aprovados** (sem `--skip-ts`, 23/11/2026), exit code 0:
+**9/9 gates do `release_check.py --skip-ts --json` aprovados** (23/11/2026, PATH estilo runner com ffmpeg real), exit code 0:
 1. higiene_git — OK
-2. typescript (build + test) — OK
+2. typescript — skipped (build/test TypeScript é etapa separada do CI)
 3. tenant_validator (5 tenants) — OK
-4. editorial_qa (7 ok, 0 warn, 0 fail) — OK
-5. workspace_doctor — OK (ffmpeg/ffprobe origem "portatil", versão 9.1)
-6. release_audit (8 domínios OK) — OK
+4. editorial_qa (7 lentes) — OK
+5. workspace_doctor — OK (ffmpeg/ffprobe origem "PATH", 0 erros)
+6. release_audit (8 domínios) — OK
 7. bundling (0 bundles, não reprova) — OK
-8. unit_tests `--fast` — OK (453 passed, 0 failed, 0 errors, 3 skipped; gate passou)
+8. unit_tests `--fast` — **456 passed, 0 failed, 0 errors, 0 skipped**
 9. e2e — OK
 
-**Alterações:** `tools/tests/test_workspace_doctor.py` (teste 09 isolado de PATH; testes 25 e 26 de `_ffprobe_metadata` com ffprobe real via PATH); `tools/tests/test_executive_summary.py`, `tools/tests/test_publish_pack.py`, `tools/tests/test_run_tests.py`, `tools/tests/test_release_audit.py` (testes 23, 08, 17, 25, 26 condicionados à presença de `.workspace/archives/`/`.workspace/reports/` locais, com skip quando ausente); ffmpeg/ffprobe portátil instalado em `.workspace/tools/ffmpeg/` (não versionado); worktree órfão removida.
+**Correções do commit `de91076` (posterior a `1149a03`):** gate 8 reprovava no CI (Ubuntu + Windows, run `45242091211`) por `test_09_ffmpeg_ausente` — o filtro de PATH por nome de pasta só isolava o binário portátil da estação, não o ffmpeg do runner (instalado via PATH em diretório `bin`). Corrigido: `test_09` remove do PATH apenas a entrada que expõe o ffmpeg real; `test_25` usa descoberta efetiva (PATH/portátil) e falha com `REQUIRE_RENDER=1` sem ffprobe; `test_executive_summary.test_23` usa sandbox sem apagar `.workspace/reports/` compartilhado; `test_release_audit` 25/26 e `test_run_tests.test_17` usam fixtures sintéticas de archives (sem skip de acervo local). Detalhe em [ESTADO-ATUAL.md](ESTADO-ATUAL.md).
 
-**Pendente:** criar PR em rascunho contra `main` (link manual: https://github.com/Jonatasbottaro/marcasalao-marketing/compare/main...fix/release-check-portabilidade?expand=1; `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
+**Pendente:** confirmar CI verde nos dois sistemas (runs `45257399186` e `45257382687` sobre `de91076`); atualizar este registro com o resultado; PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular.
+
+## Etapa 2 — Homologação real da campanha NS-001 (planejamento; não executar nesta rodada)
+
+Registro de continuidade para a próxima fase. **Não produzir nem publicar a campanha agora;** apenas deixar o plano de retomada claro. Verificações necessárias:
+
+- **Briefing e proposta de valor:** reler o briefing da NS-001 e confirmar proposta de valor, público e diferenciais.
+- **Hooks e roteiros finais:** revisar hooks e roteiros aprovados; conferir aderência à política editorial.
+- **Capturas reais e atualizadas do produto:** validar que as capturas usadas são reais e atuais.
+- **CTA e destino:** confirmar CTA por rede e destino (site oficial `https://marcasalao.com.br`; Facebook com URL completa na legenda; Instagram "link na bio" somente confirmado).
+- **Links com UTM:** conferir matriz UTM consolidada e URLs por canal.
+- **Narração e legendas separadas:** entregar texto de narração em `04-legendas/` (PT-BR, por cenas e tempos) e `.srt` correspondente; **política sem áudio** (vídeo mudio, `-an`, 0 faixas).
+- **Formatos Instagram, Facebook e YouTube:** conferir formatos e durações.
+- **Revisão editorial:** rodar `editorial_qa --strict` e revisão humana.
+- **Geração dos vídeos:** render real com FFmpeg/FFprobe (descoberta portátil) e inspeção de metadados.
+- **Conferência do pacote de entrega:** `delivery_verify`, hashes e artefatos.
+- **Aprovação explícita do titular antes de qualquer publicação.**
 
 ---
 

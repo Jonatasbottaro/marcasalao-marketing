@@ -50,6 +50,26 @@ manutenção: [DOCUMENTACAO.md](DOCUMENTACAO.md). Índice: [../README.md](../REA
 
 ## 4. Lacunas conhecidas do mapa
 
+### Resolvidas em 23/11/2026 (branch `fix/release-check-portabilidade`, commit `de91076`)
+
+- **Gate 8 (`unit_tests`) reprovava no CI (Ubuntu + Windows, run `45242091211`, SHA `1149a03`):**
+  `tools/tests/test_workspace_doctor.py::test_09_ffmpeg_ausente` removia do PATH as entradas
+  cujo nome continha "ffmpeg". Na estação isso isolava o binário portátil
+  (`.workspace/tools/ffmpeg/`), mas no runner o FFmpeg é instalado por ação oficial
+  (`FedericoCarboni/setup-ffmpeg`) num diretório de cache cujo basename é `bin` — o filtro
+  não removia nada, o `workspace_doctor` enxergava o ffmpeg real do PATH e o teste falhava
+  (`AssertionError: True is not false`). **Correção:** o teste passa a remover do PATH
+  **somente a entrada que expõe o ffmpeg real** (`shutil.which`), preservando as demais
+  entradas (git etc.); funciona no runner e na estação. Medido: `release_check.py
+  --skip-ts --json` 9/9 gates, exit 0, `unit_tests` 456/456, 0 skips (Windows, PATH estilo
+  runner). CI sobre `de91076` (runs `45257399186` e `45257382687`) — resultado pendente de
+  consulta ao vivo.
+- **Testes condicionados a acervo local convertidos em fixtures sintéticas:** `test_25`/`26`
+  de `test_release_audit` e `test_17` de `test_run_tests` agora criam archives sintéticos em
+  sandbox; `test_executive_summary.test_23` usa sandbox próprio em vez de apagar
+  `.workspace/reports/<tenant>/` compartilhado. `test_25` do `workspace_doctor` usa a
+  descoberta efetiva (PATH/portátil) e falha com `REQUIRE_RENDER=1` quando não há ffprobe.
+
 ### Resolvidas em 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`, commit de código `7572c77`)
 
 - **Gate 7 (`bundling`) do `release_check`:** `tools/release_check.py:229-234` invocava

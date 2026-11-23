@@ -1,5 +1,19 @@
 # Handoff: retomar o projeto
 
+## Etapa 1 — estabilização do release (correção final do gate 8, 23/11/2026)
+
+- **Branch:** `fix/release-check-portabilidade` @ `de91076` (push em `origin`); base `main` @ `423f720`. Arquivos temporários em `.workspace/` (não versionados).
+- **O que foi feito (commit `de91076`, posterior a `1149a03`):**
+  1. Reproduzida a falha do gate 8 em condições de CI: com o FFmpeg vindo do PATH num diretório `bin/` (como no runner), `test_09_ffmpeg_ausente` falhava com `AssertionError: True is not false` — o filtro de PATH por nome de pasta só funcionava na estação (pasta portátil `ffmpeg`).
+  2. `test_09_ffmpeg_ausente` agora remove do PATH apenas a entrada que expõe o ffmpeg real (`shutil.which`), preservando as demais; funciona no runner e na estação.
+  3. `test_25_ffprobe_metadata_encontra_ffprobe_real` usa a descoberta efetiva (PATH ou cópia portátil) sem mock; com `REQUIRE_RENDER=1` e nenhum ffprobe, falha em vez de skipar.
+  4. `test_executive_summary.test_23` gera relatórios e portal em sandbox próprio, sem apagar `.workspace/reports/<tenant>/` compartilhado.
+  5. `test_release_audit` 25/26 e `test_run_tests.test_17` usam fixtures sintéticas de archives, sem depender de acervo real não versionado da estação.
+- **Verificação local (Windows, PATH estilo runner, Python 3.13.15):** `release_check.py --skip-ts --json` **9/9 gates, exit 0**; `unit_tests` **456/456 passed / 0 failed / 0 errors / 0 skipped**; `workspace_doctor` ok (ffmpeg/ffprobe origem `PATH`); módulos doctor 51/51; `tenant_validator`, `factory_cli`, `utm_simulator`, `release_audit --strict` (8/8), E2E e `git diff --check` aprovados.
+- **CI:** novo run do `local-render-validation.yml` sobre `de91076` (runs `45257399186` e `45257382687`, Ubuntu + Windows) — **resultado pendente de consulta ao vivo**; atualizar com veredito e links ao concluir.
+- **Pendente:** confirmar CI verde nos dois sistemas; atualizar `ESTADO-ATUAL.md` com o resultado dos runs; PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular. Não merge, não publicar redes sociais, não deploy.
+- **Restrições respeitadas:** nada fora de `<RAIZ>`; `.workspace/` local e não versionado; nenhuma branch/trabalho de outra sessão excluído.
+
 ## Etapa 1 — estabilização do release (concluída com êxito, 23/11/2026)
 
 - **Branch:** `fix/release-check-portabilidade` @ `eb3c064` (push em `origin`); base `main` @ `423f720`. Arquivos temporários em `.workspace/` (não versionados).
