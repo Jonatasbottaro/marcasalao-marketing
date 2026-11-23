@@ -36,6 +36,7 @@ import approval_cli  # noqa: E402
 import campaign_calendar  # noqa: E402
 import review_dashboard  # noqa: E402
 import executive_summary as es  # noqa: E402
+import render_local  # noqa: E402
 import review_dashboard  # noqa: E402
 import utm_report_importer as utm  # noqa: E402
 
@@ -516,11 +517,27 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
 
 class ExecutiveSummaryPortalTest(ExecutiveSummaryBase):
     def test_23_portal_expoe_digest_por_tenant(self) -> None:
-        self._generate_all()
-        portal_out = ".workspace/tmp/test_executive_summary/" + self.tmp.name + "/portal"
-        result = review_dashboard.build_portal(root=str(REPO_ROOT), output_dir=portal_out)
-        self.assertTrue(result["ok"])
-        data = json.loads((REPO_ROOT / portal_out / "portal-data.json").read_text(encoding="utf-8"))
+        # O portal le os relatorios executivos do local canonico
+        # .workspace/reports/<tenant>/ (resolvido via resolve_workspace_dir),
+        # nao do diretorio temporario de saida dos demais testes desta classe.
+        reports_root = os.path.join(str(self._shared_root()), ".workspace", "reports")
+        tenant_dirs = [os.path.join(reports_root, tid) for tid in EXPECTED_TENANTS]
+        try:
+            es.generate_reports(
+                root=str(REPO_ROOT), all_tenants=True, output_dir=".workspace/reports",
+            )
+            portal_out = ".workspace/tmp/test_executive_summary/" + self.tmp.name + "/portal"
+            result = review_dashboard.build_portal(root=str(REPO_ROOT), output_dir=portal_out)
+            self.assertTrue(result["ok"])
+            data = json.loads((REPO_ROOT / portal_out / "portal-data.json").read_text(encoding="utf-8"))
+            self.assertEqual(data["totals"], {"tenants": 5, "campaigns": 14})
+        finally:
+            for tenant_dir in tenant_dirs:
+                shutil.rmtree(tenant_dir, ignore_errors=True)
+            if os.path.isdir(render_local.fs_path(reports_root)) and not os.listdir(
+                render_local.fs_path(reports_root)
+            ):
+                os.rmdir(render_local.fs_path(reports_root))
         self.assertEqual(data["totals"], {"tenants": 5, "campaigns": 14})
         self.assertIs(data["autoPublish"], False)
         digest = data["executiveSummary"]

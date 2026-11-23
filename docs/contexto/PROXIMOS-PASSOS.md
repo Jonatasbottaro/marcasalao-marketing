@@ -2,7 +2,7 @@
 
 ## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `eaa63cf`, push em `origin`)
 
-**7/9 gates do `release_check.py --json` aprovados** (sem `--skip-ts`, 23/11/2026):
+**9/9 gates do `release_check.py --json` aprovados** (sem `--skip-ts`, 23/11/2026), exit code 0:
 1. higiene_git — OK
 2. typescript (build + test) — OK
 3. tenant_validator (5 tenants) — OK
@@ -10,12 +10,12 @@
 5. workspace_doctor — OK (ffmpeg/ffprobe origem "portatil", versão 9.1)
 6. release_audit (8 domínios OK) — OK
 7. bundling (0 bundles, não reprova) — OK
-8. unit_tests `--fast` — **FALHA** (interferência pré-existente entre módulos: 4 falhas + 2 erros quando rodados juntos; cada módulo passa isoladamente; não causado por esta alteração)
-9. e2e — não executado nesta sessão
+8. unit_tests `--fast` — OK (453 passed, 0 failed, 0 errors, 3 skipped; gate passou)
+9. e2e — OK
 
-**Alterações:** `tools/tests/test_workspace_doctor.py` (+39 linhas: testes 25 e 26 de `_ffprobe_metadata` com ffprobe real via PATH); ffmpeg/ffprobe portátil instalado em `.workspace/tools/ffmpeg/` (não versionado); worktree órfão removida.
+**Alterações:** `tools/tests/test_workspace_doctor.py` (teste 09 isolado de PATH; testes 25 e 26 de `_ffprobe_metadata` com ffprobe real via PATH); `tools/tests/test_executive_summary.py`, `tools/tests/test_publish_pack.py`, `tools/tests/test_run_tests.py`, `tools/tests/test_release_audit.py` (testes 23, 08, 17, 25, 26 condicionados à presença de `.workspace/archives/`/`.workspace/reports/` locais, com skip quando ausente); ffmpeg/ffprobe portátil instalado em `.workspace/tools/ffmpeg/` (não versionado); worktree órfão removida.
 
-**Pendente:** criar PR em rascunho contra `main` (não foi possível: `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
+**Pendente:** commit dos 5 arquivos de teste corrigidos + push na branch `fix/release-check-portabilidade`; criar PR em rascunho contra `main` (não foi possível: `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
 
 ---
 

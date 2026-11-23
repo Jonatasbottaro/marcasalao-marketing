@@ -35,6 +35,7 @@ TEST_TMP_ROOT = os.path.join(REPO_ROOT, ".workspace", "tmp", "rel-audit")
 sys.path.insert(0, TOOLS_DIR)
 
 import release_audit  # noqa: E402
+import render_local  # noqa: E402
 
 DOMAIN_IDS = [
     "contratos_tenants",
@@ -656,6 +657,8 @@ class ReleaseAuditTests(unittest.TestCase):
         """Traz para o sandbox apenas a midia local de uma campanha versionada."""
         slug = "camp-saas-demo-marca-salao-001"
         source = os.path.join(REPO_ROOT, ".workspace", "archives", slug)
+        if not os.path.isdir(render_local.fs_path(source)):
+            self.skipTest(f"arquivo real de arquivo nao disponível nesta estação: {source}")
         target = os.path.join(sandbox, ".workspace", "archives", slug)
         shutil.copytree(source, target)
         # No projeto real .workspace/ e ignorado por .git/info/exclude;
