@@ -443,11 +443,24 @@ class BuildPortalTest(unittest.TestCase):
             self.assertNotIn("D:/", texto)
             self.assertNotIn("C:/", texto)
             self.assertNotIn("C:\\", texto)
+        base_compartilhada = os.path.realpath(
+            os.path.dirname(review_dashboard.resolve_workspace_dir(REPO_ROOT))
+        )
+        base_local = os.path.realpath(REPO_ROOT)
         for key, valor in _walk_strings(self.data):
             if key.endswith(("Path", "Root")):
                 self.assertFalse(valor.startswith(("/", "\\")), f"{key}={valor}")
-                self.assertNotIn("..", valor)
                 self.assertRegex(valor, r"^[A-Za-z0-9_.\-/]")
+                if ".." in valor:
+                    # Worktrees compartilham o .workspace/ do checkout principal
+                    # (invariante 5): referencias a relatorios locais por ".."
+                    # sao legitimas. Vazamento real seria resolver fora de <RAIZ>.
+                    resolvido = os.path.realpath(os.path.join(PORTAL_DIR, valor))
+                    self.assertTrue(
+                        resolvido.startswith(base_compartilhada + os.sep)
+                        or resolvido.startswith(base_local + os.sep),
+                        f"{key}={valor} resolve fora da raiz: {resolvido}",
+                    )
 
     def test_09_build_is_deterministic(self) -> None:
         antes = {

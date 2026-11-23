@@ -2269,6 +2269,11 @@ class StudioTenantEditorialIntegrationTest(StudioTestBase):
             ):
                 for dirpath, _dirs, names in os.walk(render_local.fs_path(base)):
                     for name in names:
+                        # Artefatos transientes do SQLite (WAL/SHM) nao sao conteudo
+                        # do workspace: aparecem/desaparecem por checkpoint e tornariam
+                        # a comparacao flaky sem indicar mutacao real.
+                        if name.endswith(('-wal', '-shm')):
+                            continue
                         files.add(os.path.relpath(os.path.join(dirpath, name), STUDIO_ROOT))
             return files
 

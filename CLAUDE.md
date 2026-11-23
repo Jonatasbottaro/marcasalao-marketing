@@ -1,5 +1,12 @@
 # Regras do projeto Marca Salão Marketing
 
+> **Entrada de IDE.** Este arquivo encaminha para as mesmas fontes canônicas carregadas por
+> outras IDEs; não mantém versão independente das regras. Contrato operacional completo:
+> [AGENTS.md](AGENTS.md). Índice central da documentação: [docs/README.md](docs/README.md).
+> Fluxo de marketing: [WORKFLOW.md](WORKFLOW.md). Estado técnico e retomada:
+> [docs/contexto/README.md](docs/contexto/README.md). As regras abaixo são um resumo
+> essencial; em caso de divergência, prevalece `AGENTS.md`.
+
 ## Regra de produção: vídeo sem áudio
 
 - Gerar vídeos com legendas visíveis e sincronizadas às cenas.

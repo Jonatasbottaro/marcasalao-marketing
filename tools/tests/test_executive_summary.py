@@ -34,6 +34,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 
 import approval_cli  # noqa: E402
 import campaign_calendar  # noqa: E402
+import review_dashboard  # noqa: E402
 import executive_summary as es  # noqa: E402
 import review_dashboard  # noqa: E402
 import utm_report_importer as utm  # noqa: E402
@@ -64,15 +65,25 @@ class ExecutiveSummaryBase(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(prefix="exec-", dir=str(TMP_PARENT))
         self.tmp = Path(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
-        self.out_rel = ".workspace/tmp/test_executive_summary/" + self.tmp.name + "/reports"
+        self.out_rel = (
+            ".workspace/tmp/test_executive_summary/"
+            + os.path.basename(self.tmp.name)
+            + "/reports"
+        )
 
     def _generate_all(self, **kwargs) -> dict:
         return es.generate_reports(
             root=str(REPO_ROOT), all_tenants=True, output_dir=self.out_rel, **kwargs
         )
 
+    def _shared_root(self) -> Path:
+        # Relatorios executivos vivem no .workspace/ compartilhado entre
+        # worktrees (invariante 5): em worktree, a base real e' a do checkout
+        # principal, nao a desta raiz.
+        return Path(os.path.dirname(review_dashboard.resolve_workspace_dir(str(REPO_ROOT))))
+
     def _read(self, tenant: str, ext: str) -> str:
-        path = REPO_ROOT / self.out_rel / tenant / f"relatorio-executivo-{tenant}.{ext}"
+        path = self._shared_root() / self.out_rel / tenant / f"relatorio-executivo-{tenant}.{ext}"
         return path.read_text(encoding="utf-8")
 
 
@@ -83,11 +94,21 @@ class ExecutiveSummaryGenerationTest(ExecutiveSummaryBase):
         self.assertIs(result["autoPublish"], False)
         self.assertEqual(result["totalTenants"], 5)
         self.assertEqual(tuple(result["tenants"]), EXPECTED_TENANTS)
+        shared = self._shared_root()
         for report in result["reports"]:
             tid = report["tenantId"]
-            self.assertTrue((REPO_ROOT / report["files"]["json"]).is_file(), tid)
-            self.assertTrue((REPO_ROOT / report["files"]["markdown"]).is_file(), tid)
-            self.assertIn(f".workspace/", report["files"]["json"])
+            json_abs = (REPO_ROOT / report["files"]["json"]).resolve()
+            md_abs = (REPO_ROOT / report["files"]["markdown"]).resolve()
+            self.assertTrue(json_abs.is_file(), tid)
+            self.assertTrue(md_abs.is_file(), tid)
+            self.assertTrue(
+                str(json_abs).startswith(str(shared.resolve()) + os.sep),
+                f"{tid}: {json_abs} fora do workspace compartilhado",
+            )
+            self.assertIn(
+                "tmp/test_executive_summary/",
+                report["files"]["json"].replace("\\", "/"),
+            )
 
     def test_02_cabecalho_de_governanca_completo(self) -> None:
         self._generate_all()

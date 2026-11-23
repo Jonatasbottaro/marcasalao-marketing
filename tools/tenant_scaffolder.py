@@ -1,24 +1,33 @@
 """Scaffolder automatico de novos tenants e campanha inicial (Etapa 14).
 
 Implementa o onboarding automatizado da fabrica multi-tenant: a partir de
-um ``--tenant-id`` novo, gera o contrato de tenant completo (brand-kit.json,
+um ``--tenant-id`` novo, gera os contratos do tenant (brand-kit.json,
 guardrails.json, fixture editorial) e, quando solicitado via
-``--with-campaign``, o pacote editorial inicial (campaign config, delivery
-package SRT/narracao, social copy + checklist) validados contra os guardrails
-antes de qualquer gravacao em disco.
+``--with-campaign``, o contrato da campanha inicial. SRT, narracao e copias
+sociais sao derivados **somente em memoria** para a pre-validacao de
+guardrails (``editorialQaPreview``); nada disso e' gravado em disco.
+
+Comportamento fail-closed (rodada P1 de 22/11/2026): com ``apply=True``, os
+arquivos sao gravados e em seguida validados (``tenant_validator`` strict +
+pre-validacao de guardrails); qualquer falha executa rollback completo do que
+foi gravado (sem tocar tenants preexistentes) e levanta
+``ScaffolderError("SCAFFOLD_VALIDACAO_FALHOU")`` -> CLI exit 1 e ``ok: False``.
+Com ``apply=False`` (dry-run), a mesma validacao e' executada em staging
+descartavel sob ``<RAIZ>/.workspace/tmp/tenant-scaffolder-preview/`` e o
+resultado e' reportado em ``validation`` antes de qualquer escrita.
 
 Regras de engenharia respeitadas:
 
   * 100% biblioteca padrao Python (stdlib), sem dependencias externas.
-  * Seguranca por padrao: ``--dry-run`` (padrao) e ``--apply`` mutuamente
-    exclusivos na CLI; API publica ``scaffold_tenant(..., apply=False)``.
+  * Seguranca por padrao: ``--dry-run`` e ``--apply`` mutuamente exclusivos e
+    um dos dois obrigatorio na CLI; API publica ``scaffold_tenant(..., apply=False)``.
   * Nenhuma publicacao: ``autoPublish: false`` em checklist e slots.
   * Politica de audio coerente com o tenant (``an``/``aac``) propagada para o
     manifesto, SRT, narracao e pacote social.
   * Confinamento de caminhos via ``render_local.contained``/``rel``/
     ``fs_path``/``write_text_lf``; ``tenant_id`` e slug validados com regex
     kebab-case estrito.
-  * Zero mutacao em disco sem ``--apply`` explicito.
+  * Zero mutacao em disco sem ``--apply`` explicito; rollback em falha.
 
 Uso (a partir da raiz do checkout):
     python tools/tenant_scaffolder.py --tenant-id novo-tenant \\
@@ -41,7 +50,9 @@ import datetime
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -441,7 +452,7 @@ def _build_campaign(
             {
                 "id": "cena-06-cta",
                 "kind": "cta-card",
-                "start": SRT_SCENE_SECONDS[0] + SRT_SCENE_SECONDS[1] + SRT_SCENE_SECONDS[2] + SRT_SCENE_SECONDS[3] + SRT_SCENE_SECONDS[4] + SRT_SCENE_SECONDS[5],
+                "start": SRT_SCENE_SECONDS[0] + SRT_SCENE_SECONDS[1] + SRT_SCENE_SECONDS[2] + SRT_SCENE_SECONDS[3] + SRT_SCENE_SECONDS[4],
                 "duration": SRT_SCENE_SECONDS[5],
                 "surface": "marca",
                 "route": domain,
@@ -538,6 +549,122 @@ def _social_copies(
     }
 
 
+def _guardrails_preview(
+    guardrails: dict,
+    campaign: dict | None,
+    campaign_slug: str | None,
+    brand_name: str,
+    domain: str,
+    brand: dict,
+    policy: dict,
+) -> bool:
+    """Pre-validacao editorial, em memoria, dos textos que a campanha geraria."""
+    if campaign is None or campaign_slug is None:
+        return True
+    first = campaign["scenes"][0]
+    social_texts = _social_copies(
+        campaign_slug,
+        brand_name,
+        brand["tagline"],
+        domain,
+        policy,
+        first["headline"],
+        first["subline"],
+    )
+    texts = [
+        ("srt", _build_srt(campaign_slug)),
+        ("narracao", _build_narracao(campaign_slug, brand_name, domain)),
+        *social_texts.items(),
+    ]
+    for _fonte, texto in texts:
+        violacoes = tenant_validator.validate_text_against_guardrails(
+            texto, guardrails, check_ui_elements=True
+        )
+        if violacoes:
+            return False
+    return True
+
+
+def _tenant_validation(root_real: str, tenant_id: str) -> tuple[bool, list[str]]:
+    """Valida o tenant gravado (ou staged) com fail-closed: qualquer excecao reprova."""
+    try:
+        tenant_validator.load_and_validate_tenant(tenant_id, root=root_real, strict=True)
+        return True, []
+    except tenant_validator.TenantContractError as exc:
+        return False, [str(item) for item in (exc.errors or [exc.code])]
+    except Exception as exc:  # validador indisponivel tambem e' falha fechada
+        return False, [f"VALIDADOR_INDISPONIVEL: {type(exc).__name__}: {exc}"]
+
+
+def _stage_preview(
+    root_real: str,
+    targets: list[tuple[str, dict]],
+    tenant_id: str,
+    guardrails: dict,
+    campaign: dict | None,
+    campaign_slug: str | None,
+    brand_name: str,
+    domain: str,
+    brand: dict,
+    policy: dict,
+) -> dict:
+    """Pre-valida os contratos em staging descartavel sob <RAIZ>/.workspace/tmp."""
+    base = os.path.join(root_real, ".workspace", "tmp", "tenant-scaffolder-preview")
+    os.makedirs(render_local.fs_path(base), exist_ok=True)
+    staging = tempfile.mkdtemp(prefix="scaffold-", dir=render_local.fs_path(base))
+    try:
+        schemas_src = os.path.join(root_real, "schemas")
+        if os.path.isdir(render_local.fs_path(schemas_src)):
+            shutil.copytree(
+                render_local.fs_path(schemas_src),
+                render_local.fs_path(os.path.join(staging, "schemas")),
+            )
+        for rel, data in targets:
+            abs_path = os.path.realpath(os.path.join(staging, rel))
+            if not _contained(os.path.realpath(staging), abs_path):
+                return {"tenantValidatorOk": False, "editorialQaPreview": False,
+                        "errors": ["PATH_OUTSIDE_ROOT: " + rel]}
+            os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+            _write_json(abs_path, data)
+        ok, errors = _tenant_validation(staging, tenant_id)
+        preview: dict[str, Any] = {
+            "tenantValidatorOk": ok,
+            "editorialQaPreview": (
+                _guardrails_preview(
+                    guardrails, campaign, campaign_slug, brand_name, domain, brand, policy
+                )
+                if ok
+                else False
+            ),
+        }
+        if errors:
+            preview["errors"] = errors
+        return preview
+    finally:
+        shutil.rmtree(render_local.fs_path(staging), ignore_errors=True)
+
+
+def _rollback(
+    root_real: str,
+    written: list[str],
+    tenant_dir: str,
+    tenant_dir_preexists: bool,
+) -> None:
+    """Remove somente o que esta rodada gravou; nunca toca tenants preexistentes."""
+    for rel in written:
+        try:
+            os.remove(os.path.join(root_real, *rel.split("/")))
+        except OSError:
+            pass
+    if not tenant_dir_preexists:
+        shutil.rmtree(render_local.fs_path(tenant_dir), ignore_errors=True)
+        tenants_dir = os.path.dirname(tenant_dir)
+        try:
+            os.rmdir(render_local.fs_path(tenants_dir))
+        except OSError:
+            pass
+
+
 def scaffold_tenant(
     tenant_id: str,
     brand_name: str,
@@ -580,7 +707,6 @@ def scaffold_tenant(
     guardrails = _build_guardrails(tenant_id, policy)
     fixture = _build_fixture(tenant_id, brand_name, domain, brand["tagline"])
     campaign: dict | None = None
-    files: list[str] = []
 
     if with_campaign:
         campaign_slug = _validate_slug(with_campaign)
@@ -588,19 +714,33 @@ def scaffold_tenant(
             tenant_id, campaign_slug, campaign_title or _default_tagline(brand_name),
             brand_name, domain, brand["tagline"], policy,
         )
-        files.append(f"tenants/{tenant_id}/campaigns/{campaign_slug}.json")
 
     tenant_rel = f"tenants/{tenant_id}/brand-kit.json"
     guardrails_rel = f"tenants/{tenant_id}/guardrails.json"
     fixture_rel = f"tenants/{tenant_id}/fixtures/fixture-editorial-{tenant_id}.json"
 
-    planned: list[dict] = []
-    written: list[str] = []
-    validation: dict[str, Any] = {"tenantValidatorOk": False, "editorialQaPreview": False}
-    tenant_errors: list[str] = []
+    targets: list[tuple[str, dict]] = [
+        (tenant_rel, brand),
+        (guardrails_rel, guardrails),
+        (fixture_rel, fixture),
+    ]
+    if with_campaign:
+        targets.append(
+            (f"tenants/{tenant_id}/campaigns/{_validate_slug(with_campaign)}.json", campaign)
+        )
+
+    for rel, _data in targets:
+        abs_path = os.path.realpath(os.path.join(root_real, rel))
+        if not _contained(root_real, abs_path):
+            raise ScaffolderError("PATH_OUTSIDE_ROOT", rel)
+
+    campaign_slug = _validate_slug(with_campaign) if with_campaign else None
 
     if not apply:
-        planned.append({"path": tenant_rel, "sha256": "pending", "apply": False})
+        validation = _stage_preview(
+            root_real, targets, tenant_id, guardrails, campaign, campaign_slug,
+            brand_name, domain, brand, policy,
+        )
         return {
             "ok": True,
             "dryRun": True,
@@ -609,69 +749,46 @@ def scaffold_tenant(
             "brandName": brand_name,
             "audioPolicy": policy,
             "campaignSlug": with_campaign,
-            "plannedFiles": planned,
+            "plannedFiles": [
+                {"path": rel, "sha256": "pending", "apply": False} for rel, _data in targets
+            ],
             "writtenFiles": [],
             "validation": validation,
             "nextSteps": [
-                "Revisar os contratos gerados e validar com tenant_validator --all.",
-                "Renderizar a campanha com preset_runner apos conferencia do titular.",
+                "Revisar os contratos planejados; a validacao acima e previa, em staging descartavel.",
+                "Gravar com --apply somente apos conferencia do titular.",
             ],
         }
 
-    targets: list[tuple[str, dict]] = [
-        (tenant_rel, brand),
-        (guardrails_rel, guardrails),
-        (fixture_rel, fixture),
-    ]
-    if with_campaign:
-        campaign_slug = _validate_slug(with_campaign)
-        targets.append((f"tenants/{tenant_id}/campaigns/{campaign_slug}.json", campaign))
-
-    for rel, data in targets:
-        abs_path = os.path.realpath(os.path.join(root_real, rel))
-        if not _contained(root_real, abs_path):
-            raise ScaffolderError("PATH_OUTSIDE_ROOT", rel)
-        if apply:
+    tenant_dir = os.path.join(root_real, "tenants", tenant_id)
+    tenant_dir_preexists = os.path.isdir(render_local.fs_path(tenant_dir))
+    written: list[str] = []
+    try:
+        for rel, data in targets:
+            abs_path = os.path.realpath(os.path.join(root_real, rel))
             os.makedirs(render_local.fs_path(os.path.dirname(abs_path)), exist_ok=True)
             _write_json(abs_path, data)
-        written.append(rel)
+            written.append(rel)
+    except Exception:
+        _rollback(root_real, written, tenant_dir, tenant_dir_preexists)
+        raise
 
-    ctx = None
-    tenant_errors = []
-    try:
-        ctx = tenant_validator.load_and_validate_tenant(tenant_id, root=root_real, strict=True)
-        validation["tenantValidatorOk"] = True
-    except tenant_validator.TenantContractError as exc:
-        validation["tenantValidatorOk"] = False
-        tenant_errors = exc.errors or [exc.code]
-
-    editorial_ok = True
-    if with_campaign:
-        campaign_slug = _validate_slug(with_campaign)
-        delivery_dir = os.path.join(
-            root_real, "02-reels-shorts", "deliveries", tenant_id, campaign_slug
+    validator_ok, tenant_errors = _tenant_validation(root_real, tenant_id)
+    editorial_ok = (
+        _guardrails_preview(
+            guardrails, campaign, campaign_slug, brand_name, domain, brand, policy
         )
-        pkg_dir = os.path.join(root_real, "04-legendas", "pacotes-publicacao", tenant_id, campaign_slug)
-        srt_path = os.path.join(delivery_dir, f"{campaign_slug}.srt")
-        nar_path = os.path.join(delivery_dir, f"{campaign_slug}_narracao.txt")
-        social_texts = _social_copies(
-            campaign_slug, brand_name, brand["tagline"], domain, policy,
-            campaign["scenes"][0]["headline"], campaign["scenes"][0]["subline"],
+        if validator_ok
+        else False
+    )
+    if not validator_ok or not editorial_ok:
+        _rollback(root_real, written, tenant_dir, tenant_dir_preexists)
+        motivo = (
+            "contrato invalido: " + "; ".join(tenant_errors)
+            if not validator_ok
+            else "violacao de guardrails na pre-validacao editorial"
         )
-        ok = True
-        for source, text in (
-            ("srt", _build_srt(campaign_slug)),
-            ("narration", _build_narracao(campaign_slug, brand_name, domain)),
-            *social_texts.items(),
-        ):
-            violations = tenant_validator.validate_text_against_guardrails(
-                text, guardrails, check_ui_elements=True
-            )
-            if violations:
-                ok = False
-                validation["editorialQaPreview"] = False
-                break
-        editorial_ok = ok
+        raise ScaffolderError("SCAFFOLD_VALIDACAO_FALHOU", motivo)
 
     return {
         "ok": True,
@@ -681,11 +798,10 @@ def scaffold_tenant(
         "brandName": brand_name,
         "audioPolicy": policy,
         "campaignSlug": with_campaign,
-        "plannedFiles": [t[0] for t in targets],
+        "plannedFiles": [rel for rel, _data in targets],
         "writtenFiles": written,
         "validation": {
-            "tenantValidatorOk": validation["tenantValidatorOk"],
-            **({"errors": tenant_errors} if tenant_errors else {}),
+            "tenantValidatorOk": True,
             "editorialQaPreview": editorial_ok,
         },
         "nextSteps": [

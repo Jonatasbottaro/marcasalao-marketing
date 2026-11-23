@@ -2,6 +2,12 @@
 
 - Status: decisão arquitetural futura
 - Implementação: não iniciada
+
+> **Nota de classificação (22/11/2026):** registro histórico de intenção. Beats, direção
+> visual, assets e adaptadores existem hoje parcialmente (`BeatPlan`, `VisualStyle`,
+> `VisualAnchor`, `AssetManifest`, render local); `AudioPlan` e `RenderPlan` seguem sem
+> implementação. Estado real em [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md).
+> Nada aqui autoriza implementação nem áudio.
 - Primeiro caso de uso previsto: Marca Salão
 - Dependência: MKT-VIDEO-001 e MKT-PLATFORM-001
 - Aplicação imediata: orientar o futuro contrato Composition

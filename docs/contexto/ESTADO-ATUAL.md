@@ -1,5 +1,135 @@
 # Estado atual do projeto
 
+## Base verificada em 22/11/2026 — consolidação documental
+
+Seção aditiva da consolidação documental de 22/11/2026. **Método:** leitura de código,
+schemas, testes e blobs Git; nenhum teste, gate, render ou CLI foi executado nesta
+verificação. As seções abaixo desta permanecem como registro histórico de cada marco, com
+suas datas e SHAs originais.
+
+- **Base verificada:** branch `main`, commit `05ca7fa10209c648c5ea9cfb5d8a358214c8c396`.
+  `origin/main` disponível localmente: `276ee415a171f3bac11687343265a5c704dce067`
+  (**referência local possivelmente desatualizada**; fetch/pull não autorizados nesta
+  tarefa). A base verificada está 4 commits à frente dessa referência local.
+- **Worktrees na estação:** checkout principal (`main`), `.workspace/worktrees/consol-doc`
+  (branch `docs/consolidacao-documental-2026-11-22`, base `05ca7fa`, contém esta
+  consolidação **não commitada**) e `.workspace/worktrees/utm-ab-recommendations`
+  (`codex/utm-ab-recommendations`, `533cc4c`, já integrada em `origin/main`).
+- **Portfólio (confirmado por código e disco):** 5 tenants (`marca-salao`, `multitrack-hub`,
+  `meu-salao`, `estudio-flow`, `clinica-vital`), **14 campanhas**
+  (`tenants/*/campaigns/*.json`: 2/4/3/2/3). Calendário versionado: 7 semanas, 56 slots,
+  `autoPublish:false`, `statusEditorial:"aguardando_aprovacao_titular"`.
+- **Suíte Python (confirmado por tuplas em `tools/run_tests.py:61-134`):** 4 faixas mutually
+  exclusivas — `smoke` 25 módulos, `fast` 29 (gate oficial), `render` 22, `all` 51.
+  `HEAVY_CONTRACT_MODULES` = 4. Partição fechada: módulo novo não classificado reprova.
+  Contagens de *funções* de teste não foram medidas por execução; números de testes
+  aprovados citados adiante são históricos.
+- **Gates e auditorias (confirmado por código):** `tools/release_check.py:302-312` =
+  **9 gates**; `tools/release_audit.py:82-91` = **8 domínios**;
+  `tools/editorial_qa.py:76-82` = **7 lentes**.
+- **Implementado e integrado na base verificada:** fábrica multi-tenant (Etapas 2–6),
+  acabamento 5/5B, operação do titular 6, fadiga/benchmarks 9, promote-hook 10,
+  publish_bundler 11, atribuição closed-loop 12, runner particionado + reparo + relatório
+  executivo 13/13.1, e **Etapa 14** (`tenant_scaffolder.py`,
+  `campaign_calendar.py --simulate-capacity`, bloco `capacityStatus` no
+  `executive_summary.py`) — commits `6d9cd18`, `01074c8`, `5058a94`, `05ca7fa`.
+- **Implementado com defeitos conhecidos (pendências de código, não corrigidos nesta
+  tarefa):** ver backlog em [PROXIMOS-PASSOS.md](PROXIMOS-PASSOS.md) e
+  [../auditorias/AUDITORIA-PROJETO-2026-11-22.md](../auditorias/AUDITORIA-PROJETO-2026-11-22.md).
+  Principais: E2E espera 7 domínios (`tests/e2e/test_factory_e2e.py:185,367`) contra 8
+  emitidos; scaffolder grava antes de validar e retorna `ok:true` fixo
+  (`tools/tenant_scaffolder.py:636,642,677`); `capacityStatus` mistura escopo por tenant e
+  global (`tools/executive_summary.py:529-546`); `WEEKS_DEFAULT=4` insuficiente para 14
+  campanhas (`tools/campaign_calendar.py:100,924-931`); teste do scaffolder usa `%TEMP%` e
+  `os.chdir("/")` (`tools/tests/test_tenant_scaffolder.py:40,62,65`).
+- **Somente em branch / não integrado:** nada novo além da própria consolidação documental
+  (branch `docs/consolidacao-documental-2026-11-22`, sem commit). PR #1
+  (`codex/ai-memory-integration`) segue registrada como aberta em leitura anterior;
+  **não verificado ao vivo** nesta tarefa.
+- **Proposta, não implementação:** gate de CI em três níveis; `-bitexact`/`-threads 1` para
+  determinismo de render; snapshot obrigatório pré-release; exclude portável completo;
+  `--list` no runner; verificação documental no CI; produção Temporal; `AudioPlan` e
+  `RenderPlan`.
+- **Métricas:** nenhum dado real de analytics no repositório. `impressions`/`clicks`/`ctr`
+  em `bundleAttribution` são sessões web renomeadas
+  (`tools/utm_report_importer.py:1268-1273`); simulador UTM é sintético (seed fixa).
+  `abWinRatePct` do importer é fração 0..1 (:862); o relatório executivo expõe fração e
+  percentual lado a lado.
+- **Armazenamento e aprovações por estação:** `.workspace/archives/` com 84 mídias locais
+  nesta estação; `aprovacoes-titular.json` e `.workspace/bundles/` **ausentes** aqui, logo
+  todas as campanhas `aguardando` e domínio 8 sem itens. Nada disso sincroniza entre
+  estações.
+- **Evidências disponíveis:** manifests versionados com SHA-256/ffprobe/comando;
+  aceites em `docs/historico/`; runs de CI citados nas seções históricas (mais recente
+  confirmado documentalmente: `9a800d1`, run 44904714554, 21/11/2026 — **anterior** à
+  introdução do 8º domínio e do E2E; CI dos commits posteriores não conferido).
+- **Limitações desta verificação:** sem execução de testes/gates; sem consulta ao GitHub
+  ao vivo; sem consulta a Postiz/ComfyUI/Hermes/Gemini; mídia local ausente noutras
+  estações; estação compartilhada com sessões concorrentes (HEAD moveu de `6d9cd18` para
+  `01074c8` e depois para `05ca7fa` durante o dia).
+## Fechamento dos bloqueios P1 de código — 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`)
+
+Seção aditiva da rodada P1 autorizada em 22/11/2026. **Base:** `main` @
+`05ca7fa10209c648c5ea9cfb5d8a358214c8c396`; trabalho em worktree
+`<RAIZ>/.workspace/worktrees/fix-p1`; commit de código+testes `7572c77`
+(+ commits de teste/documentação subsequentes da mesma branch). **Nenhum merge
+na `main` foi feito.** As seções abaixo permanecem como registro histórico de
+cada marco.
+
+- **Gate 7 (`bundling`):** `tools/publish_bundler.py` ganhou `verify_all_bundles()`
+  e a CLI `verify` aceita `--all` (padrão) ou `--bundle` (retrocompatível);
+  `tools/release_check.py:gate_bundling` invoca `verify --all --json` e expõe
+  `checkedCount`. Antes, `verify` sem `--bundle` era erro de uso e o gate falhava
+  em qualquer estação, interrompendo os gates 8 e 9.
+- **E2E 8 domínios:** `tests/e2e/test_factory_e2e.py` valida
+  `{"ok": 8, "warn": 0, "fail": 0}` com `strict=True`; `tests/e2e/_support.py`
+  documenta o 8º domínio e monta os sandboxes no `.workspace/tmp` do checkout
+  principal (worktrees estouram MAX_PATH do Windows nos arquivos mais longos do
+  acervo copiado).
+- **Scaffolder fail-closed:** `tools/tenant_scaffolder.py` valida após gravar e,
+  em qualquer falha (contrato strict, violação de guardrails ou validador
+  indisponível), executa rollback do que gravou (sem tocar tenants preexistentes)
+  e levanta `SCAFFOLD_VALIDACAO_FALHOU` (CLI exit 1, `ok: false`). `--dry-run`
+  pré-valida em staging descartável sob
+  `<RAIZ>/.workspace/tmp/tenant-scaffolder-preview/` e reporta `validation` fiel.
+  Corrigido também o `start` da cena 6 (somava 34 s contra `duration` 30).
+- **`campaign_calendar.simulate_calendar_capacity`:** o bloco `current` passou a
+  usar totais atuais em `totalSlotsEstimate`/`slotsPerWeekAvg` (antes usava os
+  simulados). O escopo misto de `capacityStatus` em `executive_summary`
+  (tenant × global) **permanece aberto** como P2 no backlog da consolidação
+  documental (branch `docs/alinhamento-doc-2026-11-22`).
+- **Isolamento de testes (necessário para os gates passarem fora do CI):**
+  `test_studio_work_backup` copia `tenants/`, `schemas/` e acervo versionado para
+  o workspace do aceite (o preflight editorial auditava root sem entregas);
+  `test_video_studio` ignora artefatos transientes SQLite (`-wal`/`-shm`) no
+  snapshot; `test_executive_summary` lê relatórios no `.workspace` compartilhado
+  (invariante 5) em vez de assumir a raiz própria; `test_review_dashboard`
+  aceita `..` somente quando resolve dentro de `<RAIZ>` (referência legítima ao
+  workspace compartilhado), mantendo a proteção contra vazamento;
+  `test_tenant_scaffolder` restaura o CWD original e usa
+  `<RAIZ>/.workspace/tmp` (antes `tempfile.mkdtemp()` sem `dir=` e
+  `os.chdir("/")`, que contaminavam módulos seguintes no mesmo processo);
+  `tools/build_video.py` passou a resolver o FFmpeg portátil de
+  `<checkout principal>/.workspace/tools/ffmpeg` quando ausente do PATH.
+
+**Resultado literal dos gates (estação Windows, worktree `fix-p1`, 22/11/2026):**
+`python tools/release_check.py --json` → **exit 0, `ok: true`, 9/9 gates ok**
+(`higiene_git`, `typescript` — com `npm ci` local de 8 pacotes na worktree —,
+`tenant_validator`, `editorial_qa`, `workspace_doctor`, `release_audit`,
+`bundling`, `unit_tests`, `e2e`). Suítes de apoio executadas na mesma base:
+`run_tests.py --fast` 448/448 (exit 0, `archivesGuard.ok: true`, 84 mídias
+fotografadas/restauradas); `unittest discover -s tests/e2e` 5/5 com
+`release_audit:8/8 strict`; `test_publish_bundler` 14/14; `test_tenant_scaffolder`
+15/15; `test_review_dashboard` 26/26; `test_executive_summary` 30/30;
+`test_studio_work_backup` 36/36; `test_video_studio` 47/47; `test_run_tests`
+45/45; `verify_egm_install.py` OK (8 skills, 10 agents, 5 standards);
+`tenant_validator --all` 5/5; `workspace_doctor --check` 0 erros.
+
+**Limitações:** resultados valem para esta estação e esta base; o CI remoto não
+foi consultado após o push; a faixa `--render` não foi executada nesta rodada
+(exige FFmpeg e não concorre com gates); nenhum dado de analytics real foi
+produzido; nada foi publicado, agendado ou criado em rascunhos remotos.
+
 ## Validação da Etapa 6 na main — 21/11/2026
 
 O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).

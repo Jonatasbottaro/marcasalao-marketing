@@ -1,5 +1,11 @@
 # Marca Salão — uma arte quadrada compartilhada — padrão v4
 
+> **Escopo de estação (nota de 22/11/2026):** runbook operacional do Servidor02; os caminhos
+> absolutos (`/home/swn/...`, `/dados/aplicacoes/...`) são referências de runtime daquele
+> servidor. Equivalentes portáteis versionados: `marcas/marcasalao/comfyui/`
+> (`marcasalao_media_guard.py`, `marcasalao_export.py`, workflows). Não reproduzir esses
+> caminhos em documentos genéricos nem em `AGENTS.md`.
+
 ## Padrão vigente aprovado em 22/10/2026
 
 Gerar UMA imagem quadrada por campanha e reutilizar o mesmo arquivo em Facebook e Instagram. Criar duas legendas adaptadas. Nenhum formato vertical/Stories nem segunda arte por rede por padrão. O objetivo explícito é economizar API. Padrão visual realista da referência https://www.facebook.com/photo/?fbid=122109973515500502 e prompt reverso em custom_nodes/servidor02_gemini/assets/padrao-arte-integral.txt continuam: Gemini cria a arte completa, com logo/textos/ícones; só escalar localmente, nunca redesenhar nem recortar. Sem modelos locais.

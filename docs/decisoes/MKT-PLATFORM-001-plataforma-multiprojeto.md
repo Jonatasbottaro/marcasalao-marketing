@@ -2,6 +2,12 @@
 
 - Status: decisão arquitetural futura
 - Implementação: não iniciada
+
+> **Nota de classificação (22/11/2026):** registro histórico de intenção. O núcleo
+> multiprojeto existe hoje em `platform/` com dois consumidores reais (ver
+> [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md) e
+> [../../platform/README.md](../../platform/README.md)); "não iniciada" refere-se ao
+> momento da decisão. Nada aqui autoriza implementação.
 - Primeiro consumidor: Marca Salão
 
 ## Decisão central

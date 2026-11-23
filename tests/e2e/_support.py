@@ -27,9 +27,29 @@ sys.path.insert(0, TOOLS_DIR)
 import render_local  # noqa: E402
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
-SANDBOX_ROOT = os.path.join(REPO_ROOT, ".workspace", "tmp", "factory-e2e")
+def _shared_factory_e2e_root() -> str:
+    """Sandboxes no .workspace/tmp do checkout principal.
 
-# Diretórios versionados necessários para o release_audit (7 domínios).
+    Worktrees sob ``<RAIZ>/.workspace/worktrees/`` acrescentam profundidade ao
+    caminho e estouram MAX_PATH do Windows nos arquivos mais longos do acervo
+    copiado. O ``.workspace/`` e' compartilhado entre worktrees por desenho
+    (mesmo padrao de ``review_dashboard.resolve_workspace_dir``), e os
+    sandboxes sao transitorios (``force_rmtree`` por cenario).
+    """
+    proc = subprocess.run(
+        ["git", "rev-parse", "--git-common-dir"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    common = os.path.realpath(os.path.join(REPO_ROOT, proc.stdout.strip()))
+    main_root = os.path.dirname(common) if proc.returncode == 0 else REPO_ROOT
+    return os.path.join(main_root, ".workspace", "tmp", "factory-e2e")
+
+
+SANDBOX_ROOT = _shared_factory_e2e_root()
+
+# Diretórios versionados necessários para o release_audit (8 domínios).
+# O 8º domínio (empacotamento de distribuição) é informativo: varre
+# .workspace/bundles/ do sandbox, que nasce vazio, e portanto ok sem extras.
 COPY_DIRS = (
     "schemas",
     "tenants",

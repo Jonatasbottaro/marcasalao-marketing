@@ -588,6 +588,55 @@ def verify_bundle(bundle_path: str, root: str = ".") -> dict:
     }
 
 
+def verify_all_bundles(root: str = ".") -> dict:
+    """Verifica todos os bundles ``*.zip`` de ``.workspace/bundles/`` da estacao.
+
+    Estacao sem bundles e' considerada ``ok`` (o dominio e' informativo: so' verifica
+    o que existe). Reprova somente se algum bundle presente falhar.
+    """
+    root_real = os.path.realpath(root)
+    bundles_root = _bundles_dir(root_real)
+    bundles: list[dict] = []
+    problems: list[dict] = []
+    if os.path.isdir(render_local.fs_path(bundles_root)):
+        for tenant_id in sorted(os.listdir(render_local.fs_path(bundles_root))):
+            tenant_dir = os.path.join(bundles_root, tenant_id)
+            if not os.path.isdir(render_local.fs_path(tenant_dir)):
+                continue
+            for slug in sorted(os.listdir(render_local.fs_path(tenant_dir))):
+                slug_dir = os.path.join(tenant_dir, slug)
+                if not os.path.isdir(render_local.fs_path(slug_dir)):
+                    continue
+                for name in sorted(os.listdir(render_local.fs_path(slug_dir))):
+                    if not name.endswith(".zip"):
+                        continue
+                    bundle_abs = os.path.join(slug_dir, name)
+                    try:
+                        result = verify_bundle(bundle_abs, root=root_real)
+                    except PublishBundlerError as exc:
+                        result = {
+                            "ok": False,
+                            "autoPublish": False,
+                            "bundlePath": render_local.rel(root_real, bundle_abs),
+                            "problems": [
+                                {
+                                    "severity": "error",
+                                    "code": exc.code,
+                                    "message": exc.detail,
+                                }
+                            ],
+                        }
+                    bundles.append(result)
+                    problems.extend(result.get("problems", []))
+    return {
+        "ok": all(bundle.get("ok", False) for bundle in bundles),
+        "autoPublish": False,
+        "checkedCount": len(bundles),
+        "bundles": bundles,
+        "problems": problems,
+    }
+
+
 def cmd_pack(
     root: str = ".",
     tenant_id: str | None = None,
@@ -601,6 +650,10 @@ def cmd_pack(
 
 def cmd_verify(bundle_path: str, root: str = ".") -> dict:
     return verify_bundle(bundle_path=bundle_path, root=root)
+
+
+def cmd_verify_all(root: str = ".") -> dict:
+    return verify_all_bundles(root=root)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -621,8 +674,14 @@ def main(argv: list[str] | None = None) -> int:
     p_pack.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_pack.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
-    p_verify = subparsers.add_parser("verify", help="Verifica integridade de um bundle .zip")
-    p_verify.add_argument("--bundle", required=True, help="Caminho do bundle .zip")
+    p_verify = subparsers.add_parser("verify", help="Verifica integridade de bundles .zip")
+    verify_mode = p_verify.add_mutually_exclusive_group(required=False)
+    verify_mode.add_argument("--bundle", help="Caminho de um bundle .zip especifico")
+    verify_mode.add_argument(
+        "--all",
+        action="store_true",
+        help="Verifica todos os bundles de .workspace/bundles/ (padrao quando nenhum dos dois)",
+    )
     p_verify.add_argument("--root", default=os.getcwd(), help="Raiz do checkout")
     p_verify.add_argument("--json", action="store_true", help="Emite JSON no stdout")
 
@@ -636,8 +695,10 @@ def main(argv: list[str] | None = None) -> int:
                 slug=args.slug,
                 allow_unapproved=args.allow_unapproved,
             )
-        else:
+        elif args.bundle:
             result = cmd_verify(bundle_path=args.bundle, root=args.root)
+        else:
+            result = cmd_verify_all(root=args.root)
     except PublishBundlerError as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1
@@ -647,6 +708,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.subcommand == "verify" and not args.bundle:
+        status = "OK" if result.get("ok") else "REPROVADO"
+        print(f"{status}: {result.get('checkedCount', 0)} bundle(s) verificado(s)")
+        for bundle in result.get("bundles", []):
+            bundle_status = "OK" if bundle.get("ok") else "REPROVADO"
+            print(f"  - {bundle.get('bundlePath', '')}: {bundle_status}")
+        print(f"  autoPublish: {result.get('autoPublish', False)}")
     else:
         status = "OK" if result.get("ok") else "REPROVADO"
         print(f"{status}: {result.get('tenantId', '')}/{result.get('slug', '')}")

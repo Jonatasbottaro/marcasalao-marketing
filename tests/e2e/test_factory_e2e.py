@@ -182,9 +182,9 @@ class FactoryEndToEndTests(unittest.TestCase):
         # Etapa 6 — auditoria de release ------------------------------------
         audit = release_audit.run_release_audit(root=root, strict=True)
         self.assertTrue(audit["ok"], audit["summary"])
-        self.assertEqual(audit["summary"]["domains"], {"ok": 7, "warn": 0, "fail": 0})
+        self.assertEqual(audit["summary"]["domains"], {"ok": 8, "warn": 0, "fail": 0})
         self.assertEqual(audit["summary"]["problems"], {"errors": 0, "warnings": 0})
-        steps.append("release_audit:7/7 strict")
+        steps.append("release_audit:8/8 strict")
 
         # Invariante final de mídia -----------------------------------------
         self.assertEqual(support.find_media(root), [])
@@ -364,9 +364,9 @@ class FactoryEndToEndTests(unittest.TestCase):
         self.assertTrue(audit["ok"], audit["summary"])
         self.assertEqual(
             audit["summary"]["domains"],
-            {"ok": 7, "warn": 0, "fail": 0},
+            {"ok": 8, "warn": 0, "fail": 0},
         )
-        steps.append("release_audit:7/7")
+        steps.append("release_audit:8/8")
 
         self.assertEqual(support.find_media(self.root), [])
         print("E2E-novas " + " -> ".join(steps))
