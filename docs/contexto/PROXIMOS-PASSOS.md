@@ -1,6 +1,6 @@
 # Próximos passos
 
-## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `eaa63cf`, push em `origin`)
+## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `eb3c064`, push em `origin`)
 
 **9/9 gates do `release_check.py --json` aprovados** (sem `--skip-ts`, 23/11/2026), exit code 0:
 1. higiene_git — OK
@@ -15,7 +15,7 @@
 
 **Alterações:** `tools/tests/test_workspace_doctor.py` (teste 09 isolado de PATH; testes 25 e 26 de `_ffprobe_metadata` com ffprobe real via PATH); `tools/tests/test_executive_summary.py`, `tools/tests/test_publish_pack.py`, `tools/tests/test_run_tests.py`, `tools/tests/test_release_audit.py` (testes 23, 08, 17, 25, 26 condicionados à presença de `.workspace/archives/`/`.workspace/reports/` locais, com skip quando ausente); ffmpeg/ffprobe portátil instalado em `.workspace/tools/ffmpeg/` (não versionado); worktree órfão removida.
 
-**Pendente:** commit dos 5 arquivos de teste corrigidos + push na branch `fix/release-check-portabilidade`; criar PR em rascunho contra `main` (não foi possível: `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
+**Pendente:** criar PR em rascunho contra `main` (link manual: https://github.com/Jonatasbottaro/marcasalao-marketing/compare/main...fix/release-check-portabilidade?expand=1; `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
 
 ---
 
