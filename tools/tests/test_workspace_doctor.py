@@ -12,6 +12,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -453,6 +454,44 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertTrue(result["ok"], result["sections"])
         self.assertEqual(result["summary"]["ffmpeg"]["ffmpeg"]["origin"], "portatil")
         self.assertEqual(result["summary"]["ffmpeg"]["ffprobe"]["origin"], "portatil")
+
+    def test_25_ffprobe_metadata_ffprobe_somente_no_path(self) -> None:
+        """_ffprobe_metadata encontra o ffprobe real apenas via PATH (sem copia portatil)."""
+        # Remove a copia portatil da fixture para forcar descoberta via PATH.
+        self.ffprobe.unlink()
+
+        # Gera um MP4 valido com o ffmpeg real do bootstrap (dentro de <RAIZ>).
+        ffmpeg_real = REPO_ROOT / ".workspace" / "tools" / "ffmpeg" / f"ffmpeg{'.exe' if os.name == 'nt' else ''}"
+        video_real = self.tmp / "sample.mp4"
+        subprocess.run(
+            [
+                str(ffmpeg_real), "-y", "-f", "lavfi",
+                "-i", "testsrc=duration=1:size=160x90:rate=30",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(video_real),
+            ],
+            check=True, capture_output=True,
+        )
+        self.assertTrue(video_real.is_file())
+
+        # ffprobe so esta disponível via PATH (mock de shutil.which aponta para o real).
+        ffprobe_real = REPO_ROOT / ".workspace" / "tools" / "ffmpeg" / f"ffprobe{'.exe' if os.name == 'nt' else ''}"
+        with mock.patch("shutil.which", return_value=str(ffprobe_real)):
+            meta = wd._ffprobe_metadata(self.root, str(video_real))
+
+        self.assertIsNotNone(meta)
+        self.assertEqual(meta["videoStreams"], 1)
+        self.assertEqual(meta["codec"], "h264")
+        self.assertEqual(meta["width"], 160)
+        self.assertEqual(meta["height"], 90)
+        self.assertEqual(meta["pixFmt"], "yuv420p")
+        self.assertGreater(meta["duration"], 0)
+
+    def test_26_ffprobe_metadata_retorna_none_sem_ffprobe(self) -> None:
+        """_ffprobe_metadata retorna None quando o ffprobe nao esta em lugar nenhum."""
+        self.ffprobe.unlink()
+        with mock.patch("shutil.which", return_value=None):
+            meta = wd._ffprobe_metadata(self.root, str(self.archives / f"{SLUG}.mp4"))
+        self.assertIsNone(meta)
 
 
 if __name__ == "__main__":
