@@ -654,18 +654,22 @@ class ReleaseAuditTests(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def _seed_one_campaign_archives(self, sandbox: str) -> str:
-        """Traz para o sandbox apenas a midia local de uma campanha versionada."""
+        """Cria a midia local de uma campanha diretamente no sandbox.
+
+        A fixture e sintetica: o manifesto versionado da campanha
+        (camp-saas-demo-marca-salao-001) declara um ``archivePath`` e um
+        ``sha256``; este metodo cria o arquivo em ``.workspace/archives/<slug>/``
+        com conteudo divergente. Assim o cruzamento manifesto<->binario e
+        exercitado sem depender de acervo real nao versionado de uma estacao,
+        e o teste vale em qualquer checkout (incluido worktree e CI).
+        """
         slug = "camp-saas-demo-marca-salao-001"
-        source = os.path.join(REPO_ROOT, ".workspace", "archives", slug)
-        if not os.path.isdir(render_local.fs_path(source)):
-            self.skipTest(f"arquivo real de arquivo nao disponível nesta estação: {source}")
         target = os.path.join(sandbox, ".workspace", "archives", slug)
-        shutil.copytree(source, target)
-        # No projeto real .workspace/ e ignorado por .git/info/exclude;
-        # replicate isso para nao confundir com MIDIA_NAO_IGNORADA.
-        info_exclude = os.path.join(sandbox, ".git", "info", "exclude")
-        with open(info_exclude, "a", encoding="utf-8") as handle:
-            handle.write("\n.workspace/\n")
+        os.makedirs(render_local.fs_path(target), exist_ok=True)
+        with open(
+            os.path.join(target, f"{slug}.mp4"), "wb"
+        ) as handle:
+            handle.write(b"conteudo-divergente")
         return target
 
     def _all_codes(self, result: dict) -> list[str]:

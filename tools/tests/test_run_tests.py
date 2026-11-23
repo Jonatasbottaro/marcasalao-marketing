@@ -295,9 +295,32 @@ class ArchivesGuardTest(unittest.TestCase):
 
 class SharedArchivesIntegrityTest(unittest.TestCase):
     def test_17_runner_does_not_change_real_archive_hashes(self) -> None:
-        before = archives_guard.snapshot(REPO_ROOT)
-        if not before:
-            self.skipTest("arquivos reais de .workspace/archives ausentes nesta estacao")
+        # Sandbox sintetico: o runner roda sobre uma raiz propria com archives
+        # de brinquedo, sem depender de acervo real nao versionado de uma
+        # estacao. O ArchivesGuard fotografa os hashes do sandbox antes e
+        # restaura qualquer alteracao; o teste prova que o runner nao muda o
+        # acervo fotografado.
+        os.makedirs(TEST_TMP_ROOT, exist_ok=True)
+        sandbox = tempfile.mkdtemp(prefix="shared-archives-", dir=TEST_TMP_ROOT)
+        self.addCleanup(shutil.rmtree, sandbox, True)
+        tools_dst = os.path.join(sandbox, "tools")
+        os.makedirs(os.path.join(tools_dst, "tests"))
+        for name in ("run_tests.py", "archives_guard.py", "srt_validate.py"):
+            shutil.copy2(os.path.join(TOOLS_DIR, name), os.path.join(tools_dst, name))
+        shutil.copy2(
+            os.path.join(TOOLS_DIR, "tests", "test_srt_validate.py"),
+            os.path.join(tools_dst, "tests", "test_srt_validate.py"),
+        )
+        slug = "camp-fake"
+        archive_dir = os.path.join(sandbox, ".workspace", "archives", slug)
+        os.makedirs(archive_dir)
+        _fake_media(
+            os.path.join(archive_dir, f"{slug}.mp4"),
+            b"master-sintetico-original" * 64,
+        )
+
+        before = archives_guard.snapshot(sandbox)
+        self.assertTrue(before, "a fixture deve conter midia fotografavel")
         with mock.patch.object(
             run_tests,
             "partition_modules",
@@ -309,10 +332,10 @@ class SharedArchivesIntegrityTest(unittest.TestCase):
                 "absent": [],
             },
         ):
-            report = run_tests.run_tests(REPO_ROOT, ("fast",))
-        self.assertTrue(report["ok"])
+            report = run_tests.run_tests(sandbox, ("fast",))
+        self.assertTrue(report["ok"], report.get("results"))
         self.assertTrue(report["archivesGuard"]["ok"], report["archivesGuard"])
-        self.assertEqual(archives_guard.snapshot(REPO_ROOT), before)
+        self.assertEqual(archives_guard.snapshot(sandbox), before)
 
     def test_18_render_tests_pass_isolated_archives_dir(self) -> None:
         """Regressao: estes dois renders ja sobrescreveram os masters reais."""
