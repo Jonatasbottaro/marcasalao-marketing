@@ -1,5 +1,18 @@
 # Handoff: retomar o projeto
 
+## Etapa 1 — estabilização do release (concluída, 23/11/2026)
+
+- **Branch:** `fix/release-check-portabilidade` @ `eaa63cf` (push em `origin`); base `main` @ `423f720`.
+- **O que foi feito:**
+  1. Instalado ffmpeg/ffprobe portátil via `tools/bootstrap_ffmpeg.py` em `<RAIZ>/.workspace/tools/ffmpeg/` (ffmpeg 9.1-essentials, validado com `-version`), sem instalação global.
+  2. Testada descoberta de binários reais (PATH e portátil) no `workspace_doctor.py`.
+  3. Adicionados testes 25 (`_ffprobe_metadata` com ffprobe real via PATH) e 26 (retorna `None` sem ffprobe) em `tools/tests/test_workspace_doctor.py`. 26/26 testes OK.
+  4. `python tools/release_check.py --json` (sem `--skip-ts`): 7/9 gates aprovados (higiene_git, typescript, tenant_validator, editorial_qa, workspace_doctor, release_audit, bundling). Gate 8 (unit_tests `--fast`) falha por interferência pré-existente entre módulos de teste (cada módulo passa isoladamente, falham em conjunto por estado compartilhado/timing — não causado por esta alteração). Gate 9 (E2E) não executado nesta sessão.
+  5. Worktree órfão não registrada em `.workspace/worktrees/fix-release-check-portabilidade/` removida.
+  6. Commit `eaa63cf` e push feitos na branch `fix/release-check-portabilidade`.
+- **Pendente:** criar PR em rascunho contra `main` (não foi possível: `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
+- **Restrições respeitadas:** não merge, não publicar redes sociais, não deploy, não excluir branches/trabalhos de outras sessões, nada fora de `<RAIZ>`, `.workspace/` local e não versionado.
+
 ## Última tarefa relevante — consolidação documental (22/11/2026)
 
 - **Base utilizada:** `main` @ `05ca7fa10209c648c5ea9cfb5d8a358214c8c396`; trabalho isolado

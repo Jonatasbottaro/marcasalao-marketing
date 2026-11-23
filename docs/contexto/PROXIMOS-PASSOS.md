@@ -1,5 +1,24 @@
 # Próximos passos
 
+## Etapa 1 — estabilização do release (branch `fix/release-check-portabilidade` @ `eaa63cf`, push em `origin`)
+
+**7/9 gates do `release_check.py --json` aprovados** (sem `--skip-ts`, 23/11/2026):
+1. higiene_git — OK
+2. typescript (build + test) — OK
+3. tenant_validator (5 tenants) — OK
+4. editorial_qa (7 ok, 0 warn, 0 fail) — OK
+5. workspace_doctor — OK (ffmpeg/ffprobe origem "portatil", versão 9.1)
+6. release_audit (8 domínios OK) — OK
+7. bundling (0 bundles, não reprova) — OK
+8. unit_tests `--fast` — **FALHA** (interferência pré-existente entre módulos: 4 falhas + 2 erros quando rodados juntos; cada módulo passa isoladamente; não causado por esta alteração)
+9. e2e — não executado nesta sessão
+
+**Alterações:** `tools/tests/test_workspace_doctor.py` (+39 linhas: testes 25 e 26 de `_ffprobe_metadata` com ffprobe real via PATH); ffmpeg/ffprobe portátil instalado em `.workspace/tools/ffmpeg/` (não versionado); worktree órfão removida.
+
+**Pendente:** criar PR em rascunho contra `main` (não foi possível: `gh` não instalado e sem `GITHUB_TOKEN`); consultar GitHub Actions (Ubuntu + Windows) após o PR; corrigir falhas relacionadas à alteração, se houver.
+
+---
+
 ## Fechamento P1 de código — 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`)
 
 Concluídos e medidos nesta branch (base `05ca7fa`, commit de código `7572c77`);
