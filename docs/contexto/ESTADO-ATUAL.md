@@ -130,6 +130,38 @@ foi consultado após o push; a faixa `--render` não foi executada nesta rodada
 (exige FFmpeg e não concorre com gates); nenhum dado de analytics real foi
 produzido; nada foi publicado, agendado ou criado em rascunhos remotos.
 
+## Portabilidade da descoberta de ferramentas no workspace_doctor — 23/11/2026
+
+**Correção de portabilidade** (branch `fix/release-check-portabilidade`, worktree
+`<RAIZ>/.workspace/worktrees/fix-release-check-portabilidade`, base `main` @ `423f720`).
+
+**Problema:** `tools/workspace_doctor.py` resolvia `ffmpeg`/`ffprobe` somente na cópia
+portátil de `<RAIZ>/.workspace/tools/ffmpeg/` (seção 1 do doutor e leitura de metadados
+`_ffprobe_metadata`). Em checkouts limpos ou estações onde o FFmpeg vive apenas no PATH
+(CI `local-render-validation.yml` provê via `setup-ffmpeg@v2`), a gate 5
+(`workspace_doctor --check --json`) reportava `FFMPEG_AUSENTE`/`FFPROBE_AUSENCE` e saía com
+código 1, bloqueando os gates subsequentes.
+
+**Mudança:** a descoberta passou a consultar o PATH do processo primeiro e, na falta, a cópia
+portátil (mesmo padrão de `tools/build_video.py:get_ffmpeg`/`get_ffprobe`), aplicada também ao
+`_ffprobe_metadata`, com a origem do binário reportada no resumo JSON (`"PATH"` | `"portatil"`).
+CLI, códigos de erro (`FFMPEG_AUSENTE`, `FFPROBE_AUSENTE`, `FFMPEG_INVALIDO`) e contrato JSON
+mantidos.
+
+**Testes:** `tools/tests/test_workspace_doctor.py` 24/24 (novos testes 19–24: PATH, portátil,
+precedência PATH, ausência, doutor com PATH-only e doutor com portátil-only) e
+`tools/tests/test_workspace_doctor_repair.py` 25/25.
+
+**Reprodução controlada:** com ffmpeg/ffprobe apenas no PATH, antes do fix saía
+`FFMPEG_AUSENTE`+`FFPROBE_AUSENCE` (exit 1); depois do fix, encontrados via `origin: "PATH"` e sem
+erros de ausência. Quando o binário está realmente ausente (estação sem FFmpeg instalado), a gate 5
+continua reportando `FFMPEG_AUSENTE`/`FFPROBE_AUSENCE` — comportamento intencional.
+
+**Evidence:** `.workspace/tmp/evidencia-fix-portabilidade.md` (transitório, não versionado).
+
+Nenhum caminho de máquina fixo foi introduzido; todos os artefatos de execução permanecem sob
+`<RAIZ>/.workspace/`.
+
 ## Validação da Etapa 6 na main — 21/11/2026
 
 O GitHub Actions aprovou o commit `9a800d1` no Windows e no Ubuntu, com a suíte Python de render obrigatório, a prova de `TextOverlayPlan` (`--text-overlays`) e a prova HTTP de clipes na porta `8808`. Consulte o [run 44904714554](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/44904714554).

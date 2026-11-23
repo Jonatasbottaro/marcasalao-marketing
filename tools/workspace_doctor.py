@@ -3,8 +3,9 @@
 Audita, em uma unica passada, o estado do ``.workspace/`` do checkout PRINCIPAL
 (compartilhado por todas as worktrees):
 
-  1. ffmpeg              presenca e versao de ``ffmpeg.exe``/``ffprobe.exe`` em
-                         ``<MAIN_ROOT>/.workspace/tools/ffmpeg/``.
+  1. ffmpeg              presenca e versao de ``ffmpeg.exe``/``ffprobe.exe``,
+                         resolvidos primeiro no PATH do processo e, na falta,
+                         na copia portatil de ``<MAIN_ROOT>/.workspace/tools/ffmpeg/``.
   2. archives            cruzamento dos MP4/PNG locais em ``.workspace/archives/``
                          com os SHA-256 declarados em ``manifest.json`` e
                          ``derivatives.json`` das entregas (9:16, 1:1, 16:9,
@@ -229,6 +230,19 @@ def _exe_names() -> tuple[str, str]:
     return ("ffmpeg.exe", "ffprobe.exe") if os.name == "nt" else ("ffmpeg", "ffprobe")
 
 
+def _discover_binary(name: str, workspace_root: str) -> tuple[str | None, str | None]:
+    """Resolve um binario (ffmpeg/ffprobe): PATH do processo primeiro,
+    copia portatil do checkout em seguida. Devolve (caminho, origem) com
+    origem em {"PATH", "portatil"} ou (None, None) quando nao encontrado."""
+    found = shutil.which(name)
+    if found:
+        return os.path.abspath(found), "PATH"
+    portable = os.path.join(workspace_root, "tools", "ffmpeg", name)
+    if os.path.isfile(_fs_path(portable)):
+        return os.path.abspath(portable), "portatil"
+    return None, None
+
+
 def _probe_version(path: str) -> tuple[bool, str | None, str | None]:
     """Roda ``<path> -version``. Devolve (ok, primeira_linha, versao)."""
     if not path or not os.path.isfile(_fs_path(path)):
@@ -258,15 +272,20 @@ def _check_ffmpeg(workspace_root: str) -> tuple[list[dict], dict]:
     ff_name, fp_name = _exe_names()
     summary: dict = {"toolsDir": os.path.relpath(tools_dir, os.path.dirname(workspace_root)).replace(os.sep, "/")}
     for label, filename in (("ffmpeg", ff_name), ("ffprobe", fp_name)):
-        path = os.path.join(tools_dir, filename)
-        entry: dict = {"path": os.path.relpath(path, os.path.dirname(workspace_root)).replace(os.sep, "/"),
-                       "present": False, "version": None, "valid": False}
-        if not os.path.isfile(_fs_path(path)):
-            problems.append(_error(f"{label.upper()}_AUSENTE", f"{filename} ausente em .workspace/tools/ffmpeg/"))
+        entry: dict = {"path": filename, "present": False, "version": None, "valid": False, "origin": None}
+        path, origin = _discover_binary(filename, workspace_root)
+        if path is None:
+            problems.append(
+                _error(f"{label.upper()}_AUSENTE",
+                       f"{label} nao encontrado no PATH nem em .workspace/tools/ffmpeg/")
+            )
             summary[label] = entry
             continue
         ok, first_line, version = _probe_version(path)
-        entry.update({"present": True, "valid": ok, "version": version, "firstLine": first_line})
+        entry.update({"present": True, "valid": ok, "version": version, "firstLine": first_line,
+                      "origin": origin})
+        if origin == "portatil":
+            entry["path"] = os.path.relpath(path, os.path.dirname(workspace_root)).replace(os.sep, "/")
         if not ok:
             problems.append(_error(f"{label.upper()}_INVALIDO", f"{filename} nao respondeu a -version"))
         summary[label] = entry
@@ -277,9 +296,9 @@ def _check_ffmpeg(workspace_root: str) -> tuple[list[dict], dict]:
 # 1b. Metadados ffprobe (comparacao com o manifesto)
 # ---------------------------------------------------------------------------
 def _ffprobe_metadata(workspace_root: str, path: str) -> dict | None:
-    """Le metadados do arquivo com o ffprobe portatil; None se indisponivel."""
-    ffprobe = os.path.join(workspace_root, "tools", "ffmpeg", _exe_names()[1])
-    if not os.path.isfile(_fs_path(ffprobe)):
+    """Le metadados do arquivo com o ffprobe resolvido (PATH primeiro, portatil depois); None se indisponivel."""
+    ffprobe, _origin = _discover_binary(_exe_names()[1], workspace_root)
+    if ffprobe is None:
         return None
     try:
         res = subprocess.run(

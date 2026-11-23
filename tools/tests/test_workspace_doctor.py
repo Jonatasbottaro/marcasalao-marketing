@@ -400,6 +400,60 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertTrue(json.loads(verified.getvalue())["ok"])
 
+    # ------------------------------------------------------------------
+    # Descoberta de ferramentas (PATH primeiro, copia portatil depois)
+    # ------------------------------------------------------------------
+    def test_19_descoberta_path_pequisa_binario_no_path(self) -> None:
+        candidato = str(self.tmp / "ffmpeg-path-fake")
+        Path(candidato).write_bytes(b"x")
+        with mock.patch("shutil.which", return_value=candidato):
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertEqual(caminho, os.path.abspath(candidato))
+        self.assertEqual(origem, "PATH")
+
+    def test_20_descoberta_portatil_quando_ausente_no_path(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            caminho, origem = wd._discover_binary(self.ffprobe.name, str(self.workspace))
+        self.assertEqual(caminho, os.path.abspath(str(self.ffprobe)))
+        self.assertEqual(origem, "portatil")
+
+    def test_21_descoberta_path_vantagem_sobre_portatil(self) -> None:
+        candidato = str(self.tmp / "ffmpeg-path-fake")
+        Path(candidato).write_bytes(b"x")
+        with mock.patch("shutil.which", return_value=candidato):
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertEqual(origem, "PATH")
+        self.assertEqual(os.path.basename(caminho), os.path.basename(candidato))
+
+    def test_22_descoberta_binario_nao_encontrado_retorna_none(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            self.ffmpeg.unlink()
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertIsNone(caminho)
+        self.assertIsNone(origem)
+
+    def test_23_doutor_encontra_ffmpeg_no_path_sem_portatil(self) -> None:
+        self.ffmpeg.unlink()
+        self.ffprobe.unlink()
+
+        def falso_which(name: str) -> str | None:
+            if name.lower().startswith(("ffmpeg", "ffprobe")):
+                return str(self.tmp / "binario-fake")
+            return None
+
+        with mock.patch("shutil.which", side_effect=falso_which):
+            result = wd.run_workspace_doctor(self.root)
+        self.assertTrue(result["ok"], result["sections"])
+        self.assertEqual(result["summary"]["ffmpeg"]["ffmpeg"]["origin"], "PATH")
+        self.assertEqual(result["summary"]["ffmpeg"]["ffprobe"]["origin"], "PATH")
+
+    def test_24_doutor_usa_copia_portatil_sem_path(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            result = wd.run_workspace_doctor(self.root)
+        self.assertTrue(result["ok"], result["sections"])
+        self.assertEqual(result["summary"]["ffmpeg"]["ffmpeg"]["origin"], "portatil")
+        self.assertEqual(result["summary"]["ffmpeg"]["ffprobe"]["origin"], "portatil")
+
 
 if __name__ == "__main__":
     unittest.main()
