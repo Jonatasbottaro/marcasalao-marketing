@@ -1,6 +1,6 @@
 # Histórico de processos de marketing
 
-Registros históricos para consulta e continuidade. Os materiais de demonstração não são campanhas finais aprovadas; as regras atuais de `AGENTS.md` e `WORKFLOW.md` prevalecem sobre métodos antigos. Índice completo dos 15 registros desta pasta (atualizado em 22/11/2026); nada aqui é editado retroativamente.
+Registros históricos para consulta e continuidade. Os materiais de demonstração não são campanhas finais aprovadas; as regras atuais de `AGENTS.md` e `WORKFLOW.md` prevalecem sobre métodos antigos. Índice completo dos 16 registros desta pasta (atualizado em 24/11/2026); nada aqui é editado retroativamente.
 
 ## Novembro de 2026 — primeira quinzena (continuidade e governança)
 
@@ -22,6 +22,10 @@ Registros históricos para consulta e continuidade. Os materiais de demonstraç�
 - [Entrada MCP de Planejamento — aceite — 15/11/2026](2026-11-15-entrada-mcp-planejamento-aceite.md)
 - [Fila de produção em lote — aceite — 15/11/2026](2026-11-15-fila-producao-lote-aceite.md)
 - [Modelos reutilizáveis e variações em série — aceite — 15/11/2026](2026-11-15-modelos-variacoes-aceite.md)
+
+## Novembro de 2026 — operação NS-001 (24/11)
+
+- [Operação Resultado 03 — NS-001, distribuição manual e mensuração real — 24/11/2026](2026-11-24-operacao-resultado-03-ns001.md)
 
 ## Como usar este diretório
 

@@ -1,5 +1,22 @@
 # Handoff: retomar o projeto
 
+## Operação Resultado 03 — NS-001, distribuição manual e mensuração real (24/11/2026)
+
+- **Base:** `main` @ `bcabc00`. Registros versionados em
+  [`02-reels-shorts/ns-001-reels-organizacao-agenda/resultado-03/`](../../02-reels-shorts/ns-001-reels-organizacao-agenda/resultado-03/RELATORIO.md)
+  e [`docs/historico/2026-11-24-operacao-resultado-03-ns001.md`](../historico/2026-11-24-operacao-resultado-03-ns001.md).
+- **Gate de publicação reprovado; nada publicado/agendado.** A Resultado 02 aprovou editorialmente a
+  produção e gerou vídeo real de revisão (47 s, 0 áudio) na branch `feat/ns-001-resultado02-producao`
+  @ `5412db4` (worktree `.workspace/worktrees/ns001-resultado02`, **não integrada**). Publicação,
+  decisão 7 (CTA/destino/bio/UTM) e revisão humana seguem pendentes.
+- **Destino reprovado** no teste renderizado (desktop+celular): site exibe "Meu Salão", jornada de
+  marketplace/assinatura incompatível com o CTA e claims proibidos/sem evidência. Bloqueio de
+  publicação registrado; site não alterado.
+- **Recomendação única:** C — ajustar CTA ou destino antes da próxima campanha. NS-002 não iniciada.
+  Ciclo **pendente** até publicação manual efetiva do titular.
+- **Próxima ação do titular:** decidir nome público/destino, assinar decisão 7, conferir bio IG +
+  mecanismo Shorts, revisar a peça v1, autorizar publicação manual e integrar a branch de produção.
+
 ## Operação Finalização — PR #29 com CI verde (24/11/2026)
 
 - **Branch:** `fix/release-check-portabilidade` @ **`6b81d33`** (push em `origin`); base `main` @ `423f720`. PR #29 **em rascunho**, sem merge/deploy/publicação.
