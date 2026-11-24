@@ -1,8 +1,10 @@
 # Próximos passos
 
-## Etapa 1 — estabilização do release: CONCLUÍDA com CI verde (24/11/2026, branch `fix/release-check-portabilidade` @ `6b81d33`)
+## Etapa 1 — estabilização do release: CONCLUÍDA e INTEGRADA na main (24/11/2026, merge commit `bcabc00`)
 
-**CI verde nos dois sistemas** (SHA `6b81d33`): runs [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303) e [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507) — Ubuntu e Windows `success`, 41 steps cada, render obrigatório e provas E2E incluídos. **Release local completo (com TypeScript): 9/9 gates ok, exit 0.** PR #29 segue em rascunho aguardando revisão/integração do titular.
+**PR #29 integrado à `main` pelo mecanismo oficial do GitHub** (merge commit `bcabc0096e563a3bf28626962e8e783d23cd5338`, 2026-11-24T14:30:49Z; `main` `423f720` → `bcabc00`), com autorização expressa do titular. Branch técnica preservada. **Pós-merge local (Windows, main @ `bcabc00`):** `workspace_doctor --check` ok; `run_tests --fast` 456/456, 0 skips; `release_check --json` completo com TypeScript → 9/9 gates ok, exit 0. **CI pós-merge na main:** run [45414927506](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45414927506) — Ubuntu e Windows `success` (render obrigatório + provas E2E). Detalhe em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e [HANDOFF.md](HANDOFF.md).
+
+**CI verde na branch antes do merge** (SHA `6b81d33`): runs [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303) e [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507); head final `6d5f60b`: runs [45396658005](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45396658005) e [45396649094](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45396649094) — Ubuntu e Windows `success`, render obrigatório e provas E2E incluídos.
 
 Correções pós-23/11: `7615c63` (test_09 do derivative_formats portátil, resolveu step 10) e `6b81d33` (fixture do E2E do Studio copia `tenants/`+`schemas/`+acervo editorial; preflight deixava de bloquear com "nenhum tenant disponivel"). Detalhe e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e [HANDOFF.md](HANDOFF.md).
 
@@ -21,11 +23,24 @@ Correções pós-23/11: `7615c63` (test_09 do derivative_formats portátil, reso
 
 **Correções do commit `de91076` (posterior a `1149a03`):** gate 8 reprovava no CI (Ubuntu + Windows, run `45242091211`) por `test_09_ffmpeg_ausente` — o filtro de PATH por nome de pasta só isolava o binário portátil da estação, não o ffmpeg do runner (instalado via PATH em diretório `bin`). Corrigido: `test_09` remove do PATH apenas a entrada que expõe o ffmpeg real; `test_25` usa descoberta efetiva (PATH/portátil) e falha com `REQUIRE_RENDER=1` sem ffprobe; `test_executive_summary.test_23` usa sandbox sem apagar `.workspace/reports/` compartilhado; `test_release_audit` 25/26 e `test_run_tests.test_17` usam fixtures sintéticas de archives (sem skip de acervo local). Detalhe em [ESTADO-ATUAL.md](ESTADO-ATUAL.md).
 
-**Pendente (resolvido em 24/11/2026):** os runs `45257399186`/`45257382687` (SHA `de91076`) falharam no step 10 (`test_derivative_formats.test_09` dependente de acervo local) — corrigido em `7615c63`; CI verde confirmado em `6b81d33` (ver topo). PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular.
+**Pendente (resolvido em 24/11/2026):** os runs `45257399186`/`45257382687` (SHA `de91076`) falharam no step 10 (`test_derivative_formats.test_09` dependente de acervo local) — corrigido em `7615c63`; CI verde confirmado em `6b81d33` e no head final `6d5f60b`. **PR #29 integrado à main em 24/11/2026 (merge commit `bcabc00`)** — ver topo.
+
+**Pendência documental pós-merge:** a atualização de continuidade da integração viaja em PR exclusivamente documental (branch `docs/handoff-pos-merge-pr29`), sem integração automática — revisão do titular pendente.
 
 ## Etapa 2 — Homologação real da campanha NS-001 (planejamento; não executar nesta rodada)
 
-Registro de continuidade para a próxima fase. **Não produzir nem publicar a campanha agora;** apenas deixar o plano de retomada claro. Diagnóstico de prontidão somente-leitura (24/11/2026) em `.workspace/logs/pr29-finalizacao/diagnostico-ns001-etapa2.md` (local): briefing v0.3 em validação, roteiro rascunho editorial, capturas fixture técnica, UTMs `aguardando_aprovacao_titular`, SRT/narração NS-001 ausentes em `04-legendas/`, nada autorizado para gravação/publicação. Verificações necessárias:
+Registro de continuidade para a próxima fase. **Não produzir nem publicar a campanha agora;** apenas deixar o plano de retomada claro. Diagnóstico de prontidão somente-leitura (24/11/2026) em `.workspace/logs/pr29-finalizacao/diagnostico-ns001-etapa2.md` (local): briefing v0.3 em validação, roteiro rascunho editorial, capturas fixture técnica, UTMs `aguardando_aprovacao_titular`, SRT/narração NS-001 ausentes em `04-legendas/`, nada autorizado para gravação/publicação. Estado relido nos arquivos atuais após o merge (24/11/2026): inalterado.
+
+### Proposta de execução da Etapa 2 (preparada em 24/11/2026; executar somente com autorização própria)
+
+1. **Já aprovado (técnico):** pipeline de render/contratos (1080×1920, 30 fps, h264, `-an`, SRT obrigatório), E2E do Studio verde no CI, `release_check` 9/9 na main. Nenhuma aprovação editorial existe ainda.
+2. **Apenas técnico/fictício (não usar como material final):** 12 capturas PNG de 2026-11-05 (emuladores, dados fictícios), prova P001 sintética, fixture editorial do delivery saas-demo, ensaio de destinos só localhost.
+3. **Material real a produzir (após aprovação editorial):** gravação real atualizada da agenda do gestor, fixture editorial dedicada, adaptação vertical quadro a quadro, SRT + narração NS-001 em `04-legendas/` (PT-BR, por cenas/tempos, política sem áudio).
+4. **Decisões pendentes do titular:** aprovação do briefing v0.3, hook NS-001-H15, roteiro e narração; CTA por canal; UTMs dos slots 028/032/036/053; confirmação do "link na bio" do Instagram; nome público ("Meu Salão" na interface vs "Marca Salão"); responsável editorial.
+5. **Critérios de qualidade/homologação:** `editorial_qa --strict` + revisão humana; render real com inspeção `ffprobe` (0 faixas de áudio); `delivery_verify` com hashes; destinos validados além de localhost; conferência de duração vídeo/SRT/roteiro.
+6. **Sequência:** aprovações editoriais → capturas reais → montagem/render → SRT/narração → pacote de entrega verificado → revisão final do titular → publicação/agendamento **somente com autorização explícita e separada**.
+
+Verificações necessárias:
 
 - **Briefing e proposta de valor:** reler o briefing da NS-001 e confirmar proposta de valor, público e diferenciais.
 - **Hooks e roteiros finais:** revisar hooks e roteiros aprovados; conferir aderência à política editorial.
