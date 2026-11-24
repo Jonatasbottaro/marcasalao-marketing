@@ -1,0 +1,42 @@
+1
+00:00:00,000 --> 00:00:05,000
+Você consegue visualizar os agendamentos
+do seu salão com clareza?
+
+2
+00:00:05,000 --> 00:00:10,500
+Quando uma parte da agenda fica no caderno,
+outra na conversa e outra na planilha,
+
+3
+00:00:10,500 --> 00:00:16,000
+reunir as informações pode tomar tempo
+no meio do atendimento.
+
+4
+00:00:16,000 --> 00:00:24,500
+Na agenda do painel, o registro é o mesmo:
+dá para olhar o dia, a semana ou o mês.
+
+5
+00:00:24,500 --> 00:00:31,000
+Dá para filtrar por profissional, por status,
+ou buscar o nome de um cliente.
+
+6
+00:00:31,000 --> 00:00:35,000
+Abrindo o atendimento, aparecem o horário,
+o cliente e o profissional.
+
+7
+00:00:35,000 --> 00:00:38,500
+Também o serviço, o preço e o status.
+
+8
+00:00:38,500 --> 00:00:44,000
+Quando a gestão confirma o atendimento,
+o status fica registrado na agenda.
+
+9
+00:00:44,000 --> 00:00:47,000
+Conheça a agenda do Marca Salão.

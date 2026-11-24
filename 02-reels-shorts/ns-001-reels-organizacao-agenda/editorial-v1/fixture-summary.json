@@ -1,0 +1,20 @@
+{
+  "namespace": "editorial-ns001-20261124",
+  "salonId": "editorial-ns001-20261124-harmonia",
+  "salonName": "Salão Harmonia",
+  "counts": {
+    "professionals": 4,
+    "services": 9,
+    "clients": 10,
+    "appointments": 25,
+    "payments": 10
+  },
+  "today": 6,
+  "statuses": {
+    "pending": 3,
+    "confirmed": 11,
+    "completed": 10,
+    "cancelled": 1
+  },
+  "generatedAt": "2026-11-24T17:42:34.939Z"
+}

@@ -120,12 +120,22 @@ def build_title_style(visual_style: dict | None = None, width: int = 1080, heigh
 def build_subtitle_style(width: int = 1080, height: int = 1920) -> str:
     """Estilo ASS das legendas queimadas, em unidades do espaco SRT do libass.
 
-    O libass converte SRT com PlayRes 384x288 e escala uniformemente pela altura
-    do quadro; declarar o PlayRes explicitamente torna a regra deterministica.
-    A margem inferior e a fonte permanecem proporcionais a altura, cabendo tanto
-    no 9:16 quanto no 16:9 (comprovado por medicao de quadros nos testes).
+    O PlayRes acompanha a geometria resolvida do perfil. No vertical 1080x1920
+    a fonte 40 e a margem inferior 270 mantem o bloco de ate duas linhas na
+    faixa y 1550-1650 (area segura de legendas do storyboard NS-001); as demais
+    geometrias escalam pela altura (fonte/margem vertical) e pela largura
+    (margens horizontais), preservando a fracao do quadro ocupada.
     """
-    return SUBTITLE_STYLE
+    font = max(12, round(40 * height / 1920))
+    margin_v = max(20, round(270 * height / 1920))
+    margin_h = max(10, round(40 * width / 1080))
+    return (
+        f'PlayResX={width},PlayResY={height},'
+        f'Fontname=Arial,Fontsize={font},PrimaryColour=&H00FFFFFF,'
+        f'OutlineColour=&H00000000,BackColour=&H80000000,Bold=1,Outline=2,'
+        f'Shadow=1,Alignment=2,MarginV={margin_v},'
+        f'MarginL={margin_h},MarginR={margin_h}'
+    )
 
 
 class RenderInputError(Exception):
@@ -619,7 +629,7 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
         last_label = '[vtitles]'
 
     clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
-    chains.append(f"{last_label}subtitles='{clean_srt}':force_style='{SUBTITLE_STYLE}'[vfinal]")
+    chains.append(f"{last_label}subtitles='{clean_srt}':force_style='{build_subtitle_style(width, height)}'[vfinal]")
     return ';'.join(chains)
 
 
