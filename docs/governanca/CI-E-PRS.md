@@ -50,6 +50,54 @@ manutenção: [DOCUMENTACAO.md](DOCUMENTACAO.md). Índice: [../README.md](../REA
 
 ## 4. Lacunas conhecidas do mapa
 
+### Resolvidas em 24/11/2026 (branch `fix/release-check-portabilidade`, commits `7615c63` e `6b81d33`)
+
+- **Step 10 do CI (lista unittest multi-tenant) reprovava após o fix do gate 8**
+  (runs `45257399186`/`45257382687` e `45257991157`/`45257977431`, Ubuntu + Windows):
+  `tools/tests/test_derivative_formats.py::test_09_workspace_resolution_and_probe`
+  exigia que `<ws>/archives` fosse diretório — estado local não versionado, ausente
+  em checkout limpo. **Correção (`7615c63`):** asserção de resolução determinística
+  (`resolve_workspace_root` → `<RAIZ>/.workspace`), sem depender de acervo local;
+  cobertura de resolução/probe preservada.
+- **Suite com render obrigatório reprovava no E2E do Video Studio** (runs
+  `45273869915`/`45273855748`, SHA `7615c63`, Ubuntu + Windows):
+  `test_campaign_studio_e2e.test_02` bloqueava com
+  `PREVIEW_EXECUTION_ERROR: nenhum tenant disponivel para o preflight`.
+  **Causa comprovada:** a fixture `_prepare_isolated_workspace` copiava só `tools/`
+  e `platform/`; o Studio (raiz=ws1) lê `<root>/tenants/` em `tenant_ids()` → vazio
+  → `_resolve_tenant_id` → `None` (`tools/video_studio.py:850`). Reproduzido
+  localmente com o erro exato. **Correção (`6b81d33`, +12 linhas, só fixture):**
+  copiar também `tenants/`, `schemas/`, `02-reels-shorts/`, `01-insta-stories/`,
+  `04-legendas/` — contrato de `test_studio_work_backup._copy_repo_subdirs`.
+  Produção intacta; tenant ausente/inválido continua bloqueando.
+- **Desfecho:** CI verde nos dois sistemas sobre `6b81d33` — runs
+  [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303)
+  e
+  [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507)
+  (Ubuntu e Windows `success`, 41 steps cada, render obrigatório + provas E2E).
+  Release local completo **com TypeScript** (`release_check.py --json`, sem
+  `--skip-ts`): 9/9 gates `ok`, exit 0. PR #29 permanece em rascunho.
+
+### Resolvidas em 23/11/2026 (branch `fix/release-check-portabilidade`, commit `de91076`)
+
+- **Gate 8 (`unit_tests`) reprovava no CI (Ubuntu + Windows, run `45242091211`, SHA `1149a03`):**
+  `tools/tests/test_workspace_doctor.py::test_09_ffmpeg_ausente` removia do PATH as entradas
+  cujo nome continha "ffmpeg". Na estação isso isolava o binário portátil
+  (`.workspace/tools/ffmpeg/`), mas no runner o FFmpeg é instalado por ação oficial
+  (`FedericoCarboni/setup-ffmpeg`) num diretório de cache cujo basename é `bin` — o filtro
+  não removia nada, o `workspace_doctor` enxergava o ffmpeg real do PATH e o teste falhava
+  (`AssertionError: True is not false`). **Correção:** o teste passa a remover do PATH
+  **somente a entrada que expõe o ffmpeg real** (`shutil.which`), preservando as demais
+  entradas (git etc.); funciona no runner e na estação. Medido: `release_check.py
+  --skip-ts --json` 9/9 gates, exit 0, `unit_tests` 456/456, 0 skips (Windows, PATH estilo
+  runner). CI sobre `de91076` (runs `45257399186` e `45257382687`) — resultado pendente de
+  consulta ao vivo.
+- **Testes condicionados a acervo local convertidos em fixtures sintéticas:** `test_25`/`26`
+  de `test_release_audit` e `test_17` de `test_run_tests` agora criam archives sintéticos em
+  sandbox; `test_executive_summary.test_23` usa sandbox próprio em vez de apagar
+  `.workspace/reports/<tenant>/` compartilhado. `test_25` do `workspace_doctor` usa a
+  descoberta efetiva (PATH/portátil) e falha com `REQUIRE_RENDER=1` quando não há ffprobe.
+
 ### Resolvidas em 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`, commit de código `7572c77`)
 
 - **Gate 7 (`bundling`) do `release_check`:** `tools/release_check.py:229-234` invocava

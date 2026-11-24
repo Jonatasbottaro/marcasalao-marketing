@@ -412,7 +412,13 @@ class DerivativeFormatsTest(unittest.TestCase):
         ws = derivative_formats.resolve_workspace_root(REPO_ROOT)
         self.assertTrue(os.path.isdir(render_local.fs_path(ws)))
         self.assertTrue(os.path.basename(ws) == ".workspace")
-        self.assertTrue(os.path.isdir(render_local.fs_path(os.path.join(ws, "archives"))))
+        # O .workspace/ e local por desenho e nao existe em checkout limpo (CI);
+        # no checkout principal a resolucao aponta para <REPO_ROOT>/.workspace,
+        # independentemente de archives/ existir (estado da maquina).
+        self.assertEqual(
+            os.path.normcase(os.path.realpath(ws)),
+            os.path.normcase(os.path.realpath(os.path.join(REPO_ROOT, ".workspace"))),
+        )
 
         main_root = derivative_formats._main_checkout_root(REPO_ROOT)
         self.assertIsNotNone(main_root)

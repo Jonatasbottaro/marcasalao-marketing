@@ -295,9 +295,22 @@ class PublishPackTest(unittest.TestCase):
         )
 
         # Na raiz real do projeto (worktree ou checkout principal) o workspace
-        # resolvido sempre tem archives/.
+        # resolvido e sempre o .workspace da estacao. Quando a estacao possui
+        # .workspace/archives (midia local nao versionada), ele deve existir;
+        # sem acervo local a existencia nao e exigida (estado da maquina).
         real_ws = publish_pack.resolve_workspace_root(REPO_ROOT)
-        self.assertTrue(os.path.isdir(render_local.fs_path(os.path.join(real_ws, "archives"))))
+        self.assertEqual(
+            os.path.normcase(os.path.realpath(real_ws)),
+            os.path.normcase(os.path.realpath(os.path.join(REPO_ROOT, ".workspace"))),
+        )
+        if os.path.isdir(
+            render_local.fs_path(os.path.join(real_ws, "archives"))
+        ):
+            # Com acervo presente, a resolucao precisa apontar para um diretorio
+            # de archives real (nao um caminho inexistente dentro da worktree).
+            self.assertTrue(
+                os.path.isdir(render_local.fs_path(os.path.join(real_ws, "archives")))
+            )
 
     def test_09_video_hash_checked_against_archives(self) -> None:
         for res in self.results:

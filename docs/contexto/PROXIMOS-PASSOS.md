@@ -1,5 +1,46 @@
 # Próximos passos
 
+## Etapa 1 — estabilização do release: CONCLUÍDA com CI verde (24/11/2026, branch `fix/release-check-portabilidade` @ `6b81d33`)
+
+**CI verde nos dois sistemas** (SHA `6b81d33`): runs [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303) e [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507) — Ubuntu e Windows `success`, 41 steps cada, render obrigatório e provas E2E incluídos. **Release local completo (com TypeScript): 9/9 gates ok, exit 0.** PR #29 segue em rascunho aguardando revisão/integração do titular.
+
+Correções pós-23/11: `7615c63` (test_09 do derivative_formats portátil, resolveu step 10) e `6b81d33` (fixture do E2E do Studio copia `tenants/`+`schemas/`+acervo editorial; preflight deixava de bloquear com "nenhum tenant disponivel"). Detalhe e evidências em [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e [HANDOFF.md](HANDOFF.md).
+
+### Registro de 23/11/2026 (gate 8, commit `de91076`)
+
+**9/9 gates do `release_check.py --skip-ts --json` aprovados** (23/11/2026, PATH estilo runner com ffmpeg real), exit code 0:
+1. higiene_git — OK
+2. typescript — skipped (build/test TypeScript é etapa separada do CI)
+3. tenant_validator (5 tenants) — OK
+4. editorial_qa (7 lentes) — OK
+5. workspace_doctor — OK (ffmpeg/ffprobe origem "PATH", 0 erros)
+6. release_audit (8 domínios) — OK
+7. bundling (0 bundles, não reprova) — OK
+8. unit_tests `--fast` — **456 passed, 0 failed, 0 errors, 0 skipped**
+9. e2e — OK
+
+**Correções do commit `de91076` (posterior a `1149a03`):** gate 8 reprovava no CI (Ubuntu + Windows, run `45242091211`) por `test_09_ffmpeg_ausente` — o filtro de PATH por nome de pasta só isolava o binário portátil da estação, não o ffmpeg do runner (instalado via PATH em diretório `bin`). Corrigido: `test_09` remove do PATH apenas a entrada que expõe o ffmpeg real; `test_25` usa descoberta efetiva (PATH/portátil) e falha com `REQUIRE_RENDER=1` sem ffprobe; `test_executive_summary.test_23` usa sandbox sem apagar `.workspace/reports/` compartilhado; `test_release_audit` 25/26 e `test_run_tests.test_17` usam fixtures sintéticas de archives (sem skip de acervo local). Detalhe em [ESTADO-ATUAL.md](ESTADO-ATUAL.md).
+
+**Pendente (resolvido em 24/11/2026):** os runs `45257399186`/`45257382687` (SHA `de91076`) falharam no step 10 (`test_derivative_formats.test_09` dependente de acervo local) — corrigido em `7615c63`; CI verde confirmado em `6b81d33` (ver topo). PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular.
+
+## Etapa 2 — Homologação real da campanha NS-001 (planejamento; não executar nesta rodada)
+
+Registro de continuidade para a próxima fase. **Não produzir nem publicar a campanha agora;** apenas deixar o plano de retomada claro. Diagnóstico de prontidão somente-leitura (24/11/2026) em `.workspace/logs/pr29-finalizacao/diagnostico-ns001-etapa2.md` (local): briefing v0.3 em validação, roteiro rascunho editorial, capturas fixture técnica, UTMs `aguardando_aprovacao_titular`, SRT/narração NS-001 ausentes em `04-legendas/`, nada autorizado para gravação/publicação. Verificações necessárias:
+
+- **Briefing e proposta de valor:** reler o briefing da NS-001 e confirmar proposta de valor, público e diferenciais.
+- **Hooks e roteiros finais:** revisar hooks e roteiros aprovados; conferir aderência à política editorial.
+- **Capturas reais e atualizadas do produto:** validar que as capturas usadas são reais e atuais.
+- **CTA e destino:** confirmar CTA por rede e destino (site oficial `https://marcasalao.com.br`; Facebook com URL completa na legenda; Instagram "link na bio" somente confirmado).
+- **Links com UTM:** conferir matriz UTM consolidada e URLs por canal.
+- **Narração e legendas separadas:** entregar texto de narração em `04-legendas/` (PT-BR, por cenas e tempos) e `.srt` correspondente; **política sem áudio** (vídeo mudio, `-an`, 0 faixas).
+- **Formatos Instagram, Facebook e YouTube:** conferir formatos e durações.
+- **Revisão editorial:** rodar `editorial_qa --strict` e revisão humana.
+- **Geração dos vídeos:** render real com FFmpeg/FFprobe (descoberta portátil) e inspeção de metadados.
+- **Conferência do pacote de entrega:** `delivery_verify`, hashes e artefatos.
+- **Aprovação explícita do titular antes de qualquer publicação.**
+
+---
+
 ## Fechamento P1 de código — 22/11/2026 (branch `fix/release-gates-p1-2026-11-22`)
 
 Concluídos e medidos nesta branch (base `05ca7fa`, commit de código `7572c77`);

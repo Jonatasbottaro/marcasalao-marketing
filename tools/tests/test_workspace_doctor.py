@@ -12,6 +12,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -240,13 +241,44 @@ class WorkspaceDoctorTest(unittest.TestCase):
         self.assertIn("tmp/ffmpeg-bootstrap", payload["cleaned"])
         self.assertTrue(self.approvals.exists())
 
+    def _path_sem_ffmpeg(self) -> str:
+        """Copia do PATH sem a entrada que expoe o ffmpeg/ffprobe reais.
+
+        Isola o teste 09 da descoberta real sem quebrar as ferramentas que o
+        proprio doutor usa (git, por exemplo): so a entrada que resolve para o
+        binario e removida, o resto do PATH do processo e preservado.
+        """
+        alvo = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+        if not alvo:
+            return os.environ.get("PATH", "")
+        alvo_dir = os.path.dirname(os.path.abspath(alvo))
+        entradas = []
+        for entrada in os.environ.get("PATH", "").split(os.pathsep):
+            if not entrada:
+                continue
+            if os.path.normcase(os.path.abspath(entrada)) == os.path.normcase(alvo_dir):
+                continue
+            entradas.append(entrada)
+        return os.pathsep.join(entradas)
+
     def test_09_ffmpeg_ausente(self) -> None:
+        # A ausencia precisa ser provocada pela descoberta real (shutil.which),
+        # nao por um filtro que remove entradas cujo nome contenha "ffmpeg" —
+        # esse filtro so funcionava quando o binario vivia numa pasta chamada
+        # ffmpeg e deixava o runner (que instala o FFmpeg via PATH) enxergar o
+        # binario legitimo.
         self.ffmpeg.unlink()
+        caminho_original = os.environ.get("PATH", "")
+        os.environ["PATH"] = self._path_sem_ffmpeg()
+        self.addCleanup(self._restaurar_path, caminho_original)
         result = wd.run_workspace_doctor(self.root)
         self.assertFalse(result["ok"])
         self.assertTrue(self._problems(result, "FFMPEG_AUSENTE"))
         self.assertFalse(result["summary"]["ffmpeg"]["ffmpeg"]["present"])
         self.assertTrue(result["summary"]["ffmpeg"]["ffprobe"]["valid"])
+
+    def _restaurar_path(self, caminho: str) -> None:
+        os.environ["PATH"] = caminho
 
     def test_10_worktrees_e_nao_rastreados(self) -> None:
         (self.workspace / "worktrees" / "etapa6-agente6").mkdir()
@@ -399,6 +431,122 @@ class WorkspaceDoctorTest(unittest.TestCase):
             ])
         self.assertEqual(code, 0)
         self.assertTrue(json.loads(verified.getvalue())["ok"])
+
+    # ------------------------------------------------------------------
+    # Descoberta de ferramentas (PATH primeiro, copia portatil depois)
+    # ------------------------------------------------------------------
+    def test_19_descoberta_path_pequisa_binario_no_path(self) -> None:
+        candidato = str(self.tmp / "ffmpeg-path-fake")
+        Path(candidato).write_bytes(b"x")
+        with mock.patch("shutil.which", return_value=candidato):
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertEqual(caminho, os.path.abspath(candidato))
+        self.assertEqual(origem, "PATH")
+
+    def test_20_descoberta_portatil_quando_ausente_no_path(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            caminho, origem = wd._discover_binary(self.ffprobe.name, str(self.workspace))
+        self.assertEqual(caminho, os.path.abspath(str(self.ffprobe)))
+        self.assertEqual(origem, "portatil")
+
+    def test_21_descoberta_path_vantagem_sobre_portatil(self) -> None:
+        candidato = str(self.tmp / "ffmpeg-path-fake")
+        Path(candidato).write_bytes(b"x")
+        with mock.patch("shutil.which", return_value=candidato):
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertEqual(origem, "PATH")
+        self.assertEqual(os.path.basename(caminho), os.path.basename(candidato))
+
+    def test_22_descoberta_binario_nao_encontrado_retorna_none(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            self.ffmpeg.unlink()
+            caminho, origem = wd._discover_binary("ffmpeg", str(self.workspace))
+        self.assertIsNone(caminho)
+        self.assertIsNone(origem)
+
+    def test_23_doutor_encontra_ffmpeg_no_path_sem_portatil(self) -> None:
+        self.ffmpeg.unlink()
+        self.ffprobe.unlink()
+
+        def falso_which(name: str) -> str | None:
+            if name.lower().startswith(("ffmpeg", "ffprobe")):
+                return str(self.tmp / "binario-fake")
+            return None
+
+        with mock.patch("shutil.which", side_effect=falso_which):
+            result = wd.run_workspace_doctor(self.root)
+        self.assertTrue(result["ok"], result["sections"])
+        self.assertEqual(result["summary"]["ffmpeg"]["ffmpeg"]["origin"], "PATH")
+        self.assertEqual(result["summary"]["ffmpeg"]["ffprobe"]["origin"], "PATH")
+
+    def test_24_doutor_usa_copia_portatil_sem_path(self) -> None:
+        with mock.patch("shutil.which", return_value=None):
+            result = wd.run_workspace_doctor(self.root)
+        self.assertTrue(result["ok"], result["sections"])
+        self.assertEqual(result["summary"]["ffmpeg"]["ffmpeg"]["origin"], "portatil")
+        self.assertEqual(result["summary"]["ffmpeg"]["ffprobe"]["origin"], "portatil")
+
+    def test_25_ffprobe_metadata_encontra_ffprobe_real(self) -> None:
+        """_ffprobe_metadata encontra o ffprobe real pela descoberta efetiva.
+
+        Exercita o caminho real de descoberta (PATH primeiro, copia portatil
+        depois), sem mock de shutil.which: o binario usado e o que o processo
+        realmente resolveria. Nao depende de uma pasta portatil fixa — se o
+        ffprobe vier do PATH (runner do CI), o teste vale; se vier da copia
+        portatil (estacao sem ffmpeg no PATH), tambem vale. Quando o render e
+        obrigatorio (REQUIRE_RENDER=1) e nenhum ffprobe existe, falha em vez de
+        skipar, para nao mascarar ausencia de ferramenta no CI.
+        """
+        # Remove os binarios fake criados pelo setUp para nao mascarar a
+        # descoberta real.
+        self.ffmpeg.unlink(missing_ok=True)
+        self.ffprobe.unlink(missing_ok=True)
+
+        # A copia portatil do repositorio (quando existe) fica no .workspace/
+        # do checkout real, nao no workspace da fixture: a descoberta usa essa
+        # raiz para o fallback portatil.
+        workspace_real = str(REPO_ROOT / ".workspace")
+
+        ffprobe, _origem = wd._discover_binary(wd._exe_names()[1], workspace_real)
+        if ffprobe is None:
+            if os.environ.get("REQUIRE_RENDER") == "1":
+                self.fail(
+                    "REQUIRE_RENDER=1 mas nenhum ffprobe foi encontrado no PATH "
+                    "nem na copia portatil do repositorio"
+                )
+            self.skipTest("ffprobe nao disponivel no PATH nem na copia portatil")
+
+        # Gera um MP4 valido com o ffmpeg descoberto de verdade.
+        ffmpeg, _origem = wd._discover_binary(wd._exe_names()[0], workspace_real)
+        self.assertIsNotNone(ffmpeg, "ffprobe existe mas ffmpeg nao foi descoberto")
+        video_real = self.tmp / "sample.mp4"
+        subprocess.run(
+            [
+                str(ffmpeg), "-y", "-f", "lavfi",
+                "-i", "testsrc=duration=1:size=160x90:rate=30",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(video_real),
+            ],
+            check=True, capture_output=True,
+        )
+        self.assertTrue(video_real.is_file())
+
+        # Descobricao real pelo PATH efetivo do processo (sem mock de shutil.which).
+        meta = wd._ffprobe_metadata(workspace_real, str(video_real))
+
+        self.assertIsNotNone(meta)
+        self.assertEqual(meta["videoStreams"], 1)
+        self.assertEqual(meta["codec"], "h264")
+        self.assertEqual(meta["width"], 160)
+        self.assertEqual(meta["height"], 90)
+        self.assertEqual(meta["pixFmt"], "yuv420p")
+        self.assertGreater(meta["duration"], 0)
+
+    def test_26_ffprobe_metadata_retorna_none_sem_ffprobe(self) -> None:
+        """_ffprobe_metadata retorna None quando o ffprobe nao esta em lugar nenhum."""
+        self.ffprobe.unlink()
+        with mock.patch("shutil.which", return_value=None):
+            meta = wd._ffprobe_metadata(self.root, str(self.archives / f"{SLUG}.mp4"))
+        self.assertIsNone(meta)
 
 
 if __name__ == "__main__":

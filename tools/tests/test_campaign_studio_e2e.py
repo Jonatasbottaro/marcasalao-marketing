@@ -88,6 +88,18 @@ def _prepare_isolated_workspace(ws_dir: str, copy_project: bool = True) -> None:
         render_local.fs_path(os.path.join(ws_dir, "platform"), force=True),
         copy_function=lambda s, d: shutil.copy2(render_local.fs_path(s, force=True), render_local.fs_path(d, force=True)),
     )
+    # tenants/ e schemas/ sao necessarios para o preflight resolver o tenant
+    # (_resolve_tenant_id/tenant_ids leem <root>/tenants/); sem eles o aceite
+    # falha com "nenhum tenant disponivel para o preflight" em qualquer estacao.
+    # O acervo versionado alimenta as lentes do editorial_qa no preflight
+    # (mesmo contrato de test_studio_work_backup._copy_repo_subdirs).
+    for sub in ("tenants", "schemas", "02-reels-shorts", "01-insta-stories", "04-legendas"):
+        shutil.copytree(
+            render_local.fs_path(os.path.join(WORKTREE_ROOT, sub), force=True),
+            render_local.fs_path(os.path.join(ws_dir, sub), force=True),
+            ignore=shutil.ignore_patterns("__pycache__", "*.mp4", "*.wav"),
+            copy_function=lambda s, d: shutil.copy2(render_local.fs_path(s, force=True), render_local.fs_path(d, force=True)),
+        )
     if not copy_project:
         pm = os.path.join(ws_dir, "platform", "examples", "projects", "marca-salao-social.project.json")
         if os.path.isfile(render_local.fs_path(pm, force=True)):

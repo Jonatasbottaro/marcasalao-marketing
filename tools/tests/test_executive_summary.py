@@ -36,6 +36,7 @@ import approval_cli  # noqa: E402
 import campaign_calendar  # noqa: E402
 import review_dashboard  # noqa: E402
 import executive_summary as es  # noqa: E402
+import render_local  # noqa: E402
 import review_dashboard  # noqa: E402
 import utm_report_importer as utm  # noqa: E402
 
@@ -516,10 +517,29 @@ class ExecutiveSummaryFixtureTest(ExecutiveSummaryBase):
 
 class ExecutiveSummaryPortalTest(ExecutiveSummaryBase):
     def test_23_portal_expoe_digest_por_tenant(self) -> None:
-        self._generate_all()
-        portal_out = ".workspace/tmp/test_executive_summary/" + self.tmp.name + "/portal"
-        result = review_dashboard.build_portal(root=str(REPO_ROOT), output_dir=portal_out)
-        self.assertTrue(result["ok"])
+        # O portal le os relatorios executivos do workspace resolvido
+        # (resolve_workspace_dir), nao do diretorio temporario de saida dos
+        # demais testes desta classe. Para nao tocar no .workspace/reports/
+        # compartilhado (que pode conter relatorios legitimos de outra sessao),
+        # redirecionamos os dois lados — geracao e portal — a um sandbox proprio
+        # dentro do tmp da classe. resolve_workspace_dir deve devolver o
+        # diretorio .workspace do sandbox (nao a raiz), pois generate_reports
+        # deriva a saida de dirname(workspace).
+        sandbox = self.tmp / "sandbox"
+        fake_ws = sandbox / ".workspace"
+        (fake_ws / "tmp").mkdir(parents=True)
+        with mock.patch.object(
+            review_dashboard, "resolve_workspace_dir", lambda root: str(fake_ws)
+        ):
+            result = es.generate_reports(
+                root=str(REPO_ROOT), all_tenants=True, output_dir=".workspace/reports",
+            )
+            self.assertTrue(result["ok"])
+            portal_out = ".workspace/tmp/test_executive_summary/" + self.tmp.name + "/portal"
+            portal_result = review_dashboard.build_portal(
+                root=str(REPO_ROOT), output_dir=portal_out
+            )
+        self.assertTrue(portal_result["ok"])
         data = json.loads((REPO_ROOT / portal_out / "portal-data.json").read_text(encoding="utf-8"))
         self.assertEqual(data["totals"], {"tenants": 5, "campaigns": 14})
         self.assertIs(data["autoPublish"], False)

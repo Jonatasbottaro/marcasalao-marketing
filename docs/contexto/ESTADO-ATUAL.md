@@ -1,5 +1,101 @@
 # Estado atual do projeto
 
+## Operação Finalização do PR #29 — CI verde nos dois sistemas (24/11/2026)
+
+Seção aditiva; a estabilização do release está **concluída e verificada no CI**.
+Branch `fix/release-check-portabilidade` @ **`6b81d33`** (push em `origin`); base
+`main` @ `423f720`. **PR #29 permanece em rascunho; nenhum merge, deploy ou
+publicação foi feito.** Homologação técnica da fábrica ≠ homologação de campanha
+real ≠ aprovação editorial ≠ publicação — a Etapa 2 (NS-001) segue pendente.
+
+- **Falhas resolvidas nesta rodada (após o fix do gate 8 de 23/11):**
+  1. **Step 10 do CI** (lista unittest multi-tenant, runs `45257399186`/`45257382687`
+     e `45257991157`/`45257977431`): `test_derivative_formats.test_09` exigia que
+     `<ws>/archives` existisse — estado local não versionado, ausente em checkout
+     limpo. Corrigido em **`7615c63`**: asserção de resolução determinística
+     (`resolve_workspace_root` → `<RAIZ>/.workspace`), sem remover cobertura.
+  2. **Suite com render obrigatório** (runs `45273869915`/`45273855748`, SHA
+     `7615c63`, Ubuntu + Windows): E2E do Video Studio
+     (`test_campaign_studio_e2e.test_02`) bloqueava com
+     `PREVIEW_EXECUTION_ERROR: nenhum tenant disponivel para o preflight`.
+     **Causa comprovada:** a fixture `_prepare_isolated_workspace` copiava só
+     `tools/` e `platform/`; o Studio (raiz=ws1) lê `<root>/tenants/` em
+     `tenant_ids()` → vazio → `_resolve_tenant_id` → `None`
+     (`tools/video_studio.py:850`). Reproduzido localmente com o erro exato.
+     Corrigido em **`6b81d33`** (+12 linhas, só na fixture): copiar também
+     `tenants/`, `schemas/`, `02-reels-shorts/`, `01-insta-stories/`,
+     `04-legendas/` — mesmo contrato de `test_studio_work_backup._copy_repo_subdirs`.
+     **Nenhum código de produção alterado; guardrails multi-tenant intactos**
+     (tenant ausente/inválido continua bloqueando de forma controlada).
+- **Verificação local (Windows, Python 3.13.15):** E2E do Studio com
+  `REQUIRE_RENDER=1` → 2 testes OK (96,6 s; render real, ZIP, invalidação,
+  backup/restauração, segunda restauração recusada); demais módulos render com
+  `REQUIRE_RENDER=1` → 169 testes OK + 36 do `studio_work_backup` em processo
+  separado OK; lista combinada do step 10 → 416 testes OK;
+  **`release_check.py --json` completo (COM TypeScript, sem `--skip-ts`) → 9/9
+  gates `ok`, exit 0**. `git diff --check` limpo.
+- **CI verde (SHA `6b81d33`):** runs
+  [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303)
+  e
+  [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507)
+  — **Ubuntu e Windows `success`, 41 steps cada, nenhuma falha**, incluindo
+  render obrigatório e provas E2E.
+- **Auditoria do diff vs `main`:** 12 arquivos, +440/−31; sem segredos, sem
+  caminhos absolutos de máquina, `autoPublish: false` preservado, política sem
+  áudio preservada; único `skipTest` é contratual (vira `self.fail` sob
+  `REQUIRE_RENDER=1`).
+- **Próxima etapa:** Etapa 2 — homologação operacional e editorial da campanha
+  NS-001 (diagnóstico de prontidão em `.workspace/logs/pr29-finalizacao/`);
+  aprovação explícita do titular antes de qualquer publicação.
+
+## Estabilização final do PR #29 — 23/11/2026 (branch `fix/release-check-portabilidade`)
+
+Seção aditiva da rodada de estabilização do PR #29. **Base:** `main` @ `423f720`; branch
+`fix/release-check-portabilidade`; commit de correção `de91076` (posterior a `1149a03`).
+**Nenhum merge na `main` foi feito; o PR permanece em rascunho.** As seções abaixo
+permanecem como registro histórico.
+
+- **Diagnóstico original (run `45242091211`, SHA `1149a03`, Ubuntu + Windows):** gate 8
+  (`unit_tests`) reprovava nos dois sistemas com **uma única falha**:
+  `test_09_ffmpeg_ausente` (`tools/tests/test_workspace_doctor.py`). Causa: o teste
+  removia do PATH as entradas cujo nome continha "ffmpeg"; na estação isso isolava o
+  binário portátil (pasta `.workspace/tools/ffmpeg/`), mas no runner o FFmpeg é instalado
+  por ação oficial (`FedericoCarboni/setup-ffmpeg`) num diretório de cache cujo basename
+  é `bin` — o filtro não removia nada, o `workspace_doctor` enxergava o ffmpeg real do
+  PATH e o teste falhava com `AssertionError: True is not false`. Os 7 gates anteriores
+  passaram; gate 9 e as provas seguintes não foram alcançados.
+- **Correções (commit `de91076`):**
+  1. `test_09_ffmpeg_ausente`: passa a isolar o PATH removendo **somente a entrada que
+     expõe o ffmpeg real** (via `shutil.which`), preservando as demais entradas (git etc.)
+     — funciona no runner e na estação, sem quebrar o doutor.
+  2. `test_25_ffprobe_metadata_encontra_ffprobe_real`: usa a descoberta efetiva
+     (PATH primeiro, cópia portátil depois) sem mock de `shutil.which`; com
+     `REQUIRE_RENDER=1` e nenhum ffprobe disponível, **falha** em vez de skipar; sem
+     render obrigatório e sem ferramenta, registra skip de cobertura ausente.
+  3. `test_executive_summary.test_23`: gera relatórios e portal em **sandbox próprio**
+     (patch de `review_dashboard.resolve_workspace_dir`), sem apagar
+     `.workspace/reports/<tenant>/` compartilhado.
+  4. `test_release_audit` (25/26): fixture **sintética** de archives no sandbox, sem
+     depender de acervo real não versionado da estação.
+  5. `test_run_tests.test_17`: roda em **sandbox sintético** com archives de brinquedo,
+     sem depender de `.workspace/archives` real.
+- **Verificação local (estação Windows, PATH estilo runner com ffmpeg real em diretório
+  `bin`, Python 3.13.15):** `release_check.py --skip-ts --json` **9/9 gates, exit 0**
+  (higiene_git, typescript skipped, tenant_validator, editorial_qa, workspace_doctor,
+  release_audit, bundling, unit_tests **456/456 passed / 0 failed / 0 errors / 0 skipped**,
+  e2e). `workspace_doctor --check` ok (ffmpeg/ffprobe origem `PATH`, 0 erros);
+  `test_workspace_doctor` + `test_workspace_doctor_repair` 51/51; `tenant_validator`,
+  `factory_cli list/pipeline`, `utm_simulator`, `release_audit --strict` (8/8) e
+  `unittest discover -s tests/e2e` aprovados; `git diff --check` limpo.
+- **CI (desfecho registrado em 24/11/2026):** os runs `45257399186`/`45257382687`
+  (SHA `de91076`) falharam no **step 10** (lista unittest multi-tenant) por
+  `test_derivative_formats.test_09` dependente de `.workspace/archives` local —
+  corrigido em `7615c63`; o gate 8 (step 9) passou. Ver seção de 24/11/2026 no topo
+  para o desfecho completo (CI verde em `6b81d33`).
+- **Pendências (resolvidas em 24/11/2026):** CI confirmado verde nos dois sistemas
+  (runs `45387139303`/`45387127507`); PR #29 segue em rascunho aguardando
+  revisão/integração do titular.
+
 ## Base verificada em 22/11/2026 — consolidação documental
 
 Seção aditiva da consolidação documental de 22/11/2026. **Método:** leitura de código,
@@ -129,6 +225,38 @@ fotografadas/restauradas); `unittest discover -s tests/e2e` 5/5 com
 foi consultado após o push; a faixa `--render` não foi executada nesta rodada
 (exige FFmpeg e não concorre com gates); nenhum dado de analytics real foi
 produzido; nada foi publicado, agendado ou criado em rascunhos remotos.
+
+## Portabilidade da descoberta de ferramentas no workspace_doctor — 23/11/2026
+
+**Correção de portabilidade** (branch `fix/release-check-portabilidade`, worktree
+`<RAIZ>/.workspace/worktrees/fix-release-check-portabilidade`, base `main` @ `423f720`).
+
+**Problema:** `tools/workspace_doctor.py` resolvia `ffmpeg`/`ffprobe` somente na cópia
+portátil de `<RAIZ>/.workspace/tools/ffmpeg/` (seção 1 do doutor e leitura de metadados
+`_ffprobe_metadata`). Em checkouts limpos ou estações onde o FFmpeg vive apenas no PATH
+(CI `local-render-validation.yml` provê via `setup-ffmpeg@v2`), a gate 5
+(`workspace_doctor --check --json`) reportava `FFMPEG_AUSENTE`/`FFPROBE_AUSENCE` e saía com
+código 1, bloqueando os gates subsequentes.
+
+**Mudança:** a descoberta passou a consultar o PATH do processo primeiro e, na falta, a cópia
+portátil (mesmo padrão de `tools/build_video.py:get_ffmpeg`/`get_ffprobe`), aplicada também ao
+`_ffprobe_metadata`, com a origem do binário reportada no resumo JSON (`"PATH"` | `"portatil"`).
+CLI, códigos de erro (`FFMPEG_AUSENTE`, `FFPROBE_AUSENTE`, `FFMPEG_INVALIDO`) e contrato JSON
+mantidos.
+
+**Testes:** `tools/tests/test_workspace_doctor.py` 24/24 (novos testes 19–24: PATH, portátil,
+precedência PATH, ausência, doutor com PATH-only e doutor com portátil-only) e
+`tools/tests/test_workspace_doctor_repair.py` 25/25.
+
+**Reprodução controlada:** com ffmpeg/ffprobe apenas no PATH, antes do fix saía
+`FFMPEG_AUSENTE`+`FFPROBE_AUSENCE` (exit 1); depois do fix, encontrados via `origin: "PATH"` e sem
+erros de ausência. Quando o binário está realmente ausente (estação sem FFmpeg instalado), a gate 5
+continua reportando `FFMPEG_AUSENTE`/`FFPROBE_AUSENCE` — comportamento intencional.
+
+**Evidence:** `.workspace/tmp/evidencia-fix-portabilidade.md` (transitório, não versionado).
+
+Nenhum caminho de máquina fixo foi introduzido; todos os artefatos de execução permanecem sob
+`<RAIZ>/.workspace/`.
 
 ## Validação da Etapa 6 na main — 21/11/2026
 
