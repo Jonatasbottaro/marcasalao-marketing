@@ -1,5 +1,51 @@
 # Estado atual do projeto
 
+## Etapa 1 — PR #29 INTEGRADO à main (24/11/2026)
+
+Seção aditiva; o histórico abaixo permanece como registro. O PR #29
+(`fix/release-check-portabilidade` @ `6d5f60b`) foi **integrado à `main` pelo
+mecanismo oficial de merge do GitHub (merge commit)**, com autorização expressa
+do titular no brief "Etapa 1 — Integração Definitiva do PR #29 na main"
+(24/11/2026). Homologação técnica da fábrica ≠ homologação de campanha real ≠
+aprovação editorial ≠ publicação — a Etapa 2 (NS-001) segue pendente.
+
+- **Merge commit:** `bcabc0096e563a3bf28626962e8e783d23cd5338`;
+  `merged_at` 2026-11-24T14:30:49Z (11:30:48 -0300). `main`: `423f720` →
+  **`bcabc00`**. Método merge commit, preservando os 10 commits originais.
+  Branch técnica **preservada** (não excluída); nenhum squash/rebase.
+- **Revisão pré-merge (cenário A):** PR aberto, `mergeable_state: clean`, sem
+  conflitos; 10 commits / 12 arquivos (+537/−31); 0 reviews e 0 comentários
+  pendentes; `main` sem proteção de branch. Check-runs do head `6d5f60b`:
+  Ubuntu + Windows `success` (runs
+  [45396658005](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45396658005)
+  e
+  [45396649094](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45396649094)).
+  Diff auditado: sem segredos, sem caminhos de máquina, `autoPublish:false` e
+  política sem áudio preservados; único `skipTest` é contratual (vira falha sob
+  `REQUIRE_RENDER=1`). Comentário de evidências publicado no PR
+  (`pull/29#issuecomment-7134486028`) antes de marcar pronto e integrar.
+- **Verificação local pós-merge (Windows, `main` @ `bcabc00`, 24/11/2026):**
+  `workspace_doctor.py --check --json` → ok, exit 0;
+  `run_tests.py --fast --json` → **456 passed / 0 failed / 0 errors / 0 skipped**,
+  exit 0; `release_check.py --json` completo **COM TypeScript** → **9/9 gates
+  `ok`, exit 0**. Evidências locais em `.workspace/tmp/pr29-integracao/`.
+- **CI pós-merge (push na `main`, SHA `bcabc00`):** run
+  [45414927506](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45414927506)
+  ("Validar render local de prova") — **Ubuntu e Windows `success`**, com render
+  obrigatório (`REQUIRE_RENDER=1`) e provas E2E incluídos. Nenhuma regressão.
+- **Integridade preservada:** `.workspace/` intacto (devlogs, logs, studio, tmp,
+  tools, worktrees); `autoPublish: false` em todas as campanhas de tenants;
+  guardrails multi-tenant intactos; nenhuma mídia, backup ou manifesto alterado;
+  nenhuma credencial tocada. Checkout principal atualizado por fast-forward.
+- **NS-001 (Etapa 2) — estado relido e inalterado:** briefing v0.3 "em validação";
+  roteiro rascunho com "Autorizado para gravação: não / publicação: não";
+  UTMs slots 028/032/036/053 `aguardando_aprovacao_titular`; sem SRT/narração
+  NS-001 em `04-legendas/`. Nada aprovado editorialmente; produção real e
+  publicação bloqueadas até autorização explícita do titular.
+- **Documentação pós-merge:** esta atualização viaja em PR exclusivamente
+  documental (branch `docs/handoff-pos-merge-pr29`), **sem integração
+  automática** — revisão do titular pendente.
+
 ## Operação Finalização do PR #29 — CI verde nos dois sistemas (24/11/2026)
 
 Seção aditiva; a estabilização do release está **concluída e verificada no CI**.

@@ -1,6 +1,18 @@
 # Handoff: retomar o projeto
 
+## Etapa 1 — PR #29 integrado à main (24/11/2026)
+
+- **Integração:** PR #29 (`fix/release-check-portabilidade` @ `6d5f60b`) mergeado na `main` pelo mecanismo oficial do GitHub, **merge commit `bcabc0096e563a3bf28626962e8e783d23cd5338`**, 2026-11-24T14:30:49Z. `main`: `423f720` → `bcabc00`. Autorização expressa do titular (brief "Etapa 1 — Integração Definitiva do PR #29 na main"). Branch técnica preservada; sem squash/rebase; sem deploy/publicação.
+- **Pré-merge:** `mergeable_state: clean`, 10 commits / 12 arquivos, 0 reviews/comentários pendentes, main sem proteção; check-runs do head `6d5f60b` Ubuntu+Windows `success` (runs 45396658005/45396649094); diff sem segredos/caminhos de máquina/`autoPublish:true`. Comentário de evidências: `pull/29#issuecomment-7134486028`.
+- **Pós-merge local (Windows, main @ `bcabc00`):** `workspace_doctor --check` ok exit 0; `run_tests --fast` **456/456, 0 skips**, exit 0; `release_check --json` completo **com TypeScript** → **9/9 gates ok, exit 0**. Evidências: `.workspace/tmp/pr29-integracao/` (doctor-main.json, fast-main.json, release-main.json, merge-result.json).
+- **CI pós-merge (main @ `bcabc00`):** run [45414927506](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45414927506) — **Ubuntu e Windows `success`**, render obrigatório e provas E2E incluídos; nenhuma regressão.
+- **Integridade:** `.workspace/` preservado; `autoPublish:false` em todos os tenants; política sem áudio e guardrails multi-tenant intactos; checkout principal em `main` por fast-forward; byproducts de teste do `05-review-portal/` restaurados, nunca commitados.
+- **Próxima etapa autorizável:** Etapa 2 — homologação real da NS-001. Estado relido em 24/11/2026 e inalterado: briefing v0.3 em validação, roteiro rascunho (gravação/publicação: não), UTMs `aguardando_aprovacao_titular`, SRT/narração NS-001 ausentes em `04-legendas/`. Diagnóstico: `.workspace/logs/pr29-finalizacao/diagnostico-ns001-etapa2.md`. **Nada produzir/publicar sem autorização explícita do titular.**
+- **Pendência documental:** este handoff pós-merge viaja em PR exclusivamente documental (branch `docs/handoff-pos-merge-pr29`), sem integração automática.
+
 ## Operação Finalização — PR #29 com CI verde (24/11/2026)
+
+> Registro histórico da rodada de estabilização (anterior à integração). O PR foi integrado depois — ver seção acima.
 
 - **Branch:** `fix/release-check-portabilidade` @ **`6b81d33`** (push em `origin`); base `main` @ `423f720`. PR #29 **em rascunho**, sem merge/deploy/publicação.
 - **Cadeia de correções desta rodada:**
