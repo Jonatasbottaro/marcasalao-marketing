@@ -50,6 +50,34 @@ manutenção: [DOCUMENTACAO.md](DOCUMENTACAO.md). Índice: [../README.md](../REA
 
 ## 4. Lacunas conhecidas do mapa
 
+### Resolvidas em 24/11/2026 (branch `fix/release-check-portabilidade`, commits `7615c63` e `6b81d33`)
+
+- **Step 10 do CI (lista unittest multi-tenant) reprovava após o fix do gate 8**
+  (runs `45257399186`/`45257382687` e `45257991157`/`45257977431`, Ubuntu + Windows):
+  `tools/tests/test_derivative_formats.py::test_09_workspace_resolution_and_probe`
+  exigia que `<ws>/archives` fosse diretório — estado local não versionado, ausente
+  em checkout limpo. **Correção (`7615c63`):** asserção de resolução determinística
+  (`resolve_workspace_root` → `<RAIZ>/.workspace`), sem depender de acervo local;
+  cobertura de resolução/probe preservada.
+- **Suite com render obrigatório reprovava no E2E do Video Studio** (runs
+  `45273869915`/`45273855748`, SHA `7615c63`, Ubuntu + Windows):
+  `test_campaign_studio_e2e.test_02` bloqueava com
+  `PREVIEW_EXECUTION_ERROR: nenhum tenant disponivel para o preflight`.
+  **Causa comprovada:** a fixture `_prepare_isolated_workspace` copiava só `tools/`
+  e `platform/`; o Studio (raiz=ws1) lê `<root>/tenants/` em `tenant_ids()` → vazio
+  → `_resolve_tenant_id` → `None` (`tools/video_studio.py:850`). Reproduzido
+  localmente com o erro exato. **Correção (`6b81d33`, +12 linhas, só fixture):**
+  copiar também `tenants/`, `schemas/`, `02-reels-shorts/`, `01-insta-stories/`,
+  `04-legendas/` — contrato de `test_studio_work_backup._copy_repo_subdirs`.
+  Produção intacta; tenant ausente/inválido continua bloqueando.
+- **Desfecho:** CI verde nos dois sistemas sobre `6b81d33` — runs
+  [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303)
+  e
+  [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507)
+  (Ubuntu e Windows `success`, 41 steps cada, render obrigatório + provas E2E).
+  Release local completo **com TypeScript** (`release_check.py --json`, sem
+  `--skip-ts`): 9/9 gates `ok`, exit 0. PR #29 permanece em rascunho.
+
 ### Resolvidas em 23/11/2026 (branch `fix/release-check-portabilidade`, commit `de91076`)
 
 - **Gate 8 (`unit_tests`) reprovava no CI (Ubuntu + Windows, run `45242091211`, SHA `1149a03`):**

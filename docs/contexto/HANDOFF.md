@@ -1,5 +1,17 @@
 # Handoff: retomar o projeto
 
+## Operação Finalização — PR #29 com CI verde (24/11/2026)
+
+- **Branch:** `fix/release-check-portabilidade` @ **`6b81d33`** (push em `origin`); base `main` @ `423f720`. PR #29 **em rascunho**, sem merge/deploy/publicação.
+- **Cadeia de correções desta rodada:**
+  1. `7615c63` — `test_derivative_formats.test_09` exigia `.workspace/archives` local (ausente em checkout limpo); trocada por asserção de resolução determinística. Resolveu o step 10 do CI.
+  2. `6b81d33` — fixture do E2E do Studio (`_prepare_isolated_workspace` em `tools/tests/test_campaign_studio_e2e.py`) copiava só `tools/`+`platform/`; sem `tenants/` o preflight bloqueava (`nenhum tenant disponivel para o preflight`, `video_studio.py:850`). Agora copia também `tenants/`, `schemas/`, `02-reels-shorts/`, `01-insta-stories/`, `04-legendas/` (contrato de `test_studio_work_backup._copy_repo_subdirs`). +12 linhas, só fixture; produção intacta.
+- **Verificação local:** E2E Studio `REQUIRE_RENDER=1` 2 testes OK (render real, ZIP, backup/restauração); 169 testes render + 36 backup OK; step 10 combinado 416 OK; `release_check.py --json` completo **com TypeScript** → 9/9 gates ok, exit 0.
+- **CI verde (SHA `6b81d33`):** runs [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303) e [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507) — Ubuntu e Windows `success`, 41 steps cada, render obrigatório e provas E2E incluídos.
+- **Evidências locais:** `.workspace/logs/pr29-finalizacao/checkpoint-B.md` (causa raiz, reprodução, níveis 1-4) e `.workspace/tmp/repro-ci/` (logs de reprodução, lotes e release).
+- **Próxima etapa:** Etapa 2 — homologação operacional/editorial da NS-001. Diagnóstico somente-leitura em `.workspace/logs/pr29-finalizacao/diagnostico-ns001-etapa2.md`: briefing v0.3 em validação, roteiro rascunho, capturas fixture, UTMs `aguardando_aprovacao_titular`, nada autorizado para gravação/publicação. **Aprovação explícita do titular necessária.**
+- **Restrições respeitadas:** nada fora de `<RAIZ>`; `.workspace/` local não versionado; nenhum trabalho de outra sessão descartado; PR em rascunho.
+
 ## Etapa 1 — estabilização do release (correção final do gate 8, 23/11/2026)
 
 - **Branch:** `fix/release-check-portabilidade` @ `de91076` (push em `origin`); base `main` @ `423f720`. Arquivos temporários em `.workspace/` (não versionados).
@@ -10,8 +22,8 @@
   4. `test_executive_summary.test_23` gera relatórios e portal em sandbox próprio, sem apagar `.workspace/reports/<tenant>/` compartilhado.
   5. `test_release_audit` 25/26 e `test_run_tests.test_17` usam fixtures sintéticas de archives, sem depender de acervo real não versionado da estação.
 - **Verificação local (Windows, PATH estilo runner, Python 3.13.15):** `release_check.py --skip-ts --json` **9/9 gates, exit 0**; `unit_tests` **456/456 passed / 0 failed / 0 errors / 0 skipped**; `workspace_doctor` ok (ffmpeg/ffprobe origem `PATH`); módulos doctor 51/51; `tenant_validator`, `factory_cli`, `utm_simulator`, `release_audit --strict` (8/8), E2E e `git diff --check` aprovados.
-- **CI:** novo run do `local-render-validation.yml` sobre `de91076` (runs `45257399186` e `45257382687`, Ubuntu + Windows) — **resultado pendente de consulta ao vivo**; atualizar com veredito e links ao concluir.
-- **Pendente:** confirmar CI verde nos dois sistemas; atualizar `ESTADO-ATUAL.md` com o resultado dos runs; PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular. Não merge, não publicar redes sociais, não deploy.
+- **CI (desfecho em 24/11/2026):** runs `45257399186`/`45257382687` (SHA `de91076`) falharam no step 10 por `test_derivative_formats.test_09` (dependência de `.workspace/archives` local) — corrigido em `7615c63`; gate 8 passou. Desfecho completo na seção de 24/11/2026 no topo (CI verde em `6b81d33`).
+- **Pendente (resolvido em 24/11/2026):** CI verde confirmado nos dois sistemas; PR #29 segue em rascunho (https://github.com/Jonatasbottaro/marcasalao-marketing/pull/29) aguardando revisão/integração do titular. Não merge, não publicar redes sociais, não deploy.
 - **Restrições respeitadas:** nada fora de `<RAIZ>`; `.workspace/` local e não versionado; nenhuma branch/trabalho de outra sessão excluído.
 
 ## Etapa 1 — estabilização do release (concluída com êxito, 23/11/2026)

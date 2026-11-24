@@ -1,5 +1,53 @@
 # Estado atual do projeto
 
+## Operação Finalização do PR #29 — CI verde nos dois sistemas (24/11/2026)
+
+Seção aditiva; a estabilização do release está **concluída e verificada no CI**.
+Branch `fix/release-check-portabilidade` @ **`6b81d33`** (push em `origin`); base
+`main` @ `423f720`. **PR #29 permanece em rascunho; nenhum merge, deploy ou
+publicação foi feito.** Homologação técnica da fábrica ≠ homologação de campanha
+real ≠ aprovação editorial ≠ publicação — a Etapa 2 (NS-001) segue pendente.
+
+- **Falhas resolvidas nesta rodada (após o fix do gate 8 de 23/11):**
+  1. **Step 10 do CI** (lista unittest multi-tenant, runs `45257399186`/`45257382687`
+     e `45257991157`/`45257977431`): `test_derivative_formats.test_09` exigia que
+     `<ws>/archives` existisse — estado local não versionado, ausente em checkout
+     limpo. Corrigido em **`7615c63`**: asserção de resolução determinística
+     (`resolve_workspace_root` → `<RAIZ>/.workspace`), sem remover cobertura.
+  2. **Suite com render obrigatório** (runs `45273869915`/`45273855748`, SHA
+     `7615c63`, Ubuntu + Windows): E2E do Video Studio
+     (`test_campaign_studio_e2e.test_02`) bloqueava com
+     `PREVIEW_EXECUTION_ERROR: nenhum tenant disponivel para o preflight`.
+     **Causa comprovada:** a fixture `_prepare_isolated_workspace` copiava só
+     `tools/` e `platform/`; o Studio (raiz=ws1) lê `<root>/tenants/` em
+     `tenant_ids()` → vazio → `_resolve_tenant_id` → `None`
+     (`tools/video_studio.py:850`). Reproduzido localmente com o erro exato.
+     Corrigido em **`6b81d33`** (+12 linhas, só na fixture): copiar também
+     `tenants/`, `schemas/`, `02-reels-shorts/`, `01-insta-stories/`,
+     `04-legendas/` — mesmo contrato de `test_studio_work_backup._copy_repo_subdirs`.
+     **Nenhum código de produção alterado; guardrails multi-tenant intactos**
+     (tenant ausente/inválido continua bloqueando de forma controlada).
+- **Verificação local (Windows, Python 3.13.15):** E2E do Studio com
+  `REQUIRE_RENDER=1` → 2 testes OK (96,6 s; render real, ZIP, invalidação,
+  backup/restauração, segunda restauração recusada); demais módulos render com
+  `REQUIRE_RENDER=1` → 169 testes OK + 36 do `studio_work_backup` em processo
+  separado OK; lista combinada do step 10 → 416 testes OK;
+  **`release_check.py --json` completo (COM TypeScript, sem `--skip-ts`) → 9/9
+  gates `ok`, exit 0**. `git diff --check` limpo.
+- **CI verde (SHA `6b81d33`):** runs
+  [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303)
+  e
+  [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507)
+  — **Ubuntu e Windows `success`, 41 steps cada, nenhuma falha**, incluindo
+  render obrigatório e provas E2E.
+- **Auditoria do diff vs `main`:** 12 arquivos, +440/−31; sem segredos, sem
+  caminhos absolutos de máquina, `autoPublish: false` preservado, política sem
+  áudio preservada; único `skipTest` é contratual (vira `self.fail` sob
+  `REQUIRE_RENDER=1`).
+- **Próxima etapa:** Etapa 2 — homologação operacional e editorial da campanha
+  NS-001 (diagnóstico de prontidão em `.workspace/logs/pr29-finalizacao/`);
+  aprovação explícita do titular antes de qualquer publicação.
+
 ## Estabilização final do PR #29 — 23/11/2026 (branch `fix/release-check-portabilidade`)
 
 Seção aditiva da rodada de estabilização do PR #29. **Base:** `main` @ `423f720`; branch
@@ -39,11 +87,14 @@ permanecem como registro histórico.
   `test_workspace_doctor` + `test_workspace_doctor_repair` 51/51; `tenant_validator`,
   `factory_cli list/pipeline`, `utm_simulator`, `release_audit --strict` (8/8) e
   `unittest discover -s tests/e2e` aprovados; `git diff --check` limpo.
-- **CI:** novo run do `local-render-validation.yml` disparado sobre `de91076` (runs
-  `45257399186` e `45257382687`, Ubuntu + Windows) — **resultadopendente de consulta
-  ao vivo no fechamento desta seção**; atualizar com o veredito e os links ao concluir.
-- **Pendências:** confirmar CI verde nos dois sistemas; atualizar este registro com o
-  resultado dos runs; PR #29 segue em rascunho aguardando revisão/integração do titular.
+- **CI (desfecho registrado em 24/11/2026):** os runs `45257399186`/`45257382687`
+  (SHA `de91076`) falharam no **step 10** (lista unittest multi-tenant) por
+  `test_derivative_formats.test_09` dependente de `.workspace/archives` local —
+  corrigido em `7615c63`; o gate 8 (step 9) passou. Ver seção de 24/11/2026 no topo
+  para o desfecho completo (CI verde em `6b81d33`).
+- **Pendências (resolvidas em 24/11/2026):** CI confirmado verde nos dois sistemas
+  (runs `45387139303`/`45387127507`); PR #29 segue em rascunho aguardando
+  revisão/integração do titular.
 
 ## Base verificada em 22/11/2026 — consolidação documental
 
