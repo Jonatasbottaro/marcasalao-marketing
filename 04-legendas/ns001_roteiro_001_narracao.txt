@@ -1,9 +1,13 @@
 NS-001 — ROTEIRO 001 — NARRAÇÃO EM TEXTO SEPARADO (PT-BR)
-Estado: PRELIMINAR — proposta para aprovação editorial. Nenhum áudio foi gerado.
+Estado: FINAL SINCRONIZADO com a peça editorial de revisão v1 (24/11/2026).
+Aprovação: REGISTRO-APROVACAO-2026-11-24.md (titular, 24/11/2026) — roteiro de
+7 cenas/47,0 s com os dois ajustes aprovados (texto curto da cena 2; narração
+da cena 5 em duas frases). Nenhum áudio foi gerado.
 Vídeo final: sem áudio (-an); esta narração é para uso externo pelo titular.
-Tempos: vinculados ao timing PROPOSTO do storyboard-001 (leitura cronometrada
-a ~2,5 palavras/s + 0,6 s de respiro por cena). Recalcular contra a gravação real.
-Fonte: 03-roteiros/campanhas/NS-001/roteiro-001.md (v0.3) e storyboard-001.md.
+Tempos: efetivos da montagem editorial v1 (9 beats = 7 cenas; cues do SRT
+ns001_roteiro_001.srt idênticos aos tempos abaixo por cena).
+Fonte: 03-roteiros/campanhas/NS-001/storyboard-001.md (aprovado) e
+pedido marca-salao-ns-001-p001-editorial-v1.
 
 CENA 1 — 00:00,000 a 00:05,000 (5,0 s)
 Você consegue visualizar os agendamentos do seu salão com clareza?
@@ -19,8 +23,8 @@ CENA 4 — 00:24,500 a 00:31,000 (6,5 s)
 Dá para filtrar por profissional, por status, ou buscar o nome de um cliente.
 
 CENA 5 — 00:31,000 a 00:38,500 (7,5 s)
-Abrindo o atendimento, aparecem o horário, o cliente, o profissional, o serviço,
-o preço e o status.
+Abrindo o atendimento, aparecem o horário, o cliente e o profissional.
+Também o serviço, o preço e o status.
 
 CENA 6 — 00:38,500 a 00:44,000 (5,5 s)
 Quando a gestão confirma o atendimento, o status fica registrado na agenda.
@@ -28,8 +32,10 @@ Quando a gestão confirma o atendimento, o status fica registrado na agenda.
 CENA 7 — 00:44,000 a 00:47,000 (3,0 s)
 Conheça a agenda do Marca Salão.
 
-DURAÇÃO TOTAL PROPOSTA: 47,0 s.
+DURAÇÃO TOTAL EFETIVA: 47,0 s.
 Checklist de legibilidade: frases curtas; uma ideia por frase; sem jargão;
 sem números sem fonte; sem promessa de resultado; sem lembrete/automação;
-PT-BR natural; leitura de cada cena cabe na duração proposta.
-SRT correspondente: ns001_roteiro_001.srt (PRELIMINAR, mesmos tempos).
+PT-BR natural; ≤ 2 linhas por cue no SRT; linhas ≤ 45 caracteres.
+SRT correspondente: ns001_roteiro_001.srt (FINAL, mesmos tempos).
+Texto de tela da cena 2 (versão curta aprovada): "Informação espalhada: cada
+lugar mostra um pedaço do dia." — aplicado como overlay de título na peça.

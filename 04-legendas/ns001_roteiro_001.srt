@@ -26,11 +26,11 @@ ou buscar o nome de um cliente.
 6
 00:00:31,000 --> 00:00:35,000
 Abrindo o atendimento, aparecem o horário,
-o cliente, o profissional,
+o cliente e o profissional.
 
 7
 00:00:35,000 --> 00:00:38,500
-o serviço, o preço e o status.
+Também o serviço, o preço e o status.
 
 8
 00:00:38,500 --> 00:00:44,000
