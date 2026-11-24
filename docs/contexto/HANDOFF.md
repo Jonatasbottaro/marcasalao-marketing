@@ -7,7 +7,8 @@
   e [`docs/historico/2026-11-24-operacao-resultado-03-ns001.md`](../historico/2026-11-24-operacao-resultado-03-ns001.md).
 - **Gate de publicação reprovado; nada publicado/agendado.** A Resultado 02 aprovou editorialmente a
   produção e gerou vídeo real de revisão (47 s, 0 áudio) na branch `feat/ns-001-resultado02-producao`
-  @ `5412db4` (worktree `.workspace/worktrees/ns001-resultado02`, **não integrada**). Publicação,
+  @ `5412db4` (worktree `.workspace/worktrees/ns001-resultado02`, **integrada na main via merge
+  `7e9c41c` em 24/11/2026**, autorizado pelo titular). Publicação,
   decisão 7 (CTA/destino/bio/UTM) e revisão humana seguem pendentes.
 - **Destino reprovado** no teste renderizado (desktop+celular): site exibe "Meu Salão", jornada de
   marketplace/assinatura incompatível com o CTA e claims proibidos/sem evidência. Bloqueio de
@@ -15,7 +16,8 @@
 - **Recomendação única:** C — ajustar CTA ou destino antes da próxima campanha. NS-002 não iniciada.
   Ciclo **pendente** até publicação manual efetiva do titular.
 - **Próxima ação do titular:** decidir nome público/destino, assinar decisão 7, conferir bio IG +
-  mecanismo Shorts, revisar a peça v1, autorizar publicação manual e integrar a branch de produção.
+  mecanismo Shorts, revisar a peça v1 e autorizar publicação manual. (Integração da branch de
+  produção já realizada: merge `7e9c41c`.)
 
 ## Operação Finalização — PR #29 com CI verde (24/11/2026)
 

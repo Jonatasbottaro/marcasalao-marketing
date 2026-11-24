@@ -78,3 +78,15 @@ Justificativa evidenciada: o teste de destino renderizado (desktop+celular) repr
 ## Estado do ciclo
 
 **PENDENTE / NÃO CONCLUÍDO.** A publicação depende de ações futuras do titular (decisão 7, identidade/destino, revisão humana, autorização manual). Pacote manual entregue; tarefa registrada como pendente. Não declarar o ciclo concluído antes da publicação manual efetiva.
+
+## Adendo pós-registro (24/11/2026, após autorização de merge)
+
+- A branch de produção `feat/ns-001-resultado02-producao` (@ `5412db4`, inclui homologação `103b67e`)
+  foi **integrada na `main` pelo merge `7e9c41c`** e enviada a `origin/main`, por autorização explícita
+  do titular ("pode seguir com merge branch"). As menções a "não integrada" acima descrevem o estado
+  no momento do registro e ficam superseded por este adendo.
+- Evidência de teste da correção TC-01 (`tools/render_local.py`) na branch: suíte de render
+  **107 testes OK** (`.workspace/logs/ns001-resultado02/tests-render-fix.log`, worktree). CI da `main`
+  no SHA do merge cobre render em Ubuntu/Windows.
+- A integração **não** altera o gate de publicação: destino reprovado, decisão 7, identidade pública,
+  revisão humana e autorização manual permanecem pendentes. Ciclo segue **PENDENTE**.

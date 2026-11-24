@@ -46,3 +46,13 @@ produção por fluxo próprio (PR/merge).
 Registros permanentes versionados em `02-reels-shorts/ns-001-reels-organizacao-agenda/resultado-03/`
 e commitados/enviados na `main` por autorização explícita do titular em 24/11/2026. Cópia local de
 trabalho em `.workspace/logs/operacao-resultado-03-ns001/` (não sincroniza).
+
+## Adendo — integração da branch de produção (24/11/2026)
+
+Por autorização explícita do titular ("pode seguir com merge branch"), a branch
+`feat/ns-001-resultado02-producao` (@ `5412db4`, inclui homologação `103b67e`) foi integrada na `main`
+pelo merge **`7e9c41c`** e enviada a `origin/main`. Traz o pacote de aprovação editorial, storyboard,
+SRT/narração NS-001, `editorial-v1/` e a correção TC-01 de estilo de legendas em `tools/render_local.py`
+(suíte de render da branch: 107 testes OK). A integração não altera o gate: destino reprovado,
+decisão 7, identidade pública, revisão humana e autorização de publicação manual seguem pendentes;
+ciclo **PENDENTE**.
