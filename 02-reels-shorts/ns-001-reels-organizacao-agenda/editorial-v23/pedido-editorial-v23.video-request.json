@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-001-p001-editorial-v23-studio-bella",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-001 — Organização e visibilidade da agenda — revisão v2.3 (Studio Bella, roteiro fiel)",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "ns001-editorial-v2-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 52,
+      "marginTop": 330,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "ns001-c1-abertura",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-01-painel.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c2-situacao",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-02-situacao.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c3-dia",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-03-dia.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c4-mes",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-04-mes.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c5-filtro-profissional",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-05-filtro-profissional.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c6-filtro-status",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-06-filtro-status.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c7-busca-cliente",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-07-busca-cliente.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c8-detalhes",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-08-detalhes.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c9-pendente",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-09-pendente.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c10-confirmado",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-10-confirmado.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v22-limpa",
+      "license": "owned"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "ns001-b1-semana",
+      "durationMs": 6000,
+      "mediaId": "ns001-c2-situacao",
+      "caption": "A agenda da semana mostra cada atendimento com horário e status.",
+      "narration": "A agenda da semana mostra cada atendimento com horário e status.",
+      "narrativeFunction": "hook",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b2-status",
+      "durationMs": 6000,
+      "mediaId": "ns001-c6-filtro-status",
+      "caption": "Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.",
+      "narration": "Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b3-filtro",
+      "durationMs": 5000,
+      "mediaId": "ns001-c5-filtro-profissional",
+      "caption": "Dá para filtrar por profissional e acompanhar a agenda de cada um.",
+      "narration": "Dá para filtrar por profissional e acompanhar a agenda de cada um.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b4-cta",
+      "durationMs": 5000,
+      "mediaId": "ns001-c1-abertura",
+      "caption": "Conheça a agenda do Marca Salão.",
+      "narration": "Conheça a agenda do Marca Salão.",
+      "narrativeFunction": "cta",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    }
+  ]
+}

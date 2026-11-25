@@ -1,0 +1,14 @@
+Roteiro de narracao - execution-v1-7e5007e4cc3a9625e190fed7ff5e8604fd58d436532bd7bd82e6948456cc9e93
+Video sem audio; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:06,000] ns001-b1-semana
+A agenda da semana mostra cada atendimento com horário e status.
+
+[00:00:06,000 --> 00:00:12,000] ns001-b2-status
+Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.
+
+[00:00:12,000 --> 00:00:17,000] ns001-b3-filtro
+Dá para filtrar por profissional e acompanhar a agenda de cada um.
+
+[00:00:17,000 --> 00:00:22,000] ns001-b4-cta
+Conheça a agenda do Marca Salão.
