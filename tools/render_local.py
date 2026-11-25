@@ -629,7 +629,13 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
         last_label = '[vtitles]'
 
     clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
-    chains.append(f"{last_label}subtitles='{clean_srt}':force_style='{build_subtitle_style(width, height)}'[vfinal]")
+    # libass remarca o quadro como full-range (yuvj420p); no FFmpeg 9 o filtro
+    # format sozinho nao converte o range, entao a conversao explicita para
+    # limited vem DEPOIS da legenda, garantindo yuv420p/tv na inspecao final.
+    chains.append(
+        f"{last_label}subtitles='{clean_srt}':force_style='{build_subtitle_style(width, height)}',"
+        f"scale=out_range=limited,format=yuv420p[vfinal]"
+    )
     return ';'.join(chains)
 
 
