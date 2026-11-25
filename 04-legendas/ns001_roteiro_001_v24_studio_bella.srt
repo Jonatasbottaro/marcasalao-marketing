@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:06,000
+A agenda da semana mostra cada atendimento com horário e status.
+
+2
+00:00:06,000 --> 00:00:12,000
+Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.
+
+3
+00:00:12,000 --> 00:00:17,000
+Dá para filtrar por profissional e acompanhar a agenda de cada um.
+
+4
+00:00:17,000 --> 00:00:22,000
+Conheça a agenda do Marca Salão.
