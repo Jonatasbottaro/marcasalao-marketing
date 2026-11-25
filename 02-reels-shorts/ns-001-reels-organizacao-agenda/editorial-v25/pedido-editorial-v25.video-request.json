@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-001-p001-editorial-v25-studio-bella",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-001 — Organização e visibilidade da agenda — revisão final v2.5 (Studio Bella)",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "ns001-editorial-v2-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 52,
+      "marginTop": 330,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "ns001-c1-agenda",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-01-v24-agenda.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v24",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c2-close-status",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-02-v24-close-status.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v24",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c3-filtro",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-03-v24-filtro.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real-v24",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c4-cta",
+      "path": ".workspace/tmp/ns001-studio-bella/novas-caps/CAP-04-cta-marcasalao.jpg",
+      "type": "image",
+      "origin": "arte-oficial-marcasalao-endcard-v24",
+      "license": "owned"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "ns001-b1-semana",
+      "durationMs": 6000,
+      "mediaId": "ns001-c1-agenda",
+      "caption": "A agenda da semana mostra cada atendimento com horário e status.",
+      "narration": "A agenda da semana mostra cada atendimento com horário e status.",
+      "narrativeFunction": "hook",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b2-status",
+      "durationMs": 6000,
+      "mediaId": "ns001-c2-close-status",
+      "caption": "Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.",
+      "narration": "Confirmado, concluído ou não compareceu: o status fica visível em cada cartão.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b3-filtro",
+      "durationMs": 5000,
+      "mediaId": "ns001-c3-filtro",
+      "caption": "Dá para filtrar por profissional e acompanhar a agenda de cada um.",
+      "narration": "Dá para filtrar por profissional e acompanhar a agenda de cada um.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b4-cta",
+      "durationMs": 5000,
+      "mediaId": "ns001-c4-cta",
+      "caption": "Conheça a agenda do Marca Salão.",
+      "narration": "Conheça a agenda do Marca Salão.",
+      "narrativeFunction": "cta",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    }
+  ]
+}
