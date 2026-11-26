@@ -150,6 +150,10 @@ Esta regra específica do Marca Salão orienta o uso das skills e templates gen�
 
 Consulte `WORKFLOW.md` para o fluxo completo.
 
+## Identidades de marca — decisão vigente de 26/11/2026
+
+**Marca Salão** é o projeto/plataforma e a apresentação comercial (site, campanhas, aquisição). **Meu Salão** é a experiência pessoal do cliente após adesão e o nome **intencional do PWA instalado** — não renomear o PWA, não fazer substituição global. **Studio Bella** é salão fictício de demonstração. A coexistência não é erro de marca; auditar por contexto e avaliar a clareza da transição, não impor renomeação. Texto jurídico exige fonte legal e revisão específica. Decisão canônica: [docs/decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md](docs/decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md); espelho no Salao02 em `docs/contexto/IDENTIDADES-MARCA-SALAO-MEU-SALAO.md`.
+
 ## Chamadas para o site Marca Salão — padrão de 19/10/2026
 - Destino oficial: https://marcasalao.com.br.
 - Facebook: usar URL completa na legenda e indicação “Acesse pelo link da descrição”.

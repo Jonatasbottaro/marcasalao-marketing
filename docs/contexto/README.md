@@ -20,6 +20,7 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 | Informação | Fonte principal |
 | --- | --- |
 | Regras de operação e autorização | AGENTS.md e pedido atual do titular |
+| Identidades de marca (Marca Salão / Meu Salão / Studio Bella) | [../decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md](../decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md) — decisão vigente; não renomear o PWA Meu Salão |
 | Contrato e comportamento executável | Código, schemas e testes do commit consultado |
 | Conteúdo e estado editorial de uma campanha | Briefing, hooks, roteiro e registros de aprovação da própria campanha |
 | Resultado de teste ou CI | Execução identificada por commit, ambiente e link/log |
