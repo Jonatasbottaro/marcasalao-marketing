@@ -1,0 +1,492 @@
+{
+  "schemaVersion": 1,
+  "clientId": "marca-exemplo",
+  "campaignId": "fixture-reuso-v27",
+  "canvas": {
+    "width": 360,
+    "height": 640,
+    "fps": 30
+  },
+  "captionBand": {
+    "color": "primary",
+    "y": 500,
+    "height": 60
+  },
+  "fonts": {
+    "bold": "<binario-local>/arialbd.ttf",
+    "regular": "<binario-local>/arial.ttf"
+  },
+  "ffmpeg": "<RAIZ>/.workspace/tools/ffmpeg/ffmpeg.EXE",
+  "scenes": [
+    {
+      "sceneId": "fx-c1-prova",
+      "component": "product-proof",
+      "media": "<RAIZ>/.workspace/tmp/editorial-compose-render/campanha/fx-c1-prova.mp4",
+      "mediaType": "video",
+      "durationMs": 2000,
+      "sha256": "48116a47090757f728163e64a24bb1182b62b09be2d377675f74900c2cfd1cda",
+      "bytes": 16665,
+      "layout": [
+        {
+          "kind": "proof",
+          "x": 30,
+          "y": 96,
+          "w": 300,
+          "h": 70,
+          "critical": true,
+          "window": [
+            0.0,
+            2.0
+          ]
+        },
+        {
+          "kind": "highlight-time",
+          "x": 118,
+          "y": 180,
+          "w": 124,
+          "h": 48,
+          "critical": true,
+          "window": [
+            0.0,
+            2.0
+          ],
+          "text": "09:00"
+        },
+        {
+          "kind": "status-chip",
+          "x": 58,
+          "y": 240,
+          "w": 244,
+          "h": 72,
+          "critical": true,
+          "window": [
+            0.0,
+            2.0
+          ],
+          "text": "Confirmado"
+        },
+        {
+          "kind": "microcopy",
+          "x": 67,
+          "y": 300,
+          "w": 225,
+          "h": 16,
+          "critical": false,
+          "window": [
+            0.0,
+            2.0
+          ],
+          "text": "Captura sintética de teste"
+        }
+      ],
+      "geometry": [
+        {
+          "kind": "proof",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "source": {
+            "x": 20,
+            "y": 20,
+            "w": 360,
+            "h": 80
+          },
+          "scaled": {
+            "w": 300,
+            "h": 66
+          },
+          "aspectDeviation": 0.01010101010101019
+        }
+      ],
+      "provenance": [
+        {
+          "part": "product-proof",
+          "window": [
+            0.0,
+            2.0
+          ],
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "highlights": [
+            {
+              "value": "09:00",
+              "role": "time",
+              "evidenceId": "cap-exemplo",
+              "region": "cartao-a"
+            },
+            {
+              "value": "Confirmado",
+              "role": "status",
+              "evidenceId": "cap-exemplo",
+              "region": "cartao-a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneId": "fx-c2-status",
+      "component": "status-sequence",
+      "media": "<RAIZ>/.workspace/tmp/editorial-compose-render/campanha/fx-c2-status.mp4",
+      "mediaType": "video",
+      "durationMs": 3000,
+      "sha256": "df3524d997f65c22398992b38872e91da33ae028d9c0730df6c7063898c809fe",
+      "bytes": 43519,
+      "layout": [
+        {
+          "kind": "proof",
+          "x": 30,
+          "y": 96,
+          "w": 300,
+          "h": 70,
+          "critical": true,
+          "window": [
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "kind": "highlight-status",
+          "x": 56,
+          "y": 200,
+          "w": 248,
+          "h": 48,
+          "critical": true,
+          "window": [
+            0.0,
+            1.0
+          ],
+          "text": "Confirmado"
+        },
+        {
+          "kind": "highlight-line",
+          "x": 85,
+          "y": 260,
+          "w": 189,
+          "h": 21,
+          "critical": true,
+          "window": [
+            0.0,
+            1.0
+          ],
+          "text": "09:00 · Serviço A"
+        },
+        {
+          "kind": "microcopy",
+          "x": 67,
+          "y": 300,
+          "w": 225,
+          "h": 16,
+          "critical": false,
+          "window": [
+            0.0,
+            1.0
+          ],
+          "text": "Status sintéticos de teste"
+        },
+        {
+          "kind": "proof",
+          "x": 30,
+          "y": 96,
+          "w": 300,
+          "h": 70,
+          "critical": true,
+          "window": [
+            1.0,
+            2.0
+          ]
+        },
+        {
+          "kind": "highlight-status",
+          "x": 68,
+          "y": 200,
+          "w": 223,
+          "h": 48,
+          "critical": true,
+          "window": [
+            1.0,
+            2.0
+          ],
+          "text": "Concluído"
+        },
+        {
+          "kind": "highlight-line",
+          "x": 85,
+          "y": 260,
+          "w": 189,
+          "h": 21,
+          "critical": true,
+          "window": [
+            1.0,
+            2.0
+          ],
+          "text": "10:00 · Serviço B"
+        },
+        {
+          "kind": "microcopy",
+          "x": 67,
+          "y": 300,
+          "w": 225,
+          "h": 16,
+          "critical": false,
+          "window": [
+            1.0,
+            2.0
+          ],
+          "text": "Status sintéticos de teste"
+        },
+        {
+          "kind": "proof",
+          "x": 30,
+          "y": 96,
+          "w": 300,
+          "h": 70,
+          "critical": true,
+          "window": [
+            2.0,
+            3.0
+          ]
+        },
+        {
+          "kind": "highlight-status",
+          "x": 93,
+          "y": 200,
+          "w": 173,
+          "h": 48,
+          "critical": true,
+          "window": [
+            2.0,
+            3.0
+          ],
+          "text": "No-show"
+        },
+        {
+          "kind": "highlight-line",
+          "x": 85,
+          "y": 260,
+          "w": 189,
+          "h": 21,
+          "critical": true,
+          "window": [
+            2.0,
+            3.0
+          ],
+          "text": "11:00 · Serviço C"
+        },
+        {
+          "kind": "microcopy",
+          "x": 67,
+          "y": 300,
+          "w": 225,
+          "h": 16,
+          "critical": false,
+          "window": [
+            2.0,
+            3.0
+          ],
+          "text": "Status sintéticos de teste"
+        }
+      ],
+      "geometry": [
+        {
+          "kind": "proof",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "source": {
+            "x": 20,
+            "y": 20,
+            "w": 360,
+            "h": 80
+          },
+          "scaled": {
+            "w": 300,
+            "h": 66
+          },
+          "aspectDeviation": 0.01010101010101019
+        },
+        {
+          "kind": "proof",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-b",
+          "source": {
+            "x": 20,
+            "y": 110,
+            "w": 360,
+            "h": 80
+          },
+          "scaled": {
+            "w": 300,
+            "h": 66
+          },
+          "aspectDeviation": 0.01010101010101019
+        },
+        {
+          "kind": "proof",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-c",
+          "source": {
+            "x": 20,
+            "y": 200,
+            "w": 360,
+            "h": 80
+          },
+          "scaled": {
+            "w": 300,
+            "h": 66
+          },
+          "aspectDeviation": 0.01010101010101019
+        }
+      ],
+      "provenance": [
+        {
+          "state": "Confirmado",
+          "window": [
+            0.0,
+            1.0
+          ],
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "values": {
+            "status": "Confirmado",
+            "time": "09:00",
+            "service": "Serviço A"
+          }
+        },
+        {
+          "state": "Concluído",
+          "window": [
+            1.0,
+            2.0
+          ],
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-b",
+          "values": {
+            "status": "Concluído",
+            "time": "10:00",
+            "service": "Serviço B"
+          }
+        },
+        {
+          "state": "No-show",
+          "window": [
+            2.0,
+            3.0
+          ],
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-c",
+          "values": {
+            "status": "No-show",
+            "time": "11:00",
+            "service": "Serviço C"
+          }
+        }
+      ]
+    },
+    {
+      "sceneId": "fx-c3-endcard",
+      "component": "brand-endcard",
+      "media": "<RAIZ>/.workspace/tmp/editorial-compose-render/campanha/fx-c3-endcard.mp4",
+      "mediaType": "video",
+      "durationMs": 2000,
+      "sha256": "2589947e4868ca008c5f94fd067545a7b0df7546d83c92065382b7bb525865a1",
+      "bytes": 11627,
+      "layout": [
+        {
+          "kind": "logo",
+          "x": 100,
+          "y": 100,
+          "w": 160,
+          "h": 64,
+          "critical": true,
+          "window": [
+            0,
+            2.0
+          ]
+        },
+        {
+          "kind": "brand-name",
+          "x": 35,
+          "y": 200,
+          "w": 290,
+          "h": 43,
+          "critical": true,
+          "window": [
+            0,
+            2.0
+          ],
+          "text": "Marca Exemplo"
+        },
+        {
+          "kind": "cta",
+          "x": 37,
+          "y": 260,
+          "w": 285,
+          "h": 24,
+          "critical": true,
+          "window": [
+            0,
+            2.0
+          ],
+          "text": "Conheça a Marca Exemplo"
+        }
+      ],
+      "geometry": [],
+      "provenance": [
+        {
+          "mode": "generated",
+          "logo": "tools/tests/fixtures/editorial/logo-exemplo.png"
+        }
+      ]
+    }
+  ],
+  "safeAreas": [
+    {
+      "profile": "instagram-reels-video",
+      "usefulRect": {
+        "x": 21,
+        "y": 89,
+        "w": 316,
+        "h": 326
+      },
+      "violations": []
+    }
+  ],
+  "evidence": [
+    {
+      "id": "cap-exemplo",
+      "path": "tools/tests/fixtures/editorial/captura-exemplo.png",
+      "sha256": "e30f9f4cc69a5b19fe3d5a5a3d90935573898e397ecf52959549398b33e5c4b3",
+      "regions": {
+        "cartao-a": {
+          "x": 20,
+          "y": 20,
+          "w": 360,
+          "h": 80
+        },
+        "cartao-b": {
+          "x": 20,
+          "y": 110,
+          "w": 360,
+          "h": 80
+        },
+        "cartao-c": {
+          "x": 20,
+          "y": 200,
+          "w": 360,
+          "h": 80
+        }
+      },
+      "values": [
+        "09:00",
+        "10:00",
+        "11:00",
+        "Serviço A",
+        "Serviço B",
+        "Serviço C",
+        "Confirmado",
+        "Concluído",
+        "No-show"
+      ]
+    }
+  ],
+  "nota": "Cópia versionada sanitizada: caminhos absolutos de máquina substituídos por <RAIZ>; relatório original gerado em .workspace/tmp/editorial-compose-render/campanha/."
+}
