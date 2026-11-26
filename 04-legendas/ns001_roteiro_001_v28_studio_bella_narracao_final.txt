@@ -1,0 +1,78 @@
+ROTEIRO FINAL DE NARRAÇÃO — NS-001-P001-STUDIO-BELLA-V2.8
+Campanha: NS-001 — Organização e visibilidade da agenda (Marca Salão)
+Vídeo: 22 s, 1080×1920, 30 fps, sem áudio, sem legendas queimadas (VIDEO CLEAN — MKT-VIDEO-002)
+Master de referência: .workspace/tmp/ns001-studio-bella-v28/entrega/NS-001-Studio-Bella-v2.8-instagram.mp4
+Data: 26/11/2026 — Operação RESULTADO 14
+Roteiro anterior preservado: 04-legendas/ns001_roteiro_001_v28_studio_bella_narracao.txt
+
+Uso: texto para síntese de voz em ferramenta externa (CapCut/Canva/etc.).
+Nenhum áudio foi gerado nesta operação. As durações abaixo são ESTIMATIVAS,
+calculadas a 120–150 palavras por minuto; não são medições de áudio real.
+Ritmo alvo recomendado: 135–145 ppm, locução comercial calma, sem aceleração.
+
+================================================================
+ROTEIRO POR CENA
+================================================================
+
+CENA 1 — AGENDA SEMANAL
+Entrada: 00:00,0 | Saída: 00:06,0 (janela de 6,0 s)
+Texto: "Na agenda semanal, veja horários, serviços e status de cada atendimento."
+Palavras: 11 | Fala estimada: 4,4–5,5 s (alvo ~4,7 s a 140 ppm)
+Folga para pausa: ~0,5–1,6 s
+Entonação: abertura convidativa, ritmo médio; leve ênfase em "horários,
+serviços e status" (enumerar sem pressa, micro-pausas nas vírgulas).
+Pausa: entrar ~0,3 s após o corte; terminar até 00:05,7.
+Coerência com a imagem: contexto da semana + cartão 09:00 · Mechas e
+Iluminação · Confirmado (captura real CAP-02-inapp-semana-scroll.png).
+
+CENA 2 — STATUS DOS ATENDIMENTOS
+Entrada: 00:06,0 | Saída: 00:12,0 (janela de 6,0 s)
+Texto: "Confirmado, concluído ou não compareceu: identifique cada status num relance."
+Palavras: 10 | Fala estimada: 4,0–5,0 s (alvo ~4,3 s a 140 ppm)
+Folga para pausa: ~1,0–2,0 s (inclui micro-pausas da enumeração)
+Entonação: enumerar os três status com clareza, um a um, acompanhando a
+sequência visual (Confirmado → Concluído → No-show); segunda metade em
+tom de benefício, confiante.
+Pausa: micro-pausas (~0,2 s) entre os status; pausa breve (~0,3 s) antes
+de "identifique".
+Coerência com a imagem: "não compareceu" é a leitura em português do chip
+"No-show" exibido na tela; os três chips reais aparecem na cena.
+
+CENA 3 — FILTRO POR PROFISSIONAL
+Entrada: 00:12,0 | Saída: 00:17,0 (janela de 5,0 s)
+Texto: "Selecione o profissional que quiser, como Mariana Silva."
+Palavras: 8 | Fala estimada: 3,2–4,0 s (alvo ~3,4 s a 140 ppm)
+Folga para pausa: ~1,0–1,8 s
+Entonação: instrução simples e direta; "Mariana Silva" dito com naturalidade,
+como exemplo, não como recomendação.
+Pausa: ~0,3 s antes de "como Mariana Silva".
+Coerência com a imagem: arte aprovada v2.4 mostra Mariana Silva selecionada
+no filtro; a narração não promete resultados filtrados (não visíveis na arte).
+
+CENA 4 — ENCERRAMENTO / MARCA
+Entrada: 00:17,0 | Saída: 00:22,0 (janela de 5,0 s)
+Texto: "Conheça o Marca Salão e organize seus atendimentos."
+Palavras: 8 | Fala estimada: 3,2–4,0 s (alvo ~3,4 s a 140 ppm)
+Folga para pausa: ~1,0–1,8 s
+Entonação: fechamento caloroso e memorável; ênfase no nome da marca;
+"organize seus atendimentos" em tom de convite, descendo levemente no final.
+Pausa: ~0,3 s após "Marca Salão"; deixar o endcard respirar até 00:22,0.
+Coerência com a imagem: endcard oficial com logo + CTA "Conheça o Marca Salão"
+(arte aprovada v2.4); o convite repete o CTA visível, sem promessa nova.
+
+================================================================
+RESUMO DE DURAÇÃO
+================================================================
+Total: 37 palavras | fala estimada: 14,8–18,5 s (alvo ~15,9 s a 140 ppm)
+Pausas somadas (entradas, enumeração, marca): ~2–3 s
+Ocupação estimada: ~17–21 s dentro dos 22 s — sem fala acelerada em nenhuma cena.
+Cena mais apertada: Cena 1 a 120 ppm (5,5 s de fala em 6,0 s); por isso o
+ritmo alvo é 135–145 ppm. Se a voz externa ficar lenta, encurtar a pausa
+de entrada da Cena 1, nunca acelerar a fala.
+
+================================================================
+TEXTO CORRIDO — COPIAR PARA FERRAMENTA DE SINTESE DE VOZ
+(sem instruções técnicas; gerar em pt-BR, ritmo comercial calmo)
+================================================================
+
+Na agenda semanal, veja horários, serviços e status de cada atendimento. Confirmado, concluído ou não compareceu: identifique cada status num relance. Selecione o profissional que quiser, como Mariana Silva. Conheça o Marca Salão e organize seus atendimentos.
