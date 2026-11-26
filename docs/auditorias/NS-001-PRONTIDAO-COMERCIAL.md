@@ -8,6 +8,8 @@
 
 ---
 
+> **RETIFICAÇÃO DE IDENTIDADE (26/11/2026):** decisão expressa do titular registrada em [MKT-BRAND-001](../decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md). **Marca Salão** é apresentação comercial/projeto; **Meu Salão** é a experiência de uso após adesão e o nome intencional do PWA; **Studio Bella** é demonstração fictícia. O antigo item B2 **não é conflito de marca nem autorização para renomear o aplicativo**. Resta somente verificar se a transição é clara ao visitante. Os bloqueadores B1 (destino), B3/B4 (UTM e conversão) continuam válidos; claims devem ser comprovados ou removidos. As menções históricas abaixo refletem a auditoria original e devem ser interpretadas à luz desta retificação.
+
 ## 1. CTA recomendado
 
 - **Endcard do vídeo (já aprovado):** "Conheça o Marca Salão." — neutro, serve às três redes (padrão de arte quadrada compartilhada).
@@ -35,9 +37,9 @@
 **Identidade de marca na jornada (ver Fase 2 do briefing):**
 
 - **Marca comercial (campanha/domínio):** **Marca Salão** — `marcasalao.com.br`, endcard, roteiros.
-- **Nome histórico do produto (aplicativo):** **Meu Salão** — `layout.tsx` (título), `manifest.ts`, `terms`, design system, cabeçalho e rodapé do site em produção. É o nome que o usuário vê ao chegar.
+- **Identidade intencional da experiência do cliente (aplicativo/PWA):** **Meu Salão** — `layout.tsx` (título), `manifest.ts`, `terms`, design system, cabeçalho e rodapé do site em produção. É o nome que o usuário vê ao chegar.
 - **Salão fictício de demonstração:** **Studio Bella** — ambiente do vídeo NS-001; não é marca nem aparece como destino.
-- **Risco:** o gestor vê o anúncio "Marca Salão" e cai em um site "Meu Salão". Divergência de identidade **não alterada nesta tarefa** (exige autorização do titular).
+- **Avaliação retificada:** essa coexistência é intencional, não um defeito. Verificar se o visitante compreende a passagem da marca comercial **Marca Salão** para sua experiência **Meu Salão**. Preservar o nome do PWA; não renomear globalmente.
 
 ## 4. Estado dos UTMs
 
@@ -53,7 +55,7 @@
 | # | Item | Situação atual | Problema | Impacto na conversão | Correção necessária | Repositório | Prioridade | Depende de autorização humana |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | B1 | Destino `/conheca-a-agenda` | 404 em produção; só em branch sem PR | Página não publicada | Tráfego pago cai em 404 ou na raiz genérica | Integrar `fix/ns-001-landing-conversao` à main e publicar, **ou** apontar para a raiz | Salao02 | Alta | Sim (merge/deploy) |
-| B2 | Identidade "Marca Salão" × "Meu Salão" | Anúncio Marca Salão → site Meu Salão | Quebra de reconhecimento de marca | Desconfiança, queda de conversão | Decidir identidade oficial e alinhar site/termo/manifest (não alterado aqui) | Salao02 | Alta | Sim (decisão de marca) |
+| B2 (retificado) | Identidades complementares **Marca Salão** (comercial) e **Meu Salão** (uso/PWA) | Coexistência deliberada, registrada em MKT-BRAND-001 | **Não é bloqueador por si só**; avaliar apenas clareza da transição na aquisição | Não renomear PWA; propor copy de transição somente se houver confusão comprovada | Marketing / Salao02 | Revisão editorial, sem bloqueio automático | Comunicação pública sujeita a revisão |
 | B3 | Preservação de UTM até o cadastro | `withUtms` só na branch | UTMs não chegam à produção | Atribuição de origem perdida | Integrar a branch (B1) | Salao02 | Alta | Sim (merge/deploy) |
 | B4 | Persistência de UTM + evento de conversão | Inexistente | Não há registro de cadastro concluído por campanha | Impossível medir CPA/ROAS | Persistir UTMs no cadastro e emitir evento de conversão confiável | Salao02 | Alta | Sim (desenvolvimento + deploy) |
 
@@ -82,14 +84,14 @@
 ## 7. Riscos de publicação
 
 - **Destino 404** se usar `/conheca-a-agenda` antes de B1.
-- **Divergência de marca** (Marca Salão → Meu Salão) sem decisão do titular.
+- **Clareza da transição comercial → aplicativo** (Marca Salão → Meu Salão), sem conflito de identidade: decisão do titular registrada e nome do PWA preservado.
 - **Sem mensuração**: UTMs não persistem e não há evento de conversão (B3/B4).
 - **Claims não comprovados** na home (M1) sob o domínio da campanha.
 - **Vídeo** permanece **sem áudio** (padrão VIDEO CLEAN); a versão final com narração é do titular — não confundir master limpo com peça final.
 
 ## 8. Pendências do titular
 
-1. Decidir a **identidade oficial** (Marca Salão × Meu Salão) e autorizar alinhamento (B2).
+1. **Decisão de identidade concluída**: Marca Salão = comercial/site; Meu Salão = experiência/PWA; Studio Bella = demonstração. Revisar a clareza da transição, sem renomeação global (MKT-BRAND-001).
 2. Autorizar **merge/deploy** de `fix/ns-001-landing-conversao` (B1/B3) — **sem PR hoje**.
 3. Autorizar **desenvolvimento** de persistência de UTM + evento de conversão (B4).
 4. Confirmar **link da bio** do Instagram antes de prometer CTA (Fase 4).
@@ -100,11 +102,11 @@
 
 A NS-001 pode ser publicada e medida quando:
 
-- [ ] Destino responde 200 com a marca correta (B1 + B2 resolvidos).
+- [ ] Destino responde 200 e apresenta uma transição compreensível entre **Marca Salão** (comercial) e **Meu Salão** (experiência/PWA); não exigir renomeação do PWA (B1 + checagem editorial de B2).
 - [ ] UTMs chegam e **persistem** até o cadastro, com **evento de conversão** confiável (B3 + B4).
 - [ ] CTA por plataforma confirmado (link da bio validado; descrição/Shorts conforme mecanismo real).
 - [ ] Claims/depoimentos comprovados ou removidos (M1/M2).
-- [ ] Decisão de identidade registrada pelo titular.
+- [x] Decisão de identidade registrada pelo titular em MKT-BRAND-001 (26/11/2026); clareza da jornada ainda sujeita a revisão.
 
 **Sem isso, a NS-001 não deve receber tráfego pago.** Esta auditoria não publicou nada; apenas diagnostica a prontidão.
 
