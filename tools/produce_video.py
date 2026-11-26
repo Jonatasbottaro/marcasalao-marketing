@@ -160,7 +160,7 @@ def _verify_attempt_fence(fence_file, attempt_id=None):
 
 
 def export_profile(root, profile, project, media, output_dir, run_root, preset, staging,
-                   motion_plan=None, attempt_id=None, fence_file=None):
+                   motion_plan=None, attempt_id=None, fence_file=None, clean=False):
     profile_id = profile['profileId']
     run_dir = os.path.join(run_root, profile_id)
     paths = write_working_documents(run_dir, profile, project)
@@ -186,6 +186,7 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         motion=motion,
         extra_manifest_fields=extra_fields,
         pre_promote_hook=pre_hook,
+        clean=clean,
     )
     res = {
         'profileId': profile_id,
@@ -197,6 +198,8 @@ def export_profile(root, profile, project, media, output_dir, run_root, preset, 
         'artifacts': summary['artifacts'],
         'inspection': summary['inspection'],
     }
+    if clean:
+        res['captionsMode'] = 'clean'
     if attempt_id:
         res['attemptId'] = attempt_id
     return res
@@ -395,7 +398,7 @@ def failed_result(profile, error=None):
     }
 
 
-DELIVERY_FIELDS = ('profileId', 'caseId', 'packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection', 'attemptId')
+DELIVERY_FIELDS = ('profileId', 'caseId', 'packageId', 'outputDir', 'deliveryManifest', 'artifacts', 'inspection', 'attemptId', 'captionsMode')
 EXPORT_LOCK_NAME = '.produce-video-export.lock'
 
 
@@ -572,6 +575,9 @@ def main(argv=None):
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo (opcional)')
     parser.add_argument('--preset', default='veryfast', help='Preset do FFmpeg')
+    parser.add_argument('--clean', action='store_true',
+                        help='VIDEO CLEAN (padrao de producao desde 26/11/2026): sem legendas '
+                             'queimadas e sem SRT; roteiro de narracao TXT preservado')
     parser.add_argument('--attempt-id', default=None, help='Identificador da tentativa da fila (interno)')
     parser.add_argument('--fence-file', default=None, help='Arquivo de cerca/reserva da fila (interno)')
     parser.add_argument('--json', action='store_true', help='Emite um unico resultado JSON no stdout')
@@ -685,7 +691,8 @@ def main(argv=None):
                                                   run_root, args.preset, args.staging,
                                                   motion_plan=motion_plan_input,
                                                   attempt_id=args.attempt_id,
-                                                  fence_file=args.fence_file))
+                                                  fence_file=args.fence_file,
+                                                  clean=args.clean))
                 except (build_video.DeliveryError, render_local.RenderInputError,
                         render_local.InputFileError, OSError, ValueError) as exc:
                     results.append(failed_result(profile, error=str(exc)))

@@ -122,5 +122,74 @@ class TransactionalExportTest(unittest.TestCase):
         self.assertEqual(open(self.dest, encoding="utf-8").read(), "novo aprovado")
 
 
+class CleanModeContractTest(unittest.TestCase):
+    """VIDEO CLEAN (26/11/2026): sem legendas queimadas/SRT, retrocompativel.
+
+    O contrato VideoRequest v1 e o pacote de execucao nao mudam; o modo clean
+    e uma opcao de renderizacao Python. Sem a opcao, o comportamento legado
+    (legenda queimada + SRT validado) permanece identico.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import render_local
+        import render_pipeline
+        import produce_video
+        cls.render_local = render_local
+        cls.render_pipeline = render_pipeline
+        cls.produce_video = produce_video
+        cls.package = {
+            "output": {"width": 1080, "height": 1920, "fps": 30, "durationMs": 4000},
+            "timeline": [
+                {"beatId": "b1", "durationMs": 2000, "motionIntent": "none",
+                 "transitionOut": "cut", "onScreenText": "Primeira cena"},
+                {"beatId": "b2", "durationMs": 2000, "motionIntent": "none",
+                 "transitionOut": "fade", "onScreenText": "Segunda cena"},
+            ],
+        }
+
+    def test_grafo_clean_sem_filtro_subtitles(self):
+        graph = self.render_local.build_filter_graph(self.package, None, burn_captions=False)
+        self.assertNotIn("subtitles=", graph)
+        self.assertTrue(graph.endswith("scale=out_range=limited,format=yuv420p[vfinal]"))
+
+    def test_grafo_legado_padrao_mantem_legenda(self):
+        graph = self.render_local.build_filter_graph(self.package, "C:/x/a.srt")
+        self.assertIn("subtitles=", graph)
+        self.assertIn("format=yuv420p[vfinal]", graph)
+
+    def test_comando_clean_sem_audio_e_sem_legenda(self):
+        cmd = self.render_local.build_render_command(
+            self.package, ["a.png", "b.png"], None, "out.mp4", "veryfast", burn_captions=False)
+        joined = " ".join(cmd)
+        self.assertIn("-an", cmd)
+        self.assertNotIn("subtitles=", joined)
+        self.assertNotIn("-c:a", cmd)
+
+    def test_assinaturas_clean_retrocompativeis(self):
+        import inspect
+        for fn in (self.render_local.run_render,
+                   self.render_pipeline.run_render_pipeline,
+                   self.produce_video.export_profile):
+            params = inspect.signature(fn).parameters
+            self.assertIn("clean", params)
+            self.assertIs(params["clean"].default, False)
+
+    def test_cli_produce_video_aceita_clean(self):
+        parser_actions = None
+        import io
+        import contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            try:
+                self.produce_video.main(["--help"])
+            except SystemExit:
+                pass
+        self.assertIn("--clean", buf.getvalue())
+
+    def test_delivery_fields_preserva_marcador_clean(self):
+        self.assertIn("captionsMode", self.produce_video.DELIVERY_FIELDS)
+
+
 if __name__ == "__main__":
     unittest.main()

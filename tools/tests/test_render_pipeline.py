@@ -1167,6 +1167,69 @@ class PipelineRenderEndToEndTest(unittest.TestCase):
         # Destino intacto
         self.assertEqual(hashes_before, delivery_hashes(output_dir))
 
+    def test_20_clean_render_sem_srt_e_sem_legendas_queimadas(self):
+        """VIDEO CLEAN: mesmo caso, sem SRT/legenda queimada; legado intacto.
+
+        Compara o render clean com o render legado do mesmo caso: o conteudo
+        acima da banda de legendas (y<1500) e a regiao abaixo dela (y>1700)
+        devem ser identicos; apenas a banda (y1550-1650) deve diferir.
+        """
+        assoc = self._prepare_assoc(ASSOC_MS_REL, self.assets_dir_ms)
+        case = os.path.join(WORKTREE, CASE_MS_REL)
+        out_clean = os.path.join(self.tmp, "clean-delivery")
+        out_legacy = os.path.join(self.tmp, "legacy-delivery")
+
+        summary = render_pipeline.run_render_pipeline(
+            case, assoc, out_clean, WORKTREE, None, clean=True)
+        self.assertEqual(summary["status"], "completed")
+        self.assertEqual(summary.get("captionsMode"), "clean")
+        self.assertNotIn("srt", summary["artifacts"])
+        self.assertFalse(any(f.endswith(".srt") for f in os.listdir(out_clean)))
+
+        # Narracao TXT preservada, organizada por cena e tempos
+        nar_path = os.path.join(WORKTREE, summary["artifacts"]["narration"])
+        with open(nar_path, "r", encoding="utf-8") as handle:
+            narration = handle.read()
+        self.assertIn("-->", narration)
+
+        manifest = read_json(os.path.join(WORKTREE, summary["manifest"]))
+        self.assertEqual(manifest["captionsMode"], "clean")
+        self.assertNotIn("srt", manifest["artifacts"])
+        for entry in manifest["artifacts"].values():
+            target = os.path.join(WORKTREE, entry["path"])
+            self.assertTrue(os.path.isfile(target))
+            self.assertEqual(render_local.sha256_file(target), entry["sha256"])
+
+        video_clean = os.path.join(WORKTREE, summary["artifacts"]["video"])
+        inspection = build_video.validate_mp4(video_clean, 1080, 1920, 30, 14.0)
+        self.assertEqual(inspection["videoStreams"], 1)
+        self.assertEqual(inspection["audioStreams"], 0)
+        self.assertEqual(inspection["pixFmt"], "yuv420p")
+
+        # Render legado do mesmo caso continua produzindo SRT valido
+        legacy = render_pipeline.run_render_pipeline(
+            case, assoc, out_legacy, WORKTREE, None)
+        self.assertIn("srt", legacy["artifacts"])
+        srt_path = os.path.join(WORKTREE, legacy["artifacts"]["srt"])
+        self.assertEqual(srt_validate.validate_srt_file(srt_path, 14.0), [])
+        legacy_manifest = read_json(os.path.join(WORKTREE, legacy["manifest"]))
+        self.assertNotIn("captionsMode", legacy_manifest)
+
+        # Conteudo (y<1500) identico entre clean e legado em t=7s
+        video_legacy = os.path.join(WORKTREE, legacy["artifacts"]["video"])
+        frame_clean = extract_raw_frame(video_clean, 7.0)
+        frame_legacy = extract_raw_frame(video_legacy, 7.0)
+        mae_content = calculate_mae(frame_clean, frame_legacy, width=1080, y_start=0, y_end=1500)
+        self.assertLess(mae_content, 1.0, f"Conteudo deveria ser identico, MAE={mae_content}")
+
+        # Banda de legendas (y1550-1650): difere do legado (legendas removidas)
+        mae_band = calculate_mae(frame_clean, frame_legacy, width=1080, y_start=1550, y_end=1650)
+        self.assertGreater(mae_band, 2.0, f"Banda deveria diferir do legado, MAE={mae_band}")
+
+        # Abaixo da banda (y1700-1920): identico — so a legenda queimada mudou
+        mae_below = calculate_mae(frame_clean, frame_legacy, width=1080, y_start=1700, y_end=1920)
+        self.assertLess(mae_below, 1.0, f"Regiao abaixo da banda deveria ser identica, MAE={mae_below}")
+
 
 class AssetManifestPipelineTests(unittest.TestCase):
     """Testes de ponta a ponta do inventario de midia (AssetManifest v1)."""

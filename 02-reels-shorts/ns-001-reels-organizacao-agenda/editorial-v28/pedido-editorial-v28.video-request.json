@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-001-p001-editorial-v28-studio-bella",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-001-P001-Studio-Bella-v2.8 — VIDEO CLEAN: composição editorial v2.7 sem legendas queimadas, narração separada",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "media": [
+    {
+      "id": "ns001-c1-agenda",
+      "path": ".workspace/tmp/ns001-studio-bella-v28/media/ns001-c1-agenda.mp4",
+      "type": "video",
+      "origin": "composicao-editorial-v28-cena1 (tools/editorial_compose.py + campanha-v28.editorial.json; fontes versionadas reutilizadas de editorial-v27/fontes/)",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c2-status",
+      "path": ".workspace/tmp/ns001-studio-bella-v28/media/ns001-c2-status.mp4",
+      "type": "video",
+      "origin": "composicao-editorial-v28-cena2 (tools/editorial_compose.py + campanha-v28.editorial.json; fontes versionadas reutilizadas de editorial-v27/fontes/)",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c3-filtro",
+      "path": ".workspace/tmp/ns001-studio-bella-v28/media/ns001-c3-filtro.png",
+      "type": "image",
+      "origin": "arte-aprovada-v24-filtro-mariana-silva (editorial-v27/fontes/CAP-03-v24-filtro.jpg, aprovada pelo titular em v2.4/v2.6/v2.7)",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c4-cta",
+      "path": ".workspace/tmp/ns001-studio-bella-v28/media/ns001-c4-cta.png",
+      "type": "image",
+      "origin": "arte-oficial-marcasalao-endcard-v24 (editorial-v27/fontes/CAP-04-cta-marcasalao.jpg, aprovada pelo titular em v2.4/v2.6/v2.7)",
+      "license": "owned"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "ns001-b1-semana",
+      "durationMs": 6000,
+      "mediaId": "ns001-c1-agenda",
+      "caption": "Horário, serviço e status em cada atendimento da semana.",
+      "narration": "Esta é a agenda da semana no Studio Bella. Cada atendimento mostra horário, serviço e status — como esta mechas e iluminação, das nove às doze e meia, confirmada.",
+      "narrativeFunction": "hook",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "facebook-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "youtube-shorts": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100}
+      }
+    },
+    {
+      "id": "ns001-b2-status",
+      "durationMs": 6000,
+      "mediaId": "ns001-c2-status",
+      "caption": "Cada status registra o que aconteceu no atendimento.",
+      "narration": "O status acompanha cada atendimento: confirmado antes do horário, concluído depois do serviço, e no-show quando o cliente não comparece.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "facebook-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "youtube-shorts": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100}
+      }
+    },
+    {
+      "id": "ns001-b3-filtro",
+      "durationMs": 5000,
+      "mediaId": "ns001-c3-filtro",
+      "caption": "Selecione um profissional e acompanhe a agenda dele.",
+      "narration": "A agenda também permite selecionar um profissional, como a Mariana Silva, para acompanhar os atendimentos dela.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "facebook-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "youtube-shorts": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100}
+      }
+    },
+    {
+      "id": "ns001-b4-cta",
+      "durationMs": 5000,
+      "mediaId": "ns001-c4-cta",
+      "caption": "Gestão completa para salões, em um só sistema.",
+      "narration": "Marca Salão: o sistema completo de gestão para o seu salão. Conheça o Marca Salão.",
+      "narrativeFunction": "cta",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "facebook-reels-video": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100},
+        "youtube-shorts": {"centerX": 0.5, "centerY": 0.5, "zoomPercent": 100}
+      }
+    }
+  ]
+}

@@ -28,6 +28,8 @@ REPO_ROOT = os.path.dirname(TOOLS_DIR)
 FIXTURE_DIR = os.path.join(TOOLS_DIR, "tests", "fixtures", "editorial")
 V27_DIR = os.path.join(REPO_ROOT, "02-reels-shorts", "ns-001-reels-organizacao-agenda",
                        "editorial-v27")
+V28_DIR = os.path.join(REPO_ROOT, "02-reels-shorts", "ns-001-reels-organizacao-agenda",
+                       "editorial-v28")
 
 sys.path.insert(0, TOOLS_DIR)
 
@@ -194,21 +196,52 @@ class TestCenasDistintas(unittest.TestCase):
 
 
 class TestPortabilidade(unittest.TestCase):
-    """I - nenhum caminho absoluto de maquina nos arquivos versionados v2.7."""
+    """I - nenhum caminho absoluto de maquina nos versionados v2.7/v2.8."""
 
     def test_sem_caminhos_de_maquina(self):
         offenders = []
-        for dirpath, _dirnames, filenames in os.walk(V27_DIR):
-            for fname in filenames:
-                if not fname.endswith((".json", ".md", ".txt")):
-                    continue
-                path = os.path.join(dirpath, fname)
-                with open(path, encoding="utf-8") as handle:
-                    text = handle.read()
-                for token in ("C:/Users", "C:\\Users", "/c/Users", "\\Usuario\\"):
-                    if token in text:
-                        offenders.append((fname, token))
+        for base in (V27_DIR, V28_DIR):
+            for dirpath, _dirnames, filenames in os.walk(base):
+                for fname in filenames:
+                    if not fname.endswith((".json", ".md", ".txt")):
+                        continue
+                    path = os.path.join(dirpath, fname)
+                    with open(path, encoding="utf-8") as handle:
+                        text = handle.read()
+                    for token in ("C:/Users", "C:\\Users", "/c/Users", "\\Usuario\\"):
+                        if token in text:
+                            offenders.append((fname, token))
         self.assertFalse(offenders, offenders)
+
+
+class TestVideoCleanV28(unittest.TestCase):
+    """Padrao VIDEO CLEAN (26/11/2026): v2.8 sem faixa de legendas queimadas."""
+
+    def test_manifesto_v28_valido_e_sem_caption_band(self):
+        with open(os.path.join(V28_DIR, "campanha-v28.editorial.json"),
+                  encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        self.assertNotIn("captionBand", manifest)
+        refs = editorial_compose.validate_manifest(manifest, REPO_ROOT)
+        self.assertIn("cap-semana-scroll", refs["evidence"])
+        self.assertIn("arte-filtro-v24", refs["assets"])
+
+    def test_pedido_v28_mapeia_cenas_1_para_1(self):
+        with open(os.path.join(V28_DIR, "pedido-editorial-v28.video-request.json"),
+                  encoding="utf-8") as handle:
+            request = json.load(handle)
+        media = {m["id"]: m for m in request["media"]}
+        self.assertEqual(len(media), len(request["scenes"]))
+        for scene in request["scenes"]:
+            self.assertIn(scene["mediaId"], media)
+        self.assertEqual(media["ns001-c1-agenda"]["type"], "video")
+        self.assertEqual(media["ns001-c2-status"]["type"], "video")
+        self.assertEqual(media["ns001-c3-filtro"]["type"], "image")
+        self.assertEqual(media["ns001-c4-cta"]["type"], "image")
+
+    def test_v27_preservada_com_caption_band(self):
+        manifest = load_v27("campanha-v27.editorial.json")
+        self.assertIn("captionBand", manifest)
 
 
 class TestEstiloLegenda(unittest.TestCase):

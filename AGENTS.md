@@ -120,28 +120,33 @@ Para Marca Salão e Multitrack Hub, consultar primeiro o histórico e a fila rea
 
 Rascunhos antigos não são referência de qualidade nem fila automaticamente aprovada. Desconsiderá-los como modelo, preservando seus IDs e conteúdos; não excluir ou editar sem pedido específico. Preservar o histórico anterior para evitar repetição de temas e manter rastreabilidade. Na memória de cada marca, destacar as duas referências recentes e distinguir snapshots históricos do estado remoto atual. Esta regra não autoriza publicar, agendar ou gerar campanhas adicionais.
 
-## Regra de produção: vídeo sem áudio
+## Regra de produção: VIDEO CLEAN / narração separada — 26/11/2026
 
-- Gerar vídeos com legendas visíveis e sincronizadas às cenas.
-- Não preservar o áudio original das gravações.
-- Não gerar nem inserir narração, música, efeitos sonoros ou qualquer outro áudio no editor.
-- Entregar o texto de narração separado em `04-legendas/`, em português brasileiro, organizado por cenas e tempos, pronto para copiar para uma ferramenta externa.
-- Entregar também o arquivo `.srt` correspondente às legendas do vídeo.
-- O usuário gera o áudio fora do editor de vídeo; essa etapa não é requisito para entregar o vídeo legendado.
+Decisão do titular em 26/11/2026 (registro completo em [docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md](docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md)); substitui a política anterior "vídeo sem áudio" (legendas queimadas + SRT obrigatórios), preservada como histórico nas versões anteriores deste arquivo e nas campanhas antigas.
+
+- Renderizar vídeos sem nenhuma faixa de áudio, música ou narração; não preservar o áudio original das gravações.
+- Não inserir legendas narrativas queimadas nos MP4.
+- Não gerar SRT por padrão; legendas somente por solicitação expressa.
+- Continuar produzindo o roteiro de narração em TXT separado em `04-legendas/`, em português brasileiro, organizado por cenas e tempos.
+- Preservar textos gráficos editoriais que façam parte da composição visual (títulos, destaques, chips, CTA de endcard) — não são legendas narrativas.
+- Remover das novas composições faixas e áreas reservadas exclusivamente para legendas queimadas; reaproveitar o espaço para enquadramento, tamanho, legibilidade, movimento e hierarquia visual.
+- Manter elementos essenciais dentro das áreas seguras de cada plataforma, considerando legendas adicionadas posteriormente no CapCut/Canva.
+- Preservar compatibilidade com campanhas antigas que utilizem legendas e SRT; não excluir vídeos, roteiros ou documentos anteriores.
 - Preferir exportação sem faixa de áudio; não confundir faixa silenciosa com narração gerada.
 - Só mudar essa política mediante pedido explícito do usuário.
 - Os vídeos existentes de demonstração/teste não devem ser apresentados como campanhas finais aprovadas.
 
 ### Aplicação às ferramentas
 
-Esta regra específica do Marca Salão orienta o uso das skills e templates genéricos: não seguir etapas de TTS, música ou preservação de áudio nesses fluxos. Nas composições, manter vídeos mudos e não adicionar elementos de áudio. Na exportação com FFmpeg, mapear somente vídeo e usar `-an`.
+Esta regra específica do Marca Salão orienta o uso das skills e templates genéricos: não seguir etapas de TTS, música ou preservação de áudio nesses fluxos. Nas composições, manter vídeos mudos e não adicionar elementos de áudio. Na exportação com FFmpeg, mapear somente vídeo e usar `-an`. No caminho VideoRequest/Video Studio, usar `--clean` em `tools/produce_video.py` (ou `tools/render_pipeline.py` / `tools/render_local.py`): sem legenda queimada, sem SRT, narração TXT preservada. Sem `--clean`, o comportamento legado (legendas + SRT) permanece para campanhas antigas. O caminho legado da fábrica (`preset_runner`/`factory_cli`, guardrails `requireSrt`) não foi alterado por esta decisão.
 
 ### Verificação da entrega
 
-- Conferir as legendas, legibilidade e correspondência com as cenas.
-- Conferir a duração do vídeo, do SRT e dos tempos indicados no roteiro.
+- Conferir os textos editoriais, legibilidade e correspondência com as cenas.
+- Conferir a duração do vídeo e os tempos indicados no roteiro de narração.
 - Conferir com `ffprobe` se há faixas de áudio; a exportação preferida não contém nenhuma.
-- Entregar vídeo legendado + SRT + texto de narração separado, sem gerar áudio.
+- Conferir que não há legendas narrativas queimadas (antiga banda de legendas sem texto).
+- Entregar vídeo limpo + texto de narração separado + player + verificações técnicas + ZIP, sem gerar áudio. SRT não é condição de conclusão no modo clean.
 
 Consulte `WORKFLOW.md` para o fluxo completo.
 

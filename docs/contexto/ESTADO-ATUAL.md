@@ -1,5 +1,43 @@
 # Estado atual do projeto
 
+## Operação VIDEO CLEAN — padrão audiovisual + NS-001 v2.8 (26/11/2026)
+
+Seção aditiva. Decisão do titular de 26/11/2026 registrada em
+[../decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md](../decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md):
+**VIDEO CLEAN / narração separada** — sem legendas narrativas queimadas, sem SRT por
+padrão (somente por pedido expresso), narração TXT separada obrigatória, textos
+editoriais preservados, sem faixa reservada para legendas nas novas composições.
+Substitui a política "vídeo sem áudio" (legendas + SRT); campanhas antigas permanecem
+válidas e nada anterior foi excluído. Regras atualizadas em `AGENTS.md`, `WORKFLOW.md`
+e `docs/governanca/MAPA-DOCUMENTAL.md`.
+
+- **Implementação retrocompatível (branch `feat/ns001-studio-bella-v2`, PR #33 em
+  rascunho, sem merge):** opção `--clean` em `tools/render_local.py`,
+  `tools/render_pipeline.py` e `tools/produce_video.py` (default `False`). Contrato
+  TS VideoRequest v1 inalterado; caminho legado da fábrica
+  (`preset_runner`/`factory_cli`) inalterado; sem a flag, comportamento legado
+  idêntico. Manifesto/relatório ganham `captionsMode: "clean"`; `-an` preservado.
+- **NS-001 v2.8 (primeira aplicação):** `editorial-v28/campanha-v28.editorial.json`
+  sem `captionBand`, tipografia ampliada (hora 200 px, status 144 px), conteúdo até
+  y ≈ 1204 dentro das áreas seguras; fontes reutilizadas de `editorial-v27/fontes/`
+  (sem recaptura); cenas 3/4 byte-idênticas às artes aprovadas v2.4. Narração
+  versionada em `04-legendas/ns001_roteiro_001_v28_studio_bella_narracao.txt`;
+  **nenhum SRT v2.8 gerado**. Relatório em `editorial-v28/RELATORIO-FINAL.md`.
+- **Verificação objetiva:** 22 s, 1080×1920@30, yuv420p, 0 faixas de áudio; antiga
+  banda y 1500–1700 com 100% cor única de fundo nas 4 cenas; correlação conteúdo×fonte
+  ≥ 0,9977; OCR pt-BR recuperou os destaques; 0 violações de áreas seguras; 3 MP4
+  byte-idênticos (SHA-256 `8e2406f7…`).
+- **Testes:** CleanModeContractTest 6/6; E2E clean `test_20` OK (legado do mesmo caso
+  continua com SRT válido); TestVideoCleanV28 3/3; smoke 415/416 (única falha
+  ambiental pré-existente `test_publish_pack.test_08_resolve_workspace_root`).
+  Suíte render completa (test_render_pipeline, test_render_local, test_produce_video,
+  test_editorial_compose_render): **93/93 OK, 0 falhas, 0 skips** (960 s); evidência
+  local em `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/qc/testes-render.json`.
+- **Entrega local (não versionada):** `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/entrega/`
+  (3 MP4, narração TXT, review.html, qc/, ZIP). v2.7 preservada em
+  `<RAIZ>/.workspace/tmp/ns001-studio-bella-v27/entrega/`.
+- **Pendente:** aprovação editorial do titular; publicação e merge não autorizados.
+
 ## Operação Finalização do PR #29 — CI verde nos dois sistemas (24/11/2026)
 
 Seção aditiva; a estabilização do release está **concluída e verificada no CI**.
