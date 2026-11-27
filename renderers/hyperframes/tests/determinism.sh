@@ -53,7 +53,16 @@ file_hash_1, file_hash_2 = sha256(first), sha256(second)
 assert file_hash_1 == file_hash_2, \
     f"MP4 divergem: {file_hash_1} x {file_hash_2}"
 
-ffmpeg = shutil.which("ffmpeg")
+ffmpeg = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+if not ffmpeg:
+    import os
+    _ffdir = os.environ.get("HF001_FFMPEG_DIR", "")
+    if _ffdir:
+        for _name in ("ffmpeg", "ffmpeg.exe"):
+            _cand = os.path.join(_ffdir, _name)
+            if os.path.isfile(_cand):
+                ffmpeg = _cand
+                break
 assert ffmpeg, "ffmpeg ausente no PATH (env.sh deveria expor o portavel)"
 
 # Frames-chave: meio de cada cena do pedido de exemplo (4+6+4 s). Instantes

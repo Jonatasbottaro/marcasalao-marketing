@@ -78,8 +78,14 @@ def run_adapter(root, args, profile_path, workdir, out_path, tenant):
     wrapper = os.path.join(root, 'renderers', 'hyperframes', 'scripts', 'hf-adapter.sh')
     if not os.path.isfile(wrapper):
         raise render_local.InputFileError('wrapper do adaptador ausente: renderers/hyperframes/scripts/hf-adapter.sh')
+    # FFmpeg portavel do projeto (por estacao): adiciona ao PATH do subprocess
+    # para que o gate `check` do HyperFrames encontre ffmpeg/ffprobe.
+    env = os.environ.copy()
+    ffmpeg_dir = os.path.join(root, '.workspace', 'tools', 'ffmpeg')
+    if os.path.isdir(ffmpeg_dir):
+        env['PATH'] = ffmpeg_dir + os.pathsep + env.get('PATH', '')
     cmd = [
-        'bash', render_local.rel(root, wrapper),
+        'bash', wrapper,
         '--profile-json', profile_path,
         '--root', root,
         '--tenant', tenant,
@@ -95,7 +101,7 @@ def run_adapter(root, args, profile_path, workdir, out_path, tenant):
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              encoding='utf-8', errors='replace',
-                             timeout=ADAPTER_TIMEOUT_SECONDS)
+                             timeout=ADAPTER_TIMEOUT_SECONDS, env=env)
     except subprocess.TimeoutExpired:
         raise produce_video.build_video.DeliveryError('adaptador excedeu o tempo limite')
     return res

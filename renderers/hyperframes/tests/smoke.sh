@@ -13,8 +13,7 @@ if [ ! -f "$HF_BIN" ]; then
   exit 1
 fi
 
-SMOKE_DIR="$HF001_TMP/smoke-run"
-rm -rf "$SMOKE_DIR"
+SMOKE_DIR="$HF001_TMP/smoke-run/run-$$"
 mkdir -p "$SMOKE_DIR"
 
 echo "== init =="
@@ -25,10 +24,18 @@ echo "== check =="
 "$HF_BIN" check >/dev/null
 
 echo "== render draft =="
+# O CLI hyperframes (Node.js) procura ffmpeg/ffprobe no PATH; no Windows o
+# spawnSync nao resolve .exe automaticamente a partir do PATH do Git Bash.
+# Converte o diretorio FFmpeg para o formato Windows (backslash) e o coloca
+# no inicio do PATH, que o Node herda e resolve corretamente.
+if [ -n "${HF001_FFMPEG_DIR:-}" ] && [ -d "$HF001_FFMPEG_DIR" ]; then
+  _FF_WIN="$(cygpath -w "$HF001_FFMPEG_DIR" 2>/dev/null || echo "$HF001_FFMPEG_DIR")"
+  export PATH="$_FF_WIN;$PATH"
+fi
 "$HF_BIN" render --quality draft --output "$SMOKE_DIR/out.mp4" >/dev/null
 
 echo "== ffprobe =="
-FFPROBE_BIN="$(command -v ffprobe || echo "$HF001_FFMPEG_DIR/ffprobe")"
+FFPROBE_BIN="$(command -v ffprobe || command -v ffprobe.exe || echo "$HF001_FFMPEG_DIR/ffprobe.exe")"
 PROBE_JSON="$("$FFPROBE_BIN" -v error -show_entries stream=codec_type,width,height -show_entries format=duration -of json "$SMOKE_DIR/out.mp4")"
 python - "$SMOKE_DIR/out.mp4" "$PROBE_JSON" <<'PY'
 import json, sys
