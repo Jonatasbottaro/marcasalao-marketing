@@ -532,6 +532,22 @@ def _normalize_captions_mode(value, default='burned'):
     return normalized if normalized in VALID_CAPTIONS_MODES else default
 
 
+# Selecao explicita de motor de render por trabalho (MKT-VIDEO-003):
+# 'ffmpeg' e o legado (produce_video); 'hyperframes' aciona o adaptador HF-001
+# na fila. Sem escolha registrada, o legado permanece; nunca ha fallback silencioso.
+VALID_RENDERER_ADAPTERS = ('ffmpeg', 'hyperframes')
+
+
+def _normalize_renderer(value, default='ffmpeg'):
+    if isinstance(value, str):
+        adapter = value.strip().lower()
+    elif isinstance(value, dict):
+        adapter = str(value.get('adapter') or '').strip().lower()
+    else:
+        adapter = ''
+    return adapter if adapter in VALID_RENDERER_ADAPTERS else default
+
+
 class Studio:
     """Estado e operacoes do painel, confinadas a raiz do projeto."""
 
@@ -1310,13 +1326,15 @@ class Studio:
             'videoDeliveryDir': f'{base}/deliveries/video',
             'carouselDeliveryDir': f'{base}/deliveries/carousel',
             'motionDeliveryDir': f'{base}/deliveries/motion',
+            'hyperframesDeliveryDir': f'{base}/deliveries/hyperframes',
             'packageDeliveryDir': f'{base}/deliveries/package',
         }
 
-    def _delivery_badge_summary(self, video_dir, carousel_dir, motion_dir, work_id=None):
+    def _delivery_badge_summary(self, video_dir, carousel_dir, motion_dir, work_id=None, hyperframes_dir=None):
         v = self.read_delivery(video_dir)
         c = self.read_carousel_delivery(carousel_dir)
         m = self.read_delivery(motion_dir)
+        h = self.read_delivery(hyperframes_dir) if hyperframes_dir else {'profiles': [], 'index': {}}
         v_valid = sum(
             1 for p in (v.get('index') or {}).get('profiles', [])
             if p.get('lastValidDelivery')
@@ -1326,6 +1344,10 @@ class Studio:
             1 for p in (m.get('index') or {}).get('profiles', [])
             if p.get('lastValidDelivery')
         ) or len(m.get('profiles', []))
+        h_valid = sum(
+            1 for p in (h.get('index') or {}).get('profiles', [])
+            if p.get('lastValidDelivery')
+        ) or len(h.get('profiles', []))
         pkg_valid = False
         if work_id:
             try:
@@ -1336,10 +1358,12 @@ class Studio:
             'videoValidCount': v_valid,
             'carouselValid': c_valid,
             'motionValidCount': m_valid,
+            'hyperframesValidCount': h_valid,
             'packageValid': pkg_valid,
             'videoLastStatus': (v.get('lastExportStatus') or {}).get('status'),
             'carouselLastStatus': (c.get('lastExportStatus') or {}).get('status'),
             'motionLastStatus': (m.get('lastExportStatus') or {}).get('status'),
+            'hyperframesLastStatus': (h.get('lastExportStatus') or {}).get('status'),
         }
 
     def list_works(self):
@@ -1362,6 +1386,7 @@ class Studio:
                 paths.get('carouselDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/carousel'),
                 paths.get('motionDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/motion'),
                 work_id=work_id if KEBAB_CASE_RE.match(str(work_id)) else None,
+                hyperframes_dir=paths.get('hyperframesDeliveryDir', f'.workspace/studio/works/{entry}/deliveries/hyperframes'),
             )
             works.append(work)
         works.sort(key=lambda w: w.get('updatedAt', ''), reverse=True)
@@ -1698,6 +1723,7 @@ class Studio:
             'tenantId': tenant_id,
             'autoPublish': False,
             'captionsMode': _normalize_captions_mode(body.get('captionsMode')),
+            'renderer': {'adapter': _normalize_renderer(body.get('renderer'))},
             'brand': {
                 'brandName': brand['brandName'],
                 'monogram': brand['monogram'],
@@ -1758,6 +1784,7 @@ class Studio:
             'video': self.read_delivery(wpaths['videoDeliveryDir']),
             'carousel': self.read_carousel_delivery(wpaths['carouselDeliveryDir']),
             'motion': self.read_delivery(wpaths['motionDeliveryDir']),
+            'hyperframes': self.read_delivery(wpaths['hyperframesDeliveryDir']),
         }
         listing = self.list_profiles(work['project'])
         review = studio_review.build_review_overview(self, work_id)
@@ -1807,6 +1834,10 @@ class Studio:
             work['captionsMode'] = _normalize_captions_mode(
                 body.get('captionsMode'), work.get('captionsMode') or 'burned')
 
+        if 'renderer' in body:
+            current = (work.get('renderer') or {}).get('adapter') if isinstance(work.get('renderer'), dict) else None
+            work['renderer'] = {'adapter': _normalize_renderer(body.get('renderer'), current or 'ffmpeg')}
+
         if isinstance(body.get('videoRequest'), dict):
             vreq = dict(body['videoRequest'])
             vreq['project'] = work['project']
@@ -1824,6 +1855,81 @@ class Studio:
         work['updatedAt'] = now_iso()
         atomic_write_json(work_abs, work)
         return {'work': work}
+
+    # ---- motor HyperFrames (MKT-VIDEO-003 / HF-001 F7) ----
+    def save_work_renderer(self, body):
+        """Selecao explicita de motor de render do trabalho (sem fallback silencioso)."""
+        if not isinstance(body, dict):
+            raise ValueError('payload de renderer invalido')
+        work_id = (body.get('workId') or body.get('id') or '').strip()
+        if not work_id:
+            raise ValueError('informe workId')
+        adapter = _normalize_renderer(body.get('renderer'))
+        if adapter == 'hyperframes':
+            ok, reason = studio_queue.hyperframes_runtime_ready(self.root)
+            if not ok:
+                raise ValueError(reason)
+        return self.save_work({'workId': work_id, 'renderer': {'adapter': adapter}})
+
+    def hyperframes_readiness(self):
+        ok, reason = studio_queue.hyperframes_runtime_ready(self.root)
+        version = None
+        pkg_path = os.path.join(self.root, 'renderers', 'hyperframes', 'node_modules', 'hyperframes', 'package.json')
+        if os.path.isfile(render_local.fs_path(pkg_path)):
+            try:
+                with open(render_local.fs_path(pkg_path), 'r', encoding='utf-8') as handle:
+                    version = json.load(handle).get('version')
+            except (OSError, ValueError):
+                version = None
+        return {
+            'ok': ok,
+            'reason': reason,
+            'version': version,
+            'adapter': 'hyperframes',
+        }
+
+    def hyperframes_preview(self, body):
+        """Compoe a composicao HyperFrames do rascunho e roda o check (sem render)."""
+        if not isinstance(body, dict):
+            raise ValueError('payload de previa HyperFrames invalido')
+        work_id = (body.get('workId') or '').strip()
+        profile_id = (body.get('profileId') or '').strip() or None
+        if not work_id:
+            raise ValueError('informe workId')
+        opened = self.open_work(work_id)
+        vreq = opened.get('videoRequest')
+        if not isinstance(vreq, dict) or not vreq.get('scenes'):
+            raise ValueError(f'trabalho {work_id} sem rascunho de video salvo com cenas')
+        tmp = self._write_temp_request(vreq)
+        run_dir = tempfile.mkdtemp(prefix='hf-preview-', dir=self.standalone_previews_dir)
+        cmd = [
+            sys.executable,
+            os.path.join(self.tools, 'render_hyperframes.py'),
+            '--input', tmp,
+            '--root', self.root,
+            '--workdir', run_dir,
+            '--skip-render',
+        ]
+        if profile_id:
+            cmd.extend(['--profile', profile_id])
+        try:
+            res = subprocess.run(
+                cmd, capture_output=True, text=True, encoding='utf-8', errors='replace',
+                timeout=240)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError('previa HyperFrames excedeu o tempo limite (240s)')
+        lines = [line for line in (res.stdout or '').strip().splitlines() if line.strip()]
+        verdict = None
+        if lines:
+            try:
+                verdict = json.loads(lines[-1])
+            except ValueError:
+                verdict = None
+        return {
+            'returncode': res.returncode,
+            'verdict': verdict,
+            'stderr': (res.stderr or '').strip()[-4000:],
+        }
 
     # ---- conexoes de texto e imagem ----
     def get_connections(self):
@@ -3084,6 +3190,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                     work_id=query.get('workId', [None])[0],
                     batch_id=query.get('batchId', [None])[0],
                 )})
+            elif path == '/api/hyperframes/readiness':
+                self.send_json(200, {'ok': True, **studio.hyperframes_readiness()})
             elif path == '/api/queue/batch':
                 self.send_json(200, {'ok': True, 'batch': studio.queue.get_batch(query.get('id', [''])[0])})
             elif path == '/api/queue/batch/summary':
@@ -3277,6 +3385,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True, **studio.create_demo_work(body)})
             elif path == '/api/works/save':
                 self.send_json(200, {'ok': True, **studio.save_work(body)})
+            elif path == '/api/works/renderer/save':
+                self.send_json(200, {'ok': True, **studio.save_work_renderer(body)})
+            elif path == '/api/works/hyperframes/preview':
+                self.send_json(200, {'ok': True, **studio.hyperframes_preview(body)})
             elif path == '/api/templates/save':
                 self.send_json(200, {'ok': True, **studio.save_template(body)})
             elif path == '/api/connections/save':

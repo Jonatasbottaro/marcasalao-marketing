@@ -3,21 +3,17 @@
 ## Operação Master HF-001 — migração HyperFrames (27/11/2026, em execução)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
-**sem merge**. F0–F4 concluídas (runtime 0.9.103 + skills + documentação); ordem de
+**sem merge**. F0–F8 concluídas (runtime 0.9.103 + skills + documentação + adaptador
+F6 `d2442bc` + Studio/fila F7/F8 com prova HTTP verde); ordem de
 continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md):
 
-1. **F6 — adaptador** contratos → composição HyperFrames → render (parser de
-   `frame.md`, guardrails pré-render, ponte JSON, `ffprobe` na saída; avaliar API
-   `@hyperframes/producer` vs CLI).
-2. **F7/F8 — Studio e fila:** rotas aditivas em `video_studio.py`; item
-   `hyperframes` na fila SQLite com estados/recovery preservados.
-3. **F9/F10 — templates nativos** por perfil de saída (9:16, 16:9, 1:1, 4:5), sem
+1. **F9/F10 — templates nativos** por perfil de saída (9:16, 16:9, 1:1, 4:5), sem
    claims proibidas.
-4. **F12 — piloto HF-PILOTO-001-MARCA-SALAO** (post 4:5, carrossel 4 cards, reel
+2. **F12 — piloto HF-PILOTO-001-MARCA-SALAO** (post 4:5, carrossel 4 cards, reel
    20–25 s; capturas Meu Salão com dados fictícios; VIDEO CLEAN; nada publicado).
-5. **F13 — avaliação visual humana** + comparação Op24 v2 × HyperFrames.
-6. **F14 — testes/CI aditivos** sem quebrar gates legados.
-7. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
+3. **F13 — avaliação visual humana** + comparação Op24 v2 × HyperFrames.
+4. **F14 — testes/CI aditivos** sem quebrar gates legados.
+5. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
    relatório master A–AD. **Merge somente com autorização do titular.**
 
 ## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)

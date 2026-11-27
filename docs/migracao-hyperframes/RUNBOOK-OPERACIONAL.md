@@ -39,6 +39,39 @@ bash renderers/hyperframes/scripts/hf-project.sh <dir-do-projeto> <comando>
 5. **Narração:** TXT por cena e tempos em `04-legendas/` (obrigatório no modo
    clean). SRT somente sob pedido expresso.
 
+## Studio e fila (F7/F8)
+
+No Video Studio, a seleção do motor é **explícita por trabalho** e não muda o
+caminho legado (MKT-VIDEO-003: sem fallback silencioso):
+
+```bash
+# 1. Selecionar o motor no trabalho (valida runtime antes de aceitar):
+curl -X POST .../api/works/renderer/save \
+  -d '{"workId": "<id>", "renderer": {"adapter": "hyperframes"}}'
+
+# 2. Confirmar runtime/versão:
+curl .../api/hyperframes/readiness
+
+# 3. Fila: a modalidade "hyperframes" aparece no plano somente quando o
+#    trabalho seleciona o motor; preflight exige ffmpeg/ffprobe + runtime:
+curl -X POST .../api/queue/preflight \
+  -d '{"items": [{"workId": "<id>", "modality": "hyperframes", "profileId": "<perfil>"}]}'
+
+# 4. Enfileirar como qualquer item (mesma fila SQLite, mesmos estados):
+curl -X POST .../api/queue/enqueue -d '{"items": [ ... ], "label": "..."}'
+```
+
+- Entrega promovida em `works/<id>/deliveries/hyperframes/<perfil>/` com
+  `delivery-manifest.json` (mesmo contrato da fila; `captionsMode: clean`,
+  `renderer.adapter: hyperframes`, sem SRT).
+- Revisão/empacotamento inalterados: peça `hyperframes:<perfil>`, decisão
+  `approved_for_local_delivery`, ZIP com `primary-output.mp4` + `narration.txt`.
+- Item de fila `hyperframes` congela `tenantId` (guardrails por marca) e
+  `renderer` no snapshot; falha do adaptador → item `failed` com
+  `GUARDRAILS_VIOLATION`/`ADAPTER_*` no log — nunca reprocessa em FFmpeg.
+- Trabalhos antigos: `renderer` ausente = `ffmpeg` (padrão); nada muda para
+  eles.
+
 ## Diagnóstico rápido
 
 | Sintoma | Primeiro passo |

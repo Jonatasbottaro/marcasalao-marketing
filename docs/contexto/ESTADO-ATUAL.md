@@ -25,10 +25,21 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   recursos com decisão/risco), arquitetura-alvo, contratos-e-adaptadores,
   decisões-e-conflitos, plano, critérios de aceite, runbook, atualizações/rollback e
   evidências — 11 documentos em `docs/migracao-hyperframes/`.
-- **Não implementado ainda (nesta branch):** adaptador contratos→composição (F6),
-  integração Studio/fila (F7/F8), templates nativos (F9/F10), campanha piloto
-  HF-PILOTO-001 (F12), avaliação visual (F13), testes/CI novos (F14). A main não
-  mudou; nada publicado.
+- **Adaptador (F6, commit `d2442bc`):** `renderers/hyperframes/adapter/` +
+  `scripts/hf-adapter.sh` + `tools/render_hyperframes.py`; smoke verde com
+  pedido real → composição → check → render draft → ffprobe (1080×1920,
+  14,0 s, **0 streams de áudio**); guardrails negativo aborta antes do render.
+- **Studio e fila (F7/F8):** modalidade `hyperframes` aditiva na fila SQLite
+  (estados/recovery preservados), seleção explícita de motor por trabalho
+  (`renderer.adapter`), entrega em `deliveries/hyperframes/<perfil>/` com o
+  mesmo contrato de manifesto (`captionsMode: clean`), revisão/ZIP reutilizados,
+  prova HTTP `tools/ci_hyperframes_queue_proof.py` verde (positivo VIDEO CLEAN +
+  guardrails negativo sem fallback + recuperação `running`→`interrupted`→retry).
+  Sem fallback silencioso (MKT-VIDEO-003); trabalhos sem `renderer` seguem no
+  caminho FFmpeg legado.
+- **Não implementado ainda (nesta branch):** templates nativos (F9/F10), campanha
+  piloto HF-PILOTO-001 (F12), avaliação visual (F13), testes/CI novos (F14). A
+  main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
   não rastreado do checkout principal; atualizar `platform/README.md`
   ("nenhum renderizador implementado") quando o adaptador existir.

@@ -33,12 +33,13 @@ CHANNEL_COPY_FIELDS = (
     'hashtags',
 )
 
-MODALITIES = ('video', 'carousel', 'motion')
+MODALITIES = ('video', 'carousel', 'motion', 'hyperframes')
 
 MODALITY_LABELS = {
     'video': 'Vídeo',
     'carousel': 'Carrossel',
     'motion': 'Motion',
+    'hyperframes': 'HyperFrames',
 }
 
 DECISION_LABELS = {
@@ -632,10 +633,12 @@ def _inspect_video_or_motion_piece(
     integrity_errors = []
     core_artifacts = {}
     verified_artifacts = {}
+    # VIDEO CLEAN (MKT-VIDEO-002): entregas clean nao possuem SRT.
+    mandatory_artifacts = ('video', 'narration') if manifest.get('captionsMode') == 'clean' else ('video', 'srt', 'narration')
     for art_key in ('video', 'srt', 'narration', 'motionPlan', 'report', 'package'):
         art = artifacts.get(art_key)
         if not isinstance(art, dict) or not art.get('path'):
-            if art_key in ('video', 'srt', 'narration'):
+            if art_key in mandatory_artifacts:
                 integrity_errors.append(f'artefato obrigatorio ausente no manifesto: {art_key}')
             continue
         ok, abs_path, err, actual_sha, actual_bytes = _verify_manifest_file(
@@ -1050,7 +1053,7 @@ def _active_profiles_order(video_req, carousel_req, deliveries, editorial, state
         add(pid, True)
     add(carousel_req.get('profile'), True)
 
-    for mod in ('video', 'motion'):
+    for mod in ('video', 'motion', 'hyperframes'):
         for entry in (deliveries.get(mod) or {}).get('profiles') or []:
             add(entry.get('profileId'), False)
     cm = (deliveries.get('carousel') or {}).get('manifest')
@@ -1080,6 +1083,7 @@ def build_review_overview(studio, work_id):
             'video': studio.read_delivery(wpaths['videoDeliveryDir']),
             'carousel': studio.read_carousel_delivery(wpaths['carouselDeliveryDir']),
             'motion': studio.read_delivery(wpaths['motionDeliveryDir']),
+            'hyperframes': studio.read_delivery(wpaths['hyperframesDeliveryDir']),
         }
 
         profile_meta_map = {
@@ -1163,6 +1167,29 @@ def build_review_overview(studio, work_id):
                 (state.get('pieces') or {}).get(f'motion:{pid}'),
                 draft_fp,
                 pid in video_selected,
+                video_req,
+            ))
+
+        # HyperFrames (MKT-VIDEO-003): peca propria quando o trabalho usa o motor
+        hyperframes_delivered = [
+            p.get('profileId')
+            for p in (deliveries['hyperframes'].get('profiles') or [])
+            if p.get('profileId')
+        ]
+        renderer = work_doc.get('renderer') if isinstance(work_doc.get('renderer'), dict) else {}
+        hf_selected = list(video_selected) if renderer.get('adapter') == 'hyperframes' else []
+        for pid in list(dict.fromkeys(hf_selected + hyperframes_delivered)):
+            draft_fp, _ = compute_draft_snapshot(studio, 'hyperframes', video_req, None, None, profile_id=pid)
+            pieces.append(_inspect_video_or_motion_piece(
+                studio,
+                'hyperframes',
+                pid,
+                profile_meta_map.get(pid),
+                wpaths['hyperframesDeliveryDir'],
+                deliveries['hyperframes'],
+                (state.get('pieces') or {}).get(f'hyperframes:{pid}'),
+                draft_fp,
+                pid in hf_selected,
                 video_req,
             ))
 
@@ -1352,8 +1379,8 @@ def read_verified_artifact_text(studio, work_id, modality, profile_id, kind):
     """Le .srt ou roteiro de narracao verificado por manifesto, confinamento e SHA-256."""
     if kind not in ARTIFACT_TEXT_KINDS:
         raise ValueError('tipo de texto de artefato invalido (use srt ou narration)')
-    if modality not in ('video', 'motion'):
-        raise ValueError('leitura de SRT/narracao aplica-se a video ou motion')
+    if modality not in ('video', 'motion', 'hyperframes'):
+        raise ValueError('leitura de SRT/narracao aplica-se a video, motion ou hyperframes')
     overview = build_review_overview(studio, work_id)
     piece = next(
         (p for p in overview['pieces'] if p['modality'] == modality and p['profileId'] == profile_id),

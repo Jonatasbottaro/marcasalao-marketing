@@ -312,7 +312,7 @@ def build_and_promote_package(studio, work_id, body):
             piece_files = []
             card_order = []
 
-            if mod in ('video', 'motion'):
+            if mod in ('video', 'motion', 'hyperframes'):
                 arts = piece.get('artifacts') or {}
                 arc_names = {
                     'video': 'primary-output.mp4',

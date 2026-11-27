@@ -32,7 +32,7 @@ QUEUE_SCHEMA_VERSION = 1
 PREFLIGHT_SCHEMA_VERSION = 1
 SNAPSHOT_SCHEMA_VERSION = 2
 VALID_STATUSES = ('queued', 'running', 'completed', 'failed', 'cancelled', 'interrupted')
-VALID_MODALITIES = ('video', 'carousel', 'motion')
+VALID_MODALITIES = ('video', 'carousel', 'motion', 'hyperframes')
 # Modos de legenda do trabalho. 'burned' e o legado (legenda queimada + SRT);
 # 'clean' e o VIDEO CLEAN (MKT-VIDEO-002): sem legenda queimada e sem SRT,
 # roteiro de narracao TXT preservado. So o modulo de video/motion usa o modo.
@@ -44,7 +44,24 @@ MODALITY_LABELS = {
     'video': 'Video',
     'carousel': 'Carrossel',
     'motion': 'Motion',
+    'hyperframes': 'HyperFrames',
 }
+
+
+def hyperframes_runtime_ready(root):
+    """Verifica a presenca do runtime HyperFrames pinado e do adaptador (HF-001)."""
+    fs = render_local.fs_path
+    hf_cli = os.path.join(root, 'renderers', 'hyperframes', 'node_modules', 'hyperframes', 'bin', 'hyperframes.mjs')
+    adapter = os.path.join(root, 'renderers', 'hyperframes', 'adapter', 'hf_adapter.mjs')
+    wrapper = os.path.join(root, 'renderers', 'hyperframes', 'scripts', 'hf-adapter.sh')
+    entry = os.path.join(root, 'tools', 'render_hyperframes.py')
+    if not os.path.isfile(fs(hf_cli)):
+        return False, 'Runtime HyperFrames ausente: rode npm install em renderers/hyperframes.'
+    if not os.path.isfile(fs(adapter)) or not os.path.isfile(fs(wrapper)):
+        return False, 'Adaptador HyperFrames ausente: renderers/hyperframes/adapter incompleto.'
+    if not os.path.isfile(fs(entry)):
+        return False, 'Entrada Python ausente: tools/render_hyperframes.py.'
+    return True, None
 
 
 def _safe_rollback(conn):
@@ -412,6 +429,8 @@ class StudioQueue:
 
             motion_snapshot = None
             output_dir = wpaths['videoDeliveryDir']
+            if modality == 'hyperframes':
+                output_dir = wpaths['hyperframesDeliveryDir']
             if modality == 'motion':
                 if profile_id not in cat['motion']:
                     raise ValueError(f'Motion local disponivel apenas para perfis verticais 9:16 ({profile_id} e {pmeta.get("aspectRatio")})')
@@ -436,6 +455,9 @@ class StudioQueue:
         captions_mode = work.get('captionsMode')
         if captions_mode not in CAPTIONS_MODES:
             captions_mode = 'burned'
+        if modality == 'hyperframes':
+            # O motor HyperFrames e sempre VIDEO CLEAN (MKT-VIDEO-002/MKT-VIDEO-003)
+            captions_mode = 'clean'
 
         snapshot = {
             'schemaVersion': SNAPSHOT_SCHEMA_VERSION,
@@ -453,6 +475,15 @@ class StudioQueue:
             'mediaOrigins': media_origins,
             'draftFingerprint': draft_fp,
         }
+        if modality == 'hyperframes':
+            # O adaptador exige tenant real (guardrails por marca); congela a
+            # resolucao do Studio (tenantId do trabalho -> brandTheme do projeto)
+            # para o executor nao depender do id do manifesto do projeto.
+            tenant_id = self.studio._resolve_tenant_id(work_id=work_id, project_rel=project_rel)
+            if not tenant_id:
+                raise ValueError(f'trabalho {work_id} sem tenant resolvivel para render HyperFrames')
+            snapshot['renderer'] = {'adapter': 'hyperframes'}
+            snapshot['tenantId'] = tenant_id
         snapshot_sha = studio_review.canonical_sha256(snapshot)
         return snapshot, snapshot_sha
 
@@ -746,6 +777,48 @@ class StudioQueue:
                     'available': avail,
                     'unavailableReason': reason,
                 })
+
+            # HyperFrames (somente quando o trabalho seleciona o motor explicitamente)
+            renderer = work.get('renderer') if isinstance(work.get('renderer'), dict) else {}
+            if renderer.get('adapter') == 'hyperframes':
+                hf_ok, hf_reason = hyperframes_runtime_ready(self.studio.root)
+                for pid, pmeta in cat['all'].items():
+                    if pmeta.get('mediaKind') != 'video':
+                        continue
+                    if pmeta.get('availability') != 'allowed' and not (isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])):
+                        continue
+                    selected_in_req = isinstance(v_req, dict) and pid in (v_req.get('profiles') or [])
+                    local_ok = bool(pmeta.get('availability') == 'allowed' and pmeta.get('localExportVideo'))
+                    p_entry = v_profile_map.get(pid)
+                    if not local_ok:
+                        avail = False
+                        reason = pmeta.get('blockReason') or 'Perfil indisponivel para video local.'
+                    elif not hf_ok:
+                        avail = False
+                        reason = hf_reason
+                    elif not v_check_ok:
+                        avail = False
+                        reason = v_check_err
+                    elif p_entry is not None and p_entry.get('status') != 'compiled':
+                        avail = False
+                        reason = self._extract_profile_preview_error(p_entry)
+                    else:
+                        avail = True
+                        reason = None
+                    options.append({
+                        'workId': wid,
+                        'workTitle': work.get('title') or wid,
+                        'project': project_rel,
+                        'modality': 'hyperframes',
+                        'modalityLabel': 'HyperFrames',
+                        'profileId': pid,
+                        'profileLabel': f'{pmeta.get("name") or pid} (HyperFrames)',
+                        'aspectRatio': pmeta.get('aspectRatio'),
+                        'outputDir': wpaths['hyperframesDeliveryDir'],
+                        'selectedByDefault': selected_in_req and avail,
+                        'available': avail,
+                        'unavailableReason': reason,
+                    })
 
             works_out.append({
                 'workId': wid,
@@ -1310,7 +1383,10 @@ class StudioQueue:
         if manifest.get('attemptId') != attempt_id:
             return None
         artifacts = manifest.get('artifacts') or {}
-        for key in ('video', 'srt', 'narration'):
+        # VIDEO CLEAN (MKT-VIDEO-002): entregas clean nao produzem SRT;
+        # o roteiro de narracao TXT permanece obrigatorio.
+        required_keys = ('video', 'narration') if manifest.get('captionsMode') == 'clean' else ('video', 'srt', 'narration')
+        for key in required_keys:
             art = artifacts.get(key)
             if not isinstance(art, dict) or not art.get('path') or not art.get('sha256'):
                 return None
@@ -1580,7 +1656,12 @@ class StudioQueue:
                 json.dump(staged_request, handle, ensure_ascii=False, indent=2)
 
             output_abs = self.studio.confine_workspace(item_row['output_dir'])
-            tool_name = 'produce_carousel.py' if item_row['modality'] == 'carousel' else 'produce_video.py'
+            if item_row['modality'] == 'carousel':
+                tool_name = 'produce_carousel.py'
+            elif item_row['modality'] == 'hyperframes':
+                tool_name = 'render_hyperframes.py'
+            else:
+                tool_name = 'produce_video.py'
             cmd = [
                 sys.executable,
                 os.path.join(self.studio.tools, tool_name),
@@ -1597,6 +1678,8 @@ class StudioQueue:
                 if snap.get('captionsMode') == 'clean':
                     # VIDEO CLEAN: sem legenda queimada e sem SRT (narracao TXT preservada)
                     cmd.append('--clean')
+                if item_row['modality'] == 'hyperframes' and snap.get('tenantId'):
+                    cmd.extend(['--tenant', str(snap['tenantId'])])
                 if item_row['modality'] == 'motion' and snap.get('motionPlan'):
                     plan_path = os.path.join(staging_dir, 'motion.plan.json')
                     with open(plan_path, 'w', encoding='utf-8', newline='\n') as handle:
@@ -1749,6 +1832,8 @@ class StudioQueue:
             required_ids.extend(['ffmpeg', 'ffprobe'])
         elif modality == 'carousel':
             required_ids.append('ffmpeg')
+        elif modality == 'hyperframes':
+            required_ids.extend(['ffmpeg', 'ffprobe'])
 
         checks = []
         blockers = []
@@ -1783,6 +1868,32 @@ class StudioQueue:
                 })
         has_bridge = bool((items_by_id.get('node') or {}).get('ok') and (items_by_id.get('platformBuild') or {}).get('ok'))
         has_ffprobe = bool((items_by_id.get('ffprobe') or {}).get('ok'))
+        if modality == 'hyperframes':
+            hf_ok, hf_reason = hyperframes_runtime_ready(self.studio.root)
+            if hf_ok:
+                checks.append({
+                    'id': 'env:hyperframes',
+                    'label': 'Runtime HyperFrames',
+                    'status': 'passed',
+                    'code': 'ENV_OK',
+                    'message': 'Runtime HyperFrames e adaptador presentes.',
+                })
+            else:
+                checks.append({
+                    'id': 'env:hyperframes',
+                    'label': 'Runtime HyperFrames',
+                    'status': 'failed',
+                    'code': 'ENV_MISSING_HYPERFRAMES',
+                    'message': hf_reason,
+                    'subject': 'hyperframes',
+                    'action': 'Rode npm install em renderers/hyperframes e confira o adaptador.',
+                })
+                blockers.append({
+                    'code': 'ENV_MISSING_HYPERFRAMES',
+                    'message': hf_reason,
+                    'subject': 'hyperframes',
+                    'action': 'Rode npm install em renderers/hyperframes e confira o adaptador.',
+                })
         return checks, blockers, has_bridge, has_ffprobe
 
     def _preflight_check_file(self, rel_path, expected_sha256, media_type, has_ffprobe, file_cache):
@@ -2079,7 +2190,7 @@ class StudioQueue:
                     act = f"Adicione '{profile_id}' em outputProfiles no ProjectManifest ou escolha um perfil permitido."
                     blockers.append({'code': 'PROFILE_NOT_ALLOWED', 'message': msg, 'subject': profile_id, 'action': act})
                     checks.append({'id': 'profile', 'label': 'Perfil e allowlist', 'status': 'failed', 'code': 'PROFILE_NOT_ALLOWED', 'message': msg, 'subject': profile_id, 'action': act})
-                elif modality == 'video' and not pmeta.get('localExportVideo'):
+                elif modality in ('video', 'hyperframes') and not pmeta.get('localExportVideo'):
                     msg = pmeta.get('blockReason') or (pmeta.get('localExport') or {}).get('video', {}).get('reason') or f"Perfil '{profile_id}' indisponivel para video local."
                     act = 'Escolha um perfil suportado para exportacao local de video.'
                     blockers.append({'code': 'PROFILE_LOCAL_EXPORT_UNSUPPORTED', 'message': msg, 'subject': profile_id, 'action': act})
