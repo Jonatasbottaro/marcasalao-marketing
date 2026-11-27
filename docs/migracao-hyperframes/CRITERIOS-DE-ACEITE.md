@@ -25,17 +25,22 @@ Critérios verificáveis por fase. Um critério só é aceito com evidência exe
 
 ## Adaptador (F6)
 
-- [ ] Aceita um `CreativeExecutionPackage` real e produz composição que passa
-      `hyperframes check` sem findings persistentes.
-- [ ] Render `--quality draft` do pacote conclui e gera MP4 com **0 streams de áudio**.
-- [ ] Texto com alegação proibida (ex.: "24h", "whatsapp") **aborta** o job antes do
-      render, com erro estruturado.
-- [ ] `renderer.adapter` lido do manifest; sem fallback silencioso para FFmpeg
-      (job falha com log quando o motor falha).
-- [ ] Caminhos de entrada validados contra escape de `<RAIZ>` (`..`, symlink).
+- [x] Aceita um `CreativeExecutionPackage` real e produz composição que passa
+      `hyperframes check` sem findings persistentes (smoke 27/11: check verde na
+      primeira materialização).
+- [x] Render `--quality draft` do pacote conclui e gera MP4 com **0 streams de áudio**
+      (h264 1080×1920, 14,0 s).
+- [x] Texto com alegação proibida ("Agenda sempre cheia, 24h sem faltas") **aborta**
+      o job antes do render, com erro estruturado (`GUARDRAILS_VIOLATION` + termos).
+- [x] `renderer.adapter` lido do manifest; sem fallback silencioso para FFmpeg
+      (entrada Python aciona exclusivamente o adaptador; falha = veredito `ok:false`).
+- [x] Caminhos de entrada validados contra escape de `<RAIZ>` (`ASSET_PATH_ESCAPE`,
+      `PATH_ESCAPE`, `workdir`/`out` confinados na entrada Python).
 - [ ] Mesmo pacote + mesma versão → mesmo output (determinismo; verificação por
-      re-render com hash de frames-chave).
-- [ ] Decisão registrada: API `@hyperframes/producer` vs CLI (com justificativa).
+      re-render com hash de frames-chave) — teste dedicado no F14.
+- [x] Decisão registrada: API `@hyperframes/producer` vs CLI — **CLI pinado**
+      (caminho único check+render, isolamento de processo); producer avaliado e
+      mantido como opção de progresso fino para a fila (F8).
 
 ## Studio e fila (F7/F8)
 

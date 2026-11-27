@@ -56,7 +56,39 @@ bash renderers/hyperframes/scripts/hf-project.sh <dir-do-projeto> render --quali
 
 Projetos de composição vivem em `compositions/<tenant>/<campanha>/` (scaffold via
 `hf.sh init`, scripts pinando `hyperframes@0.9.103`). O adaptador da fábrica fica em
-`adapters/` (contratos `platform/` → projeto HyperFrames → render → manifesto).
+`adapter/` (contratos `platform/` → projeto HyperFrames → render → veredito JSON).
+
+## Adaptador (F6)
+
+Cadeia: `tools/render_hyperframes.py` (entrada Python; compila o VideoRequest pela
+ponte `render_bridge.mjs`) → `scripts/hf-adapter.sh` (env confinado) →
+`adapter/hf_adapter.mjs` (orquestrador) com:
+
+- `adapter/tenant.mjs` — carrega `frame.md` (frontmatter normativo), `brand-kit.json`
+  e `guardrails.json` do tenant; valida caption/title/narration contra as alegações
+  proibidas **antes** do render (violação aborta com erro estruturado);
+- `adapter/compose.mjs` — materializa o projeto de composição (HTML `data-*`,
+  timeline GSAP seekable, headerOverlay, textos gráficos, zoom/framing por cena,
+  `narracao.txt` separado) e copia a mídia para `assets/` com confinamento de caminho;
+- verificação `ffprobe` na saída: 1 stream de vídeo, **0 streams de áudio**
+  (VIDEO CLEAN), geometria e duração conforme o plano.
+
+```bash
+# producao completa a partir de um pedido VideoRequest:
+python tools/render_hyperframes.py --input <pedido.video-request.json> \
+  --profile instagram-reels-video --quality draft
+# apenas compor e rodar o check:
+python tools/render_hyperframes.py --input <pedido.video-request.json> --skip-render
+```
+
+Decisão CLI × API: o adaptador usa o **CLI pinado** (spawn do módulo
+`hyperframes/bin/hyperframes.mjs`) — caminho único para `check` + `render`,
+isolamento de processo e códigos de saída estáveis. A API
+`@hyperframes/producer` (`createRenderJob`/`executeRenderJob`) permanece instalada
+como opção para progresso fino da fila (F8); não há compromisso de adoção.
+
+Smoke do adaptador: `tests/adapter-smoke.sh` (positivo: render draft + ffprobe;
+negativo: claim proibida aborta antes do render).
 
 ## VIDEO CLEAN (MKT-VIDEO-002)
 
@@ -71,3 +103,8 @@ Projetos de composição vivem em `compositions/<tenant>/<campanha>/` (scaffold 
 `tests/smoke.sh` — scaffold → check → render draft → ffprobe (0 faixas de áudio).
 Evidência da instalação (27/11/2026): MP4 h264 1080×1920, 10.0 s, 0 streams de áudio,
 render local em 22.7 s (software gpu, capture screenshot), caches confinados.
+
+`tests/adapter-smoke.sh` — adaptador ponta a ponta (27/11/2026): pedido real de
+exemplo → composição → check → render draft → ffprobe (h264 1080×1920, 14.0 s,
+0 streams de áudio) + caso negativo de guardrails ("24h", "agenda sempre cheia"
+abortam antes do render com `GUARDRAILS_VIOLATION`).

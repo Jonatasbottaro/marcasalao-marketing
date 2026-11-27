@@ -79,10 +79,12 @@ executa, comunicação por JSON em stdin/stdout com códigos de saída explícit
 6. **Templates históricos intocados.** O adaptador usa apenas os templates nativos
    novos (F9); `templates/` de demonstração nunca é alvo de escrita.
 
-## Avaliação pendente — `@hyperframes/producer`
+## Avaliação — `@hyperframes/producer` (decidida em F6, 27/11/2026)
 
 O pacote `@hyperframes/producer` (instalado em `renderers/hyperframes/`) expõe
-API programática (`createRenderJob`/`executeRenderJob`, a avaliar em F6). Se a API
-cobrir check+render+progresso de forma estável, o adaptador a usa em vez de shelling
-para a CLI; caso contrário, a CLI via wrappers permanece. A decisão fica registrada
-em [EVIDENCIAS.md](EVIDENCIAS.md) F6 quando tomada.
+`createRenderJob`/`executeRenderJob` com `ProgressCallback` — API programática de
+render. **Decisão: o adaptador usa o CLI pinado** (spawn do módulo
+`hyperframes/bin/hyperframes.mjs`), porque `check` e `render` ficam num único
+caminho (a API não expõe o bundle de auditoria do `check`), o processo fica isolado
+e os códigos de saída são estáveis. O producer permanece instalado como opção para
+progresso fino da fila (F8); adoção não é compromisso.

@@ -10,8 +10,8 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F2 | Matriz de migração + decisão MKT-VIDEO-003 | ✅ Concluída | MATRIZ-DE-MIGRACAO; MKT-VIDEO-003; notas datadas em MKT-VIDEO-001/MKT-PIPELINE-001 |
 | F3 | Instalação do runtime HyperFrames | ✅ Concluída | commit `89ef85f`; smoke verde (h264 1080×1920, 10.0 s, **0 streams de áudio**) |
 | F4 | Skills HyperFrames | ✅ Concluída | commit `5d4465c`; 25 skills, lock v2 upstream `cfaefdc` |
-| F5 | `frame.md` consumido por máquina | 🔶 Dobrada em F6 | Frontmatter normativo pronto; parser entra com o adaptador |
-| F6 | Adaptador contratos → composição → render | ⬜ Pendente | Padrão definido em CONTRATOS-E-ADAPTADORES; avaliar `@hyperframes/producer` |
+| F5 | `frame.md` consumido por máquina | ✅ Concluída (via F6) | `adapter/tenant.mjs` parseia o frontmatter normativo (cores/tipografia/headerOverlay/áudio) |
+| F6 | Adaptador contratos → composição → render | ✅ Concluída | `renderers/hyperframes/adapter/` + `tools/render_hyperframes.py`; smoke verde (render + guardrails); decisão CLI registrada |
 | F7 | Integração Video Studio | ⬜ Pendente | Rotas aditivas em `video_studio.py`; pacote de entrega reutilizado |
 | F8 | Fila: concorrência, progresso, recuperação | ⬜ Pendente | Item `hyperframes` na fila SQLite existente; estados/recovery preservados |
 | F9 | Templates nativos (reel produto/funcionalidade/institucional, motion, horizontal) | ⬜ Pendente | `kind` de cena → template; geometrias dos perfis |
@@ -29,11 +29,11 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 
 1. **PR A — governança e documentação** (F1/F2/F15/F16): docs da migração + MKT-VIDEO-003
    + notas datadas + atualização dos índices oficiais (`docs/README.md`,
-   `docs/governanca/MAPA-DOCUMENTAL.md`, `docs/contexto/*`, `WORKFLOW.md`).
-2. **PR B — fundação** (já na branch): runtime + skills (commits existentes).
+   `docs/governanca/MAPA-DOCUMENTAL.md`, `docs/contexto/*`, `WORKFLOW.md`). ✅ commit `3fca35a`.
+2. **PR B — fundação** (já na branch): runtime + skills (commits `89ef85f`, `5d4465c`). ✅
 3. **F6 — adaptador** (`renderers/hyperframes/`): parser de `frame.md`, validação de
    guardrails, materialização de composição, ponte JSON, verificação `ffprobe`.
-   Avaliar API `@hyperframes/producer` vs CLI.
+   Avaliar API `@hyperframes/producer` vs CLI. ✅ smoke verde.
 4. **F7+F8 — Studio e fila**: rotas e tipo de item aditivos; testes de recovery.
 5. **F9+F10 — templates nativos** por perfil de saída, sem claims proibidas.
 6. **F12 — piloto** HF-PILOTO-001-MARCA-SALAO (produção nova completa, VIDEO CLEAN).

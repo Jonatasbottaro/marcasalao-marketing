@@ -73,11 +73,11 @@ são preenchidos somente com saída de comando real.
 
 | Fase | Evidência |
 | --- | --- |
-| F6 Adaptador | _pendente_ |
+| F6 Adaptador | **Concluído (27/11/2026).** `renderers/hyperframes/adapter/` (`tenant.mjs`, `compose.mjs`, `hf_adapter.mjs`) + `scripts/hf-adapter.sh` + entrada Python `tools/render_hyperframes.py`. Smoke `tests/adapter-smoke.sh` verde: pedido real de exemplo → composição → `check` → render draft → `ffprobe` **h264 1080×1920, 14,0 s, 0 streams de áudio**; caso negativo: caption "Agenda sempre cheia, 24h sem faltas" aborta antes do render com `GUARDRAILS_VIOLATION` (termos "24h" + "agenda sempre cheia"). Decisão CLI × API: **CLI pinado** (spawn de `hyperframes/bin/hyperframes.mjs`); `@hyperframes/producer` avaliado (expõe `createRenderJob`/`executeRenderJob` + `ProgressCallback`) e mantido como opção para progresso fino na fila (F8). Determinismo por re-render com hash de frames: pendente de teste dedicado (F14). |
 | F7/F8 Studio+fila | _pendente_ |
 | F9/F10 Templates | _pendente_ |
 | F12 Piloto | _pendente_ |
 | F13 Avaliação | _pendente_ |
 | F14 Testes/CI | _pendente_ |
 | F17 Segurança | _pendente_ |
-| F18 PRs/relatório | _pendente_ |
+| F18 PRs/relatório | Branch `codex/hyperframes-core-migration` enviada ao remoto até `3fca35a` (27/11/2026). PR da branch **pendente de criação**: `gh` ausente e sem token na estação; link manual: `https://github.com/Jonatasbottaro/marcasalao-marketing/compare/main...codex/hyperframes-core-migration?expand=1`. Relatório master A–AD ao final da operação. |
