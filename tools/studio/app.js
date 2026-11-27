@@ -326,6 +326,8 @@ function renderActiveWorkBar() {
   bar.hidden = false;
   $('#active-work-title').textContent = `Trabalho ativo: ${currentWork.name} (${currentWork.id})`;
   $('#active-work-meta').textContent = ` — Projeto: ${currentWork.projectId || currentWork.project} · Pasta: ${currentWork.paths.workDir}`;
+  const cleanEl = $('#work-captions-clean');
+  if (cleanEl) cleanEl.checked = currentWork.captionsMode === 'clean';
 }
 
 function updateWorkPathsPreview() {
@@ -353,6 +355,7 @@ function hasUnsavedWorkChanges() {
     videoRequest: draft,
     carouselRequest: cdraft,
     motionPlan: mplan,
+    captionsMode: ($('#work-captions-clean')?.checked) ? 'clean' : 'burned',
   });
   return currentSnap !== lastSavedWorkSnapshot;
 }
@@ -524,11 +527,13 @@ async function saveWork(silent = false) {
   }
   syncDraftFields();
   syncCFields();
+  const captionsMode = ($('#work-captions-clean')?.checked) ? 'clean' : 'burned';
   const payload = {
     workId: currentWork.id,
     videoRequest: draft,
     carouselRequest: cdraft,
     motionPlan: mplan,
+    captionsMode,
   };
   const data = await post('/api/works/save', payload);
   currentWork = data.work;
@@ -536,6 +541,7 @@ async function saveWork(silent = false) {
     videoRequest: draft,
     carouselRequest: cdraft,
     motionPlan: mplan,
+    captionsMode,
   });
   if (!mStandaloneOverride) mreq = JSON.parse(JSON.stringify(draft));
   renderActiveWorkBar();
@@ -2923,6 +2929,9 @@ async function init() {
 
   $('#btn-save-work').addEventListener('click', () => saveWork().catch((e) => toast(e.message)));
   $('#btn-work-home').addEventListener('click', () => setMode('home'));
+  $('#work-captions-clean')?.addEventListener('change', () => {
+    if (typeof schedulePreviewStatusRefresh === 'function') schedulePreviewStatusRefresh();
+  });
 
   $('#btn-load-profiles').addEventListener('click', () => loadProfiles().catch((e) => toast(e.message)));
   $('#project-select').addEventListener('change', () => {

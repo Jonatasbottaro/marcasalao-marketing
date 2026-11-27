@@ -619,6 +619,26 @@ class TestStudioQueue(unittest.TestCase):
         self.assertFalse(c_port2['selectedByDefault'])
         self.assertIn(creq_bad['cards'][0]['id'], c_port2['unavailableReason'] or '')
 
+    def test_09_captions_mode_frozen_snapshot(self):
+        """VIDEO CLEAN (MKT-VIDEO-002): o snapshot congela o modo de legenda; default e 'burned'."""
+        studio = self._make_studio(auto_start=False)
+        w1 = f'tq-captions-{os.getpid()}'
+        self._seed_work(studio, w1, 'marca-salao')
+
+        # Sem captionsMode no trabalho -> legado 'burned'
+        snap, _ = studio.queue._build_frozen_snapshot(w1, 'video', 'instagram-reels-video')
+        self.assertEqual(snap.get('captionsMode'), 'burned')
+
+        # Com 'clean' salvo -> congela 'clean'
+        studio.save_work({'workId': w1, 'captionsMode': 'clean'})
+        snap_clean, _ = studio.queue._build_frozen_snapshot(w1, 'video', 'instagram-reels-video')
+        self.assertEqual(snap_clean.get('captionsMode'), 'clean')
+
+        # Valor invalido nao contamina o snapshot
+        studio.save_work({'workId': w1, 'captionsMode': 'burned'})
+        snap_burned, _ = studio.queue._build_frozen_snapshot(w1, 'video', 'instagram-reels-video')
+        self.assertEqual(snap_burned.get('captionsMode'), 'burned')
+
 
 if __name__ == '__main__':
     unittest.main()

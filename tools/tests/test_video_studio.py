@@ -146,11 +146,13 @@ class StudioHttpTest(StudioTestBase):
         self.assertFalse(horiz["localExportMotion"])
         self.assertEqual(horiz["localExport"]["motion"]["reason"], "MOTION_VERTICAL_ONLY")
         self.assertTrue(profiles["instagram-reels-video"]["localExportMotion"])
-        # Retrato 4:5 conhecido, mas fora do allowlist deste projeto.
+        # Retrato 4:5 (1080x1350) habilitado no allowlist deste projeto e suportado pelo adaptador
+        # (Operacao Resultado 24: geracao estatica 4:5 nativa, sem resize manual por FFmpeg).
         portrait = profiles["instagram-feed-image-portrait"]
-        self.assertEqual(portrait["availability"], "blocked")
-        self.assertFalse(portrait["localExportCarousel"])
+        self.assertEqual(portrait["availability"], "allowed")
+        self.assertTrue(portrait["localExportCarousel"])
         self.assertTrue(portrait["localExport"]["carousel"]["supported"])
+        self.assertEqual((portrait["width"], portrait["height"]), (1080, 1350))
         # Imagem 9:16 de stories: conhecida, porem sem render local de carrossel.
         stories_img = profiles["instagram-stories-image"]
         self.assertFalse(stories_img["localExport"]["carousel"]["supported"])
