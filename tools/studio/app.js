@@ -1925,6 +1925,7 @@ async function startExport(profileOverride) {
       outputDir,
       profile: profile || undefined,
       workId: currentWork ? currentWork.id : undefined,
+      captionsMode: ($('#work-captions-clean')?.checked) ? 'clean' : 'burned',
     });
     pollExport(data.jobId, outputDir);
   } catch (err) {
@@ -2770,6 +2771,7 @@ async function mExport() {
       kind: 'video',
       motionPlan: mplan,
       workId: (!mStandaloneOverride && currentWork) ? currentWork.id : undefined,
+      captionsMode: ($('#work-captions-clean')?.checked) ? 'clean' : 'burned',
     });
     mPoll(d.jobId, outputDir);
   } catch (err) {

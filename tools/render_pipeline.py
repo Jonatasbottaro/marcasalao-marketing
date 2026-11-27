@@ -574,6 +574,7 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'report': f'{package_id}-execution-report.json',
         'manifest': 'delivery-manifest.json',
     }
+    stale_captions = names['srt'] if clean else None
     if clean:
         names.pop('srt')
     if text_overlays_path and canonical_overlay_json:
@@ -936,6 +937,13 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     shutil.rmtree(fs(backup_dir, force=True), ignore_errors=True)
     if staging_created:
         shutil.rmtree(fs(staging, force=True), ignore_errors=True)
+    if stale_captions:
+        leftover = os.path.join(output_dir, stale_captions)
+        try:
+            if os.path.isfile(fs(leftover)):
+                os.remove(fs(leftover))
+        except OSError:
+            pass
 
     summary = {
         'status': 'completed',

@@ -38,9 +38,29 @@ Escopo: publicar e validar as correções da Operação 24, sem criar novos mód
 
 - `test_studio_queue` — 9/9 OK (inclui `test_09_captions_mode_frozen_snapshot`).
 - `test_multi_format` — 12/12 OK.
-- `test_video_studio` + `test_studio_video_api` — 55/55 OK (inclui `test_profiles_local_export`, do 4:5).
+- `test_video_studio` + `test_studio_video_api` — 56/56 OK (inclui `test_profiles_local_export`, do 4:5,
+  e o novo `VideoCleanExportTest`: export legado gera SRT; export limpo no mesmo destino o remove).
+- `test_render_pipeline` + `test_build_video` — 51/51 OK.
 - Ambiente: worktree `.workspace/worktrees/op24`; FFmpeg/FFprobe portáteis do checkout principal
   alcançáveis pela worktree (junção em `.workspace/tools/ffmpeg`); Node do sistema.
+
+## 4.1 Defeito P1 encontrado na validação do painel (§4)
+
+A jornada real no navegador revelou que o botão **"Exportar vídeo"** não honrava o modo limpo:
+`start_export` montava o comando de `produce_video.py` sem `--clean` e o `app.js` não enviava
+`captionsMode`. Com "Vídeo limpo" marcado, o render saía legado (legenda queimada + `captions.srt`).
+
+Correção aplicada (esta operação):
+
+- `tools/video_studio.py::start_export` — aceita `captions_mode`, faz fallback para o `captionsMode`
+  do trabalho salvo e acrescenta `--clean` (exceto carrossel); a rota `/api/export` repassa `captionsMode`.
+- `tools/studio/app.js` — envia `captionsMode` nos exports de vídeo e motion.
+- `tools/render_pipeline.py::run_render_pipeline` — ao renderizar em modo limpo, remove `captions.srt`
+  estale deixado por uma exportação legada anterior no mesmo destino.
+- `tools/tests/test_video_studio.py::VideoCleanExportTest` — regressão do caminho direto do painel.
+
+Efeito verificado: reexport limpo → relatório com `captions: {mode: clean, burned: false}`, sem artefato
+`srt`, MP4 1080×1920 com 1 stream de vídeo e 0 de áudio.
 
 ## 5. VIDEO CLEAN pelo painel
 

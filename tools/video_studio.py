@@ -2002,7 +2002,7 @@ class Studio:
             self._finalize_job(job)
 
     def start_export(self, request, output_dir_rel, profile=None, kind='video', motion_plan=None,
-                     work_id=None, tenant_id=None, overlay_plan=None):
+                     work_id=None, tenant_id=None, overlay_plan=None, captions_mode=None):
         if self.is_single_export_active(output_dir_rel, profile=profile) or self.queue.is_destination_active(output_dir_rel):
             raise ValueError('Destino em uso por uma exportacao ou item da fila em andamento. Aguarde a conclusao.')
         if work_id:
@@ -2050,6 +2050,11 @@ class Studio:
         if motion_plan is not None and kind == 'video':
             plan_tmp = self._write_temp_request(motion_plan)
             cmd.extend(['--motion-plan', plan_tmp])
+        effective_captions_mode = _normalize_captions_mode(captions_mode) if captions_mode else None
+        if effective_captions_mode is None and work_id:
+            effective_captions_mode = _normalize_captions_mode(saved_work.get('captionsMode') or 'burned')
+        if effective_captions_mode == 'clean' and kind != 'carousel':
+            cmd.append('--clean')
         job_id = uuid.uuid4().hex[:12]
         out_path = os.path.join(self.drafts_dir, f'job-{job_id}.out.json')
         err_path = os.path.join(self.drafts_dir, f'job-{job_id}.err.log')
@@ -3381,6 +3386,7 @@ class StudioHandler(BaseHTTPRequestHandler):
                     work_id=body.get('workId'),
                     tenant_id=body.get('tenant_id') or body.get('tenantId'),
                     overlay_plan=body.get('textOverlayPlan') or body.get('overlayPlan'),
+                    captions_mode=body.get('captionsMode'),
                 )
                 self.send_json(200, {'ok': True, 'jobId': job_id})
             elif path == '/api/queue/plan':
