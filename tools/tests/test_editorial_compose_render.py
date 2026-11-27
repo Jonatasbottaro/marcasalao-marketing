@@ -90,6 +90,27 @@ class TestEditorialComposeRender(unittest.TestCase):
         self.assertEqual((video[0]["width"], video[0]["height"]), (360, 640))
         self.assertAlmostEqual(float(data["format"]["duration"]), 2.0, delta=0.05)
 
+    def test_fallback_ass_sem_drawtext(self):
+        """Build sem drawtext (ex.: FFmpeg 6.1-static do CI Ubuntu) usa fallback ASS."""
+        from unittest import mock
+        out = os.path.join(SANDBOX, 'fallback')
+        out2 = os.path.join(SANDBOX, 'fallback-2')
+        with mock.patch.object(editorial_compose, 'has_filter', lambda name: False):
+            editorial_compose.compose_campaign(FIXTURE, WORKTREE, out, ['fx-c1-prova'])
+            editorial_compose.compose_campaign(FIXTURE, WORKTREE, out2, ['fx-c1-prova'])
+        path = os.path.join(out, 'fx-c1-prova.mp4')
+        probe = subprocess.run(
+            [shutil.which('ffprobe'), '-v', 'error', '-show_streams', '-show_format',
+             '-of', 'json', path], capture_output=True, text=True, check=True)
+        data = json.loads(probe.stdout)
+        video = [s for s in data["streams"] if s["codec_type"] == "video"]
+        audio = [s for s in data["streams"] if s["codec_type"] == "audio"]
+        self.assertEqual(len(video), 1)
+        self.assertFalse(audio)
+        self.assertEqual(video[0]["codec_name"], "h264")
+        self.assertEqual((video[0]["width"], video[0]["height"]), (360, 640))
+        self.assertEqual(sha(path), sha(os.path.join(out2, 'fx-c1-prova.mp4')))
+
     def test_campanha_ficticia_completa(self):
         out = os.path.join(SANDBOX, "campanha")
         report = editorial_compose.compose_campaign(FIXTURE, WORKTREE, out)

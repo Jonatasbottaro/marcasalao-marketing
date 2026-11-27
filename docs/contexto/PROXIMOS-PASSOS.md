@@ -1,5 +1,19 @@
 # Próximos passos
 
+## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)
+
+Correção do pipeline audiovisual (drawtext ausente no FFmpeg 6.1-static do CI
+Ubuntu) commitada na branch `feat/ns001-studio-bella-v2` (PR #33, rascunho).
+Pendências na ordem:
+
+1. **CI Ubuntu e Windows** no novo SHA: os três testes de composição editorial
+   e os gates obrigatórios precisam passar nos dois sistemas.
+2. **Revisão editorial da v2.8** pelo titular (player em
+   `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/entrega/review.html`).
+3. **Merge do PR #33** somente com autorização explícita do titular.
+4. **Publicação manual** somente após aprovação; áudio/narração gerados pelo
+   titular fora do editor a partir do TXT.
+
 ## VIDEO CLEAN — revisão da v2.8 pelo titular (26/11/2026)
 
 Padrão audiovisual atualizado (MKT-VIDEO-002) e primeira aplicação entregue na

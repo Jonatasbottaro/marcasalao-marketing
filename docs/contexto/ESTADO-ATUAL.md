@@ -1,5 +1,39 @@
 # Estado atual do projeto
 
+## Operação Resultado 22 — correção do pipeline audiovisual (FFmpeg/CI Ubuntu) (27/11/2026)
+
+Seção aditiva. Os três testes de composição editorial
+(`tools/tests/test_editorial_compose_render.py`) falhavam no CI Ubuntu com
+"Filter not found" durante `-filter_complex`.
+
+- **Causa raiz comprovada:** o `FedericoCarboni/setup-ffmpeg@v2` instala no
+  Ubuntu o build `6.1-static` do johnvansickle, que **não inclui o filtro
+  `drawtext`** (regressão do build 6.1; o 6.0.1 do mesmo autor inclui,
+  verificado por inspeção do binário). O job Windows do CI usa `6.1-full`
+  (gyan) e o ambiente local usa `9.1-essentials` (gyan), ambos com drawtext —
+  por isso a falha só aparecia no Ubuntu. A mensagem do CI estava truncada pelo
+  limite de 400 caracteres de stderr no `run_ffmpeg`.
+- **Correção mínima (`tools/editorial_compose.py`):** detecção do filtro em
+  tempo de execução (`has_filter`, cache por binário) e construção compatível —
+  `drawtext` quando disponível (caminho Windows inalterado, saída byte-idêntica);
+  fallback por ASS/libass (`subtitles` + `fontsdir` com a fonte resolvida) em
+  builds sem drawtext, preservando tipografia, cor, posição e fade (diferenças
+  residuais: ~7 px no topo do texto pela âncora do libass e roundtrip RGB do
+  filtro). Diagnóstico do `run_ffmpeg` ampliado de 400 para 4000 caracteres.
+- **Testes:** `test_editorial_compose_render` 4/4 (inclui o novo
+  `test_fallback_ass_sem_drawtext`, que força o fallback em qualquer sistema);
+  suítes `test_editorial_compose`/`test_render_pipeline`/`test_render_local`/
+  `test_produce_video`: **112/112 OK, 0 falhas, 0 skips** (926 s,
+  REQUIRE_RENDER=1, ffmpeg local gyan 9.1).
+- **VIDEO CLEAN preservado:** MP4 sem faixa de áudio, h264/yuv420p, geometria e
+  duração corretas nos dois caminhos; manifesto, textos editoriais e NS-001
+  v2.8 intactos; renderização legada inalterada.
+- **Workflow:** `.github/workflows/local-render-validation.yml` inalterado —
+  gates preservados (REQUIRE_RENDER=1, sem skips); a falha era do build, não do
+  workflow.
+- **Pendente:** CI Ubuntu e Windows no novo SHA do PR #33; aprovação editorial
+  da v2.8; merge e publicação não autorizados.
+
 ## Operação VIDEO CLEAN — padrão audiovisual + NS-001 v2.8 (26/11/2026)
 
 Seção aditiva. Decisão do titular de 26/11/2026 registrada em

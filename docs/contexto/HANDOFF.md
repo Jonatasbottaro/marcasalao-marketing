@@ -1,5 +1,22 @@
 # Handoff: retomar o projeto
 
+## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
+
+- **Causa raiz:** o build `6.1-static` (johnvansickle) que o
+  `FedericoCarboni/setup-ffmpeg@v2` instala no Ubuntu não inclui `drawtext`;
+  Windows (6.1-full gyan) e local (9.1-essentials gyan) incluem.
+- **Código:** `tools/editorial_compose.py` com `has_filter()` (cache por
+  binário) + fallback ASS (`subtitles` + `fontsdir`); `run_ffmpeg` captura
+  4000 caracteres do stderr; novo teste `test_fallback_ass_sem_drawtext`.
+  Workflow inalterado (gates preservados).
+- **Verificações:** `test_editorial_compose_render` 4/4; suítes relacionadas
+  112/112 OK (REQUIRE_RENDER=1, 926 s); fallback validado por ffprobe (sem
+  áudio, h264/yuv420p, 360x640, 2,0 s) e reprodutibilidade byte-idêntica.
+- **Branch:** `feat/ns001-studio-bella-v2` (worktree `.workspace/worktrees/ns001v2`),
+  PR #33 em rascunho; **sem merge/publicação**.
+- **Próxima ação:** conferir CI Ubuntu e Windows no novo SHA do PR #33; depois,
+  revisão editorial da NS-001 v2.8 pelo titular.
+
 ## Operação VIDEO CLEAN — padrão audiovisual + NS-001 v2.8 (26/11/2026)
 
 - **Decisão vigente:** MKT-VIDEO-002 (`docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md`)

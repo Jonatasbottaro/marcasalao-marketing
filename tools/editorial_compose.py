@@ -23,6 +23,9 @@ Principios:
     cenas sem alteracao. Nenhum audio em nenhuma saida.
   - Areas seguras por perfil, configuraveis; a previsualizacao com sobreposicao
     e artefato temporario de QC e nunca entra no MP4 final.
+  - Texto: drawtext quando o build expoe o filtro; fallback por ASS (libass) em
+    builds sem drawtext (ex.: FFmpeg 6.1-static do CI Ubuntu), com a mesma
+    tipografia, cor, posicao e fade.
 
 CLI (a partir da raiz do checkout):
   python tools/editorial_compose.py --manifest <campanha.editorial.json> \
@@ -41,6 +44,7 @@ import os
 import re
 import subprocess
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -108,6 +112,69 @@ def esc_text(text):
     return out
 
 
+def _font_face(path):
+    """(family, bold) lidos da tabela name do TTF, sem dependencias externas."""
+    with open(render_local.fs_path(path), 'rb') as handle:
+        data = handle.read()
+    num_tables = int.from_bytes(data[4:6], 'big')
+    base = None
+    for i in range(num_tables):
+        rec = 12 + 16 * i
+        if data[rec:rec + 4] == b'name':
+            base = int.from_bytes(data[rec + 8:rec + 12], 'big')
+            break
+    if base is None:
+        raise EditorialError('FONT_FAMILY_UNKNOWN', path)
+    count = int.from_bytes(data[base + 2:base + 4], 'big')
+    strings_off = base + int.from_bytes(data[base + 4:base + 6], 'big')
+    family = subfamily = None
+    family_rank = subfamily_rank = (0, 0)
+    for i in range(count):
+        rec = base + 6 + 12 * i
+        platform = int.from_bytes(data[rec:rec + 2], 'big')
+        language = int.from_bytes(data[rec + 4:rec + 6], 'big')
+        name_id = int.from_bytes(data[rec + 6:rec + 8], 'big')
+        length = int.from_bytes(data[rec + 8:rec + 10], 'big')
+        offset = int.from_bytes(data[rec + 10:rec + 12], 'big')
+        if name_id not in (1, 2):
+            continue
+        raw = data[strings_off + offset:strings_off + offset + length]
+        value = raw.decode('utf-16-be' if platform in (0, 3) else 'latin-1', errors='replace')
+        rank = (2 if platform == 3 else (1 if platform == 0 else 0),
+                1 if language in (0, 0x409) else 0)
+        if name_id == 1 and rank > family_rank:
+            family, family_rank = value, rank
+        elif name_id == 2 and rank > subfamily_rank:
+            subfamily, subfamily_rank = value, rank
+    if not family:
+        raise EditorialError('FONT_FAMILY_UNKNOWN', path)
+    return family.strip(), 'bold' in (subfamily or '').lower()
+
+
+def _ass_color(color):
+    """0xRRGGBB -> &H00BBGGRR (ordem BGR do ASS)."""
+    return f'&H00{color[6:8]}{color[4:6]}{color[2:4]}'.upper()
+
+
+def _ass_time(seconds):
+    cs = max(0, int(round(seconds * 100)))
+    h, rem = divmod(cs, 360000)
+    m, rem = divmod(rem, 6000)
+    s, cs = divmod(rem, 100)
+    return f'{h}:{m:02d}:{s:02d}.{cs:02d}'
+
+
+def _ass_escape(text):
+    out = str(text).replace('\n', ' ')
+    for ch in ('\\', '{', '}'):
+        out = out.replace(ch, '\\' + ch)
+    return out
+
+
+def _ass_filter_arg(path):
+    return "'" + path.replace(os.sep, '/').replace(':', '\\:').replace("'", "\\'") + "'"
+
+
 def probe_dims(path):
     res = subprocess.run([build_video.get_ffprobe(), '-v', 'error', '-select_streams', 'v:0',
                           '-show_entries', 'stream=width,height', '-of', 'json',
@@ -122,8 +189,35 @@ def run_ffmpeg(args):
     res = subprocess.run([build_video.get_ffmpeg()] + args, capture_output=True, text=True,
                          encoding='utf-8', errors='replace', timeout=FF_TIMEOUT)
     if res.returncode != 0:
-        raise RuntimeError(f'FFmpeg falhou: {(res.stderr or "")[-400:]}')
+        raise RuntimeError(f'FFmpeg falhou: {(res.stderr or "")[-4000:]}')
     return res
+
+
+_FILTER_CACHE = {}
+
+
+def has_filter(name):
+    """Indica se o build local do FFmpeg expoe o filtro (cache por binario).
+
+    Builds estaticos podem omitir filtros (ex.: FFmpeg 6.1-static do CI Ubuntu
+    nao inclui drawtext); o grafo precisa saber disso para escolher uma
+    construcao compativel em vez de falhar no meio do render.
+    """
+    ffmpeg = build_video.get_ffmpeg()
+    if ffmpeg not in _FILTER_CACHE:
+        names = set()
+        try:
+            res = subprocess.run([ffmpeg, '-hide_banner', '-filters'], capture_output=True,
+                                 text=True, encoding='utf-8', errors='replace',
+                                 timeout=PROBE_TIMEOUT)
+            for line in (res.stdout or '').splitlines():
+                parts = line.split()
+                if len(parts) >= 2:
+                    names.add(parts[1])
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        _FILTER_CACHE[ffmpeg] = names
+    return name in _FILTER_CACHE[ffmpeg]
 
 
 def scale_dims(src_w, src_h, target_w):
@@ -314,6 +408,8 @@ class SceneGraph:
         self.geometry = []
         self._last = 'bg'
         self._n = 0
+        self._drawtext = has_filter('drawtext')
+        self._ass_events = []
 
     def begin(self, duration_s, with_bg=True, band=None):
         self.duration = duration_s
@@ -395,17 +491,21 @@ class SceneGraph:
         color = hex_ff(self.color_of(color_token))
         est_w = int(size * TEXT_WIDTH_FACTOR * len(content))
         x = (self.W - est_w) // 2
-        alpha = ''
-        if t1 > t0:
-            a_in = f'min(1,(t-{t0:.3f})/{ELEMENT_FADE_S})'
-            a_out = f'max(0,({t1:.3f}-t)/{ELEMENT_FADE_S})'
-            alpha = (f":alpha='if(lt(t,{t0:.3f}),0,"
-                     f"if(gt(t,{t1 - ELEMENT_FADE_S:.3f}),{a_out},{a_in}))'")
-        nxt = self._next()
-        self.chains.append(
-            f"[{self._last}]drawtext=fontfile='{font_ff(role)}':text='{esc_text(content)}':"
-            f"fontsize={size}:fontcolor={color}:x=(w-text_w)/2:y={y}{alpha}[{nxt}]")
-        self._last = nxt
+        if self._drawtext:
+            alpha = ''
+            if t1 > t0:
+                a_in = f'min(1,(t-{t0:.3f})/{ELEMENT_FADE_S})'
+                a_out = f'max(0,({t1:.3f}-t)/{ELEMENT_FADE_S})'
+                alpha = (f":alpha='if(lt(t,{t0:.3f}),0,"
+                         f"if(gt(t,{t1 - ELEMENT_FADE_S:.3f}),{a_out},{a_in}))'")
+            nxt = self._next()
+            self.chains.append(
+                f"[{self._last}]drawtext=fontfile='{font_ff(role)}':text='{esc_text(content)}':"
+                f"fontsize={size}:fontcolor={color}:x=(w-text_w)/2:y={y}{alpha}[{nxt}]")
+            self._last = nxt
+        else:
+            self._ass_events.append({'text': content, 'size': size, 'color': color, 'role': role,
+                                     'cx': self.W / 2, 'y': y, 't0': t0, 't1': t1})
         self.layout.append({'kind': label, 'x': x, 'y': y, 'w': est_w, 'h': int(size * 1.2),
                             'critical': critical, 'window': [t0, t1], 'text': content})
         return est_w
@@ -421,17 +521,24 @@ class SceneGraph:
         self.chains.append(
             f'color=c={surface}:s={box_w}x{box_h}:r={self.fps}:d={self.duration:.3f},'
             f'format=rgba[{cbg}]')
-        self.chains.append(
-            f"[{cbg}]drawtext=fontfile='{font_ff('bold')}':text='{esc_text(content)}':"
-            f"fontsize={size}:fontcolor={color}:x=(w-text_w)/2:y={pad_y}[{ctxt}]")
+        if self._drawtext:
+            self.chains.append(
+                f"[{cbg}]drawtext=fontfile='{font_ff('bold')}':text='{esc_text(content)}':"
+                f"fontsize={size}:fontcolor={color}:x=(w-text_w)/2:y={pad_y}[{ctxt}]")
+            src = ctxt
+        else:
+            self._ass_events.append({'text': content, 'size': size, 'color': color,
+                                     'role': 'bold', 'cx': box_x + box_w / 2, 'y': y + pad_y,
+                                     't0': t0, 't1': t1})
+            src = cbg
         fade = ''
         ol_enable = ''
         if t1 > t0:
             fade = (f',fade=t=in:st={t0:.3f}:d={ELEMENT_FADE_S}:alpha=1,'
                     f'fade=t=out:st={max(t0, t1 - ELEMENT_FADE_S):.3f}:d={ELEMENT_FADE_S}:alpha=1')
             ol_enable = f":enable='between(t,{t0:.3f},{t1:.3f})'"
-        self.chains.append(f'[{ctxt}]{fade.lstrip(",")}[{clayer}]' if fade
-                           else f'[{ctxt}]null[{clayer}]')
+        self.chains.append(f'[{src}]{fade.lstrip(",")}[{clayer}]' if fade
+                           else f'[{src}]null[{clayer}]')
         nxt = self._next()
         self.chains.append(f'[{self._last}][{clayer}]overlay={box_x}:{y}{ol_enable}[{nxt}]')
         self._last = nxt
@@ -474,7 +581,50 @@ class SceneGraph:
     def finish_static(self):
         self.chains.append(f'[{self._last}]format=rgb24[v]')
 
+    def _write_ass(self):
+        """Arquivo ASS com um estilo por texto; usado quando o build nao tem drawtext."""
+        lines = ['[Script Info]', 'ScriptType: v4.00+', f'PlayResX: {self.W}',
+                 f'PlayResY: {self.H}', 'WrapStyle: 2', 'ScaledBorderAndShadow: yes', '',
+                 '[V4+ Styles]',
+                 'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, '
+                 'BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, '
+                 'BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding']
+        events = []
+        fade_ms = int(ELEMENT_FADE_S * 1000)
+        for i, ev in enumerate(self._ass_events):
+            family, bold = _font_face(resolve_font(ev['role']))
+            name = f'S{i}'
+            primary = _ass_color(ev['color'])
+            lines.append(f'Style: {name},{family},{ev["size"]},{primary},{primary},'
+                         f'&H00000000,&H00000000,{1 if bold else 0},0,0,0,100,100,0,0,'
+                         f'1,0,0,8,10,10,10,1')
+            animated = ev['t1'] > ev['t0']
+            start = ev['t0'] if animated else 0.0
+            end = ev['t1'] if animated else self.duration
+            fade = f'\\fad({fade_ms},{fade_ms})' if animated else ''
+            events.append(f'Dialogue: 0,{_ass_time(start)},{_ass_time(end)},{name},,0,0,0,,'
+                          f'{{\\an8\\pos({ev["cx"]},{ev["y"]}){fade}}}'
+                          f'{_ass_escape(ev["text"])}')
+        lines += ['', '[Events]',
+                  'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text']
+        lines += events
+        ass_dir = os.path.join(self.root, '.workspace', 'tmp', 'editorial-compose-ass')
+        os.makedirs(render_local.fs_path(ass_dir), exist_ok=True)
+        ass_path = os.path.join(ass_dir, f'{uuid.uuid4().hex}.ass')
+        with open(render_local.fs_path(ass_path), 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(lines) + '\n')
+        return ass_path
+
     def render(self, out_path, duration_s, video):
+        if self._ass_events and not self._drawtext:
+            ass_path = self._write_ass()
+            fonts_dir = os.path.dirname(resolve_font('bold')).replace(os.sep, '/')
+            new_lbl = self._next()
+            self.chains[-1] = self.chains[-1].replace(f'[{self._last}]', f'[{new_lbl}]', 1)
+            self.chains.insert(
+                len(self.chains) - 1,
+                f"[{self._last}]subtitles={_ass_filter_arg(ass_path)}"
+                f":fontsdir={_ass_filter_arg(fonts_dir)}[{new_lbl}]")
         args = ['-y', '-v', 'error']
         for inp in self.inputs:
             args += inp
@@ -649,9 +799,32 @@ def safe_area_overlay(manifest, profile, out_path):
         f'[a]drawbox=x=0:y={H - bottom}:w={W}:h={bottom}:color={red}:t=fill[b]',
         f'[b]drawbox=x=0:y={top}:w={left}:h={H - top - bottom}:color={red}:t=fill[c]',
         f'[c]drawbox=x={W - right}:y={top}:w={right}:h={H - top - bottom}:color={red}:t=fill[d]',
-        f"[d]drawtext=fontfile='{font_ff('bold')}':text='{esc_text(profile)}':"
-        f'fontsize=34:fontcolor=white:x=(w-text_w)/2:y={top + 12}[e]',
     ]
+    if has_filter('drawtext'):
+        chains.append(
+            f"[d]drawtext=fontfile='{font_ff('bold')}':text='{esc_text(profile)}':"
+            f'fontsize=34:fontcolor=white:x=(w-text_w)/2:y={top + 12}[e]')
+    else:
+        family, bold = _font_face(resolve_font('bold'))
+        ass_dir = os.path.dirname(out_path)
+        if ass_dir:
+            os.makedirs(render_local.fs_path(ass_dir), exist_ok=True)
+        ass_path = os.path.join(ass_dir, f'ass-{profile}.ass') if ass_dir else f'ass-{profile}.ass'
+        lines = ['[Script Info]', 'ScriptType: v4.00+', f'PlayResX: {W}', f'PlayResY: {H}',
+                 'WrapStyle: 2', 'ScaledBorderAndShadow: yes', '', '[V4+ Styles]',
+                 'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, '
+                 'BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, '
+                 'BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+                 f'Style: S0,{family},34,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,'
+                 f'{1 if bold else 0},0,0,0,100,100,0,0,1,0,0,8,10,10,10,1', '', '[Events]',
+                 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+                 f'Dialogue: 0,0:00:00.00,0:00:10.00,S0,,0,0,0,,'
+                 f'{{\\an8\\pos({W / 2},{top + 12})}}{_ass_escape(profile)}']
+        with open(render_local.fs_path(ass_path), 'w', encoding='utf-8') as handle:
+            handle.write('\n'.join(lines) + '\n')
+        fonts_dir = os.path.dirname(resolve_font('bold')).replace(os.sep, '/')
+        chains.append(f"[d]subtitles={_ass_filter_arg(ass_path)}"
+                      f":fontsdir={_ass_filter_arg(fonts_dir)}[e]")
     run_ffmpeg(['-y', '-v', 'error', '-filter_complex', ';'.join(chains),
                 '-map', '[e]', '-frames:v', '1', str(out_path)])
 
