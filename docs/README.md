@@ -7,6 +7,9 @@ continuam em [AGENTS.md](../AGENTS.md); este índice organiza o resto.
 - **Base verificada deste índice:** branch `main`, commit
   `05ca7fa10209c648c5ea9cfb5d8a358214c8c396` (2026-11-22). Consolidação documental registrada
   em [auditorias/CONSOLIDACAO-DOCUMENTAL-2026-11-22.md](auditorias/CONSOLIDACAO-DOCUMENTAL-2026-11-22.md).
+- **Adendo HF-001 (27/11/2026, branch `codex/hyperframes-core-migration`):** migração do
+  motor audiovisual para HyperFrames — ver [migracao-hyperframes/](migracao-hyperframes/README.md)
+  e [decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md](decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md).
 - **Estado técnico consolidado:** [contexto/ESTADO-ATUAL.md](contexto/ESTADO-ATUAL.md).
 - **Inventário e situação de cada documento:** [governanca/MAPA-DOCUMENTAL.md](governanca/MAPA-DOCUMENTAL.md).
 - **Regras de manutenção documental:** [governanca/DOCUMENTACAO.md](governanca/DOCUMENTACAO.md).
@@ -70,6 +73,8 @@ Fontes: [../platform/README.md](../platform/README.md) e
 | Novo tenant/nicho | [guia-novo-nicho.md](guia-novo-nicho.md) | Onboarding manual; scaffolder existe com ressalvas (ver ESTADO-ATUAL) |
 | Decisões de arquitetura | [decisoes/](decisoes/) | **Registros históricos de intenção**; estado real no ESTADO-ATUAL |
 | Identidades de marca (vigente) | [decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md](decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md) | Marca Salão comercial / Meu Salão experiência+PWA / Studio Bella demonstração; não renomear o PWA |
+| Motor audiovisual principal (vigente) | [decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md](decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md) | HyperFrames como motor principal; fábrica preservada como orquestração; FFmpeg fallback; sem fallback silencioso |
+| Migração HyperFrames (HF-001) | [migracao-hyperframes/README.md](migracao-hyperframes/README.md) | Inventários, matriz, arquitetura-alvo, contratos, runbook, rollback e evidências da migração |
 | Planejamento R001/TEMPORAL | [planejamento/](planejamento/) | Especificações; partes implementadas, partes em revisão |
 | Especificações aprovadas (EGM) | [designs/SITEMAP.md](designs/SITEMAP.md) | Bundle EGM em `.agents/plugins/egm/` (terceiros) |
 | Integrações Hermes/Postiz/ComfyUI | [hermes/README.md](hermes/README.md), [../marcas/marcasalao/comfyui/FLUXO-COMPLETO-MARCA-SALAO.md](../marcas/marcasalao/comfyui/FLUXO-COMPLETO-MARCA-SALAO.md) | Escopo por marca e por estação; guards fail-closed |

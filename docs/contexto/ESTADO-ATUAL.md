@@ -1,5 +1,38 @@
 # Estado atual do projeto
 
+## Operação Master HF-001 — HyperFrames como motor audiovisual principal (27/11/2026)
+
+Seção aditiva (branch `codex/hyperframes-core-migration`, worktree
+`.workspace/worktrees/hf001`; **não integrada à main**). Decisão canônica:
+[MKT-VIDEO-003](../decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md) — o
+HyperFrames passa a ser o motor principal de composição/renderização audiovisual;
+a fábrica existente permanece como orquestração + inteligência editorial + governança;
+o render FFmpeg local permanece como fallback operacional; fábrica legada
+(`preset_runner`/`factory_cli`) congelada. Documentação completa em
+[../migracao-hyperframes/README.md](../migracao-hyperframes/README.md).
+
+- **Instalado e verificado:** runtime HyperFrames **0.9.103 pinado** em
+  `renderers/hyperframes/` (commit `89ef85f`), com env de confinamento
+  (`config/env.sh` + wrappers `scripts/hf.sh`/`hf-project.sh`) que mantém caches
+  npm/Chrome/TEMP dentro de `<RAIZ>/.workspace/tmp/hf001/`. Smoke end-to-end verde:
+  init → check → render draft → `ffprobe` (h264, 1080×1920, ~10 s, **0 streams de
+  áudio** — VIDEO CLEAN). Chrome pinado (`chrome-headless-shell` 158.0.8127.88)
+  em cache local; FFmpeg portável do projeto no PATH via env; telemetry desabilitada.
+- **Skills:** 25 skills HyperFrames em `.agents/skills/` atualizadas ao upstream
+  `cfaefdc` pelo procedimento oficial (commit `5d4465c`), com `skills-lock.json` v2
+  (hashes por skill).
+- **Documentação:** inventários documental/funcional, matriz de migração (20
+  recursos com decisão/risco), arquitetura-alvo, contratos-e-adaptadores,
+  decisões-e-conflitos, plano, critérios de aceite, runbook, atualizações/rollback e
+  evidências — 11 documentos em `docs/migracao-hyperframes/`.
+- **Não implementado ainda (nesta branch):** adaptador contratos→composição (F6),
+  integração Studio/fila (F7/F8), templates nativos (F9/F10), campanha piloto
+  HF-PILOTO-001 (F12), avaliação visual (F13), testes/CI novos (F14). A main não
+  mudou; nada publicado.
+- **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
+  não rastreado do checkout principal; atualizar `platform/README.md`
+  ("nenhum renderizador implementado") quando o adaptador existir.
+
 ## Operação Resultado 22 — correção do pipeline audiovisual (FFmpeg/CI Ubuntu) (27/11/2026)
 
 Seção aditiva. Os três testes de composição editorial

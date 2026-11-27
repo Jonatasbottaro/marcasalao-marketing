@@ -28,6 +28,7 @@ Este diretório é o ponto de entrada para continuar o trabalho entre computador
 | Inventário e situação de cada documento | [../governanca/MAPA-DOCUMENTAL.md](../governanca/MAPA-DOCUMENTAL.md) |
 | Regras de manutenção documental | [../governanca/DOCUMENTACAO.md](../governanca/DOCUMENTACAO.md) |
 | Estado do piloto de orquestração | orchestration/temporal/README.md e docs/planejamento/TEMPORAL-01-piloto-de-orquestracao.md |
+| Motor audiovisual e migração HyperFrames (HF-001) | [../migracao-hyperframes/README.md](../migracao-hyperframes/README.md) e [../decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md](../decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md) |
 | Próxima tarefa | PROXIMOS-PASSOS.md, confrontado com as branches existentes |
 | Publicações e rascunhos atuais | Estado remoto real, consultado quando a tarefa envolver conteúdo |
 
@@ -51,6 +52,8 @@ A existência dos fluxos anteriores não significa que estejam integrados ao nov
 | [MKT-VIDEO-001](../decisoes/MKT-VIDEO-001-producao-modular.md) | Conteúdo separado da tecnologia de renderização |
 | [MKT-PLATFORM-001](../decisoes/MKT-PLATFORM-001-plataforma-multiprojeto.md) | Núcleo reutilizável e configuração por projeto |
 | [MKT-PIPELINE-001](../decisoes/MKT-PIPELINE-001-pipeline-criativo-modular.md) | Beats, direção visual, assets, áudio e adaptadores independentes |
+| [MKT-VIDEO-002](../decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md) | VIDEO CLEAN: vídeo sem áudio, sem legenda queimada, narração TXT separada |
+| [MKT-VIDEO-003](../decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md) | HyperFrames como motor audiovisual principal (HF-001); fábrica preservada; FFmpeg fallback |
 
 Essas decisões registram o contexto e o escopo da sua criação. Expressões históricas como “Implementação: não iniciada” não descrevem sozinhas o estado do código hoje. Consulte ESTADO-ATUAL.md para saber quais partes já existem e em qual referência.
 

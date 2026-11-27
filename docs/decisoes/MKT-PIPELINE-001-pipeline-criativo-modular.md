@@ -8,6 +8,12 @@
 > `VisualAnchor`, `AssetManifest`, render local); `AudioPlan` e `RenderPlan` seguem sem
 > implementação. Estado real em [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md).
 > Nada aqui autoriza implementação nem áudio.
+
+> **Nota de classificação (27/11/2026):** a lista de adaptadores citava HyperFrames como
+> "possibilidade futura" e nenhuma ferramenta estava adotada à época. A decisão vigente
+> passou a ser [MKT-VIDEO-003 — HyperFrames como motor audiovisual principal](MKT-VIDEO-003-hyperframes-motor-principal.md):
+> o adaptador `Renderer` concretiza-se como o adaptador HyperFrames em
+> `renderers/hyperframes/`, mantendo contratos neutros e fornecedor fora do núcleo.
 - Primeiro caso de uso previsto: Marca Salão
 - Dependência: MKT-VIDEO-001 e MKT-PLATFORM-001
 - Aplicação imediata: orientar o futuro contrato Composition

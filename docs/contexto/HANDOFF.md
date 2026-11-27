@@ -1,5 +1,41 @@
 # Handoff: retomar o projeto
 
+## Operação Master HF-001 — migração HyperFrames (em execução, 27/11/2026)
+
+- **Objetivo:** promover o HyperFrames a motor principal de composição/renderização
+  audiovisual, preservando a fábrica como orquestração + inteligência editorial +
+  governança. Decisão canônica:
+  [MKT-VIDEO-003](../decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md);
+  documentação da migração em [../migracao-hyperframes/](../migracao-hyperframes/README.md).
+- **Branch:** `codex/hyperframes-core-migration` (worktree
+  `<RAIZ>/.workspace/worktrees/hf001`), base `codex/operacao-resultado-26` `3cf2fdc`
+  (= `main` `7f1c7ff` + 6 commits, incluindo `tenants/marca-salao/frame.md` e o fix
+  VIDEO CLEAN do Studio). Commits da op26 foram enviados ao remoto para preservar o
+  `frame.md` entre estações.
+- **Concluído:** F0 auditoria Git; F1/F2 inventários + matriz + MKT-VIDEO-003 +
+  notas datadas em MKT-VIDEO-001/MKT-PIPELINE-001; F3 runtime HyperFrames **0.9.103
+  pinado** em `renderers/hyperframes/` (commit `89ef85f`) com caches confinados em
+  `<RAIZ>/.workspace/tmp/hf001/` via wrappers (`hf.sh`/`hf-project.sh`/`config/env.sh`)
+  e smoke verde (h264 1080×1920, ~10 s, **0 streams de áudio**); F4 skills atualizadas
+  pelo procedimento oficial (commit `5d4465c`, 25 skills, lock v2 upstream `cfaefdc`);
+  F15/F16 docs de atualização/rollback.
+- **Incidente corrigido:** primeira instalação gravou caches npm+Chrome (823 MB) em
+  `/.workspace` fora de `<RAIZ>` (bug de caminho Windows no env); movidos para dentro
+  da raiz, env corrigido com case `[A-Za-z]:[/\\]*` + sanity check; vazamento
+  verificado e eliminado. Detalhe em
+  [../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md).
+- **Pendente (ordem):** PR A docs (este commit) → **F6 adaptador** (parser de
+  `frame.md`, guardrails pré-render, composição HTML, ponte JSON no padrão
+  `render_bridge.mjs`, `ffprobe` na saída; avaliar API `@hyperframes/producer`) →
+  F7/F8 Studio+fila → F9/F10 templates nativos → F12 piloto HF-PILOTO-001 → F13
+  avaliação visual → F14 testes/CI → F18 PRs C/D + relatório master A–AD.
+- **Restrições vigentes:** sem merge para `main`, sem publicação/agendamento, sem
+  serviços pagos/nuvem, templates históricos intocados, fábrica legada congelada,
+  VIDEO CLEAN em toda produção nova, `autoPublish: false`.
+- **Próxima ação segura:** retomar na worktree hf001, conferir
+  `git status`/`git log` da branch, e continuar pelo F6 conforme
+  [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md).
+
 ## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
 
 - **Causa raiz:** o build `6.1-static` (johnvansickle) que o

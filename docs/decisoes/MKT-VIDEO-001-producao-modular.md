@@ -8,6 +8,12 @@
 > deste desenho existem hoje em `platform/` e `tools/` (ver
 > [../contexto/ESTADO-ATUAL.md](../contexto/ESTADO-ATUAL.md) e
 > [../../platform/README.md](../../platform/README.md)). Nada aqui autoriza implementação.
+
+> **Nota de classificação (27/11/2026):** a afirmação "HyperFrames não foi adotado"
+> descrevia o estado até esta data e permanece como registro histórico. A decisão vigente
+> passou a ser [MKT-VIDEO-003 — HyperFrames como motor audiovisual principal](MKT-VIDEO-003-hyperframes-motor-principal.md),
+> que preserva o princípio desta decisão: a integração fica **atrás de adaptador** e
+> nenhuma composição depende obrigatoriamente de um único motor.
 - Prioridade atual: posterior à validação da primeira campanha
 - Primeiro caso de uso: Marca Salão
 

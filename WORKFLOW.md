@@ -1,10 +1,10 @@
 # Workflow de Marketing Marca Salão
 
 ## Ferramentas
+- **HyperFrames (HeyGen)**: **Motor principal de composição e renderização audiovisual** (decisão [MKT-VIDEO-003](docs/decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md), 27/11/2026) — runtime pinado 0.9.103 em `renderers/hyperframes/`, operado pelos wrappers (`hf.sh`/`hf-project.sh`); migração documentada em [docs/migracao-hyperframes/](docs/migracao-hyperframes/README.md)
 - **Antigravity AI Agent**: Edição conversacional automatizada, raciocínio de cortes e renderização
-- **HyperFrames (HeyGen)**: Renderização gráfica determinística em HTML/CSS/GSAP para overlays e motion graphics
 - **video-use**: Pipeline de cortes cirúrgicos, legendagem (recursos de áudio não usados neste projeto)
-- **FFmpeg**: Automação e composição de vídeo e legendas, sem áudio
+- **FFmpeg**: Infraestrutura e fallback do render (composição local `--clean` permanece instalada e testada); fábrica legada (`preset_runner`/`factory_cli`) congelada
 - **CapCut / Drift**: Editores manuais de apoio (opcionais)
 
 ## Regra de produção: VIDEO CLEAN / narração separada (26/11/2026)

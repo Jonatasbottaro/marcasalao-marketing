@@ -130,3 +130,21 @@ Situação: `vigente` · `historico` · `proposta` · `duplicado` · `conflitant
   os 13 aceites de `docs/historico/` e os bundles de `.agents/`.
 - **Não verificados:** conteúdo remoto (Postiz/ComfyUI/Hermes), PRs ao vivo, e qualquer
   resultado de execução citado como histórico sem reexecução.
+
+## 9. Adendo — migração HyperFrames HF-001 (27/11/2026)
+
+Documentos criados na branch `codex/hyperframes-core-migration` (base `main` `7f1c7ff` +
+commits da `codex/operacao-resultado-26`). Entrada: [../migracao-hyperframes/README.md](../migracao-hyperframes/README.md).
+
+| Caminho | Finalidade | Categoria | Situação | Ação |
+| --- | --- | --- | --- | --- |
+| `docs/migracao-hyperframes/` (11 docs) | Inventários, matriz, arquitetura-alvo, contratos/adaptadores, decisões, plano, critérios, runbook, atualizações/rollback, evidências | propria | **novo** | criados na HF-001 |
+| `docs/decisoes/MKT-VIDEO-003-hyperframes-motor-principal.md` | HyperFrames como motor audiovisual principal | propria | **novo** (vigente) | criada; contradição com MKT-VIDEO-001 resolvida por nota datada |
+| `docs/decisoes/MKT-VIDEO-001-*.md` | Decisão de produção modular | historico | histórico + nota de classificação 27/11 | nota datada apontando para MKT-VIDEO-003; original preservado |
+| `docs/decisoes/MKT-PIPELINE-001-*.md` | Decisão de pipeline por beats/assets | historico | histórico + nota de classificação 27/11 | nota datada: adaptador Renderer concretiza em `renderers/hyperframes/` |
+| `renderers/hyperframes/` (README, package.json, scripts, smoke) | Runtime HyperFrames 0.9.103 confinado em `<RAIZ>` | propria | **novo** (vigente) | criado na F3 (commit `89ef85f`) |
+| `.agents/skills/` + `skills-lock.json` v2 | Skills HyperFrames atualizadas ao upstream `cfaefdc` | terceiros | vigente | atualizadas pelo procedimento oficial (commit `5d4465c`) |
+| `tenants/marca-salao/frame.md` | Design system de vídeo (frontmatter normativo) | propria | vigente (v2, 27/11 — veio da op26) | consumido por máquina a partir do adaptador (F6) |
+
+Nenhum documento existente foi movido ou reescrito; contradições receberam nota datada
+sem apagar o registro original (política de [DOCUMENTACAO.md](DOCUMENTACAO.md)).
