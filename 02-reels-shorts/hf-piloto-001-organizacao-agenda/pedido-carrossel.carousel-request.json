@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "hf-piloto-001-carrossel-agenda",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "profile": "instagram-feed-image-square",
+  "title": "HF-PILOTO-001 — Carrossel: organização da agenda e dos atendimentos",
+  "media": [
+    {
+      "id": "cap-painel",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-01-painel-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-dia",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-03-dia-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-confirmado",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-10-confirmado-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    }
+  ],
+  "cards": [
+    {
+      "id": "card-rotina",
+      "title": "Organize sua rotina.",
+      "body": "O dia do salão inteiro em um só lugar.",
+      "mediaId": "cap-painel"
+    },
+    {
+      "id": "card-horarios",
+      "title": "Visualize os horários.",
+      "body": "Cada horário no lugar certo.",
+      "mediaId": "cap-dia"
+    },
+    {
+      "id": "card-atendimentos",
+      "title": "Acompanhe atendimentos.",
+      "body": "O status de cada atendimento, sempre à vista.",
+      "mediaId": "cap-confirmado"
+    },
+    {
+      "id": "card-cta",
+      "title": "Conheça o Marca Salão.",
+      "body": "marcasalao.com.br"
+    }
+  ]
+}

@@ -40,16 +40,28 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
 - **Templates nativos e stills (F9/F10):** biblioteca de templates dentro do
   compositor (`adapter/compose.mjs`) selecionada pelo campo neutro do contrato
   `narrativeFunction` (`hook`→card de marca centrado, `demonstration`→captura
-  como estrela com texto na base, `cta`→convite centrado sem botão), com layout
+  como estrela com texto na base sobre scrim de legibilidade quase sólido
+  (WCAG AA no gate `check`), `cta`→convite centrado sem botão), com layout
   genérico por geometria (1:1/4:5/9:16/16:9; `data-resolution` corrigido para
   `square` no 1:1). Stills de post/card/carrossel via captura oficial
   `hyperframes snapshot` (`hf_adapter.mjs --still` + ferramenta
   `tools/render_hyperframes_still.py` sobre `CarouselRequest v1`, entrega
-  transacional no contrato do `produce_carousel`); PNGs 1080×1350 e 1080×1080
+  transacional no contrato do `produce_carousel`); função narrativa do still
+  decidida pela presença de captura (com mídia → `demonstration`; sem mídia →
+  card de marca `hook`/`cta`); PNGs 1080×1350 e 1080×1080
   verificados por ffprobe; guardrails abortam card com claim proibida antes da
   captura. `produce_carousel.py` (fallback) e ComfyUI08 (arte de feed) intactos.
-- **Não implementado ainda (nesta branch):** campanha
-  piloto HF-PILOTO-001 (F12), avaliação visual (F13), testes/CI novos (F14). A
+- **Campanha piloto HF-PILOTO-001 (F12, 27/11/2026):** primeira produção
+  completa pelo novo motor, tema organização da agenda e dos atendimentos, em
+  [02-reels-shorts/hf-piloto-001-organizacao-agenda/](../../02-reels-shorts/hf-piloto-001-organizacao-agenda/README.md)
+  (pedidos versionados + capturas Studio Bella em `fontes/` + direção de cenas;
+  narração em `04-legendas/hf-piloto-001-narracao-reel.txt`). Entregas reais
+  verificadas: post 4:5 (PNG 1080×1350), carrossel 1:1 de 4 cards (PNGs
+  1080×1080), reel 9:16 de 24 s (**h264 1080×1920, 0 streams de áudio**,
+  qualidade delivery, 6 beats hook/4×demonstration/cta). VIDEO CLEAN mantido;
+  guardrails verdes; **nada publicado ou aprovado** — material de revisão F13.
+- **Não implementado ainda (nesta branch):** avaliação visual (F13),
+  testes/CI novos (F14). A
   main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
   não rastreado do checkout principal; atualizar `platform/README.md`

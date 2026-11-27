@@ -3,17 +3,18 @@
 ## Operação Master HF-001 — migração HyperFrames (27/11/2026, em execução)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
-**sem merge**. F0–F10 concluídas (runtime 0.9.103 + skills + documentação + adaptador
+**sem merge**. F0–F12 concluídas (runtime 0.9.103 + skills + documentação + adaptador
 F6 `d2442bc` + Studio/fila F7/F8 `8ceb8d5` com prova HTTP verde + templates
-nativos por `narrativeFunction` e stills PNG F9/F10 com provas por geometria);
+nativos por `narrativeFunction` e stills PNG F9/F10 `f06c355` com provas por
+geometria + piloto HF-PILOTO-001 com post/carrossel/reel reais verificados);
 ordem de
 continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md):
 
-1. **F12 — piloto HF-PILOTO-001-MARCA-SALAO** (post 4:5, carrossel 4 cards, reel
-   20–25 s; capturas Meu Salão com dados fictícios; VIDEO CLEAN; nada publicado).
-2. **F13 — avaliação visual humana** + comparação Op24 v2 × HyperFrames.
-3. **F14 — testes/CI aditivos** sem quebrar gates legados.
-4. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
+1. **F13 — avaliação visual humana** + comparação Op24 v2 × HyperFrames
+   (pacote de revisão portátil com previews, storyboard, player, frames e
+   relatórios técnico/editorial; sem aprovação estética sem ver).
+2. **F14 — testes/CI aditivos** sem quebrar gates legados.
+3. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
    relatório master A–AD. **Merge somente com autorização do titular.**
 
 ## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)

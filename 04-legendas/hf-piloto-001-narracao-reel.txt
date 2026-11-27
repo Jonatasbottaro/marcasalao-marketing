@@ -1,0 +1,23 @@
+# Narracao — HF-PILOTO-001 — Reel "Sua agenda, mais organizada."
+# Video: 1080x1920 — duracao total 24,0s — 30 fps
+# Modo VIDEO CLEAN (MKT-VIDEO-002): este texto NAO esta no video.
+# Gravar a locucao em ferramenta externa e sincronizar pelos tempos abaixo.
+# Frases prontas para gravacao, em portugues brasileiro.
+
+[0.0s - 4.0s] hook-agenda
+Sua agenda, mais organizada.
+
+[4.0s - 8.0s] agenda-semana
+A semana inteira do seu salão em uma só tela.
+
+[8.0s - 12.0s] horarios-dia
+Cada horário do dia no lugar certo.
+
+[12.0s - 16.0s] agendamentos
+Cada agendamento com serviço, profissional e horário.
+
+[16.0s - 20.0s] status-atendimentos
+E o status de cada atendimento sempre à vista.
+
+[20.0s - 24.0s] cta-marcasalao
+Conheça o Marca Salão.

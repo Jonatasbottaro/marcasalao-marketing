@@ -87,7 +87,8 @@ python tools/render_hyperframes_still.py --input pedido.carousel-request.json \
 ```
 
 - Cada card vira composição de cena única com template nativo por função
-  narrativa (primeiro `hook`, meios `demonstration`, último `cta`); guardrails do
+  narrativa (card com captura → `demonstration`, a captura é a estrela; card
+  sem captura → card de marca, primeiro `hook` e demais `cta`); guardrails do
   tenant abortam card com claim proibida **antes** da captura.
 - Entrega: `01-<id>.png`…, `stills.zip`, `still-manifest.json` (renderer
   hyperframes, SHA-256), `index.json`; promoção sob lock com backup.

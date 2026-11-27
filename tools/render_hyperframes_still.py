@@ -2,7 +2,8 @@
 
 Estrategia especifica para imagens: post/card/carrossel NAO sao export de video.
 Cada card vira uma composicao HyperFrames de cena unica (template nativo por
-funcao narrativa: primeiro card hook, ultimos-meio demonstration, ultimo cta) e
+funcao narrativa: card com captura -> demonstration, a captura e a estrela; card
+sem captura -> card de marca, primeiro hook e demais cta) e
 o PNG sai da captura oficial de quadros (`hyperframes snapshot`) no instante com
 entradas concluidas, com codec/geometria verificados por ffprobe. A geometria
 vem do perfil de imagem resolvido pelo catalogo + allowlist do projeto (ponte
@@ -62,13 +63,14 @@ def load_request(root, input_path):
         return json.load(handle)
 
 
-def narrative_for(index, total):
-    """Mesma convencao do compile-video-request: primeiro hook, ultimo cta."""
-    if index == 0:
-        return 'hook'
-    if index == total - 1:
-        return 'cta'
-    return 'demonstration'
+def narrative_for(card, index, total):
+    """Tratamento do card: captura presente -> demonstration (a captura e a
+    estrela, frame.md); sem captura -> card de marca (primeiro hook, demais cta).
+    A posicao so decide quando o card nao tem midia: um card COM captura nunca
+    pode virar brand card solido, que esconderia a captura."""
+    if card.get('mediaId'):
+        return 'demonstration'
+    return 'hook' if index == 0 else 'cta'
 
 
 def build_card_profile(verdict, card, still_duration_ms=STILL_DURATION_MS):
@@ -81,7 +83,7 @@ def build_card_profile(verdict, card, still_duration_ms=STILL_DURATION_MS):
         'caseId': f"{verdict['requestId']}-{card['id']}",
         'status': 'compiled',
         'composition': {'scenes': [{'id': card['id'], 'type': 'image'}]},
-        'beatPlan': {'beats': [{'id': card['id'], 'narrativeFunction': narrative_for(index, total)}]},
+        'beatPlan': {'beats': [{'id': card['id'], 'narrativeFunction': narrative_for(card, index, total)}]},
         'plan': {
             'geometry': {'width': geometry['width'], 'height': geometry['height']},
             'fps': 30,

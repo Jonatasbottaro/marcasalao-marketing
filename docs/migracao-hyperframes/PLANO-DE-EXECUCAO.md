@@ -17,7 +17,7 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F9 | Templates nativos (reel produto/funcionalidade/institucional, motion, horizontal) | ✅ Concluída | `narrativeFunction` → template no compositor (hook/demonstration/cta); geometrias genéricas — EVIDENCIAS F9/F10 |
 | F10 | Formatos de post/carrossel no motor de vídeo | ✅ Concluída | Stills PNG via `snapshot` oficial: 1080×1350 e 1080×1080 verificados; 9:16/16:9 como vídeo; arte estática de feed segue ComfyUI08 — EVIDENCIAS F9/F10 |
 | F11 | Preservação de geração de imagens IA | ✅ Sem ação | ComfyUI08 + guard de proveniência intocados (matriz #13) |
-| F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ⬜ Pendente | Tema organização da agenda; post 4:5 + carrossel 4 cards + reel 20–25 s; capturas Meu Salão autorizadas com dados fictícios; VIDEO CLEAN |
+| F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ✅ Concluída | Post 4:5 + carrossel 4 cards + reel 24 s renderizados e verificados; capturas Studio Bella versionadas; VIDEO CLEAN; nada publicado (ver EVIDENCIAS) |
 | F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | ⬜ Pendente | Pacote de revisão portável; sem aprovação estética sem ver |
 | F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ⬜ Pendente | Gates legados preservados; novo gate HyperFrames aditivo |
 | F15 | Política de atualização/manutenção | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
@@ -36,7 +36,9 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
    Avaliar API `@hyperframes/producer` vs CLI. ✅ smoke verde.
 4. **F7+F8 — Studio e fila**: rotas e tipo de item aditivos; testes de recovery. ✅ commit `8ceb8d5`.
 5. **F9+F10 — templates nativos** por perfil de saída, sem claims proibidas. ✅ templates por `narrativeFunction` no compositor + stills PNG via `snapshot`; geometrias 1:1/4:5/9:16/16:9 verificadas.
-6. **F12 — piloto** HF-PILOTO-001-MARCA-SALAO (produção nova completa, VIDEO CLEAN).
+6. **F12 — piloto** HF-PILOTO-001-MARCA-SALAO (produção nova completa, VIDEO CLEAN). ✅
+   post/carrossel/reel reais verificados; refinamentos de contraste e convenção
+   de stills registrados em EVIDENCIAS.
 7. **F13 — avaliação visual** humana + comparação v2/v3 × HyperFrames.
 8. **F14 — testes e CI** aditivos.
 9. **F18 — PRs C (integração) e D (produção)**, relatório master A–AD, handoff.

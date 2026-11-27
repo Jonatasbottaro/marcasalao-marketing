@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "hf-piloto-001-reel-agenda-organizada",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "HF-PILOTO-001 — Reel: organização da agenda e dos atendimentos",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "hf-piloto-001-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 52,
+      "marginTop": 330,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "cap-painel",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-01-painel-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-semana",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-02-semana-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-dia",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-03-dia-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-detalhes",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-08-detalhes-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "cap-confirmado",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-10-confirmado-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook-agenda",
+      "durationMs": 4000,
+      "mediaId": "cap-painel",
+      "caption": "Veja o dia do seu salão com clareza.",
+      "narration": "Sua agenda, mais organizada.",
+      "title": "Sua agenda, mais organizada.",
+      "narrativeFunction": "hook",
+      "motionIntent": "none"
+    },
+    {
+      "id": "agenda-semana",
+      "durationMs": 4000,
+      "mediaId": "cap-semana",
+      "caption": "A semana inteira em uma só tela.",
+      "narration": "A semana inteira do seu salão em uma só tela.",
+      "title": "Agenda da semana",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "horarios-dia",
+      "durationMs": 4000,
+      "mediaId": "cap-dia",
+      "caption": "Cada horário no lugar certo.",
+      "narration": "Cada horário do dia no lugar certo.",
+      "title": "Horários do dia",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "agendamentos",
+      "durationMs": 4000,
+      "mediaId": "cap-detalhes",
+      "caption": "Serviço, profissional e horário em um só lugar.",
+      "narration": "Cada agendamento com serviço, profissional e horário.",
+      "title": "Agendamentos completos",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "status-atendimentos",
+      "durationMs": 4000,
+      "mediaId": "cap-confirmado",
+      "caption": "O status de cada atendimento, sempre à vista.",
+      "narration": "E o status de cada atendimento sempre à vista.",
+      "title": "Status dos atendimentos",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom"
+    },
+    {
+      "id": "cta-marcasalao",
+      "durationMs": 4000,
+      "mediaId": "cap-painel",
+      "caption": "marcasalao.com.br",
+      "narration": "Conheça o Marca Salão.",
+      "title": "Conheça o Marca Salão",
+      "narrativeFunction": "cta",
+      "motionIntent": "none"
+    }
+  ]
+}

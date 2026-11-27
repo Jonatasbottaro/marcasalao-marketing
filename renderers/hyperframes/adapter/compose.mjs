@@ -163,7 +163,11 @@ function mediaClipHtml(beat, staged, geometry, motionIntent) {
 /**
  * Camada de cena entre a midia e os textos (trilho 1): card de marca solido
  * (hook/cta, fundo normativo `background`) ou scrim inferior de legibilidade
- * (demonstration — a captura continua visivel, sem cartao sobre ela).
+ * (demonstration — a captura continua visivel, sem cartao sobre ela). O scrim e
+ * dimensionado para o bloco de texto (margem segura + bloco estimado em 2
+ * linhas + fade curto no topo) e chega a ~0.95 de opacidade ATRAS do texto:
+ * capturas claras de app exigem fundo quase solido para passar WCAG AA no
+ * gate `check` (achado real do piloto F12: 2,3:1 com o scrim linear antigo).
  */
 function sceneLayerHtml(beat, geometry, tokens, treatment) {
     const start = seconds(beat.startMs)
@@ -174,18 +178,25 @@ function sceneLayerHtml(beat, geometry, tokens, treatment) {
         data-start="${start}" data-duration="${duration}" data-track-index="1"
         style="position:absolute; inset:0; background:${tokens.background};"></div>`
     }
-    const scrimHeight = Math.round(geometry.height * 0.38)
+    const headlineSize = fontSizeFor(geometry.width, treatment.headline)
+    const sublineSize = fontSizeFor(geometry.width, treatment.subline)
+    const blockHeight = Math.round(
+        px(geometry.width, treatment.barHeight) + 18
+        + 2 * 1.15 * headlineSize + treatment.sublineGap
+        + 2 * 1.3 * sublineSize)
+    const fade = px(geometry.width, 120)
+    const scrimHeight = safeBottomMargin(geometry.height) + blockHeight + fade
     return `      <div id="${id}" class="clip"
         data-start="${start}" data-duration="${duration}" data-track-index="1"
         style="position:absolute; left:0; right:0; bottom:0; height:${scrimHeight}px;
-        background:linear-gradient(180deg, ${hexToRgba(tokens.background, 0)} 0%, ${hexToRgba(tokens.background, 0.85)} 100%);"></div>`
+        background:linear-gradient(180deg, ${hexToRgba(tokens.background, 0)} 0%, ${hexToRgba(tokens.background, 0.93)} ${fade}px, ${hexToRgba(tokens.background, 0.96)} 100%);"></div>`
 }
 
 function headerHtml(tokens, geometry, totalSeconds) {
     if (!tokens.header.enabled) return ''
     const height = tokens.headerHeight
     const labelSize = fontSizeFor(geometry.width, 44)
-    const badgeSize = fontSizeFor(geometry.width, 26)
+    const badgeSize = fontSizeFor(geometry.width, 30)
     const pad = px(geometry.width, 48)
     return `      <div id="header" class="clip"
         data-start="0" data-duration="${totalSeconds}" data-track-index="2"

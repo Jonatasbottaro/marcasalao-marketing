@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "hf-piloto-001-post-agenda-organizada",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "profile": "instagram-feed-image-portrait",
+  "title": "HF-PILOTO-001 — Post: Sua agenda, mais organizada.",
+  "media": [
+    {
+      "id": "cap-semana",
+      "path": "02-reels-shorts/hf-piloto-001-organizacao-agenda/fontes/CAP-02-semana-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    }
+  ],
+  "cards": [
+    {
+      "id": "post-agenda-organizada",
+      "title": "Sua agenda, mais organizada.",
+      "body": "Conheça o Marca Salão.",
+      "mediaId": "cap-semana"
+    }
+  ]
+}

@@ -132,9 +132,13 @@ H.264 nem por checagem de duração. Caminho oficial:
    conjunto de 1 card.
 2. **Composição:** cada card vira uma composição HyperFrames de cena única
    (`tools/render_hyperframes_still.py` monta o perfil compilado; função
-   narrativa posicional: primeiro `hook`, meios `demonstration`, último `cta`) —
-   templates nativos do F9, tokens do tenant, guardrails do tenant validados
-   pelo adaptador **antes** da captura.
+   narrativa pela presença de captura — card **com** `mediaId` → `demonstration`
+   (a captura é a estrela e nunca pode ser coberta por card de marca); card
+   **sem** captura → card de marca, primeiro `hook` e demais `cta`. A posição
+   só decide quando o card não tem mídia. Refinamento de 27/11/2026 (F12): a
+   convenção puramente posicional escondia a captura do post e das capas com
+   mídia) — templates nativos do F9, tokens do tenant, guardrails do tenant
+   validados pelo adaptador **antes** da captura.
 3. **Captura de quadro:** `hyperframes snapshot --at <t>` (recurso oficial de
    captura/exportação de PNG) no instante com entradas concluídas (~1,2 s de uma
    composição de 2 s; o modo still desliga o fade-out do último beat). O
