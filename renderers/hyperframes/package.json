@@ -1,0 +1,13 @@
+{
+  "name": "@marcasalao/renderers-hyperframes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runtime HyperFrames do Marca Salao Marketing - motor principal de composicao e renderizacao audiovisual (HF-001).",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "hyperframes": "0.9.103",
+    "@hyperframes/producer": "0.9.103"
+  }
+}
