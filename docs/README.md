@@ -69,6 +69,7 @@ Fontes: [../platform/README.md](../platform/README.md) e
 | Mensuração e destinos NS-001/NS-002 | [../05-mensuracao/GUIA-MENSURACAO-NS001-NS002.md](../05-mensuracao/GUIA-MENSURACAO-NS001-NS002.md), [../06-validacao-destinos/GUIA-VALIDACAO-DESTINOS-NS001-NS002.md](../06-validacao-destinos/GUIA-VALIDACAO-DESTINOS-NS001-NS002.md) | Ensaios com dados fictícios |
 | Novo tenant/nicho | [guia-novo-nicho.md](guia-novo-nicho.md) | Onboarding manual; scaffolder existe com ressalvas (ver ESTADO-ATUAL) |
 | Decisões de arquitetura | [decisoes/](decisoes/) | **Registros históricos de intenção**; estado real no ESTADO-ATUAL |
+| Identidades de marca (vigente) | [decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md](decisoes/MKT-BRAND-001-marca-salao-meu-salao-studio-bella.md) | Marca Salão comercial / Meu Salão experiência+PWA / Studio Bella demonstração; não renomear o PWA |
 | Planejamento R001/TEMPORAL | [planejamento/](planejamento/) | Especificações; partes implementadas, partes em revisão |
 | Especificações aprovadas (EGM) | [designs/SITEMAP.md](designs/SITEMAP.md) | Bundle EGM em `.agents/plugins/egm/` (terceiros) |
 | Integrações Hermes/Postiz/ComfyUI | [hermes/README.md](hermes/README.md), [../marcas/marcasalao/comfyui/FLUXO-COMPLETO-MARCA-SALAO.md](../marcas/marcasalao/comfyui/FLUXO-COMPLETO-MARCA-SALAO.md) | Escopo por marca e por estação; guards fail-closed |

@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "clientId": "marca-salao",
+  "campaignId": "ns-001-p001-studio-bella-v27",
+  "brand": {
+    "name": "Marca Salão",
+    "primaryColor": "#025C5D",
+    "backgroundColor": "#EDFCF7",
+    "textColor": "#1F2A33",
+    "mutedColor": "#5A6B72",
+    "primaryColorProvenance": "Moda das cores escuras do logotipo oficial (marcas/marcasalao/comfyui/custom_nodes/servidor02_gemini/assets/marcasalao-logo.png, SHA-256 574c50d4...); a identidade não fixa hex oficial, as artes aprovadas são a referência.",
+    "functionalColors": {
+      "Confirmado": {
+        "text": "#1E3A8A",
+        "surface": "#DBEAFE"
+      },
+      "Concluído": {
+        "text": "#064E3B",
+        "surface": "#D1FAE5"
+      },
+      "No-show": {
+        "text": "#7C2D12",
+        "surface": "#FFEDD5"
+      }
+    },
+    "functionalColorsProvenance": "Cores amostradas dos cartões reais em CAP-02-inapp-semana-scroll.png (texto do serviço e preenchimento do cartão): Confirmado azul, Concluído verde, No-show laranja.",
+    "logo": {
+      "path": "marcas/marcasalao/comfyui/custom_nodes/servidor02_gemini/assets/marcasalao-logo.png",
+      "sha256": "574c50d40c64d9a198d0d2fc89e8c2cdd5ac497c2beebc752880100b47b0b338"
+    }
+  },
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "captionBand": {
+    "color": "primary",
+    "y": 1520,
+    "height": 180,
+    "purpose": "Faixa de marca sob a banda de legendas queimadas (y1550-1650 do render_local) para contraste do texto branco em cenas editoriais; cenas 3/4 aprovadas permanecem intactas."
+  },
+  "assetScopes": [
+    "02-reels-shorts/ns-001-reels-organizacao-agenda/editorial-v27/fontes/",
+    "marcas/marcasalao/comfyui/custom_nodes/servidor02_gemini/assets/"
+  ],
+  "safeAreas": {
+    "instagram-reels-video": {
+      "top": 0.14,
+      "bottom": 0.35,
+      "left": 0.06,
+      "right": 0.06,
+      "basis": "meta-reels-ads-approximation",
+      "note": "Margens conservadoras recomendadas pela Meta para anúncios Reels; para orgânico é aproximação — validar na interface real antes de publicar."
+    },
+    "facebook-reels-video": {
+      "top": 0.14,
+      "bottom": 0.35,
+      "left": 0.06,
+      "right": 0.06,
+      "basis": "meta-reels-ads-approximation",
+      "note": "Mesma referência Meta Reels; aproximação para orgânico."
+    },
+    "youtube-shorts": {
+      "top": 0.12,
+      "bottom": 0.25,
+      "left": 0.06,
+      "right": 0.08,
+      "basis": "youtube-shorts-approximation",
+      "note": "Aproximação própria: controles do Shorts concentram-se à direita e na base; não é a mesma sobreposição do Instagram. Validar na interface real antes de publicar."
+    }
+  },
+  "evidence": [
+    {
+      "id": "cap-semana-scroll",
+      "path": "02-reels-shorts/ns-001-reels-organizacao-agenda/editorial-v27/fontes/CAP-02-inapp-semana-scroll.png",
+      "sha256": "52424a3d2de459b4dddd1c9c25fbfa556feb9fa9f09fba8c1927ef2d5913f44c",
+      "kind": "captura-real",
+      "source": "Sessão autenticada real do ambiente demo Studio Bella (localhost:5000), captura in-app 665x605 da agenda Semana com scroll até os cartões, 25/11/2026.",
+      "verification": "Valores conferidos contra snapshot de acessibilidade (snapshot-agenda.txt) e OCR pt-BR com regiões (ocr-semana-scroll.json em .workspace/tmp/ns001-studio-bella-v27/). Fontes versionadas em editorial-v27/fontes/ (captura, artes aprovadas e snapshot de acessibilidade).",
+      "regions": {
+        "contexto-semana": {
+          "x": 64,
+          "y": 95,
+          "w": 549,
+          "h": 248
+        },
+        "cartao-no-show": {
+          "x": 77,
+          "y": 249,
+          "w": 496,
+          "h": 93
+        },
+        "cartao-concluido": {
+          "x": 77,
+          "y": 350,
+          "w": 496,
+          "h": 92
+        },
+        "cartao-confirmado": {
+          "x": 77,
+          "y": 450,
+          "w": 496,
+          "h": 93
+        }
+      },
+      "values": [
+        "15:00",
+        "15:50",
+        "Escova Modelada",
+        "No-show",
+        "16:30",
+        "19:00",
+        "Coloração Completa",
+        "Concluído",
+        "09:00",
+        "12:30",
+        "Mechas e Iluminação",
+        "Confirmado",
+        "Semana De 23/11 A 29/11",
+        "Todos os profissionais"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "arte-filtro-v24",
+      "path": "02-reels-shorts/ns-001-reels-organizacao-agenda/editorial-v27/fontes/CAP-03-v24-filtro.jpg",
+      "sha256": "455505b4d993a786bf80d74b4dcec033b317427a09b129ef1610c13798f0fc7a",
+      "kind": "arte-aprovada",
+      "note": "Cena 3 aprovada pelo titular (v2.4/v2.6): Mariana Silva selecionada; resultados filtrados não visíveis — narração fiel usa 'selecionar um profissional'."
+    },
+    {
+      "id": "arte-endcard-v24",
+      "path": "02-reels-shorts/ns-001-reels-organizacao-agenda/editorial-v27/fontes/CAP-04-cta-marcasalao.jpg",
+      "sha256": "a08bbe4d6bfb9c28c232f431184e376544bb252652f4d5cfbc80312ed910329f",
+      "kind": "arte-aprovada",
+      "note": "Endcard aprovado (v2.4/v2.6): logo oficial + CTA 'Conheça o Marca Salão' (OCR y1180-1226). Legenda queimada da cena 4 não duplica esse texto."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "ns001-c1-agenda",
+      "component": "product-proof",
+      "durationMs": 6000,
+      "parts": [
+        {
+          "component": "product-context",
+          "startMs": 0,
+          "endMs": 2800,
+          "heading": {
+            "text": "A agenda da semana",
+            "size": 72,
+            "color": "primary",
+            "y": 340
+          },
+          "proof": {
+            "evidenceId": "cap-semana-scroll",
+            "region": "contexto-semana",
+            "width": 900,
+            "y": 520,
+            "drift": 6
+          },
+          "microcopy": {
+            "text": "Captura real do ambiente de demonstração",
+            "size": 26,
+            "y": 1010
+          }
+        },
+        {
+          "component": "product-proof",
+          "startMs": 2600,
+          "endMs": 6000,
+          "proof": {
+            "evidenceId": "cap-semana-scroll",
+            "region": "cartao-confirmado",
+            "width": 900,
+            "y": 380,
+            "drift": 6
+          },
+          "highlights": [
+            {
+              "role": "time",
+              "evidenceId": "cap-semana-scroll",
+              "region": "cartao-confirmado",
+              "value": "09:00",
+              "size": 170,
+              "color": "primary",
+              "y": 640
+            },
+            {
+              "role": "service",
+              "evidenceId": "cap-semana-scroll",
+              "region": "cartao-confirmado",
+              "value": "Mechas e Iluminação",
+              "size": 68,
+              "color": "text",
+              "y": 860
+            },
+            {
+              "role": "status",
+              "evidenceId": "cap-semana-scroll",
+              "region": "cartao-confirmado",
+              "value": "Confirmado",
+              "size": 56,
+              "color": "func:Confirmado",
+              "surface": "funcSurface:Confirmado",
+              "y": 980,
+              "chip": true
+            }
+          ],
+          "microcopy": {
+            "text": "Dados reais do cenário de demonstração",
+            "size": 26,
+            "y": 1160
+          }
+        }
+      ]
+    },
+    {
+      "id": "ns001-c2-status",
+      "component": "status-sequence",
+      "durationMs": 6000,
+      "states": [
+        {
+          "status": "Confirmado",
+          "evidenceId": "cap-semana-scroll",
+          "region": "cartao-confirmado",
+          "time": "09:00",
+          "service": "Mechas e Iluminação"
+        },
+        {
+          "status": "Concluído",
+          "evidenceId": "cap-semana-scroll",
+          "region": "cartao-concluido",
+          "time": "16:30",
+          "service": "Coloração Completa"
+        },
+        {
+          "status": "No-show",
+          "evidenceId": "cap-semana-scroll",
+          "region": "cartao-no-show",
+          "time": "15:00",
+          "service": "Escova Modelada"
+        }
+      ],
+      "layout": {
+        "proofWidth": 900,
+        "proofY": 360,
+        "statusSize": 130,
+        "statusY": 680,
+        "lineSize": 46,
+        "lineY": 880,
+        "microcopy": {
+          "text": "Status reais dos cartões da agenda",
+          "size": 26,
+          "y": 1060
+        }
+      }
+    },
+    {
+      "id": "ns001-c3-filtro",
+      "component": "static-art",
+      "durationMs": 5000,
+      "mode": "approved-art",
+      "assetId": "arte-filtro-v24"
+    },
+    {
+      "id": "ns001-c4-cta",
+      "component": "brand-endcard",
+      "durationMs": 5000,
+      "mode": "approved-art",
+      "assetId": "arte-endcard-v24"
+    }
+  ]
+}

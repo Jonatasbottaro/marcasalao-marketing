@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "id": "marca-salao-ns-001-p001-editorial-v21-studio-bella",
+  "project": "platform/examples/projects/marca-salao-social.project.json",
+  "title": "NS-001 — Organização e visibilidade da agenda — peça editorial de revisão v2.1 (Studio Bella)",
+  "locale": "pt-BR",
+  "profiles": [
+    "instagram-reels-video",
+    "facebook-reels-video",
+    "youtube-shorts"
+  ],
+  "visualStyle": {
+    "schemaVersion": 1,
+    "id": "ns001-editorial-v2-style",
+    "title": {
+      "textColor": "#FFFFFF",
+      "outlineColor": "#000000",
+      "fontSize": 52,
+      "marginTop": 330,
+      "marginHorizontal": 80
+    }
+  },
+  "media": [
+    {
+      "id": "ns001-c1-abertura",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-01-painel-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c2-situacao",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-02-semana-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c3-dia",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-03-dia-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c4-mes",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-04-mes-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c5-filtro-profissional",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-05-filtro-profissional-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c6-filtro-status",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-06-filtro-status-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c7-busca-cliente",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-07-busca-cliente-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c8-detalhes",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-08-detalhes-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c9-pendente",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-09-pendente-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    },
+    {
+      "id": "ns001-c10-confirmado",
+      "path": ".workspace/tmp/ns001-studio-bella/CAP-10-confirmado-1080x1920.jpg",
+      "type": "image",
+      "origin": "captura-studio-bella-real",
+      "license": "owned"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "ns001-b1-abertura",
+      "durationMs": 5000,
+      "mediaId": "ns001-c1-abertura",
+      "caption": "Você consegue visualizar os agendamentos\ndo seu salão com clareza?",
+      "narration": "Você consegue visualizar os agendamentos do seu salão com clareza?",
+      "narrativeFunction": "hook",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b2-situacao-a",
+      "durationMs": 5500,
+      "mediaId": "ns001-c2-situacao",
+      "caption": "Quando uma parte da agenda fica no caderno,\noutra na conversa e outra na planilha,",
+      "narration": "Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha,",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b3-situacao-b",
+      "durationMs": 5500,
+      "mediaId": "ns001-c2-situacao",
+      "caption": "reunir as informações pode tomar tempo\nno meio do atendimento.",
+      "narration": "reunir as informações pode tomar tempo no meio do atendimento.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b4-visoes-dia",
+      "durationMs": 2833,
+      "mediaId": "ns001-c3-dia",
+      "caption": "Na agenda do painel,\no registro é o mesmo:",
+      "narration": "Na agenda do painel, o registro é o mesmo:",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b5-visoes-semana",
+      "durationMs": 2833,
+      "mediaId": "ns001-c2-situacao",
+      "caption": "dá para olhar o dia, a semana",
+      "narration": "dá para olhar o dia, a semana",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b6-visoes-mes",
+      "durationMs": 2834,
+      "mediaId": "ns001-c4-mes",
+      "caption": "ou o mês.",
+      "narration": "ou o mês.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b7-filtros-profissional",
+      "durationMs": 2167,
+      "mediaId": "ns001-c5-filtro-profissional",
+      "caption": "Dá para filtrar por profissional,",
+      "narration": "Dá para filtrar por profissional,",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b8-filtros-status",
+      "durationMs": 2167,
+      "mediaId": "ns001-c6-filtro-status",
+      "caption": "por status,",
+      "narration": "por status,",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b9-busca-cliente",
+      "durationMs": 2166,
+      "mediaId": "ns001-c7-busca-cliente",
+      "caption": "ou buscar o nome de um cliente.",
+      "narration": "ou buscar o nome de um cliente.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b10-detalhes-a",
+      "durationMs": 3750,
+      "mediaId": "ns001-c8-detalhes",
+      "caption": "Abrindo o atendimento, aparecem o horário,\no cliente e o profissional.",
+      "narration": "Abrindo o atendimento, aparecem o horário, o cliente e o profissional.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b11-detalhes-b",
+      "durationMs": 3750,
+      "mediaId": "ns001-c8-detalhes",
+      "caption": "Também o serviço, o preço e o status.",
+      "narration": "Também o serviço, o preço e o status.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b12-confirmar",
+      "durationMs": 2750,
+      "mediaId": "ns001-c9-pendente",
+      "caption": "Quando a gestão confirma\no atendimento,",
+      "narration": "Quando a gestão confirma o atendimento,",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b13-confirmado",
+      "durationMs": 2750,
+      "mediaId": "ns001-c10-confirmado",
+      "caption": "o status fica registrado\nna agenda.",
+      "narration": "o status fica registrado na agenda.",
+      "narrativeFunction": "demonstration",
+      "motionIntent": "none",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    },
+    {
+      "id": "ns001-b14-cta",
+      "durationMs": 3000,
+      "mediaId": "ns001-c1-abertura",
+      "caption": "Conheça a agenda do Marca Salão.",
+      "narration": "Conheça a agenda do Marca Salão.",
+      "narrativeFunction": "cta",
+      "motionIntent": "slow-zoom",
+      "framingByProfile": {
+        "instagram-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "facebook-reels-video": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        },
+        "youtube-shorts": {
+          "centerX": 0.5,
+          "centerY": 0.5,
+          "zoomPercent": 100
+        }
+      }
+    }
+  ]
+}

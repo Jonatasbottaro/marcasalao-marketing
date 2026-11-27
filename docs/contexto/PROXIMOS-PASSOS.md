@@ -1,5 +1,33 @@
 # Próximos passos
 
+## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)
+
+Correção do pipeline audiovisual (drawtext ausente no FFmpeg 6.1-static do CI
+Ubuntu) commitada na branch `feat/ns001-studio-bella-v2` (PR #33, rascunho).
+Pendências na ordem:
+
+1. **CI Ubuntu e Windows** no novo SHA: os três testes de composição editorial
+   e os gates obrigatórios precisam passar nos dois sistemas.
+2. **Revisão editorial da v2.8** pelo titular (player em
+   `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/entrega/review.html`).
+3. **Merge do PR #33** somente com autorização explícita do titular.
+4. **Publicação manual** somente após aprovação; áudio/narração gerados pelo
+   titular fora do editor a partir do TXT.
+
+## VIDEO CLEAN — revisão da v2.8 pelo titular (26/11/2026)
+
+Padrão audiovisual atualizado (MKT-VIDEO-002) e primeira aplicação entregue na
+branch `feat/ns001-studio-bella-v2` (PR #33, rascunho). Pendências na ordem:
+
+1. **Revisão editorial da v2.8** pelo titular: player em
+   `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/entrega/review.html`
+   (3 MP4, narração TXT, QC; sem SRT no modo clean).
+2. **Decisão de aprovação/ajuste** da campanha NS-001 v2.8.
+3. **Merge do PR #33** somente com autorização explícita do titular.
+4. **Publicação manual** somente após aprovação; áudio/narração gerados pelo
+   titular fora do editor a partir do TXT; legendas opcionais no CapCut/Canva
+   respeitando as áreas seguras.
+
 ## Etapa 1 — estabilização do release: CONCLUÍDA com CI verde (24/11/2026, branch `fix/release-check-portabilidade` @ `6b81d33`)
 
 **CI verde nos dois sistemas** (SHA `6b81d33`): runs [45387139303](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387139303) e [45387127507](https://github.com/Jonatasbottaro/marcasalao-marketing/actions/runs/45387127507) — Ubuntu e Windows `success`, 41 steps cada, render obrigatório e provas E2E incluídos. **Release local completo (com TypeScript): 9/9 gates ok, exit 0.** PR #29 segue em rascunho aguardando revisão/integração do titular.
@@ -32,7 +60,7 @@ Registro de continuidade para a próxima fase. **Não produzir nem publicar a ca
 - **Capturas reais e atualizadas do produto:** validar que as capturas usadas são reais e atuais.
 - **CTA e destino:** confirmar CTA por rede e destino (site oficial `https://marcasalao.com.br`; Facebook com URL completa na legenda; Instagram "link na bio" somente confirmado).
 - **Links com UTM:** conferir matriz UTM consolidada e URLs por canal.
-- **Narração e legendas separadas:** entregar texto de narração em `04-legendas/` (PT-BR, por cenas e tempos) e `.srt` correspondente; **política sem áudio** (vídeo mudio, `-an`, 0 faixas).
+- **Narração separada (VIDEO CLEAN, 26/11/2026):** entregar texto de narração em `04-legendas/` (PT-BR, por cenas e tempos); vídeo sem áudio (`-an`, 0 faixas) e **sem legendas queimadas/SRT por padrão** — `.srt` somente por pedido expresso ou campanha legada (decisão `docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md`; opção `--clean` no caminho VideoRequest).
 - **Formatos Instagram, Facebook e YouTube:** conferir formatos e durações.
 - **Revisão editorial:** rodar `editorial_qa --strict` e revisão humana.
 - **Geração dos vídeos:** render real com FFmpeg/FFprobe (descoberta portátil) e inspeção de metadados.

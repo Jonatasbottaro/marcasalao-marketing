@@ -1,0 +1,30 @@
+uid=1_1 RootWebArea "Meu Salão - Gestão e Agendamento" focusable url="http://localhost:5000/gestor/agenda"
+  uid=1_2 button expandable focusable hasPopup="dialog" invalid="false"
+  uid=1_3 banner
+    uid=1_4 button "Notificações" expandable focusable hasPopup="dialog" invalid="false"
+    uid=1_5 button "GS" expandable focusable hasPopup="menu" invalid="false"
+  uid=1_6 main
+    uid=1_7 StaticText "AGENDA DO SALÃO"
+    uid=1_8 heading "Studio Bella – Demonstração" level="1"
+    uid=1_9 StaticText "Acompanhe os atendimentos por período, profissional e status."
+    uid=1_10 button "Exportar CSV" focusable invalid="false"
+    uid=1_11 button focusable invalid="false"
+    uid=1_12 button "23 De Nov – 29 De Nov 2026" expandable focusable hasPopup="dialog" invalid="false"
+    uid=1_13 button focusable invalid="false"
+    uid=1_14 button "Hoje" focusable invalid="false"
+    uid=1_15 tablist focusable orientation="horizontal"
+      uid=1_16 tab "Dia" focusable invalid="false" selectable
+      uid=1_17 tab "Semana" focusable invalid="false" selectable selected
+      uid=1_18 tab "Mês" focusable invalid="false" selectable
+    uid=1_19 textbox "Buscar cliente" editable="plaintext" focusable invalid="false" settable
+    uid=1_20 combobox expandable focusable hasPopup="listbox" invalid="false" value="Todos os profissionais"
+    uid=1_21 combobox expandable focusable hasPopup="listbox" invalid="false" value="Todos status"
+    uid=1_22 StaticText "Semana De 23/11 A 29/11"
+    uid=1_23 button "15:00 - 15:50 Escova Modelada Cliente não identificado No-show A pagar 15:00" focusable invalid="false"
+    uid=1_24 button "16:30 - 19:00 Coloração Completa Cliente não identificado Concluído Pago 16:30" focusable invalid="false"
+    uid=1_25 button "09:00 - 12:30 Mechas e Iluminação Cliente não identificado Confirmado A pagar 09:00" focusable invalid="false"
+    uid=1_26 button "10:30 - 11:30 Hidratação Premium Cliente não identificado Confirmado A pagar 10:30" focusable invalid="false"
+    uid=1_27 button "11:00 - 11:45 Manicure Cliente não identificado Confirmado A pagar 11:00" focusable invalid="false"
+    uid=1_28 button "12:30 - 13:20 Pedicure Cliente não identificado Confirmado A pagar 12:30" focusable invalid="false"
+    uid=1_29 button "13:00 - 13:35 Design de Sobrancelhas Cliente não identificado Confirmado A pagar 13:00" focusable invalid="false"
+  uid=1_30 region "Notifications alt+T" focusable live="polite" relevant="additions text"

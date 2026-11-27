@@ -1,5 +1,48 @@
 # Handoff: retomar o projeto
 
+## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
+
+- **Causa raiz:** o build `6.1-static` (johnvansickle) que o
+  `FedericoCarboni/setup-ffmpeg@v2` instala no Ubuntu não inclui `drawtext`;
+  Windows (6.1-full gyan) e local (9.1-essentials gyan) incluem.
+- **Código:** `tools/editorial_compose.py` com `has_filter()` (cache por
+  binário) + fallback ASS (`subtitles` + `fontsdir`); `run_ffmpeg` captura
+  4000 caracteres do stderr; novo teste `test_fallback_ass_sem_drawtext`.
+  Workflow inalterado (gates preservados).
+- **Verificações:** `test_editorial_compose_render` 4/4; suítes relacionadas
+  112/112 OK (REQUIRE_RENDER=1, 926 s); fallback validado por ffprobe (sem
+  áudio, h264/yuv420p, 360x640, 2,0 s) e reprodutibilidade byte-idêntica.
+- **Branch:** `feat/ns001-studio-bella-v2` (worktree `.workspace/worktrees/ns001v2`),
+  PR #33 em rascunho; **sem merge/publicação**.
+- **Próxima ação:** conferir CI Ubuntu e Windows no novo SHA do PR #33; depois,
+  revisão editorial da NS-001 v2.8 pelo titular.
+
+## Operação VIDEO CLEAN — padrão audiovisual + NS-001 v2.8 (26/11/2026)
+
+- **Decisão vigente:** MKT-VIDEO-002 (`docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md`)
+  — vídeo sem áudio e sem legendas narrativas queimadas; SRT somente por pedido
+  expresso; narração TXT separada obrigatória; textos editoriais preservados; espaço
+  da antiga banda de legendas reaproveitado; campanhas antigas intactas.
+- **Branch:** `feat/ns001-studio-bella-v2` (worktree `.workspace/worktrees/ns001v2`),
+  PR #33 em rascunho; **sem merge/publicação**.
+- **Código:** `--clean` retrocompatível em `render_local.py`/`render_pipeline.py`/
+  `produce_video.py` (default `False` = legado com legenda+SRT). Contrato TS e
+  fábrica legada inalterados. Testes novos: `CleanModeContractTest`,
+  `test_20_clean_render_sem_srt_e_sem_legendas_queimadas`, `TestVideoCleanV28`.
+- **NS-001 v2.8:** manifesto/pedido/relatório em
+  `02-reels-shorts/ns-001-reels-organizacao-agenda/editorial-v28/`; fontes reutilizadas
+  da v2.7; narração em `04-legendas/ns001_roteiro_001_v28_studio_bella_narracao.txt`.
+  Entrega local em `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/entrega/`
+  (3 MP4 idênticos sha `8e2406f7…`, player, QC, ZIP; **sem SRT**).
+- **Verificações:** 0 faixas de áudio; banda antiga 100% fundo limpo; correlação
+  ≥ 0,9977; OCR dos destaques OK; áreas seguras 0 violações; smoke 415/416 (falha
+  ambiental pré-existente). Suíte render completa: **93/93 OK, 0 falhas, 0 skips**;
+  evidência em `<RAIZ>/.workspace/tmp/ns001-studio-bella-v28/qc/testes-render.json`.
+- **Próxima ação do titular:** revisar a v2.8 no player (`review.html`), decidir
+  aprovação/ajuste e autorizar (ou não) merge do PR #33 e publicação manual.
+- **Restrições respeitadas:** nada fora de `<RAIZ>`; `.workspace/` local não
+  versionado; v2.7 e histórico preservados; Salão02 não tocado; sem recaptura.
+
 ## Operação Resultado 03 — NS-001, distribuição manual e mensuração real (24/11/2026)
 
 - **Base:** `main` @ `bcabc00`. Registros versionados em

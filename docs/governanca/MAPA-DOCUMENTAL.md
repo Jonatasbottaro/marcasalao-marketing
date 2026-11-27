@@ -52,6 +52,7 @@ Situação: `vigente` · `historico` · `proposta` · `duplicado` · `conflitant
 | `docs/checklist-decisoes-titular.md` | Decisões abertas pré-publicação | propria | vigente (3 decisões abertas em 21/11) | titular | mantido |
 | `docs/ARQUIVAMENTO-DE-CAMPANHAS.md` | Como arquivar material aprovado | propria | vigente | — | mantido |
 | `docs/decisoes/MKT-VIDEO-001-*.md` | Decisão de produção modular | historico | histórico ("não iniciada" superado) | `platform/README.md` | banner de registro histórico |
+| `docs/decisoes/MKT-VIDEO-002-video-clean-narracao-separada.md` | Padrão VIDEO CLEAN / narração separada (26/11/2026) | propria | vigente | `tools/render_local.py`, `tools/render_pipeline.py`, `tools/produce_video.py`, `AGENTS.md`, `WORKFLOW.md` | opção `--clean` retrocompatível; legado preservado |
 | `docs/decisoes/MKT-PLATFORM-001-*.md` | Decisão de núcleo multiprojeto | historico | histórico (idem) | `platform/README.md` | banner |
 | `docs/decisoes/MKT-PIPELINE-001-*.md` | Decisão de pipeline por beats/assets | historico | histórico (parcialmente implementado) | `docs/contexto/ESTADO-ATUAL.md` | banner |
 | `docs/planejamento/R001-formatos-sociais.md` | Catálogo de formatos e regras oficiais | propria | vigente (fontes certificadas em 07/11) | `platform/src/output-profiles/rules.ts` | mantido |

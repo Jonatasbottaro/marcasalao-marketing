@@ -1,0 +1,14 @@
+Roteiro de narracao - execution-v1-41d5bfc4b18a4117ec6abf0991bbf44c270b27962ff85c89d70ecb07768c4301
+Video sem audio; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:06,000] ns001-b1-semana
+Esta é a agenda da semana no Studio Bella. Cada atendimento mostra horário, serviço e status — como esta mechas e iluminação, das nove às doze e meia, confirmada.
+
+[00:00:06,000 --> 00:00:12,000] ns001-b2-status
+O status acompanha cada atendimento: confirmado antes do horário, concluído depois do serviço, e no-show quando o cliente não comparece.
+
+[00:00:12,000 --> 00:00:17,000] ns001-b3-filtro
+A agenda também permite selecionar um profissional, como a Mariana Silva, para acompanhar os atendimentos dela.
+
+[00:00:17,000 --> 00:00:22,000] ns001-b4-cta
+Marca Salão: o sistema completo de gestão para o seu salão. Conheça o Marca Salão.

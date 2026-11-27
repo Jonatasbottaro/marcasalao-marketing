@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "clientId": "marca-exemplo",
+  "campaignId": "fixture-reuso-v27",
+  "brand": {
+    "name": "Marca Exemplo",
+    "primaryColor": "#7C3AED",
+    "backgroundColor": "#F5F3FF",
+    "textColor": "#2E1065",
+    "mutedColor": "#6D6A75",
+    "primaryColorProvenance": "Cor fictícia arbitrária da fixture; nenhuma relação com marca real.",
+    "functionalColors": {
+      "Confirmado": {
+        "text": "#1E3A8A",
+        "surface": "#DBEAFE"
+      },
+      "Concluído": {
+        "text": "#064E3B",
+        "surface": "#D1FAE5"
+      },
+      "No-show": {
+        "text": "#7C2D12",
+        "surface": "#FFEDD5"
+      }
+    },
+    "logo": {
+      "path": "tools/tests/fixtures/editorial/logo-exemplo.png",
+      "sha256": "61a7e88bd9dc3401fcd7a44abba1b89ceebaaa247ced7f6314e39e070c45d8ba"
+    }
+  },
+  "canvas": {
+    "width": 360,
+    "height": 640,
+    "fps": 30
+  },
+  "captionBand": {
+    "color": "primary",
+    "y": 500,
+    "height": 60
+  },
+  "assetScopes": [
+    "tools/tests/fixtures/editorial/"
+  ],
+  "safeAreas": {
+    "instagram-reels-video": {
+      "top": 0.14,
+      "bottom": 0.35,
+      "left": 0.06,
+      "right": 0.06,
+      "basis": "fixture",
+      "note": "Fixture de reutilização; não representa publicação real."
+    }
+  },
+  "evidence": [
+    {
+      "id": "cap-exemplo",
+      "path": "tools/tests/fixtures/editorial/captura-exemplo.png",
+      "sha256": "e30f9f4cc69a5b19fe3d5a5a3d90935573898e397ecf52959549398b33e5c4b3",
+      "kind": "captura-sintetica",
+      "source": "PNG sintético gerado por FFmpeg para teste de reutilização.",
+      "verification": "Fixture: valores declarados e conferidos contra as regiões desenhadas.",
+      "regions": {
+        "cartao-a": {
+          "x": 20,
+          "y": 20,
+          "w": 360,
+          "h": 80
+        },
+        "cartao-b": {
+          "x": 20,
+          "y": 110,
+          "w": 360,
+          "h": 80
+        },
+        "cartao-c": {
+          "x": 20,
+          "y": 200,
+          "w": 360,
+          "h": 80
+        }
+      },
+      "values": [
+        "09:00",
+        "10:00",
+        "11:00",
+        "Serviço A",
+        "Serviço B",
+        "Serviço C",
+        "Confirmado",
+        "Concluído",
+        "No-show"
+      ]
+    }
+  ],
+  "assets": [],
+  "scenes": [
+    {
+      "id": "fx-c1-prova",
+      "component": "product-proof",
+      "durationMs": 2000,
+      "proof": {
+        "evidenceId": "cap-exemplo",
+        "region": "cartao-a",
+        "width": 300,
+        "y": 100,
+        "drift": 4
+      },
+      "highlights": [
+        {
+          "role": "time",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "value": "09:00",
+          "size": 40,
+          "color": "primary",
+          "y": 180
+        },
+        {
+          "role": "status",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "value": "Confirmado",
+          "size": 24,
+          "color": "func:Confirmado",
+          "surface": "funcSurface:Confirmado",
+          "y": 240,
+          "chip": true
+        }
+      ],
+      "microcopy": {
+        "text": "Captura sintética de teste",
+        "size": 14,
+        "y": 300
+      }
+    },
+    {
+      "id": "fx-c2-status",
+      "component": "status-sequence",
+      "durationMs": 3000,
+      "states": [
+        {
+          "status": "Confirmado",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-a",
+          "time": "09:00",
+          "service": "Serviço A"
+        },
+        {
+          "status": "Concluído",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-b",
+          "time": "10:00",
+          "service": "Serviço B"
+        },
+        {
+          "status": "No-show",
+          "evidenceId": "cap-exemplo",
+          "region": "cartao-c",
+          "time": "11:00",
+          "service": "Serviço C"
+        }
+      ],
+      "layout": {
+        "proofWidth": 300,
+        "proofY": 100,
+        "statusSize": 40,
+        "statusY": 200,
+        "lineSize": 18,
+        "lineY": 260,
+        "microcopy": {
+          "text": "Status sintéticos de teste",
+          "size": 14,
+          "y": 300
+        }
+      }
+    },
+    {
+      "id": "fx-c3-endcard",
+      "component": "brand-endcard",
+      "durationMs": 2000,
+      "brandName": "Marca Exemplo",
+      "nameSize": 36,
+      "nameY": 200,
+      "ctaText": "Conheça a Marca Exemplo",
+      "ctaSize": 20,
+      "ctaY": 260,
+      "logoWidth": 160,
+      "logoY": 100
+    }
+  ]
+}

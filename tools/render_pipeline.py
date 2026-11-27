@@ -418,7 +418,7 @@ def run_check_assets(case_path, asset_manifest_path, root,
 
 def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, preset='veryfast',
                         text_overlays_path=None, visual_style_path=None, asset_manifest_path=None,
-                        motion=None, extra_manifest_fields=None, pre_promote_hook=None):
+                        motion=None, extra_manifest_fields=None, pre_promote_hook=None, clean=False):
     root = os.path.realpath(root)
     if bool(assets_path) == bool(asset_manifest_path):
         raise render_local.InputFileError('informe exatamente um entre --assets e --asset-manifest')
@@ -574,6 +574,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'report': f'{package_id}-execution-report.json',
         'manifest': 'delivery-manifest.json',
     }
+    if clean:
+        names.pop('srt')
     if text_overlays_path and canonical_overlay_json:
         names['textOverlayPlan'] = f'{package_id}-text-overlay-plan.json'
     if visual_style_path and canonical_visual_style_json:
@@ -586,7 +588,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
     write_text(staging_paths['package'], canonical_package_json)
-    write_text(staging_paths['srt'], render_local.build_srt(package))
+    if not clean:
+        write_text(staging_paths['srt'], render_local.build_srt(package))
     write_text(staging_paths['narration'], render_local.build_narration(package))
 
     title_srt_staging = None
@@ -628,9 +631,9 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     title_style = render_local.build_title_style(
         visual_style, package['output']['width'], package['output']['height']) if visual_style else None
     cmd = render_local.build_render_command(
-        package, asset_paths, staging_paths['srt'], staging_paths['video'], preset,
+        package, asset_paths, staging_paths.get('srt'), staging_paths['video'], preset,
         title_srt_path=title_srt_staging, title_style=title_style, motion=motion_render,
-        source_cuts=source_cuts, framings_by_beat=framings_by_beat)
+        source_cuts=source_cuts, framings_by_beat=framings_by_beat, burn_captions=not clean)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=render_local.RENDER_TIMEOUT_SECONDS)
@@ -648,9 +651,10 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
     inspection = build_video.validate_mp4(
         staging_paths['video'], output['width'], output['height'], output['fps'], duration_s,
         timeout=render_local.PROBE_TIMEOUT_SECONDS)
-    srt_errors = srt_validate.validate_srt_file(fs(staging_paths['srt']), duration_s)
-    if srt_errors:
-        raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
+    if not clean:
+        srt_errors = srt_validate.validate_srt_file(fs(staging_paths['srt']), duration_s)
+        if srt_errors:
+            raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
     with open(fs(staging_paths['narration']), 'rb') as handle:
         narration_bytes = handle.read()
     if not narration_bytes.decode('utf-8').strip():
@@ -670,6 +674,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         command += f' --text-overlays {rel(root, text_overlays_path)}'
     if visual_style_path:
         command += f' --visual-style {rel(root, visual_style_path)}'
+    if clean:
+        command += ' --clean'
 
     report_artifacts = [
         {
@@ -687,13 +693,6 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'bytes': os.path.getsize(fs(staging_paths['video'])),
         },
         {
-            'id': 'srt',
-            'kind': 'captions',
-            'path': rel(root, dests['srt']),
-            'sha256': sha256_file(staging_paths['srt']),
-            'bytes': os.path.getsize(fs(staging_paths['srt'])),
-        },
-        {
             'id': 'narration',
             'kind': 'narration-script',
             'path': rel(root, dests['narration']),
@@ -701,6 +700,14 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'bytes': os.path.getsize(fs(staging_paths['narration'])),
         },
     ]
+    if not clean:
+        report_artifacts.insert(2, {
+            'id': 'srt',
+            'kind': 'captions',
+            'path': rel(root, dests['srt']),
+            'sha256': sha256_file(staging_paths['srt']),
+            'bytes': os.path.getsize(fs(staging_paths['srt'])),
+        })
     if 'textOverlayPlan' in dests:
         report_artifacts.append({
             'id': 'textOverlayPlan',
@@ -763,10 +770,12 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'durationMs': output['durationMs'],
         },
         'inspection': inspection,
-        'captions': {
-            'blocks': sum(1 for step in package['timeline'] if step.get('onScreenText')),
-            'valid': True,
-        },
+        'captions': (
+            {'mode': 'clean', 'burned': False, 'blocks': 0, 'valid': True}
+            if clean else
+            {'blocks': sum(1 for step in package['timeline'] if step.get('onScreenText')),
+             'valid': True}
+        ),
         'assets': report_assets,
         'sourceCuts': cut_infos,
         'artifacts': report_artifacts,
@@ -820,12 +829,12 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
             'bytes': os.path.getsize(fs(staging_paths['video'])),
             'ffprobe': inspection,
         },
-        'srt': {
+        **({} if clean else {'srt': {
             'id': 'srt',
             'path': rel(root, dests['srt']),
             'sha256': sha256_file(staging_paths['srt']),
             'bytes': os.path.getsize(fs(staging_paths['srt'])),
-        },
+        }}),
         'narration': {
             'id': 'narration',
             'path': rel(root, dests['narration']),
@@ -899,6 +908,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         ],
         'artifacts': manifest_artifacts,
     }
+    if clean:
+        manifest['captionsMode'] = 'clean'
     if assets_path:
         manifest['association'] = rel(root, assets_path)
     if asset_manifest_path and asset_manifest:
@@ -935,6 +946,8 @@ def run_render_pipeline(case_path, assets_path, output_dir, root, staging_dir, p
         'artifacts': {key: rel(root, dests[key]) for key in names},
         'inspection': inspection,
     }
+    if clean:
+        summary['captionsMode'] = 'clean'
     if visual_style:
         summary['visualStyleId'] = visual_style['id']
     if 'assetManifest' in manifest_artifacts:
@@ -958,6 +971,8 @@ def main(argv=None):
     parser.add_argument('--root', default=os.getcwd(), help='Raiz do projeto')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo')
     parser.add_argument('--preset', default='veryfast', help='Preset do FFmpeg')
+    parser.add_argument('--clean', action='store_true',
+                        help='VIDEO CLEAN: sem legendas queimadas e sem SRT; narracao TXT preservada')
     parser.add_argument('--json', action='store_true', help='Emite resultado estruturado em JSON no stdout')
     args = parser.parse_args(argv)
 
@@ -1008,6 +1023,7 @@ def main(argv=None):
                 text_overlays_path=args.text_overlays,
                 visual_style_path=args.visual_style,
                 asset_manifest_path=args.asset_manifest,
+                clean=args.clean,
             )
     except render_local.RenderInputError as exc:
         subject = f': {exc.subject}' if exc.subject else ''

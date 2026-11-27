@@ -1,0 +1,44 @@
+Roteiro de narracao - execution-v1-80d33547590b9b04edc1e162ebb85665b18fbf8048adf45d35548794b10db5d3
+Video sem audio; texto para ferramenta externa, organizado por cena e tempos.
+
+[00:00:00,000 --> 00:00:05,000] ns001-b1-abertura
+Você consegue visualizar os agendamentos do seu salão com clareza?
+
+[00:00:05,000 --> 00:00:10,500] ns001-b2-situacao-a
+Quando uma parte da agenda fica no caderno, outra na conversa e outra na planilha,
+
+[00:00:10,500 --> 00:00:16,000] ns001-b3-situacao-b
+reunir as informações pode tomar tempo no meio do atendimento.
+
+[00:00:16,000 --> 00:00:18,833] ns001-b4-visoes-dia
+Na agenda do painel, o registro é o mesmo:
+
+[00:00:18,833 --> 00:00:21,666] ns001-b5-visoes-semana
+dá para olhar o dia, a semana
+
+[00:00:21,666 --> 00:00:24,500] ns001-b6-visoes-mes
+ou o mês.
+
+[00:00:24,500 --> 00:00:26,667] ns001-b7-filtros-profissional
+Dá para filtrar por profissional,
+
+[00:00:26,667 --> 00:00:28,834] ns001-b8-filtros-status
+por status,
+
+[00:00:28,834 --> 00:00:31,000] ns001-b9-busca-cliente
+ou buscar o nome de um cliente.
+
+[00:00:31,000 --> 00:00:34,750] ns001-b10-detalhes-a
+Abrindo o atendimento, aparecem o horário, o cliente e o profissional.
+
+[00:00:34,750 --> 00:00:38,500] ns001-b11-detalhes-b
+Também o serviço, o preço e o status.
+
+[00:00:38,500 --> 00:00:41,250] ns001-b12-confirmar
+Quando a gestão confirma o atendimento,
+
+[00:00:41,250 --> 00:00:44,000] ns001-b13-confirmado
+o status fica registrado na agenda.
+
+[00:00:44,000 --> 00:00:47,000] ns001-b14-cta
+Conheça a agenda do Marca Salão.

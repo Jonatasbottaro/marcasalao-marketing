@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:06,000
+Horário, serviço e status em cada atendimento da semana.
+
+2
+00:00:06,000 --> 00:00:12,000
+Cada status registra o que aconteceu no atendimento.
+
+3
+00:00:12,000 --> 00:00:17,000
+Selecione um profissional e acompanhe a agenda dele.
+
+4
+00:00:17,000 --> 00:00:22,000
+Gestão completa para salões, em um só sistema.

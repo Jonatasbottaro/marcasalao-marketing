@@ -560,7 +560,7 @@ def build_narration(package):
 
 
 def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None, motion_effects=None,
-                       framings_by_beat=None):
+                       framings_by_beat=None, burn_captions=True):
     output = package['output']
     width, height, fps = output['width'], output['height'], output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -628,12 +628,21 @@ def build_filter_graph(package, srt_path, title_srt_path=None, title_style=None,
         chains.append(f"{last_label}subtitles='{clean_title_srt}':force_style='{style_to_use}'[vtitles]")
         last_label = '[vtitles]'
 
-    clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
-    chains.append(f"{last_label}subtitles='{clean_srt}':force_style='{build_subtitle_style(width, height)}'[vfinal]")
+    if burn_captions:
+        clean_srt = srt_path.replace('\\', '/').replace(':', '\\:')
+        # libass remarca o quadro como full-range (yuvj420p); no FFmpeg 9 o filtro
+        # format sozinho nao converte o range, entao a conversao explicita para
+        # limited vem DEPOIS da legenda, garantindo yuv420p/tv na inspecao final.
+        chains.append(
+            f"{last_label}subtitles='{clean_srt}':force_style='{build_subtitle_style(width, height)}',"
+            f"scale=out_range=limited,format=yuv420p[vfinal]"
+        )
+    else:
+        chains.append(f"{last_label}scale=out_range=limited,format=yuv420p[vfinal]")
     return ';'.join(chains)
 
 
-def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None, source_cuts=None, framings_by_beat=None):
+def build_render_command(package, asset_paths, srt_path, video_path, preset, title_srt_path=None, title_style=None, motion=None, source_cuts=None, framings_by_beat=None, burn_captions=True):
     output = package['output']
     fps = output['fps']
     total_s = output['durationMs'] / 1000.0
@@ -656,7 +665,7 @@ def build_render_command(package, asset_paths, srt_path, video_path, preset, tit
             'input_index': input_index, 'start': m['start'], 'end': m['end'],
             'fadeIn': m['fadeIn'], 'fadeOut': m['fadeOut'],
         })
-    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style, motion_effects=motion_effects, framings_by_beat=framings_by_beat), '-map', '[vfinal]']
+    cmd += ['-filter_complex', build_filter_graph(package, srt_path, title_srt_path=title_srt_path, title_style=title_style, motion_effects=motion_effects, framings_by_beat=framings_by_beat, burn_captions=burn_captions), '-map', '[vfinal]']
     cmd += ['-an', '-c:v', 'libx264', '-preset', preset, '-pix_fmt', 'yuv420p',
             '-t', f'{total_s:.3f}', video_path]
     return cmd
@@ -715,7 +724,7 @@ def promote_with_backup(staging_paths, dests, backup_dir):
         raise build_video.DeliveryError('promocao falhou; entrega anterior preservada')
 
 
-def run_render(package_path, assets_path, output_dir, root, staging_dir, preset='veryfast'):
+def run_render(package_path, assets_path, output_dir, root, staging_dir, preset='veryfast', clean=False):
     root = os.path.realpath(root)
     for label, path in (('package', package_path), ('assets', assets_path),
                         ('output', output_dir)):
@@ -773,14 +782,17 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         source_cuts.append(start_ms)
 
     names = artifact_names(package)
+    if clean:
+        names.pop('srt')
     staging_paths = {key: os.path.join(staging, names[key]) for key in names}
 
-    write_text(staging_paths['srt'], build_srt(package))
+    if not clean:
+        write_text(staging_paths['srt'], build_srt(package))
     write_text(staging_paths['narration'], build_narration(package))
 
-    cmd = build_render_command(package, asset_paths, staging_paths['srt'],
+    cmd = build_render_command(package, asset_paths, staging_paths.get('srt'),
                                staging_paths['video'], preset, source_cuts=source_cuts,
-                               framings_by_beat=framings_by_beat)
+                               framings_by_beat=framings_by_beat, burn_captions=not clean)
     try:
         res = subprocess.run(cmd, capture_output=True, text=True,
                              timeout=RENDER_TIMEOUT_SECONDS)
@@ -798,9 +810,10 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
     inspection = build_video.validate_mp4(
         staging_paths['video'], output['width'], output['height'], output['fps'], duration_s,
         timeout=PROBE_TIMEOUT_SECONDS)
-    srt_errors = srt_validate.validate_srt_file(fs_path(staging_paths['srt']), duration_s)
-    if srt_errors:
-        raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
+    if not clean:
+        srt_errors = srt_validate.validate_srt_file(fs_path(staging_paths['srt']), duration_s)
+        if srt_errors:
+            raise build_video.DeliveryError('SRT invalido: ' + '; '.join(srt_errors))
     with open(fs_path(staging_paths['narration']), 'rb') as handle:
         narration_bytes = handle.read()
     if not narration_bytes.decode('utf-8').strip():
@@ -813,6 +826,8 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
         f' --assets {rel(root, assets_path)}'
         f' --output-dir {rel(root, output_dir)}'
     )
+    if clean:
+        command += ' --clean'
     report = {
         'schemaVersion': 1,
         'adapter': ADAPTER_ID,
@@ -830,10 +845,12 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
             'durationMs': output['durationMs'],
         },
         'inspection': inspection,
-        'captions': {
-            'blocks': sum(1 for step in package['timeline'] if step.get('onScreenText')),
-            'valid': True,
-        },
+        'captions': (
+            {'mode': 'clean', 'burned': False, 'blocks': 0, 'valid': True}
+            if clean else
+            {'blocks': sum(1 for step in package['timeline'] if step.get('onScreenText')),
+             'valid': True}
+        ),
         'assets': [
             {'beatId': step['beatId'], 'path': rel(root, path), 'sha256': sha256_file(path),
              'sourceStartMs': start_ms, 'sourceEndMs': start_ms + step['durationMs']}
@@ -849,6 +866,7 @@ def run_render(package_path, assets_path, output_dir, root, staging_dir, preset=
             }
             for key, kind in (('video', 'primary-output'), ('srt', 'captions'),
                               ('narration', 'narration-script'))
+            if key in names
         ],
         'tools': {
             'ffmpeg': tool_version(build_video.get_ffmpeg()),
@@ -887,11 +905,13 @@ def main(argv=None):
     parser.add_argument('--root', default=os.getcwd())
     parser.add_argument('--staging', default=None)
     parser.add_argument('--preset', default='veryfast')
+    parser.add_argument('--clean', action='store_true',
+                        help='VIDEO CLEAN: sem legendas queimadas e sem SRT; narracao TXT preservada')
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
     try:
         summary = run_render(args.package, args.assets, args.output_dir, args.root,
-                             args.staging, preset=args.preset)
+                             args.staging, preset=args.preset, clean=args.clean)
     except RenderInputError as exc:
         subject = f': {exc.subject}' if exc.subject else ''
         print(f'Erro: entrada invalida ({exc.code}{subject})', file=sys.stderr)
