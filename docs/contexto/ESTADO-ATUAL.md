@@ -23,8 +23,9 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   (hashes por skill).
 - **Documentação:** inventários documental/funcional, matriz de migração (20
   recursos com decisão/risco), arquitetura-alvo, contratos-e-adaptadores,
-  decisões-e-conflitos, plano, critérios de aceite, runbook, atualizações/rollback e
-  evidências — 11 documentos em `docs/migracao-hyperframes/`.
+  decisões-e-conflitos, plano, critérios de aceite, runbook, atualizações/rollback,
+  evidências e relatório master A–AD — 12 documentos em
+  `docs/migracao-hyperframes/`.
 - **Adaptador (F6, commit `d2442bc`):** `renderers/hyperframes/adapter/` +
   `scripts/hf-adapter.sh` + `tools/render_hyperframes.py`; smoke verde com
   pedido real → composição → check → render draft → ffprobe (1080×1920,
@@ -85,8 +86,23 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   nenhum workflow ativo alterado; três smokes + stills com pedidos versionados
   do piloto + prova da fila + invariante de mídia; YAML validado por parse
   real). Promoção do trigger é decisão do titular na integração.
-- **Não implementado ainda (nesta branch):** nada além da revisão humana do
-  pacote F13 (decisão do titular) e do F18 (PRs rascunho + relatório master).
+- **Segurança (F17, 27/11/2026):** varreduras com saída real — nenhum padrão de
+  segredo no código novo do HF-001, nos arquivos versionados do piloto nem nos
+  artefatos de entrega; nenhum comando/endpoint de nuvem no código novo (única
+  correspondência é a declaração `$schema` em `adapter/compose.mjs`); ZIPs de
+  entrega contêm somente MP4 + narração TXT; confinamento de caminhos
+  (`ASSET_PATH_ESCAPE`/`PATH_ESCAPE`) provado no F6; telemetria desabilitada.
+- **Entrega (F18, 27/11/2026):** operação encerrada na branch — 9 commits de
+  fase + commit de fechamento enviados ao remoto, **sem merge**. PRs A/B/C/D
+  mapeados por faixa de commits (A docs `3fca35a`; B fundação `89ef85f`+`5d4465c`;
+  C integração `d2442bc`+`8ceb8d5`; D produção `f06c355`+`eabb13c`+`19d8430`+
+  `51679c6`+fechamento); **bloqueio:** `gh` ausente (exit 127) — link manual
+  registrado no EVIDENCIAS F18. Relatório master A–AD versionado em
+  [../migracao-hyperframes/RELATORIO-MASTER.md](../migracao-hyperframes/RELATORIO-MASTER.md)
+  (30 seções, status por fase, evidências; pendências do titular na seção AC).
+- **Não implementado (decisão do titular, não da branch):** revisão humana do
+  pacote F13 (aceite/ajuste estético), criação formal dos PRs A/B/C/D em
+  rascunho, promoção do gate rascunho a push/PR e eventual merge.
   A main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
   não rastreado do checkout principal; atualizar `platform/README.md`

@@ -24,12 +24,15 @@ orquestração, inteligência editorial e governança.
 | [RUNBOOK-OPERACIONAL.md](RUNBOOK-OPERACIONAL.md) | Operação diária do novo motor |
 | [ATUALIZACOES-E-ROLLBACK.md](ATUALIZACOES-E-ROLLBACK.md) | Política de atualização e reversão |
 | [EVIDENCIAS.md](EVIDENCIAS.md) | Registro de evidências por fase |
+| [RELATORIO-MASTER.md](RELATORIO-MASTER.md) | Relatório master A–AD da operação (status por fase + evidências) |
 
 ## Estado em uma linha
 
-Instalação concluída e validada (0.9.103, smoke test verde, caches confinados);
-documentação e matriz publicadas; adaptador, integração com Studio/fila, templates
-nativos e campanha piloto em execução — ver [PLANO-DE-EXECUCAO.md](PLANO-DE-EXECUCAO.md).
+**Operação concluída na branch técnica** (F0–F18): runtime 0.9.103 pinado e
+validado, adaptador + Studio/fila + templates + stills entregues, piloto
+HF-PILOTO-001 renderizado (VIDEO CLEAN), determinismo provado, gate CI em
+rascunho, relatório master A–AD versionado — **sem merge para `main`**;
+pendências do titular em [RELATORIO-MASTER.md](RELATORIO-MASTER.md) (seção AC).
 
 ## Regras que governam esta migração
 

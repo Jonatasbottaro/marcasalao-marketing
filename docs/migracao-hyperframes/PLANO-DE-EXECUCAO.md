@@ -22,8 +22,8 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ✅ Concluída (ressalvas registradas) | Smokes HF + determinismo dedicado verdes; 415/416 smoke Python e 1009/1017 platform com **falhas herdadas da base** (prova: arquivos idênticos a `3cf2fdc`); workflow rascunho `hyperframes-validation.yml` (dispatch-only) — ver EVIDENCIAS |
 | F15 | Política de atualização/manutenção | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
 | F16 | Rollback | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
-| F17 | Segurança e governança | 🔶 Em execução | Confinamento de caminhos no adaptador (F6); revisão de segredos na entrega |
-| F18 | Commits e PRs (rascunho, sem merge) | 🔶 Em execução | Commits `89ef85f`, `5d4465c` enviados; PR A (governança/docs) em preparação |
+| F17 | Segurança e governança | ✅ Concluída | Confinamento de caminhos (F6) + varreduras de segredos/nuvem com saída real (EVIDENCIAS F17) |
+| F18 | Commits e PRs (rascunho, sem merge) | ✅ Concluída (bloqueio gh registrado) | Branch enviada (9 commits de fase + fechamento); PRs mapeados por faixa de commits + link manual (gh ausente); RELATORIO-MASTER A–AD versionado; **sem merge** |
 
 ## Ordem de execução a partir daqui
 
@@ -46,7 +46,12 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
    rascunho criado; duas falhas herdadas da base registradas (fumo Python
    415/416 ambiental de worktree; platform 1 falha introduzida pelo Op 24
    `f01ed60`) — correção fora do escopo HF-001, dependência anotada para os PRs.
-9. **F18 — PRs C (integração) e D (produção)**, relatório master A–AD, handoff.
+9. **F18 — PRs C (integração) e D (produção)**, relatório master A–AD, handoff. ✅
+   concluída: branch completa enviada; PRs A/B/C/D mapeados por faixa de commits
+   com link manual (bloqueio `gh` registrado); [RELATORIO-MASTER.md](RELATORIO-MASTER.md)
+   versionado; handoff AGENTS.md no retorno final. **Operação encerrada nesta
+   branch** — decisões restantes (revisão F13, PRs formais, gate, merge) são do
+   titular (seção AC do relatório).
 
 ## Regras de execução permanentes
 

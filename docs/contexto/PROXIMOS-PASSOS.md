@@ -1,33 +1,34 @@
 # Próximos passos
 
-## Operação Master HF-001 — migração HyperFrames (27/11/2026, em execução)
+## Operação Master HF-001 — migração HyperFrames (27/11/2026, CONCLUÍDA na branch)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
-**sem merge**. F0–F14 concluídas (runtime 0.9.103 + skills + documentação + adaptador
-F6 `d2442bc` + Studio/fila F7/F8 `8ceb8d5` com prova HTTP verde + templates
-nativos por `narrativeFunction` e stills PNG F9/F10 `f06c355` com provas por
-geometria + piloto HF-PILOTO-001 com post/carrossel/reel reais verificados +
-pacote de revisão F13 com relatórios e re-render delivery byte-idêntico + F14
-com smokes/determinismo verdes, duas falhas herdadas da base provadas como
-pré-existentes e workflow rascunho `hyperframes-validation.yml`);
-ordem de
-continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md):
+**sem merge**. **F0–F18 concluídas** (runtime 0.9.103 + skills + documentação +
+adaptador + Studio/fila + templates/stills + piloto HF-PILOTO-001 + pacote de
+revisão F13 + testes/determinismo + falhas herdadas provadas + gate rascunho +
+segurança F17 varrida + F18 entregue). Relatório master A–AD versionado em
+[../migracao-hyperframes/RELATORIO-MASTER.md](../migracao-hyperframes/RELATORIO-MASTER.md).
+Decisões restantes — **todas do titular** (seção AC do relatório):
 
-1. **F13 — revisão humana pendente do titular:** pacote portátil pronto em
+1. **F13 — revisão humana:** pacote portátil em
    `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/review.html` (post, carrossel,
    storyboard, player do reel, comparação Op24 v2 × HyperFrames, relatórios).
    **Nenhuma aprovação estética foi declarada** (o agente não visualiza as
    mídias); a decisão de aceite/ajuste é do titular.
-2. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
-   relatório master A–AD + handoff AGENTS.md. **Merge somente com autorização
-   do titular.** Nota: o CI dos PRs carrega duas falhas herdadas da base
-   (platform `output-plan-examples` introduzida pelo Op 24 `f01ed60`; smoke
-   `test_08` ambiental de worktree) — correção pertence à linha Op 24–26
-   (PR #35) ou autorização própria.
-3. **Decisão do titular sobre o gate rascunho:** promover
+2. **PRs A/B/C/D em rascunho:** mapeados por faixa de commits no EVIDENCIAS
+   F18; criação formal bloqueada por `gh` ausente (exit 127) — link manual:
+   `https://github.com/Jonatasbottaro/marcasalao-marketing/compare/main...codex/hyperframes-core-migration?expand=1`.
+   **Merge somente com autorização do titular.** Nota: o CI dos PRs carrega
+   duas falhas herdadas da base (platform `output-plan-examples` introduzida
+   pelo Op 24 `f01ed60`; smoke `test_08` ambiental de worktree) — correção
+   pertence à linha Op 24–26 (PR #35) ou autorização própria.
+3. **Gate rascunho:** decidir a promoção de
    `.github/workflows/hyperframes-validation.yml` de `workflow_dispatch` para
    push/PR (caminhos `renderers/hyperframes/**`, `tools/render_hyperframes*`,
    `tenants/*/frame.md`) na integração.
+4. **Reconciliações pós-integração:** `skills-lock.json` v2 (branch) vs v1 não
+   rastreado do checkout principal; atualizar `platform/README.md`
+   ("nenhum renderizador implementado") quando o adaptador for integrado.
 
 ## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)
 

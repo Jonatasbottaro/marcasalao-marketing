@@ -34,22 +34,32 @@
   piloto HF-PILOTO-001 (commit `eabb13c`; post/carrossel/reel reais verificados);
   F13 pacote de revisão montado (`review.html` + relatórios + comparação v2 × HF +
   re-render byte-idêntico de 40,7 s) — **aprovação estética pendente do titular**;
-  F15–F17 docs de atualização/rollback/segurança.
-- **Pendente (ordem):** F18 PRs C/D em rascunho + relatório master A–AD + handoff
-  AGENTS.md. Revisão humana do pacote F13 pelo titular é paralela e não bloqueia
-  o F18. F14 concluída (27/11/2026): smokes + determinismo dedicado verdes;
-  `run_tests.py --smoke` 415/416 e `npm test` platform 1009/1017 com **falhas
-  pré-existentes provadas** (arquivos byte-idênticos à base `3cf2fdc`; falha do
-  platform introduzida pelo Op 24 `f01ed60`) — não são regressões do HF-001;
-  workflow rascunho `.github/workflows/hyperframes-validation.yml`
-  (dispatch-only, workflows ativos intocados).
+  F14 smokes + determinismo dedicado verdes, duas falhas herdadas da base provadas
+  como pré-existentes, workflow rascunho `hyperframes-validation.yml`
+  (dispatch-only, workflows ativos intocados); F15/F16 docs de
+  atualização/rollback; F17 varreduras de segurança com saída real (nenhum segredo
+  no código novo/piloto/entregas; nenhum comando de nuvem); **F18 concluída com
+  bloqueio registrado**: branch completa enviada (9 commits de fase + fechamento,
+  **sem merge**), PRs A/B/C/D mapeados por faixa de commits com link manual
+  (`gh` ausente, exit 127), relatório master A–AD versionado em
+  [../migracao-hyperframes/RELATORIO-MASTER.md](../migracao-hyperframes/RELATORIO-MASTER.md).
+- **Pendente (decisões do titular, na ordem):** (1) revisão humana do pacote F13
+  (`<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/review.html`) — aceite/ajuste
+  estético; (2) criação formal dos PRs A/B/C/D em rascunho (gh/token) e eventual
+  merge, somente com autorização explícita; (3) decisão sobre a promoção do gate
+  rascunho a push/PR; (4) correção das falhas herdadas (linha Op 24–26 / PR #35)
+  para o CI verde dos PRs C/D; (5) reconciliações pós-integração
+  (`skills-lock.json` v2; `platform/README.md`). Detalhe na seção AC do
+  RELATORIO-MASTER.
 - **Restrições vigentes:** sem merge para `main`, sem publicação/agendamento, sem
   serviços pagos/nuvem, templates históricos intocados, fábrica legada congelada,
   VIDEO CLEAN em toda produção nova, `autoPublish: false`.
-- **Próxima ação segura:** retomar na worktree hf001, conferir
-  `git status`/`git log` da branch, e continuar pelo F18 (PRs rascunho +
-  relatório master) conforme
-  [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md).
+- **Próxima ação segura:** a operação está encerrada na branch. Ao retomar,
+  conferir `git status`/`git log` da worktree hf001 e o estado do remoto, **ler a
+  seção AC do
+  [../migracao-hyperframes/RELATORIO-MASTER.md](../migracao-hyperframes/RELATORIO-MASTER.md)**
+  e aguardar/executar somente a decisão do titular (revisão F13, PRs, gate,
+  merge). Nenhuma implementação adicional foi autorizada.
 
 ## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
 

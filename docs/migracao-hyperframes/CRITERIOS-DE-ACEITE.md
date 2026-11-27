@@ -133,8 +133,21 @@ Critérios verificáveis por fase. Um critério só é aceito com evidência exe
 ## Entrega (F18)
 
 - [ ] PRs A/B/C/D abertos como **rascunho**; nenhum merge para `main`.
-- [ ] Relatório master A–AD com status por fase e evidência.
-- [ ] Handoff AGENTS.md completo, incluindo a confirmação textual de confinamento
+      (**Bloqueio registrado:** `gh` ausente na estação (exit 127) e sem
+      `GITHUB_TOKEN` — PRs não criáveis como objetos do GitHub. Mapeamento por
+      faixa de commits + link manual registrados em EVIDENCIAS F18 e no
+      RELATORIO-MASTER (seção Y). Nenhum merge para `main` — respeitado.)
+- [x] Relatório master A–AD com status por fase e evidência.
+      ([RELATORIO-MASTER.md](RELATORIO-MASTER.md): 30 seções A–AD, status por
+      fase F0–F18, evidências verificáveis; nota metodológica sobre a
+      reconstrução dos títulos das seções — anexo do briefing excluído)
+- [x] Handoff AGENTS.md completo, incluindo a confirmação textual de confinamento
       em `<RAIZ>`.
-- [ ] `git status --short` limpo de surpresas; worktrees temporárias removidas ou
+      (entregue no retorno final da sessão, com `<RAIZ>` real substituído)
+- [x] `git status --short` limpo de surpresas; worktrees temporárias removidas ou
       justificadas; `.workspace/` sem única cópia de arquivo permanente.
+      (verificado no fechamento: árvore limpa pós-commit; worktree hf001 é a
+      área da tarefa em curso, justificada e registrada; pacote F13 vive em
+      `.workspace/` por ser material de revisão não versionável — MP4 ignorado
+      pelo Git — e as peças **versionáveis** do piloto estão commitadas em
+      `02-reels-shorts/hf-piloto-001-organizacao-agenda/` e `04-legendas/`)
