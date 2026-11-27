@@ -19,7 +19,7 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F11 | Preservação de geração de imagens IA | ✅ Sem ação | ComfyUI08 + guard de proveniência intocados (matriz #13) |
 | F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ✅ Concluída | Post 4:5 + carrossel 4 cards + reel 24 s renderizados e verificados; capturas Studio Bella versionadas; VIDEO CLEAN; nada publicado (ver EVIDENCIAS) |
 | F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | 🔶 Pacote pronto; revisão humana pendente | `review.html` + 3 relatórios + frames/storyboard + players v2 × HF; re-render byte-idêntico (40,7 s); **sem aprovação estética declarada** (ver EVIDENCIAS) |
-| F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ⬜ Pendente | Gates legados preservados; novo gate HyperFrames aditivo |
+| F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ✅ Concluída (ressalvas registradas) | Smokes HF + determinismo dedicado verdes; 415/416 smoke Python e 1009/1017 platform com **falhas herdadas da base** (prova: arquivos idênticos a `3cf2fdc`); workflow rascunho `hyperframes-validation.yml` (dispatch-only) — ver EVIDENCIAS |
 | F15 | Política de atualização/manutenção | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
 | F16 | Rollback | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
 | F17 | Segurança e governança | 🔶 Em execução | Confinamento de caminhos no adaptador (F6); revisão de segredos na entrega |
@@ -42,7 +42,10 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 7. **F13 — avaliação visual** humana + comparação v2/v3 × HyperFrames. 🔶 pacote
    de revisão montado (`review.html`, relatórios, frames, players); decisão de
    aceite/ajuste pendente do titular — sem aprovação estética sem ver.
-8. **F14 — testes e CI** aditivos.
+8. **F14 — testes e CI** aditivos. ✅ smokes + determinismo verdes; workflow
+   rascunho criado; duas falhas herdadas da base registradas (fumo Python
+   415/416 ambiental de worktree; platform 1 falha introduzida pelo Op 24
+   `f01ed60`) — correção fora do escopo HF-001, dependência anotada para os PRs.
 9. **F18 — PRs C (integração) e D (produção)**, relatório master A–AD, handoff.
 
 ## Regras de execução permanentes

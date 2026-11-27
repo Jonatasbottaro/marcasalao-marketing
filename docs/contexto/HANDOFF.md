@@ -35,15 +35,20 @@
   F13 pacote de revisão montado (`review.html` + relatórios + comparação v2 × HF +
   re-render byte-idêntico de 40,7 s) — **aprovação estética pendente do titular**;
   F15–F17 docs de atualização/rollback/segurança.
-- **Pendente (ordem):** F14 testes/CI aditivos (determinismo por re-render com hash
-  de frames; suítes smoke/fast/render; `npm test` da platform) → F18 PRs C/D em
-  rascunho + relatório master A–AD + handoff AGENTS.md. Revisão humana do pacote
-  F13 pelo titular é paralela e não bloqueia F14/F18.
+- **Pendente (ordem):** F18 PRs C/D em rascunho + relatório master A–AD + handoff
+  AGENTS.md. Revisão humana do pacote F13 pelo titular é paralela e não bloqueia
+  o F18. F14 concluída (27/11/2026): smokes + determinismo dedicado verdes;
+  `run_tests.py --smoke` 415/416 e `npm test` platform 1009/1017 com **falhas
+  pré-existentes provadas** (arquivos byte-idênticos à base `3cf2fdc`; falha do
+  platform introduzida pelo Op 24 `f01ed60`) — não são regressões do HF-001;
+  workflow rascunho `.github/workflows/hyperframes-validation.yml`
+  (dispatch-only, workflows ativos intocados).
 - **Restrições vigentes:** sem merge para `main`, sem publicação/agendamento, sem
   serviços pagos/nuvem, templates históricos intocados, fábrica legada congelada,
   VIDEO CLEAN em toda produção nova, `autoPublish: false`.
 - **Próxima ação segura:** retomar na worktree hf001, conferir
-  `git status`/`git log` da branch, e continuar pelo F14 conforme
+  `git status`/`git log` da branch, e continuar pelo F18 (PRs rascunho +
+  relatório master) conforme
   [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md).
 
 ## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)

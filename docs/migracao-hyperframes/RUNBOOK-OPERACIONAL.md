@@ -100,6 +100,19 @@ python tools/render_hyperframes_still.py --input pedido.carousel-request.json \
   intocado; a troca por still HyperFrames é decisão explícita, nunca silenciosa.
   Arte estática de feed por IA segue ComfyUI08 + guard de proveniência.
 
+## Suítes e provas do motor (F14)
+
+| Verificação | Comando | O que prova |
+| --- | --- | --- |
+| Smoke de instalação | `bash renderers/hyperframes/tests/smoke.sh` | init → check → render draft → ffprobe (1080×1920, 0 áudio) |
+| Smoke do adaptador | `bash renderers/hyperframes/tests/adapter-smoke.sh` | pedido real → composição → check → render + guardrails negativo aborta antes do render |
+| Determinismo | `bash renderers/hyperframes/tests/determinism.sh` | dois renders independentes byte-idênticos + frames-chave com hashes iguais |
+| Fila (Studio HTTP) | `python tools/ci_hyperframes_queue_proof.py --port 8813` | positivo/guardrails/recuperação + ZIP sem SRT |
+| Gate CI (rascunho) | workflow `hyperframes-validation.yml` (dispatch-only) | matriz ubuntu+windows com os itens acima + stills versionados do piloto |
+
+O workflow é **rascunho**: dispara somente por `workflow_dispatch` e não altera
+os workflows ativos; promover o trigger a push/PR é decisão do titular.
+
 ## Diagnóstico rápido
 
 | Sintoma | Primeiro passo |

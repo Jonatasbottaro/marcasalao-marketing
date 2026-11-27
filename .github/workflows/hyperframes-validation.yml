@@ -1,0 +1,143 @@
+name: Validar motor HyperFrames (rascunho)
+
+# Gate HyperFrames da HF-001 (F14) — PROPOSTA EM RASCUNHO: dispara somente por
+# workflow_dispatch (execucao manual). Nao roda em push/PR e nao altera nenhum
+# workflow ativo; promover o trigger para push/PR (caminhos renderers/hyperframes,
+# tools/render_hyperframes*, tenants/*/frame.md) e decisao do titular no momento
+# da integracao (PR C/D). O gate nao publica, nao faz deploy, nao usa segredos e
+# nao toca servicos pagos: render local com o runtime pinado 0.9.103.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hyperframes:
+    name: ${{ matrix.os }} · HyperFrames 0.9.103
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: '1'
+    strategy:
+      # Um ambiente quebrado nao deve esconder o veredito do outro.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (runtime HyperFrames)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: renderers/hyperframes/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # O caminho HyperFrames nao usa drawtext (render por Chrome + encode
+      # FFmpeg), portanto o build static do setup-ffmpeg no Ubuntu basta.
+      - name: FFmpeg e FFprobe
+        uses: FedericoCarboni/setup-ffmpeg@v2
+
+      - name: Versoes registradas das ferramentas
+        run: |
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+          node --version
+          python --version
+
+      - name: Instalar runtime pinado (0.9.103)
+        working-directory: renderers/hyperframes
+        run: |
+          npm ci
+          test -f node_modules/hyperframes/bin/hyperframes.mjs
+          test -f node_modules/@hyperframes/producer/package.json
+
+      # A ponte Node (tools/render_bridge.mjs) importa de platform/dist/src:
+      # compilar a platform antes de qualquer smoke/proof do motor HyperFrames.
+      # A suíte da platform em si e gate do platform-validation.yml, fora daqui.
+      - name: Compilar a ponte TypeScript (platform)
+        working-directory: platform
+        run: |
+          npm ci
+          npm run build
+          test -f dist/src/compile-video-request.js
+          test -f dist/src/validate-carousel-request.js
+
+      # Os tres smokes confinam caches npm/Chrome/TEMP em .workspace/tmp/hf001/
+      # via config/env.sh e gravam saidas de prova dentro da raiz do checkout.
+      - name: Smoke de instalacao (init -> check -> render draft -> ffprobe)
+        run: bash renderers/hyperframes/tests/smoke.sh
+
+      - name: Smoke do adaptador (compose -> check -> render + guardrails negativo)
+        run: bash renderers/hyperframes/tests/adapter-smoke.sh
+
+      - name: Determinismo (dois renders independentes, arquivo + frames-chave)
+        run: bash renderers/hyperframes/tests/determinism.sh
+
+      # Stills (F10): pedidos versionados do piloto, entrega transacional PNG.
+      - name: Prova de stills com os pedidos versionados do piloto (post 4:5 + carrossel 1:1)
+        run: |
+          python tools/render_hyperframes_still.py \
+            --input 02-reels-shorts/hf-piloto-001-organizacao-agenda/pedido-post.carousel-request.json \
+            --output-dir .workspace/archives/ci-hyperframes/stills-post --json
+          python tools/render_hyperframes_still.py \
+            --input 02-reels-shorts/hf-piloto-001-organizacao-agenda/pedido-carrossel.carousel-request.json \
+            --output-dir .workspace/archives/ci-hyperframes/stills-carrossel --json
+          python - <<'PY'
+          import glob, json, subprocess
+          expected = {
+              '.workspace/archives/ci-hyperframes/stills-post': (1080, 1350, 1),
+              '.workspace/archives/ci-hyperframes/stills-carrossel': (1080, 1080, 4),
+          }
+          for base, (w, h, count) in expected.items():
+              pngs = sorted(glob.glob(f'{base}/*.png'))
+              assert len(pngs) == count, f'{base}: esperado {count} PNG, achei {len(pngs)}'
+              for png in pngs:
+                  info = json.loads(subprocess.check_output(
+                      ['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', png], text=True))
+                  stream = info['streams'][0]
+                  assert stream['codec_name'] == 'png', stream
+                  assert int(stream['width']) == w and int(stream['height']) == h, stream
+              print(f'{base}: {count} PNG {w}x{h} codec png')
+          print('stills CI proof ok: post 4:5 + carrossel 1:1, codec png, geometrias exatas')
+          PY
+
+      - name: Prova da fila do Studio com modalidade hyperframes (HTTP em 127.0.0.1)
+        run: |
+          python tools/ci_hyperframes_queue_proof.py --port 8813
+
+      # Invariante de midia (mesma regra do gate legado): nenhum .mp4/.png de
+      # prova fora de .workspace/.
+      - name: Nenhuma midia de prova fora de .workspace/
+        run: |
+          python - <<'PY'
+          import os, sys
+          violations = []
+          for dirpath, dirnames, filenames in os.walk('.'):
+              dirnames[:] = [d for d in dirnames if d not in ('.git', 'node_modules')]
+              for name in filenames:
+                  if not name.lower().endswith(('.mp4', '.wav')):
+                      continue
+                  rel = os.path.relpath(os.path.join(dirpath, name), '.').replace(os.sep, '/')
+                  if rel.startswith('.workspace/'):
+                      continue
+                  violations.append(rel)
+          if violations:
+              print('Midia gerada fora de .workspace/:')
+              for rel in sorted(violations):
+                  print(' -', rel)
+              sys.exit(1)
+          print('OK: nenhum .mp4/.wav fora de .workspace/')
+          PY

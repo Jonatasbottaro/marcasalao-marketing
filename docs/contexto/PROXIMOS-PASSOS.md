@@ -3,12 +3,13 @@
 ## Operação Master HF-001 — migração HyperFrames (27/11/2026, em execução)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
-**sem merge**. F0–F13 concluídas (runtime 0.9.103 + skills + documentação + adaptador
+**sem merge**. F0–F14 concluídas (runtime 0.9.103 + skills + documentação + adaptador
 F6 `d2442bc` + Studio/fila F7/F8 `8ceb8d5` com prova HTTP verde + templates
 nativos por `narrativeFunction` e stills PNG F9/F10 `f06c355` com provas por
 geometria + piloto HF-PILOTO-001 com post/carrossel/reel reais verificados +
-pacote de revisão F13 com relatórios técnico/editorial/comparativo v2 × HF e
-re-render delivery byte-idêntico de 40,7 s);
+pacote de revisão F13 com relatórios e re-render delivery byte-idêntico + F14
+com smokes/determinismo verdes, duas falhas herdadas da base provadas como
+pré-existentes e workflow rascunho `hyperframes-validation.yml`);
 ordem de
 continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md):
 
@@ -17,11 +18,16 @@ continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migraca
    storyboard, player do reel, comparação Op24 v2 × HyperFrames, relatórios).
    **Nenhuma aprovação estética foi declarada** (o agente não visualiza as
    mídias); a decisão de aceite/ajuste é do titular.
-2. **F14 — testes/CI aditivos** sem quebrar gates legados (determinismo por
-   re-render com hash de frames; suítes smoke/fast/render; `npm test` da
-   platform).
-3. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
-   relatório master A–AD. **Merge somente com autorização do titular.**
+2. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
+   relatório master A–AD + handoff AGENTS.md. **Merge somente com autorização
+   do titular.** Nota: o CI dos PRs carrega duas falhas herdadas da base
+   (platform `output-plan-examples` introduzida pelo Op 24 `f01ed60`; smoke
+   `test_08` ambiental de worktree) — correção pertence à linha Op 24–26
+   (PR #35) ou autorização própria.
+3. **Decisão do titular sobre o gate rascunho:** promover
+   `.github/workflows/hyperframes-validation.yml` de `workflow_dispatch` para
+   push/PR (caminhos `renderers/hyperframes/**`, `tools/render_hyperframes*`,
+   `tenants/*/frame.md`) na integração.
 
 ## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)
 

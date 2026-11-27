@@ -70,8 +70,24 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   as mídias): tipografia, qualidade de imagem, movimento, composição,
   legibilidade mobile, contraste percebido, áreas seguras, fidelidade,
   identidade e coerência seguem pendentes da revisão humana do titular.
-- **Não implementado ainda (nesta branch):** testes/CI novos (F14). A
-  main não mudou; nada publicado.
+- **Testes e CI do motor (F14, 27/11/2026):** suítes HyperFrames verdes com
+  saída real — `smoke.sh` (h264 1080×1920, 10,0 s, 0 áudio), `adapter-smoke.sh`
+  (render 14,0 s + guardrails negativo) e **teste dedicado de determinismo**
+  `determinism.sh` (dois renders independentes byte-idênticos + frames-chave
+  2,0/7,0/13,0 s com hashes iguais; fecha a pendência do critério F6).
+  `run_tests.py --smoke` **415/416** e `npm test` platform **1009/1017**: as
+  duas únicas falhas são **pré-existentes/ambientais**, provadas (arquivos
+  byte-idênticos à base `3cf2fdc`; falha do platform introduzida pelo Op 24
+  `f01ed60`, ancestral do ponto de ramificação) — não são regressões do HF-001;
+  correção pertence à linha Op 24–26 (PR #35) e é dependência para CI verde dos
+  PRs C/D. **Novo gate proposto como rascunho:**
+  `.github/workflows/hyperframes-validation.yml` (somente `workflow_dispatch`;
+  nenhum workflow ativo alterado; três smokes + stills com pedidos versionados
+  do piloto + prova da fila + invariante de mídia; YAML validado por parse
+  real). Promoção do trigger é decisão do titular na integração.
+- **Não implementado ainda (nesta branch):** nada além da revisão humana do
+  pacote F13 (decisão do titular) e do F18 (PRs rascunho + relatório master).
+  A main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
   não rastreado do checkout principal; atualizar `platform/README.md`
   ("nenhum renderizador implementado") quando o adaptador existir.
