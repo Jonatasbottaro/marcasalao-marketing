@@ -18,7 +18,7 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F10 | Formatos de post/carrossel no motor de vídeo | ✅ Concluída | Stills PNG via `snapshot` oficial: 1080×1350 e 1080×1080 verificados; 9:16/16:9 como vídeo; arte estática de feed segue ComfyUI08 — EVIDENCIAS F9/F10 |
 | F11 | Preservação de geração de imagens IA | ✅ Sem ação | ComfyUI08 + guard de proveniência intocados (matriz #13) |
 | F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ✅ Concluída | Post 4:5 + carrossel 4 cards + reel 24 s renderizados e verificados; capturas Studio Bella versionadas; VIDEO CLEAN; nada publicado (ver EVIDENCIAS) |
-| F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | ⬜ Pendente | Pacote de revisão portável; sem aprovação estética sem ver |
+| F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | 🔶 Pacote pronto; revisão humana pendente | `review.html` + 3 relatórios + frames/storyboard + players v2 × HF; re-render byte-idêntico (40,7 s); **sem aprovação estética declarada** (ver EVIDENCIAS) |
 | F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ⬜ Pendente | Gates legados preservados; novo gate HyperFrames aditivo |
 | F15 | Política de atualização/manutenção | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
 | F16 | Rollback | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
@@ -39,7 +39,9 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 6. **F12 — piloto** HF-PILOTO-001-MARCA-SALAO (produção nova completa, VIDEO CLEAN). ✅
    post/carrossel/reel reais verificados; refinamentos de contraste e convenção
    de stills registrados em EVIDENCIAS.
-7. **F13 — avaliação visual** humana + comparação v2/v3 × HyperFrames.
+7. **F13 — avaliação visual** humana + comparação v2/v3 × HyperFrames. 🔶 pacote
+   de revisão montado (`review.html`, relatórios, frames, players); decisão de
+   aceite/ajuste pendente do titular — sem aprovação estética sem ver.
 8. **F14 — testes e CI** aditivos.
 9. **F18 — PRs C (integração) e D (produção)**, relatório master A–AD, handoff.
 

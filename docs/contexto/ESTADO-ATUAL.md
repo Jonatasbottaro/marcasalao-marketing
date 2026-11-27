@@ -60,8 +60,17 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   1080×1080), reel 9:16 de 24 s (**h264 1080×1920, 0 streams de áudio**,
   qualidade delivery, 6 beats hook/4×demonstration/cta). VIDEO CLEAN mantido;
   guardrails verdes; **nada publicado ou aprovado** — material de revisão F13.
-- **Não implementado ainda (nesta branch):** avaliação visual (F13),
-  testes/CI novos (F14). A
+- **Pacote de revisão F13 (27/11/2026):** montado em
+  `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/` (não versionado): `review.html`
+  portátil (post, carrossel, storyboard de 6 frames, player do reel, comparação
+  Op24 v2 × HyperFrames, relatórios técnico/editorial/comparativo), peças
+  renderizadas, frames, MP4 v2 (47,0 s) × MP4 HF (24,0 s) e re-render
+  cronometrado (40,7 s, **byte-idêntico** — SHA-256 `572d1390…dcc74`, prova real
+  de determinismo). **Aprovação estética não declarada** (o agente não visualiza
+  as mídias): tipografia, qualidade de imagem, movimento, composição,
+  legibilidade mobile, contraste percebido, áreas seguras, fidelidade,
+  identidade e coerência seguem pendentes da revisão humana do titular.
+- **Não implementado ainda (nesta branch):** testes/CI novos (F14). A
   main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1
   não rastreado do checkout principal; atualizar `platform/README.md`

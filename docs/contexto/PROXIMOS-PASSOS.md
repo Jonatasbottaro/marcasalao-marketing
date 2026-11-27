@@ -3,17 +3,23 @@
 ## Operação Master HF-001 — migração HyperFrames (27/11/2026, em execução)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
-**sem merge**. F0–F12 concluídas (runtime 0.9.103 + skills + documentação + adaptador
+**sem merge**. F0–F13 concluídas (runtime 0.9.103 + skills + documentação + adaptador
 F6 `d2442bc` + Studio/fila F7/F8 `8ceb8d5` com prova HTTP verde + templates
 nativos por `narrativeFunction` e stills PNG F9/F10 `f06c355` com provas por
-geometria + piloto HF-PILOTO-001 com post/carrossel/reel reais verificados);
+geometria + piloto HF-PILOTO-001 com post/carrossel/reel reais verificados +
+pacote de revisão F13 com relatórios técnico/editorial/comparativo v2 × HF e
+re-render delivery byte-idêntico de 40,7 s);
 ordem de
 continuação conforme [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md):
 
-1. **F13 — avaliação visual humana** + comparação Op24 v2 × HyperFrames
-   (pacote de revisão portátil com previews, storyboard, player, frames e
-   relatórios técnico/editorial; sem aprovação estética sem ver).
-2. **F14 — testes/CI aditivos** sem quebrar gates legados.
+1. **F13 — revisão humana pendente do titular:** pacote portátil pronto em
+   `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/review.html` (post, carrossel,
+   storyboard, player do reel, comparação Op24 v2 × HyperFrames, relatórios).
+   **Nenhuma aprovação estética foi declarada** (o agente não visualiza as
+   mídias); a decisão de aceite/ajuste é do titular.
+2. **F14 — testes/CI aditivos** sem quebrar gates legados (determinismo por
+   re-render com hash de frames; suítes smoke/fast/render; `npm test` da
+   platform).
 3. **F18 — PRs em rascunho** (A docs, B fundação, C integração, D produção) +
    relatório master A–AD. **Merge somente com autorização do titular.**
 

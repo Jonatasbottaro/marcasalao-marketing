@@ -24,16 +24,26 @@
   da raiz, env corrigido com case `[A-Za-z]:[/\\]*` + sanity check; vazamento
   verificado e eliminado. Detalhe em
   [../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md).
-- **Pendente (ordem):** PR A docs (este commit) → **F6 adaptador** (parser de
-  `frame.md`, guardrails pré-render, composição HTML, ponte JSON no padrão
-  `render_bridge.mjs`, `ffprobe` na saída; avaliar API `@hyperframes/producer`) →
-  F7/F8 Studio+fila → F9/F10 templates nativos → F12 piloto HF-PILOTO-001 → F13
-  avaliação visual → F14 testes/CI → F18 PRs C/D + relatório master A–AD.
+- **Concluído (até 27/11/2026):** F0 auditoria Git; F1/F2 inventários + matriz +
+  MKT-VIDEO-003; F3 runtime **0.9.103 pinado** (commit `89ef85f`, caches confinados
+  em `<RAIZ>/.workspace/tmp/hf001/` via wrappers, smoke verde 0 áudio); F4 skills
+  (commit `5d4465c`, 25 skills, lock v2 `cfaefdc`); PR A docs (commit `3fca35a`);
+  F6 adaptador (`renderers/hyperframes/adapter/` + `tools/render_hyperframes.py`,
+  smoke verde, decisão CLI); F7/F8 Studio+fila (commit `8ceb8d5`, prova HTTP verde);
+  F9/F10 templates por `narrativeFunction` + stills PNG (commit `f06c355`); F12
+  piloto HF-PILOTO-001 (commit `eabb13c`; post/carrossel/reel reais verificados);
+  F13 pacote de revisão montado (`review.html` + relatórios + comparação v2 × HF +
+  re-render byte-idêntico de 40,7 s) — **aprovação estética pendente do titular**;
+  F15–F17 docs de atualização/rollback/segurança.
+- **Pendente (ordem):** F14 testes/CI aditivos (determinismo por re-render com hash
+  de frames; suítes smoke/fast/render; `npm test` da platform) → F18 PRs C/D em
+  rascunho + relatório master A–AD + handoff AGENTS.md. Revisão humana do pacote
+  F13 pelo titular é paralela e não bloqueia F14/F18.
 - **Restrições vigentes:** sem merge para `main`, sem publicação/agendamento, sem
   serviços pagos/nuvem, templates históricos intocados, fábrica legada congelada,
   VIDEO CLEAN em toda produção nova, `autoPublish: false`.
 - **Próxima ação segura:** retomar na worktree hf001, conferir
-  `git status`/`git log` da branch, e continuar pelo F6 conforme
+  `git status`/`git log` da branch, e continuar pelo F14 conforme
   [../migracao-hyperframes/PLANO-DE-EXECUCAO.md](../migracao-hyperframes/PLANO-DE-EXECUCAO.md).
 
 ## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
