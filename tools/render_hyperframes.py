@@ -14,8 +14,8 @@ promocao, indice reconciliado e resultado JSON compativel com produce_video.
 Uso (a partir da raiz do checkout):
     python tools/render_hyperframes.py --input <pedido.video-request.json> \
         [--profile <id>] [--tenant <id>] [--quality draft|looks|delivery] \
-        [--workdir <dir>] [--out <mp4>] [--root <raiz>] [--skip-render] \
-        [--output-dir <dir>] [--staging <dir>] [--attempt-id <id>] \
+        [--workdir <dir>] [--out <mp4|png>] [--root <raiz>] [--skip-render] \
+        [--still] [--output-dir <dir>] [--staging <dir>] [--attempt-id <id>] \
         [--fence-file <arquivo>] [--json]
 
 Sem --workdir, usa <raiz>/.workspace/tmp/hf001/<pedido>/<perfil>/.
@@ -86,6 +86,8 @@ def run_adapter(root, args, profile_path, workdir, out_path, tenant):
         '--workdir', workdir,
         '--quality', args.quality,
     ]
+    if getattr(args, 'still', False):
+        cmd.append('--still')
     if out_path:
         cmd.extend(['--out', out_path])
     if args.skip_render:
@@ -264,6 +266,8 @@ def main(argv=None):
     parser.add_argument('--workdir', default=None, help='Diretorio de trabalho do adaptador')
     parser.add_argument('--out', default=None, help='MP4 de saida')
     parser.add_argument('--skip-render', action='store_true', help='Compoe e roda o check sem renderizar')
+    parser.add_argument('--still', action='store_true',
+                        help='Captura um quadro PNG (F10) em vez de renderizar MP4; exige --out *.png')
     parser.add_argument('--output-dir', default=None,
                         help='Diretorio final de entrega da fila (um subdiretorio por perfil)')
     parser.add_argument('--staging', default=None, help='Diretorio de staging exclusivo (interno da fila)')
@@ -276,6 +280,9 @@ def main(argv=None):
 
     if args.skip_render and args.output_dir:
         print('Erro: --skip-render nao combina com --output-dir', file=sys.stderr)
+        return 2
+    if args.still and args.output_dir:
+        print('Erro: --still nao combina com --output-dir; conjuntos de cards usam tools/render_hyperframes_still.py', file=sys.stderr)
         return 2
 
     root = os.path.realpath(args.root)
@@ -302,8 +309,11 @@ def main(argv=None):
         os.makedirs(workdir, exist_ok=True)
         out_path = None
         if not args.skip_render:
-            out_path = os.path.realpath(args.out or os.path.join(
-                workdir, f"video-{profile['profileId']}.mp4"))
+            default_name = (f"still-{profile['profileId']}.png" if args.still
+                            else f"video-{profile['profileId']}.mp4")
+            out_path = os.path.realpath(args.out or os.path.join(workdir, default_name))
+            if args.still and not out_path.endswith('.png'):
+                raise render_local.InputFileError('saida --still deve ser um arquivo .png')
             if not render_local.contained(root, out_path):
                 raise render_local.InputFileError('saida fora da raiz do projeto')
         profile_path = os.path.join(workdir, 'profile.compiled.json')

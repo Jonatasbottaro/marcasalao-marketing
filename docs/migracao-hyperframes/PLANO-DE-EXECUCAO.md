@@ -12,10 +12,10 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F4 | Skills HyperFrames | ✅ Concluída | commit `5d4465c`; 25 skills, lock v2 upstream `cfaefdc` |
 | F5 | `frame.md` consumido por máquina | ✅ Concluída (via F6) | `adapter/tenant.mjs` parseia o frontmatter normativo (cores/tipografia/headerOverlay/áudio) |
 | F6 | Adaptador contratos → composição → render | ✅ Concluída | `renderers/hyperframes/adapter/` + `tools/render_hyperframes.py`; smoke verde (render + guardrails); decisão CLI registrada |
-| F7 | Integração Video Studio | ⬜ Pendente | Rotas aditivas em `video_studio.py`; pacote de entrega reutilizado |
-| F8 | Fila: concorrência, progresso, recuperação | ⬜ Pendente | Item `hyperframes` na fila SQLite existente; estados/recovery preservados |
-| F9 | Templates nativos (reel produto/funcionalidade/institucional, motion, horizontal) | ⬜ Pendente | `kind` de cena → template; geometrias dos perfis |
-| F10 | Formatos de post/carrossel no motor de vídeo | ⬜ Pendente | 1080×1350, 1080×1080, 1080×1920, 1920×1080 (arte estática de feed segue ComfyUI08) |
+| F7 | Integração Video Studio | ✅ Concluída | Rotas aditivas (`renderer/save`, `readiness`, `preview`); entrega reutilizada — commit `8ceb8d5`, prova `ci_hyperframes_queue_proof.py` verde (EVIDENCIAS F7/F8) |
+| F8 | Fila: concorrência, progresso, recuperação | ✅ Concluída | Modalidade `hyperframes` na fila SQLite existente; estados/recovery preservados — commit `8ceb8d5`, prova HTTP verde (positivo/guardrails/recuperação) |
+| F9 | Templates nativos (reel produto/funcionalidade/institucional, motion, horizontal) | ✅ Concluída | `narrativeFunction` → template no compositor (hook/demonstration/cta); geometrias genéricas — EVIDENCIAS F9/F10 |
+| F10 | Formatos de post/carrossel no motor de vídeo | ✅ Concluída | Stills PNG via `snapshot` oficial: 1080×1350 e 1080×1080 verificados; 9:16/16:9 como vídeo; arte estática de feed segue ComfyUI08 — EVIDENCIAS F9/F10 |
 | F11 | Preservação de geração de imagens IA | ✅ Sem ação | ComfyUI08 + guard de proveniência intocados (matriz #13) |
 | F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ⬜ Pendente | Tema organização da agenda; post 4:5 + carrossel 4 cards + reel 20–25 s; capturas Meu Salão autorizadas com dados fictícios; VIDEO CLEAN |
 | F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | ⬜ Pendente | Pacote de revisão portável; sem aprovação estética sem ver |
@@ -34,8 +34,8 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 3. **F6 — adaptador** (`renderers/hyperframes/`): parser de `frame.md`, validação de
    guardrails, materialização de composição, ponte JSON, verificação `ffprobe`.
    Avaliar API `@hyperframes/producer` vs CLI. ✅ smoke verde.
-4. **F7+F8 — Studio e fila**: rotas e tipo de item aditivos; testes de recovery.
-5. **F9+F10 — templates nativos** por perfil de saída, sem claims proibidas.
+4. **F7+F8 — Studio e fila**: rotas e tipo de item aditivos; testes de recovery. ✅ commit `8ceb8d5`.
+5. **F9+F10 — templates nativos** por perfil de saída, sem claims proibidas. ✅ templates por `narrativeFunction` no compositor + stills PNG via `snapshot`; geometrias 1:1/4:5/9:16/16:9 verificadas.
 6. **F12 — piloto** HF-PILOTO-001-MARCA-SALAO (produção nova completa, VIDEO CLEAN).
 7. **F13 — avaliação visual** humana + comparação v2/v3 × HyperFrames.
 8. **F14 — testes e CI** aditivos.

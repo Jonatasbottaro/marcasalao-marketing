@@ -72,6 +72,33 @@ curl -X POST .../api/queue/enqueue -d '{"items": [ ... ], "label": "..."}'
 - Trabalhos antigos: `renderer` ausente = `ffmpeg` (padrão); nada muda para
   eles.
 
+## Stills de post/card/carrossel (F9/F10)
+
+Post e card são **captura de quadro PNG**, não export de vídeo. Entrada é o
+mesmo `CarouselRequest v1` do carrossel legado (post = conjunto de 1 card):
+
+```bash
+# Previa (ponte de carrossel: catálogo + allowlist + geometria, sem render):
+python tools/render_hyperframes_still.py --input pedido.carousel-request.json --plan-only --json
+
+# Exportacao (composicao -> check -> snapshot PNG -> ffprobe -> entrega transacional):
+python tools/render_hyperframes_still.py --input pedido.carousel-request.json \
+  --output-dir <entrega> [--tenant marca-salao] --json
+```
+
+- Cada card vira composição de cena única com template nativo por função
+  narrativa (primeiro `hook`, meios `demonstration`, último `cta`); guardrails do
+  tenant abortam card com claim proibida **antes** da captura.
+- Entrega: `01-<id>.png`…, `stills.zip`, `still-manifest.json` (renderer
+  hyperframes, SHA-256), `index.json`; promoção sob lock com backup.
+- Verificação de aceite: `ffprobe` codec `png` + geometria do perfil
+  (1:1 `1080×1080`, 4:5 `1080×1350`, 9:16 stories `1080×1920`).
+- Render de um único still direto pelo adaptador (uso interno/depuração):
+  `python tools/render_hyperframes.py --input <pedido.video-request.json> --still --out <quadro.png>`.
+- **Fallback:** o caminho legado `produce_carousel.py` permanece disponível e
+  intocado; a troca por still HyperFrames é decisão explícita, nunca silenciosa.
+  Arte estática de feed por IA segue ComfyUI08 + guard de proveniência.
+
 ## Diagnóstico rápido
 
 | Sintoma | Primeiro passo |

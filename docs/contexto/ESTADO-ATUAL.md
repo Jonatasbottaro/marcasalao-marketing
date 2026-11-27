@@ -29,7 +29,7 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   `scripts/hf-adapter.sh` + `tools/render_hyperframes.py`; smoke verde com
   pedido real → composição → check → render draft → ffprobe (1080×1920,
   14,0 s, **0 streams de áudio**); guardrails negativo aborta antes do render.
-- **Studio e fila (F7/F8):** modalidade `hyperframes` aditiva na fila SQLite
+- **Studio e fila (F7/F8, commit `8ceb8d5`):** modalidade `hyperframes` aditiva na fila SQLite
   (estados/recovery preservados), seleção explícita de motor por trabalho
   (`renderer.adapter`), entrega em `deliveries/hyperframes/<perfil>/` com o
   mesmo contrato de manifesto (`captionsMode: clean`), revisão/ZIP reutilizados,
@@ -37,7 +37,18 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   guardrails negativo sem fallback + recuperação `running`→`interrupted`→retry).
   Sem fallback silencioso (MKT-VIDEO-003); trabalhos sem `renderer` seguem no
   caminho FFmpeg legado.
-- **Não implementado ainda (nesta branch):** templates nativos (F9/F10), campanha
+- **Templates nativos e stills (F9/F10):** biblioteca de templates dentro do
+  compositor (`adapter/compose.mjs`) selecionada pelo campo neutro do contrato
+  `narrativeFunction` (`hook`→card de marca centrado, `demonstration`→captura
+  como estrela com texto na base, `cta`→convite centrado sem botão), com layout
+  genérico por geometria (1:1/4:5/9:16/16:9; `data-resolution` corrigido para
+  `square` no 1:1). Stills de post/card/carrossel via captura oficial
+  `hyperframes snapshot` (`hf_adapter.mjs --still` + ferramenta
+  `tools/render_hyperframes_still.py` sobre `CarouselRequest v1`, entrega
+  transacional no contrato do `produce_carousel`); PNGs 1080×1350 e 1080×1080
+  verificados por ffprobe; guardrails abortam card com claim proibida antes da
+  captura. `produce_carousel.py` (fallback) e ComfyUI08 (arte de feed) intactos.
+- **Não implementado ainda (nesta branch):** campanha
   piloto HF-PILOTO-001 (F12), avaliação visual (F13), testes/CI novos (F14). A
   main não mudou; nada publicado.
 - **Pendências de integração:** reconciliar `skills-lock.json` v2 (branch) com o v1

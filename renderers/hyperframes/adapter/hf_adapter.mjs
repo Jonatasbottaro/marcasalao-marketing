@@ -1,21 +1,27 @@
 #!/usr/bin/env node
 /**
- * hf_adapter.mjs — orquestrador do adaptador HyperFrames (HF-001, F6).
+ * hf_adapter.mjs — orquestrador do adaptador HyperFrames (HF-001, F6/F10).
  *
  * Entrada: um perfil compilado do render_bridge (--video-request), o tenant e a
  * raiz do projeto. Fluxo: carga de identidade/guardrails -> validacao textual ->
  * materializacao da composicao -> hyperframes check -> hyperframes render ->
  * verificacao ffprobe (VIDEO CLEAN: 0 streams de audio) -> veredito JSON.
  *
+ * Modo --still (F10): em vez do render de video, captura um quadro PNG pelo
+ * caminho oficial `hyperframes snapshot` no instante com entradas concluidas e
+ * verifica codec/geometria por ffprobe. Video e imagem estatica nao sao
+ * equivalentes: o still nao passa por encode H.264 nem por checagem de duracao.
+ *
  * Uso (sempre via wrapper com env confinado):
  *   bash renderers/hyperframes/scripts/hf-adapter.sh \
  *     --profile-json <perfil.json> --root <raiz> --tenant marca-salao \
- *     --workdir <dir> --out <video.mp4> [--quality draft|looks|delivery] [--skip-render]
+ *     --workdir <dir> --out <video.mp4> [--quality draft|looks|delivery] [--skip-render] \
+ *     [--still]
  *
- * Exit codes: 0 ok; 2 uso; 3 entrada/guardrails; 4 check; 5 render; 6 ffprobe.
+ * Exit codes: 0 ok; 2 uso; 3 entrada/guardrails; 4 check; 5 render/snapshot; 6 ffprobe.
  */
 
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, copyFileSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -41,6 +47,7 @@ function parseArgs(argv) {
         quality: 'draft',
         skipRender: false,
         skipCheck: false,
+        still: false,
     }
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i]
@@ -52,13 +59,14 @@ function parseArgs(argv) {
         else if (arg === '--quality' && i + 1 < argv.length) args.quality = argv[++i]
         else if (arg === '--skip-render') args.skipRender = true
         else if (arg === '--skip-check') args.skipCheck = true
+        else if (arg === '--still') args.still = true
         else {
             process.stderr.write(`erro: flag desconhecida: ${arg}\n`)
             process.exit(2)
         }
     }
     if (!args.profileJson || !args.tenant || !args.workdir) {
-        process.stderr.write('uso: hf_adapter.mjs --profile-json <perfil.json> --root <raiz> --tenant <id> --workdir <dir> [--out <mp4>] [--quality draft|looks|delivery] [--skip-render] [--skip-check]\n')
+        process.stderr.write('uso: hf_adapter.mjs --profile-json <perfil.json> --root <raiz> --tenant <id> --workdir <dir> [--out <mp4|png>] [--quality draft|looks|delivery] [--skip-render] [--skip-check] [--still]\n')
         process.exit(2)
     }
     if (!['draft', 'looks', 'delivery'].includes(args.quality)) {
@@ -67,6 +75,10 @@ function parseArgs(argv) {
     }
     if (!args.skipRender && !args.out) {
         process.stderr.write('erro: --out e obrigatorio sem --skip-render\n')
+        process.exit(2)
+    }
+    if (args.still && args.out && !args.out.endsWith('.png')) {
+        process.stderr.write('erro: no modo --still a saida --out deve ser um arquivo .png\n')
         process.exit(2)
     }
     return args
@@ -123,6 +135,30 @@ function ffprobeStreams(outAbs) {
     return { ok: true, video, audio, durationSeconds: Number(parsed.format?.duration ?? 0) }
 }
 
+/** Verificacao do PNG capturado (F10): codec png e geometria exata; sem duracao. */
+function ffprobeStill(pngAbs) {
+    const probe = runCommand('ffprobe', [
+        '-v', 'error',
+        '-show_entries', 'stream=codec_name,width,height',
+        '-of', 'json',
+        pngAbs,
+    ], path.dirname(pngAbs))
+    if (probe.status !== 0) {
+        return { ok: false, failureCode: 'FFPROBE_FAILED', detail: tail(probe.stderr || probe.stdout) }
+    }
+    let parsed
+    try {
+        parsed = JSON.parse(probe.stdout)
+    } catch {
+        return { ok: false, failureCode: 'FFPROBE_OUTPUT_INVALID', detail: tail(probe.stdout) }
+    }
+    const stream = (parsed.streams ?? [])[0]
+    if (!stream) {
+        return { ok: false, failureCode: 'FFPROBE_STREAM_MISSING', detail: tail(probe.stdout) }
+    }
+    return { ok: true, codec: stream.codec_name, width: stream.width, height: stream.height }
+}
+
 const args = parseArgs(process.argv.slice(2))
 const rootAbs = path.resolve(args.root)
 const workdirAbs = assertInsideRoot(rootAbs, args.workdir, 'workdir')
@@ -175,7 +211,7 @@ if (violations.length > 0) {
 
 let composed
 try {
-    composed = composeProject({ profile, tokens, root: rootAbs, workdir: workdirAbs })
+    composed = composeProject({ profile, tokens, root: rootAbs, workdir: workdirAbs, still: args.still })
 } catch (error) {
     emit({ ok: false, failureCode: String(error.message ?? error).split(':')[0], detail: String(error.message ?? error) }, 3)
     process.exit(3)
@@ -211,6 +247,76 @@ if (args.skipRender) {
         totalSeconds: composed.totalSeconds,
         beats: composed.beats,
         quality: args.quality,
+        still: args.still,
+    }, 0)
+    process.exit(0)
+}
+
+// F10 — still: captura de quadro PNG pelo caminho oficial (hyperframes snapshot)
+// no instante de entradas concluidas; sem encode de video e sem checagem de duracao.
+if (args.still) {
+    const snapDir = path.join(workdirAbs, '.still-capture')
+    rmSync(snapDir, { recursive: true, force: true })
+    const snapshot = runCommand(HF_CLI, [
+        'snapshot',
+        '--at', String(composed.stillAtSeconds),
+        '--no-end',
+        '--keep',
+        '--output', snapDir,
+        '--json',
+    ], workdirAbs)
+    if (snapshot.status !== 0) {
+        emit({
+            ok: false,
+            failureCode: 'HF_SNAPSHOT_FAILED',
+            exitCode: snapshot.status,
+            detail: tail(snapshot.stderr || snapshot.stdout, 40),
+        }, 5)
+        process.exit(5)
+    }
+    let pngs = []
+    try {
+        pngs = readdirSync(snapDir).filter((file) => file.toLowerCase().endsWith('.png'))
+    } catch { /* diretorio ausente cai na verificacao abaixo */ }
+    if (pngs.length !== 1) {
+        emit({ ok: false, failureCode: 'HF_SNAPSHOT_OUTPUT_INVALID', pngCount: pngs.length }, 5)
+        process.exit(5)
+    }
+    const captured = path.join(snapDir, pngs[0])
+    const probe = ffprobeStill(captured)
+    if (!probe.ok) {
+        emit({ ok: false, failureCode: probe.failureCode, detail: probe.detail }, 6)
+        process.exit(6)
+    }
+    if (probe.codec !== 'png') {
+        emit({ ok: false, failureCode: 'FFPROBE_CODEC', expected: 'png', actual: probe.codec }, 6)
+        process.exit(6)
+    }
+    if (probe.width !== composed.geometry.width || probe.height !== composed.geometry.height) {
+        emit({
+            ok: false,
+            failureCode: 'FFPROBE_GEOMETRY_MISMATCH',
+            expected: composed.geometry,
+            actual: { width: probe.width, height: probe.height },
+        }, 6)
+        process.exit(6)
+    }
+    copyFileSync(captured, outAbs)
+    emit({
+        ok: true,
+        adapter: 'hyperframes',
+        kind: 'still',
+        caseId: profile.caseId,
+        profileId: profile.profileId,
+        rendered: true,
+        outputPath: outAbs,
+        codec: 'png',
+        geometry: { width: probe.width, height: probe.height },
+        captureSeconds: composed.stillAtSeconds,
+        quality: args.quality,
+        workdir: workdirAbs,
+        narrationFile: path.join(workdirAbs, 'narracao.txt'),
+        beats: composed.beats,
     }, 0)
     process.exit(0)
 }

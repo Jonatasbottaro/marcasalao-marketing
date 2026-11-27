@@ -88,3 +88,67 @@ render. **Decisão: o adaptador usa o CLI pinado** (spawn do módulo
 caminho (a API não expõe o bundle de auditoria do `check`), o processo fica isolado
 e os códigos de saída são estáveis. O producer permanece instalado como opção para
 progresso fino da fila (F8); adoção não é compromisso.
+
+## Templates nativos por cena (F9, 27/11/2026)
+
+A biblioteca de templates vive **dentro do compositor** (`adapter/compose.mjs`),
+não em projetos soltos: cada produção materializa a composição a partir das
+variáveis do pedido (textos, mídia, paleta do tenant, geometria do perfil) — nunca
+edição de código por produção. A seleção de template usa o campo neutro do
+contrato `profile.beatPlan.beats[].narrativeFunction` (`hook|demonstration|cta`,
+já resolvido pelo `compile-video-request` com default posicional); o `kind` legado
+(`hook-card`/`manager-agenda`/`cta-card`) existia só na fábrica congelada
+`ns002_pilot.py` e não entra no contrato. `platform/src` segue intocado.
+
+| `narrativeFunction` | Template (frame.md, "Regras de composição por tipo de cena") | Tratamento |
+| --- | --- | --- |
+| `hook` | hook-card | Card de marca em fundo `background` cobrindo o quadro; bloco centrado (barra de acento + headline grande + subline). Pergunta/provocação da dor. |
+| `demonstration` | manager-agenda | Captura é a estrela: mídia full-bleed + scrim suave inferior de legibilidade; texto ancorado na base (área segura), sem cartão sobre a UI. |
+| `cta` | cta-card | Card de marca com convite centrado (headline + subline); sem aparência de botão/link clicável desenhado. |
+
+Regras respeitadas: hierarquia barra → headline → subline; um acento `primary`
+por cena; headerOverlay ancorando a marca no topo em todos os beats (trilho
+acima dos cards); sem claims proibidas (guardrails rodam antes de compor);
+tipografia Arial bold do frame.md, escalada por geometria (`fontSizeFor`/`px`
+sobre a largura 1080 de referência) — cobre 1:1, 4:5, 9:16 e 16:9 sem código por
+formato. `data-resolution` do `<html>` usa `square` no 1:1 (valores aceitos pelo
+runtime: portrait/landscape/square e variantes 4k).
+
+A biblioteca inicial pedida (reel produto/funcionalidade/institucional, motion,
+horizontal, post, carrossel, CTA) é coberta pela combinação perfil × função
+narrativa: o mesmo compositor serve reel 9:16, horizontal 16:9, stills de
+post/carrossel (abaixo) e o CTA final é o beat `cta`.
+
+## Estratégia técnica para imagens (F10, 27/11/2026)
+
+**Vídeo e imagem estática não são equivalentes** — o still não passa por encode
+H.264 nem por checagem de duração. Caminho oficial:
+
+1. **Contrato de entrada:** o mesmo `CarouselRequest v1` do carrossel legado
+   (cards com `title`/`body`/`mediaId`), validado pela ponte Node
+   (`render_bridge.mjs --carousel-request`): catálogo + allowlist do projeto +
+   geometria do perfil de imagem resolvem via `resolveOutputPlan` — 1:1
+   `1080×1080`, 4:5 `1080×1350`, 9:16 `1080×1920` (stories). Um post é um
+   conjunto de 1 card.
+2. **Composição:** cada card vira uma composição HyperFrames de cena única
+   (`tools/render_hyperframes_still.py` monta o perfil compilado; função
+   narrativa posicional: primeiro `hook`, meios `demonstration`, último `cta`) —
+   templates nativos do F9, tokens do tenant, guardrails do tenant validados
+   pelo adaptador **antes** da captura.
+3. **Captura de quadro:** `hyperframes snapshot --at <t>` (recurso oficial de
+   captura/exportação de PNG) no instante com entradas concluídas (~1,2 s de uma
+   composição de 2 s; o modo still desliga o fade-out do último beat). O
+   adaptador (`hf_adapter.mjs --still`) exige exatamente 1 PNG e verifica
+   `ffprobe`: codec `png` + geometria exata.
+4. **Entrega:** mesmo contrato transacional do `produce_carousel` — PNGs
+   numerados (`01-<id>.png`…), `stills.zip`, `still-manifest.json` (renderer
+   hyperframes, SHA-256, dimensões) e `index.json` com
+   lastAttempt/lastValidDelivery; promoção sob lock com backup.
+
+**Fallback preservado:** `produce_carousel.py` (FFmpeg + `carousel_layout.py`)
+segue intacto e continua sendo o caminho da modalidade `carousel` da fila; o
+caminho HyperFrames é ferramenta explícita até ser validado visualmente (F13) —
+sem troca silenciosa (MKT-VIDEO-003). A arte estática de feed gerada por IA
+(ComfyUI08 + guard de proveniência) permanece sistema separado e intocado
+(matriz #13).
+
