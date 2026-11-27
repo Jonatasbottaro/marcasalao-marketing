@@ -31,6 +31,7 @@ Registros históricos para consulta e continuidade. Os materiais de demonstraç�
 
 - [Operação Resultado 24 — estabilização operacional e primeira campanha com imagens reais — 27/11/2026](2026-11-27-operacao-resultado-24.md)
 - [Operação Resultado 25 — consolidação do Video Studio e liberação para uso cotidiano — 27/11/2026](2026-11-27-operacao-resultado-25.md)
+- [Operação Resultado 26 — Qualidade Criativa V3 (PILOTO-OPERACIONAL-001-V3) — 27/11/2026](2026-11-27-operacao-resultado-26.md)
 
 ## Como usar este diretório
 
