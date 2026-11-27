@@ -124,9 +124,11 @@ criado editor novo; o Video Studio não foi substituído nem reconstruído.
 
 ## Q. Git e integração (Fase P)
 
-- Branch `codex/operacao-resultado-26`; commits e push normal (sem force). Base do PR sugerida:
-  `codex/operacao-resultado-24` (não `main`). PR em rascunho a ser aberto **após** confirmação —
-  nenhum merge, nenhum deploy. `main` intacta.
+- Branch `codex/operacao-resultado-26` publicada (push normal, sem force).
+- Commit: `5354ab9` — "feat(v3): tipografia comercial ASS e criativos v3 do piloto (Op 26)".
+- **Pull Request #35 (rascunho)**: https://github.com/Jonatasbottaro/marcasalao-marketing/pull/35
+  - base: `codex/operacao-resultado-24`; head: `codex/operacao-resultado-26`.
+  - PRs #33/#34 permanecem intactos; `main` intacta; sem merge/deploy/publicação.
 
 ## R. Riscos residuais
 
