@@ -64,7 +64,8 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
 - **Pacote de revisão F13 (27/11/2026):** montado em
   `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/` (não versionado): `review.html`
   portátil (post, carrossel, storyboard de 6 frames, player do reel, comparação
-  Op24 v2 × HyperFrames, relatórios técnico/editorial/comparativo), peças
+  NS-001 v2 × HyperFrames (corrigido em HF-002: 47 s é Resultado 08, não Op24),
+  relatórios técnico/editorial/comparativo), peças
   renderizadas, frames, MP4 v2 (47,0 s) × MP4 HF (24,0 s) e re-render
   cronometrado (40,7 s, **byte-idêntico** — SHA-256 `572d1390…dcc74`, prova real
   de determinismo). **Aprovação estética não declarada** (o agente não visualiza

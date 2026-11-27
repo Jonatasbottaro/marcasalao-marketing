@@ -98,7 +98,9 @@ Critérios verificáveis por fase. Um critério só é aceito com evidência exe
 - [x] Pacote de revisão portável (prévias estáticas + storyboard + player) entregue
       dentro de `<RAIZ>`. (`<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/`:
       `review.html` + peças + frames + players + relatórios)
-- [x] Comparação Op24 v2 × HyperFrames documentada com frames lado a lado.
+- [x] Comparação NS-001 v2 × HyperFrames documentada com frames lado a lado.
+      (corrigida em HF-002: o vídeo de 47 s é NS-001 v2/Resultado 08, não Op24;
+      Op24 v2 é reel separado de 19 s — divergência declarada, não escondida)
       (players lado a lado no `review.html` + `comparacao-v2-hyperframes.md`
       com ffprobe/tempos/determinismo; render do motor legado não medido —
       declarado, não estimado)

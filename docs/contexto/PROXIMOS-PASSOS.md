@@ -12,7 +12,8 @@ Decisões restantes — **todas do titular** (seção AC do relatório):
 
 1. **F13 — revisão humana:** pacote portátil em
    `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/review.html` (post, carrossel,
-   storyboard, player do reel, comparação Op24 v2 × HyperFrames, relatórios).
+   storyboard, player do reel, comparação NS-001 v2 × HyperFrames (corrigido
+   em HF-002: 47 s é Resultado 08, não Op24), relatórios).
    **Nenhuma aprovação estética foi declarada** (o agente não visualiza as
    mídias); a decisão de aceite/ajuste é do titular.
 2. **PRs A/B/C/D em rascunho:** mapeados por faixa de commits no EVIDENCIAS

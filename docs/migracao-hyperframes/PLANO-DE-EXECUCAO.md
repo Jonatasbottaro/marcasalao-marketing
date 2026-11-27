@@ -18,7 +18,7 @@ executável registrada em [EVIDENCIAS.md](EVIDENCIAS.md).
 | F10 | Formatos de post/carrossel no motor de vídeo | ✅ Concluída | Stills PNG via `snapshot` oficial: 1080×1350 e 1080×1080 verificados; 9:16/16:9 como vídeo; arte estática de feed segue ComfyUI08 — EVIDENCIAS F9/F10 |
 | F11 | Preservação de geração de imagens IA | ✅ Sem ação | ComfyUI08 + guard de proveniência intocados (matriz #13) |
 | F12 | Campanha piloto HF-PILOTO-001-MARCA-SALAO | ✅ Concluída | Post 4:5 + carrossel 4 cards + reel 24 s renderizados e verificados; capturas Studio Bella versionadas; VIDEO CLEAN; nada publicado (ver EVIDENCIAS) |
-| F13 | Avaliação visual + comparação Op24 v2 × HyperFrames | 🔶 Pacote pronto; revisão humana pendente | `review.html` + 3 relatórios + frames/storyboard + players v2 × HF; re-render byte-idêntico (40,7 s); **sem aprovação estética declarada** (ver EVIDENCIAS) |
+| F13 | Avaliação visual + comparação NS-001 v2 × HyperFrames | 🔶 Pacote pronto; revisão humana pendente | `review.html` + 3 relatórios + frames/storyboard + players v2 × HF; re-render byte-idêntico (40,7 s); **sem aprovação estética declarada** (ver EVIDENCIAS; corrigido em HF-002: 47 s é NS-001 v2/Resultado 08, não Op24) |
 | F14 | Testes (contratos, adaptador, operação, ffprobe, CI) | ✅ Concluída (ressalvas registradas) | Smokes HF + determinismo dedicado verdes; 415/416 smoke Python e 1009/1017 platform com **falhas herdadas da base** (prova: arquivos idênticos a `3cf2fdc`); workflow rascunho `hyperframes-validation.yml` (dispatch-only) — ver EVIDENCIAS |
 | F15 | Política de atualização/manutenção | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |
 | F16 | Rollback | ✅ Concluída (doc) | ATUALIZACOES-E-ROLLBACK |

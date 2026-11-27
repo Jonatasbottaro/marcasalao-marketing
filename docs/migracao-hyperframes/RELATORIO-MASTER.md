@@ -244,7 +244,7 @@ re-renderizado verde; provas F10 re-executadas verdes após a correção. Guardr
 verdes em todos os textos; CTA sem botão. **Nada publicado, agendado ou
 aprovado.**
 
-## R — Avaliação e comparação Op24 v2 × HyperFrames (F13)
+## R — Avaliação e comparação NS-001 v2 × HyperFrames (F13)
 
 **Status: Parcial — pacote pronto; decisão estética pendente do titular.
 Commits `eabb13c`/`19d8430`.**
@@ -253,7 +253,8 @@ Pacote de revisão portátil em
 `<RAIZ>/.workspace/tmp/hf-piloto-001/revisao/` (não versionado): `review.html`
 (aviso "MATERIAL DE REVISÃO — NÃO PUBLICADO"; post, carrossel, storyboard de 6
 frames, player do reel, comparação lado a lado v2 × HF), peças renderizadas,
-MP4 Op24 v2 (47,0 s) × MP4 HF (24,0 s), re-render cronometrado (**40,7 s wall,
+MP4 NS-001 v2 (47,0 s; Resultado 08, PR #33 — **corrigido em HF-002: não é Op24**)
+× MP4 HF (24,0 s), re-render cronometrado (**40,7 s wall,
 byte-idêntico** — SHA-256 `572d1390…dcc74` nos dois) e três relatórios
 (técnico/editorial/comparativo). Comparação medida por ffprobe nos eixos do
 brief: qualidade visual (paridade de encode; HF agrega gate WCAG AA que pegou
@@ -392,7 +393,7 @@ PRs pré-existentes (#33/#34/#35) intocados. **Nenhum merge para `main`.**
 | Determinismo draft (2 renders) | SHA-256 | `2b4778e6…07ff6` (idêntico) |
 | Frames-chave 2,0/7,0/13,0 s | SHA-256 | `0484b8f9…`, `1b52cae4…`, `5dfd8698…` (idênticos) |
 | Reel piloto (delivery, 2 renders) | ffprobe + SHA-256 | h264 1080×1920, 24,0 s, 0 áudio; `572d1390…dcc74` (idêntico) |
-| Reel Op24 v2 (comparação) | ffprobe + SHA-256 | h264 1080×1920, 47,0 s, 0 áudio; `63bef7c1…360b11b` |
+| Reel NS-001 v2 (comparação; Resultado 08, não Op24) | ffprobe + SHA-256 | h264 1080×1920, 47,0 s, 0 áudio; `63bef7c1…360b11b` |
 | Post piloto | ffprobe | PNG 1080×1350 codec png |
 | Carrossel piloto (4 cards) | ffprobe | PNG 1080×1080 codec png ×4 |
 | Re-render delivery cronometrado | wall | 40,7 s |
