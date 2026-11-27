@@ -25,7 +25,14 @@ Escopo: publicar e validar as correções da Operação 24, sem criar novos mód
 
 ## 3. Publicação
 
-_(preenchido após push/PR)_
+- Branch `codex/operacao-resultado-24` publicada no GitHub (push normal, sem force push).
+- Commits no GitHub:
+  - `f01ed60` — correções da Op 24 (VIDEO CLEAN pelo painel + 4:5 nativo + guia).
+  - `3077166` — guia de uso diário (Op 25) + este relatório + índice.
+- Pull Request **#34 (rascunho)**: https://github.com/Jonatasbottaro/marcasalao-marketing/pull/34
+  - base: `feat/ns001-studio-bella-v2` (head do PR #33); head: `codex/operacao-resultado-24`.
+- PR #33 permanece aberto e em rascunho, base `main`, **inalterado**.
+- `main` não foi tocada; nenhum merge, nenhum force push.
 
 ## 4. Testes executados
 
