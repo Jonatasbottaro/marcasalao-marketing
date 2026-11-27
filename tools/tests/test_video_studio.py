@@ -5,6 +5,7 @@ seguranca (Host/Origin, contencao a raiz, midia por referencia verificada no
 manifesto) e a exportacao real com FFmpeg (REQUIRE_RENDER).
 """
 
+import glob
 import http.client
 import json
 import os
@@ -146,11 +147,13 @@ class StudioHttpTest(StudioTestBase):
         self.assertFalse(horiz["localExportMotion"])
         self.assertEqual(horiz["localExport"]["motion"]["reason"], "MOTION_VERTICAL_ONLY")
         self.assertTrue(profiles["instagram-reels-video"]["localExportMotion"])
-        # Retrato 4:5 conhecido, mas fora do allowlist deste projeto.
+        # Retrato 4:5 (1080x1350) habilitado no allowlist deste projeto e suportado pelo adaptador
+        # (Operacao Resultado 24: geracao estatica 4:5 nativa, sem resize manual por FFmpeg).
         portrait = profiles["instagram-feed-image-portrait"]
-        self.assertEqual(portrait["availability"], "blocked")
-        self.assertFalse(portrait["localExportCarousel"])
+        self.assertEqual(portrait["availability"], "allowed")
+        self.assertTrue(portrait["localExportCarousel"])
         self.assertTrue(portrait["localExport"]["carousel"]["supported"])
+        self.assertEqual((portrait["width"], portrait["height"]), (1080, 1350))
         # Imagem 9:16 de stories: conhecida, porem sem render local de carrossel.
         stories_img = profiles["instagram-stories-image"]
         self.assertFalse(stories_img["localExport"]["carousel"]["supported"])
@@ -258,6 +261,50 @@ class StudioExportTest(StudioTestBase):
 
         status, _ = self.request("GET", f"/media?dir={output_rel}&profile=youtube-shorts&kind=srt")
         self.assertEqual(status, 200)
+
+
+class VideoCleanExportTest(StudioTestBase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not HAS_FFMPEG:
+            if REQUIRE_RENDER:
+                raise AssertionError("REQUIRE_RENDER=1 mas FFmpeg/FFprobe ausentes")
+            raise unittest.SkipTest("FFmpeg/FFprobe indisponiveis")
+
+    def _export(self, output_rel, extra):
+        body = {"request": self.example, "outputDir": output_rel}
+        body.update(extra)
+        status, data = self.request("POST", "/api/export", body)
+        self.assertEqual(status, 200, data)
+        job = data["jobId"]
+        final = None
+        for _ in range(200):
+            status, data = self.request("GET", "/api/export/status?job=" + job)
+            self.assertEqual(status, 200)
+            if data["status"] != "running":
+                final = data
+                break
+            time.sleep(1.5)
+        self.assertIsNotNone(final, "exportacao nao concluiu")
+        self.assertEqual(final["status"], "completed", final)
+        return final
+
+    def _srt_files(self, output_rel):
+        return glob.glob(os.path.join(
+            render_local.fs_path(STUDIO_ROOT), output_rel, "**", "*-captions.srt"), recursive=True)
+
+    def test_export_clean_omits_srt_and_marks_captions_mode(self):
+        make_request_media.generate_request_media(self.example, STUDIO_ROOT)
+        output_rel = f".workspace/tmp/t_studio/{self._testMethodName}/entrega"
+        self._export(output_rel, {})
+        self.assertTrue(self._srt_files(output_rel), "export legado deveria produzir SRT")
+        final = self._export(output_rel, {"captionsMode": "clean"})
+        profiles = [p for p in final["result"]["profiles"] if p["status"] == "completed"]
+        self.assertEqual(len(profiles), 3)
+        for profile in profiles:
+            self.assertEqual(profile.get("captionsMode"), "clean", profile)
+        self.assertEqual(self._srt_files(output_rel), [], "clean nao pode deixar SRT no destino")
 
 
 class CarouselPanelTest(StudioTestBase):

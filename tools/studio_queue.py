@@ -33,6 +33,10 @@ PREFLIGHT_SCHEMA_VERSION = 1
 SNAPSHOT_SCHEMA_VERSION = 2
 VALID_STATUSES = ('queued', 'running', 'completed', 'failed', 'cancelled', 'interrupted')
 VALID_MODALITIES = ('video', 'carousel', 'motion')
+# Modos de legenda do trabalho. 'burned' e o legado (legenda queimada + SRT);
+# 'clean' e o VIDEO CLEAN (MKT-VIDEO-002): sem legenda queimada e sem SRT,
+# roteiro de narracao TXT preservado. So o modulo de video/motion usa o modo.
+CAPTIONS_MODES = ('burned', 'clean')
 LEASE_STALE_SECONDS = 20.0
 EXPORT_TIMEOUT_SECONDS = 300
 
@@ -429,6 +433,10 @@ class StudioQueue:
             raise ValueError(f'ProjectManifest do trabalho {work_id} nao encontrado: {project_rel}')
         project_sha = render_local.sha256_file(project_abs)
 
+        captions_mode = work.get('captionsMode')
+        if captions_mode not in CAPTIONS_MODES:
+            captions_mode = 'burned'
+
         snapshot = {
             'schemaVersion': SNAPSHOT_SCHEMA_VERSION,
             'workId': work_id,
@@ -439,6 +447,7 @@ class StudioQueue:
             'modality': modality,
             'profileId': profile_id,
             'outputDir': output_dir,
+            'captionsMode': captions_mode,
             'request': req_snapshot,
             'motionPlan': motion_snapshot,
             'mediaOrigins': media_origins,
@@ -1585,6 +1594,9 @@ class StudioQueue:
             ]
             if item_row['modality'] != 'carousel':
                 cmd.extend(['--staging', os.path.join(staging_dir, 'render')])
+                if snap.get('captionsMode') == 'clean':
+                    # VIDEO CLEAN: sem legenda queimada e sem SRT (narracao TXT preservada)
+                    cmd.append('--clean')
                 if item_row['modality'] == 'motion' and snap.get('motionPlan'):
                     plan_path = os.path.join(staging_dir, 'motion.plan.json')
                     with open(plan_path, 'w', encoding='utf-8', newline='\n') as handle:

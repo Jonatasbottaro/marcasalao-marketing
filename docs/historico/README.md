@@ -1,6 +1,6 @@
 # Histórico de processos de marketing
 
-Registros históricos para consulta e continuidade. Os materiais de demonstração não são campanhas finais aprovadas; as regras atuais de `AGENTS.md` e `WORKFLOW.md` prevalecem sobre métodos antigos. Índice completo dos 16 registros desta pasta (atualizado em 24/11/2026); nada aqui é editado retroativamente.
+Registros históricos para consulta e continuidade. Os materiais de demonstração não são campanhas finais aprovadas; as regras atuais de `AGENTS.md` e `WORKFLOW.md` prevalecem sobre métodos antigos. Índice completo dos 18 registros desta pasta (atualizado em 27/11/2026); nada aqui é editado retroativamente.
 
 ## Novembro de 2026 — primeira quinzena (continuidade e governança)
 
@@ -26,6 +26,11 @@ Registros históricos para consulta e continuidade. Os materiais de demonstraç�
 ## Novembro de 2026 — operação NS-001 (24/11)
 
 - [Operação Resultado 03 — NS-001, distribuição manual e mensuração real — 24/11/2026](2026-11-24-operacao-resultado-03-ns001.md)
+
+## Novembro de 2026 — estabilização operacional do Video Studio (27/11)
+
+- [Operação Resultado 24 — estabilização operacional e primeira campanha com imagens reais — 27/11/2026](2026-11-27-operacao-resultado-24.md)
+- [Operação Resultado 25 — consolidação do Video Studio e liberação para uso cotidiano — 27/11/2026](2026-11-27-operacao-resultado-25.md)
 
 ## Como usar este diretório
 
