@@ -101,6 +101,7 @@ RENDER_MODULES = (
     "test_multi_format",
     "test_preset_runner",
     "test_produce_carousel",
+    "test_produce_v3",
     "test_produce_video",
     "test_queue_process_restart",
     "test_r002_pilot",
