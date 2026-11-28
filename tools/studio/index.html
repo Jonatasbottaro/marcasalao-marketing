@@ -27,6 +27,14 @@
         <label class="work-clean-toggle" title="VIDEO CLEAN (MKT-VIDEO-002): MP4 sem legenda queimada e sem SRT; roteiro de narracao TXT preservado. Aplica-se a video/motion.">
           <input id="work-captions-clean" type="checkbox"> Vídeo limpo (sem legendas/SRT)
         </label>
+        <label class="work-renderer-toggle" title="Motor de renderização: HyperFrames (principal) ou FFmpeg (legado).">
+          <span class="muted">Motor:</span>
+          <select id="work-renderer-select" class="renderer-select">
+            <option value="hyperframes">HyperFrames — motor principal para novos trabalhos compatíveis</option>
+            <option value="ffmpeg">FFmpeg — legado e fallback explícito</option>
+          </select>
+        </label>
+        <span id="work-renderer-note" class="muted work-renderer-note"></span>
         <button id="btn-save-work" class="ok-btn">Salvar trabalho</button>
         <button id="btn-work-home" class="secondary">Trocar / Novo trabalho</button>
       </div>

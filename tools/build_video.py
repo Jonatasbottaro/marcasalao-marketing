@@ -125,6 +125,25 @@ def build_video(bg_path, audio_path=None, overlay_path=None, subtitles_path=None
         print(f"\nVideo rendered successfully: {output_path}")
     return success
 
+def _probe_path(path):
+    """Caminho para o ffprobe portavel.
+
+    O ffprobe 4.0.2 embarcado em .workspace/tools/ffmpeg falha com "No such file
+    or directory" em caminhos absolutos de ~180 caracteres ou mais (limite do
+    build de 2018, anterior ao suporte a caminhos longos do Windows). O prefixo
+    `\\\\?\\` dispensa a normalizacao de MAX_PATH e faz o binario antigo ler o
+    mesmo arquivo que o ffmpeg 6.1.1 ja le. Sem efeito em outros sistemas.
+    """
+    text = str(path)
+    if os.name != 'nt' or text.startswith('\\\\?\\'):
+        return text
+    if text.startswith('\\\\'):
+        return '\\\\?\\UNC\\' + text[2:]
+    if os.path.isabs(text):
+        return '\\\\?\\' + text
+    return text
+
+
 def probe_media(path, timeout=None):
     """Inspecao real via ffprobe; devolve dict com streams/format ou lanca DeliveryError.
 
@@ -134,7 +153,7 @@ def probe_media(path, timeout=None):
     ffprobe = get_ffprobe()
     try:
         res = subprocess.run(
-            [ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
+            [ffprobe, "-v", "error", "-show_streams", "-show_format", "-of", "json", _probe_path(path)],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
         )
     except subprocess.TimeoutExpired:

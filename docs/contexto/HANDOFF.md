@@ -61,6 +61,46 @@
   e aguardar/executar somente a decisão do titular (revisão F13, PRs, gate,
   merge). Nenhuma implementação adicional foi autorizada.
 
+## Operação HF-003.5 — concorrência, seletor visual e exportação HyperFrames pela interface (28/11/2026)
+
+Seção aditiva; **não integrada à `main`**, sem merge/deploy/publicação. Branch
+`codex/hyperframes-core-migration`, worktree `<RAIZ>/.workspace/worktrees/hf001`.
+Evidência completa em
+[../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md#hf-0035--concorrência-da-fila-seletor-visual-e-exportação-hyperframes-pela-interface-28112026).
+
+- **Cinco estados mantidos separados (não confundir):** (1) backend HyperFrames
+  funcionando; (2) frontend do Studio funcionando; (3) integração visual do
+  HyperFrames funcionando; (4) exportação HyperFrames comprovada **pela interface**;
+  (5) qualidade estética **pendente do titular**. Os itens 1–4 têm prova executada
+  nesta seção; o item 5 não foi avaliado.
+- **Fila (concorrência, item 1 do brief):** nova prova
+  `tools/ci_hyperframes_concurrency_proof.py` verde — dois trabalhos submetidos
+  simultaneamente com a mesma `idempotencyKey` convergiram em **um lote**
+  (`batch-b8d4644130`, 2/2 completed), lease de executor **negada** a um rival,
+  **1 tentativa por item**, isolamento de `outputDir`, cancelamento de item pendente
+  (`CANCELLED_BY_USER`) e recusa de cancelamento de item `running`, manifesto
+  `hyperframes` sem SRT, snapshot congelado com `renderer.adapter=hyperframes` e
+  `tenantId=marca-salao`. Regressão: `ci_hyperframes_queue_proof.py` e
+  `ci_studio_queue_proof.py` verdes (5/5). Fila de produção **preservada**
+  (51 itens, 0 interrupted).
+- **Seletor visual (item 2 do brief):** `tools/studio/index.html`,
+  `tools/studio/app.js` e `tools/studio/style.css` ganharam o controle **Motor**
+  (HyperFrames / FFmpeg (legado)) na barra do trabalho ativo, gravando por
+  `/api/works/renderer/save`. **Nenhum trabalho antigo troca de motor automaticamente.**
+- **Exportação pela interface (itens 3 e 4 do brief):** `Studio.start_export` passou a
+  honrar `renderer.adapter` (antes usava sempre FFmpeg). Trabalho novo
+  `hf005-interface-proof-v2` criado, configurado, pré-visualizado, enfileirado,
+  renderizado, aprovado e empacotado **por controles visuais**: manifesto
+  `adapter/renderer = hyperframes`, `captionsMode: clean`, MP4 **h264 1080×1920 30 fps
+  14,0 s com 0 streams de áudio** (ffprobe independente), sha
+  `c562d4668098ab0f…9573fd3`, ZIP de entrega gerado.
+- **Persistência:** backend reiniciado (PID 12332 → 14380); trabalho, seletor
+  **HyperFrames** e fila reabrem sem itens `running`/`interrupted`.
+- **Limitação registrada:** navegador interno sem viewport visível
+  (`NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`) — fluxo testado por script no DOM e
+  snapshot estrutural, **sem captura visual e sem aprovação estética**.
+- **Próxima ação segura:** aguardar decisão do titular (revisão estética, PRs,
+  merge). Nada foi publicado, agendado ou integrado.
 ## Operação Resultado 22 — correção FFmpeg/CI Ubuntu (27/11/2026)
 
 - **Causa raiz:** o build `6.1-static` (johnvansickle) que o

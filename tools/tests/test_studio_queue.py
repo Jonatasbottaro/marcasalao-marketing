@@ -281,7 +281,8 @@ class TestStudioQueue(unittest.TestCase):
                 v_abs = studio.confine_workspace(v_art['path'])
                 self.assertEqual(render_local.sha256_file(v_abs), v_art['sha256'])
                 probe = subprocess.run(
-                    [ffprobe, '-v', 'error', '-show_streams', '-of', 'json', v_abs],
+                    [ffprobe, '-v', 'error', '-show_streams', '-of', 'json',
+                     build_video._probe_path(v_abs)],
                     capture_output=True, text=True, check=True,
                 )
                 streams = json.loads(probe.stdout)['streams']

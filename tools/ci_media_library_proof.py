@@ -28,6 +28,7 @@ import zipfile
 ROOT = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 
+import build_video  # noqa: E402
 import image_adapters  # noqa: E402
 import render_local  # noqa: E402
 
@@ -203,7 +204,8 @@ def main(argv=None):
 
         # 9. FFprobe: zero faixas de audio
         mp4 = os.path.join(ROOT, manifest['artifacts']['video']['path'])
-        probe = subprocess.run(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json', render_local.fs_path(mp4)],
+        probe = subprocess.run(['ffprobe', '-v', 'error', '-show_streams', '-of', 'json',
+                                build_video._probe_path(render_local.fs_path(mp4))],
                                capture_output=True, text=True, timeout=60)
         streams = json.loads(probe.stdout)['streams']
         assert not any(s['codec_type'] == 'audio' for s in streams), streams

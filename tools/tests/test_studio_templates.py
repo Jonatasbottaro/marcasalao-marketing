@@ -430,7 +430,8 @@ class TestStudioTemplates(unittest.TestCase):
         with open(man_abs, 'r', encoding='utf-8') as f:
             manifest = json.load(f)
         v_abs = studio.confine_workspace(manifest['artifacts']['video']['path'])
-        probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json', v_abs],
+        probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json',
+                                build_video._probe_path(v_abs)],
                                capture_output=True, text=True, check=True)
         streams = json.loads(probe.stdout)['streams']
         self.assertEqual(len([s for s in streams if s.get('codec_type') == 'audio']), 0)

@@ -31,6 +31,26 @@ Decisões restantes — **todas do titular** (seção AC do relatório):
    rastreado do checkout principal; atualizar `platform/README.md`
    ("nenhum renderizador implementado") quando o adaptador for integrado.
 
+## Operação HF-003.5 — continuidade (28/11/2026, concluída na branch)
+
+Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),
+**sem merge**. Entregue: prova de concorrência dedicada
+(`tools/ci_hyperframes_concurrency_proof.py`), seletor visual **Motor**
+(HyperFrames / FFmpeg legado) no `tools/studio/`, `Studio.start_export` honrando o
+motor do trabalho, e exportação HyperFrames **comprovada pela interface**
+(trabalho `hf005-interface-proof-v2`: manifesto `hyperframes`, `captionsMode: clean`,
+h264 1080×1920 30 fps 14,0 s, **0 streams de áudio**, ZIP gerado). Persistência
+conferida após reinício do backend. Evidência em
+[../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md).
+
+1. **Revisão estética (titular):** segue pendente; o fluxo foi testado
+   estruturalmente, sem captura visual (`NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`).
+2. **PRs e merge:** nada criado nesta etapa; aguardam autorização (ver seção
+   anterior, itens 2–4).
+3. **Trabalhos de demonstração** `hf005-interface-proof` (falha
+   `TENANT_FILES_MISSING`, tenant `clinica-vital`) e `hf005-interface-proof-v2`
+   (sucesso) ficam preservados como evidência; não são campanhas aprovadas.
+
 ## Operação Resultado 22 — CI Ubuntu/Windows no novo SHA (27/11/2026)
 
 Correção do pipeline audiovisual (drawtext ausente no FFmpeg 6.1-static do CI

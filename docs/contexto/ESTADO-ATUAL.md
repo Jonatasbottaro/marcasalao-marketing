@@ -109,6 +109,29 @@ o render FFmpeg local permanece como fallback operacional; fábrica legada
   não rastreado do checkout principal; atualizar `platform/README.md`
   ("nenhum renderizador implementado") quando o adaptador existir.
 
+- **Continuidade HF-003.5 (28/11/2026):** três frentes entregues na mesma
+  branch, **sem merge**. (1) **Fila/concorrência:** nova prova
+  `tools/ci_hyperframes_concurrency_proof.py` verde — dois trabalhos submetidos
+  simultaneamente (mesma `idempotencyKey`) convergiram em um único lote
+  (`batch-b8d4644130`, 2/2 completed), lease de executor negada a rival, 1
+  tentativa por item, isolamento de destinos, cancelamento de pendente
+  (`CANCELLED_BY_USER`) e recusa de cancelamento de item `running`, manifesto
+  `hyperframes` sem SRT, snapshot com `renderer.adapter=hyperframes` e
+  `tenantId=marca-salao`; regressão `ci_hyperframes_queue_proof.py` e
+  `ci_studio_queue_proof.py` verdes (5/5); fila de produção preservada
+  (51 itens, 0 interrupted). (2) **Seletor visual:** controle **Motor**
+  (HyperFrames / FFmpeg (legado)) na barra do trabalho ativo do `tools/studio/`,
+  gravando por `/api/works/renderer/save`; nenhum trabalho antigo troca de motor
+  automaticamente. (3) **Exportação pela interface:** `Studio.start_export` passou
+  a honrar `renderer.adapter`; trabalho novo `hf005-interface-proof-v2` criado,
+  pré-visualizado, enfileirado, renderizado, aprovado e empacotado por controles
+  visuais — manifesto `hyperframes`, `captionsMode: clean`, MP4 **h264 1080×1920
+  30 fps 14,0 s, 0 streams de áudio** (ffprobe independente), sha
+  `c562d4668098ab0f…9573fd3`, ZIP de entrega gerado. Persistência conferida após
+  reinício do backend (PID 12332 → 14380). **Limitação:** navegador interno sem
+  viewport visível — teste estrutural por DOM/snapshot, **sem captura visual e sem
+  aprovação estética**. Evidência em
+  [../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md).
 ## Operação Resultado 22 — correção do pipeline audiovisual (FFmpeg/CI Ubuntu) (27/11/2026)
 
 Seção aditiva. Os três testes de composição editorial

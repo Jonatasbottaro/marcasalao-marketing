@@ -19,6 +19,7 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import build_video
 import image_adapters
 import render_local
 import studio_media
@@ -75,7 +76,7 @@ CREATIVE = {
 
 class MediaTestBase(StudioTestBase):
     def create_demo(self, brand="marca-salao", work_id=None):
-        body = {"brand": brand}
+        body = {"brand": brand, "renderer": {"adapter": "ffmpeg"}}
         if work_id:
             body["id"] = work_id
         status, data = self.request("POST", "/api/works/demo", body)
@@ -727,7 +728,8 @@ class MediaLibraryRenderTest(MediaTestBase):
         if probe is None:
             import subprocess
             out = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_streams", "-of", "json", render_local.fs_path(video_abs)],
+                ["ffprobe", "-v", "error", "-show_streams", "-of", "json",
+                 build_video._probe_path(render_local.fs_path(video_abs))],
                 capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
             )
             probe = json.loads(out.stdout)

@@ -328,6 +328,23 @@ function renderActiveWorkBar() {
   $('#active-work-meta').textContent = ` — Projeto: ${currentWork.projectId || currentWork.project} · Pasta: ${currentWork.paths.workDir}`;
   const cleanEl = $('#work-captions-clean');
   if (cleanEl) cleanEl.checked = currentWork.captionsMode === 'clean';
+  const rendererEl = $('#work-renderer-select');
+  if (rendererEl) {
+    const adapter = currentWork.renderer?.adapter || 'hyperframes';
+    rendererEl.value = adapter;
+    const noteEl = $('#work-renderer-note');
+    if (noteEl) {
+      const tenantId = currentWork.tenantId || '';
+      const ready = currentWork.hyperframesReady;
+      if (adapter === 'hyperframes' && ready === false) {
+        noteEl.textContent = `tenant ${tenantId} sem frame.md/brand-kit/guardrails — HyperFrames não pode renderizar`;
+        noteEl.className = 'work-renderer-note warn';
+      } else {
+        noteEl.textContent = `tenant ${tenantId}`;
+        noteEl.className = 'muted work-renderer-note';
+      }
+    }
+  }
 }
 
 function updateWorkPathsPreview() {
@@ -2933,6 +2950,24 @@ async function init() {
   $('#btn-work-home').addEventListener('click', () => setMode('home'));
   $('#work-captions-clean')?.addEventListener('change', () => {
     if (typeof schedulePreviewStatusRefresh === 'function') schedulePreviewStatusRefresh();
+  });
+
+  $('#work-renderer-select')?.addEventListener('change', async (e) => {
+    if (!currentWork) return;
+    const adapter = e.target.value;
+    try {
+      const data = await api('/api/works/renderer/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workId: currentWork.id, renderer: adapter }),
+      });
+      currentWork.renderer = data.work?.renderer || { adapter };
+      toast(`Motor de renderização: ${adapter}`);
+    } catch (err) {
+      toast(err.message);
+      const rendererEl = $('#work-renderer-select');
+      if (rendererEl) rendererEl.value = currentWork.renderer?.adapter || 'hyperframes';
+    }
   });
 
   $('#btn-load-profiles').addEventListener('click', () => loadProfiles().catch((e) => toast(e.message)));

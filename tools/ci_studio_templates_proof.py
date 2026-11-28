@@ -279,7 +279,8 @@ def main(argv=None):
                 for card in manifest['cards']:
                     cabs = studio.confine_workspace(card['path'])
                     assert _sha256(cabs) == card['sha256']
-                    probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json', cabs],
+                    probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json',
+                                            build_video._probe_path(cabs)],
                                            capture_output=True, text=True, check=True)
                     st = json.loads(probe.stdout)['streams'][0]
                     assert (st['width'], st['height']) == (1080, 1350)
@@ -287,7 +288,8 @@ def main(argv=None):
                 v_art = manifest['artifacts']['video']
                 v_abs = studio.confine_workspace(v_art['path'])
                 assert _sha256(v_abs) == v_art['sha256']
-                probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json', v_abs],
+                probe = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-of', 'json',
+                                        build_video._probe_path(v_abs)],
                                        capture_output=True, text=True, check=True)
                 streams = json.loads(probe.stdout)['streams']
                 assert len([s for s in streams if s.get('codec_type') == 'audio']) == 0

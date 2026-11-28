@@ -129,6 +129,7 @@ STUDIO_TENANT_UI = r'''<!-- STUDIO_TENANT_UI -->
   <label>Conta <select id="studio-tenant-select"></select></label>
   <div id="studio-tenant-brand" class="studio-muted">carregando…</div>
   <div id="studio-tenant-labels" class="studio-muted"></div>
+  <div id="studio-tenant-hf" class="studio-muted"></div>
   <button id="studio-tenant-recheck" type="button">Verificar pré-requisitos</button>
   <span id="studio-tenant-status" class="studio-muted"></span>
 </div>
@@ -139,10 +140,12 @@ STUDIO_TENANT_UI = r'''<!-- STUDIO_TENANT_UI -->
   var select=document.getElementById("studio-tenant-select");
   var brandEl=document.getElementById("studio-tenant-brand");
   var labelsEl=document.getElementById("studio-tenant-labels");
+  var hfEl=document.getElementById("studio-tenant-hf");
   var statusEl=document.getElementById("studio-tenant-status");
   var alertEl=document.getElementById("studio-tenant-alert");
   var bar=document.getElementById("studio-tenant-bar");
   var KEY="studio.tenantId";
+  var tenantsById={};
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function color(v){return /^#[0-9a-fA-F]{6}$/.test(String(v||""))?String(v):"#000000";}
   function showAlerts(pf){
@@ -167,6 +170,19 @@ STUDIO_TENANT_UI = r'''<!-- STUDIO_TENANT_UI -->
     labelsEl.textContent="Fonte: "+font+" · "+String(labels.customerLabel||"")+" · "+String(labels.itemUnitLabel||"");
     statusEl.textContent="";
   }
+  // Prontidao HyperFrames por tenant: o operador precisa saber, antes de criar o
+  // trabalho, se o tenant tem frame.md/brand-kit/guardrails (HF-003.6).
+  function applyHyperframes(t){
+    if(!hfEl){return;}
+    if(!t){hfEl.textContent="";return;}
+    if(t.hyperframesReady){
+      hfEl.textContent="Motor HyperFrames: pronto para este tenant";
+      hfEl.style.color="#8b949e";
+    }else{
+      hfEl.textContent="Motor HyperFrames: não configurado — "+(t.hyperframesReason||"faltam arquivos do tenant");
+      hfEl.style.color="#f6d37e";
+    }
+  }
   function selectTenant(id){
     var body={tenant_id:id};
     return fetch("/api/tenants/select",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
@@ -176,13 +192,23 @@ STUDIO_TENANT_UI = r'''<!-- STUDIO_TENANT_UI -->
   }
   fetch("/api/tenants").then(function(r){return r.json();}).then(function(d){
     var tenants=(d&&d.tenants)||[];
+    tenantsById={};
+    tenants.forEach(function(t){tenantsById[t.tenantId]=t;});
     select.innerHTML="";
-    tenants.forEach(function(t){var o=document.createElement("option");o.value=t.tenantId;o.textContent=t.brandName||t.tenantId;select.appendChild(o);});
+    tenants.forEach(function(t){
+      var o=document.createElement("option");
+      o.value=t.tenantId;
+      o.textContent=(t.brandName||t.tenantId)+(t.hyperframesReady?"":" — HyperFrames não configurado");
+      select.appendChild(o);
+    });
     var saved=localStorage.getItem(KEY)||"";
     var pick=tenants.some(function(t){return t.tenantId===saved;})?saved:(tenants[0]&&tenants[0].tenantId);
-    if(pick){select.value=pick;selectTenant(pick);}
+    if(pick){select.value=pick;applyHyperframes(tenantsById[pick]||null);selectTenant(pick);}
   }).catch(function(){brandEl.textContent="tenants indisponíveis";});
-  select.addEventListener("change",function(){selectTenant(select.value);});
+  select.addEventListener("change",function(){
+    applyHyperframes(tenantsById[select.value]||null);
+    selectTenant(select.value);
+  });
   document.getElementById("studio-tenant-recheck").addEventListener("click",function(){
     statusEl.textContent="verificando…";
     fetch("/api/works/preflight",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenant_id:select.value})})
@@ -534,11 +560,14 @@ def _normalize_captions_mode(value, default='burned'):
 
 # Selecao explicita de motor de render por trabalho (MKT-VIDEO-003):
 # 'ffmpeg' e o legado (produce_video); 'hyperframes' aciona o adaptador HF-001
-# na fila. Sem escolha registrada, o legado permanece; nunca ha fallback silencioso.
+# na fila. Trabalho novo sem escolha explicita segue o motor preferencial da
+# decisao MKT-VIDEO-003 quando o tenant esta preparado; nunca ha fallback silencioso.
 VALID_RENDERER_ADAPTERS = ('ffmpeg', 'hyperframes')
+DEFAULT_RENDERER_ADAPTER = 'ffmpeg'
+PREFERRED_RENDERER_ADAPTER = 'hyperframes'
 
 
-def _normalize_renderer(value, default='ffmpeg'):
+def _normalize_renderer(value, default=DEFAULT_RENDERER_ADAPTER):
     if isinstance(value, str):
         adapter = value.strip().lower()
     elif isinstance(value, dict):
@@ -546,6 +575,22 @@ def _normalize_renderer(value, default='ffmpeg'):
     else:
         adapter = ''
     return adapter if adapter in VALID_RENDERER_ADAPTERS else default
+
+
+def tenant_hyperframes_ready(root, tenant_id):
+    """Prontidao do tenant para o motor HyperFrames (frame.md + brand-kit + guardrails)."""
+    tid = str(tenant_id or '').strip()
+    if not tid:
+        return False, 'nenhum tenant selecionado'
+    base = os.path.join(root, TENANTS_DIR, tid)
+    missing = [name for name in ('frame.md', 'brand-kit.json', 'guardrails.json')
+               if not os.path.isfile(render_local.fs_path(os.path.join(base, name)))]
+    if missing:
+        return False, (
+            f'tenant {tid} nao esta preparado para HyperFrames: '
+            f'faltam {", ".join(missing)}'
+        )
+    return True, None
 
 
 class Studio:
@@ -662,6 +707,7 @@ class Studio:
                     kit = json.load(handle)
             except (OSError, ValueError):
                 continue
+            hyperframes_ready, hyperframes_reason = tenant_hyperframes_ready(self.root, tenant_id)
             rows.append({
                 'tenantId': tenant_id,
                 'brandName': kit.get('brandName') or tenant_id,
@@ -670,6 +716,8 @@ class Studio:
                 'domain': kit.get('domain') or '',
                 'defaultPreset': kit.get('defaultPreset'),
                 'fontFamily': (kit.get('typography') or {}).get('fontFamily'),
+                'hyperframesReady': hyperframes_ready,
+                'hyperframesReason': hyperframes_reason,
             })
         return rows
 
@@ -1714,6 +1762,14 @@ class Studio:
             }
 
         ts = now_iso()
+        # MKT-VIDEO-003: trabalho novo segue o motor preferencial quando o tenant
+        # esta preparado; escolha explicita do operador sempre prevalece.
+        requested_renderer = body.get('renderer')
+        if requested_renderer is None:
+            ready, _ = tenant_hyperframes_ready(self.root, tenant_id)
+            default_adapter = PREFERRED_RENDERER_ADAPTER if ready else DEFAULT_RENDERER_ADAPTER
+        else:
+            default_adapter = DEFAULT_RENDERER_ADAPTER
         work_doc = {
             'schemaVersion': 1,
             'id': work_id,
@@ -1723,7 +1779,7 @@ class Studio:
             'tenantId': tenant_id,
             'autoPublish': False,
             'captionsMode': _normalize_captions_mode(body.get('captionsMode')),
-            'renderer': {'adapter': _normalize_renderer(body.get('renderer'))},
+            'renderer': {'adapter': _normalize_renderer(requested_renderer, default_adapter)},
             'brand': {
                 'brandName': brand['brandName'],
                 'monogram': brand['monogram'],
@@ -1761,6 +1817,7 @@ class Studio:
             'name': body.get('name') or f'Demonstracao guiada ({brand})',
             'project': project_rel,
             'template': brand,
+            'renderer': body.get('renderer'),
         })
 
     def open_work(self, work_id):
@@ -1791,6 +1848,10 @@ class Studio:
         planning = studio_planning.build_planning_overview(self, work_id)
         package_delivery = delivery_package.read_package_delivery(self, work_id)
         media_library = studio_media.build_media_overview(self, work_id)
+        hyperframes_ready, hyperframes_reason = tenant_hyperframes_ready(
+            self.root, work_view.get('tenantId'))
+        work_view['hyperframesReady'] = hyperframes_ready
+        work_view['hyperframesReason'] = hyperframes_reason
         return {
             'work': work_view,
             'videoRequest': video_req,
@@ -1836,7 +1897,13 @@ class Studio:
 
         if 'renderer' in body:
             current = (work.get('renderer') or {}).get('adapter') if isinstance(work.get('renderer'), dict) else None
-            work['renderer'] = {'adapter': _normalize_renderer(body.get('renderer'), current or 'ffmpeg')}
+            requested = _normalize_renderer(body.get('renderer'), current or DEFAULT_RENDERER_ADAPTER)
+            if requested == 'hyperframes':
+                ready, reason = tenant_hyperframes_ready(
+                    self.root, work.get('tenantId') or self._resolve_tenant_id(work_id=work_id))
+                if not ready:
+                    raise ValueError(reason)
+            work['renderer'] = {'adapter': requested}
 
         if isinstance(body.get('videoRequest'), dict):
             vreq = dict(body['videoRequest'])
@@ -1867,6 +1934,11 @@ class Studio:
         adapter = _normalize_renderer(body.get('renderer'))
         if adapter == 'hyperframes':
             ok, reason = studio_queue.hyperframes_runtime_ready(self.root)
+            if not ok:
+                raise ValueError(reason)
+            work = self.open_work(work_id)
+            ok, reason = tenant_hyperframes_ready(
+                self.root, work.get('tenantId') or self._resolve_tenant_id(work_id=work_id))
             if not ok:
                 raise ValueError(reason)
         return self.save_work({'workId': work_id, 'renderer': {'adapter': adapter}})
@@ -2149,7 +2221,12 @@ class Studio:
         out_rel = self.rel(output_abs)
         tmp = self._write_temp_request(request)
         plan_tmp = None
-        cmd = [sys.executable, os.path.join(self.tools, self._tool_for(kind)),
+        render_tool = self._tool_for(kind)
+        if kind == 'video' and work_id:
+            work_renderer = saved_work.get('renderer') if isinstance(saved_work.get('renderer'), dict) else {}
+            if work_renderer.get('adapter') == 'hyperframes':
+                render_tool = 'render_hyperframes.py'
+        cmd = [sys.executable, os.path.join(self.tools, render_tool),
                '--input', tmp, '--root', self.root, '--output-dir', output_abs, '--json']
         if profile:
             cmd.extend(['--profile', profile])
