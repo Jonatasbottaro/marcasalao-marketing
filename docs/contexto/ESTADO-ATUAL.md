@@ -1,5 +1,37 @@
 # Estado atual do projeto
 
+## HF-003.6/HF-003.7 — fechamento técnico e pacote visual revalidado (28/11/2026)
+
+Branch `codex/hyperframes-core-migration`, worktree `<RAIZ>/.workspace/worktrees/hf001`,
+commit técnico `b7b86f6e21bcaa1d8fbc79bd107e56968039ac81`; **não integrada à main**.
+HyperFrames é preferencial para trabalho novo sem escolha explícita somente com
+tenant pronto (`frame.md` + `brand-kit.json` + `guardrails.json`); FFmpeg permanece
+default legado e fallback explícito. Nenhum tenant foi promovido ou alterado.
+
+- Prova complementar `tools/ci_hyperframes_concurrency_proof2.py` verde, exit 0:
+  dois lotes independentes com chaves diferentes, executor serial, 1 tentativa por
+  item, destinos/snapshots isolados, falha e cancelamento isolados.
+- Recuperação: tentativa combinada interrompida descartada como evidência; suítes
+  reexecutadas em primeiro plano com TEMP interno — fila **9/9**, mídia **44/44**,
+  templates **6/6**, todas exit 0.
+- ZIP definitivo em
+  `<RAIZ>/.workspace/worktrees/hf001/.workspace/archives/hyperframes-hf001/hf-piloto-001-revisao-visual-hf0036.zip`,
+  **6.380.951 bytes**, SHA-256
+  `b7b8d7102f21570a4ba041737df7447f98804ad7c8d661055d9ada82b4cc63d3`.
+  Revalidação: 29 entradas, 28 hashes, 23 referências internas, HTML aberto com
+  quatro vídeos carregados e sem rede externa; quatro MP4 h264 1080×1920 30 fps sem
+  áudio (24/47/24/19 s). Sem captura visual por viewport nativo indisponível e sem
+  aprovação estética.
+- Incidente de portabilidade: log externo de 69 bytes preservado internamente e
+  removido; dez saídas concluídas da sessão também preservadas/removidas. Sete
+  placeholders vazios e 255 temporários operacionais do harness Bash foram
+  inventariados e não removidos por propriedade/estado incertos. Exceção registrada
+  em `.workspace/logs/hf0036/incidente-portabilidade/resumo.json`; nenhuma
+  configuração global alterada.
+- Evidência canônica em
+  [../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md#hf-0036hf-0037--fechamento-técnico-pacote-visual-e-recuperação-segura-28112026).
+  Nada publicado, agendado ou enviado à `main`.
+
 ## Operação Master HF-001 — HyperFrames como motor audiovisual principal (27/11/2026)
 
 Seção aditiva (branch `codex/hyperframes-core-migration`, worktree

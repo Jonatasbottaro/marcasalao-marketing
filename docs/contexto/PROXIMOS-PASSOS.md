@@ -1,5 +1,28 @@
 # Próximos passos
 
+## HF-003.6/HF-003.7 — revisão do pacote definitivo (28/11/2026)
+
+Branch `codex/hyperframes-core-migration`, worktree `<RAIZ>/.workspace/worktrees/hf001`;
+**sem merge, publicação, agendamento ou deploy**.
+
+1. **Revisão estética do titular:** abrir o ZIP
+   `<RAIZ>/.workspace/worktrees/hf001/.workspace/archives/hyperframes-hf001/hf-piloto-001-revisao-visual-hf0036.zip`
+   e extrair em diretório isolado. SHA-256:
+   `b7b8d7102f21570a4ba041737df7447f98804ad7c8d661055d9ada82b4cc63d3`.
+   O pacote tem 29 entradas, 28 hashes verificados, 23 referências internas e os
+   quatro vídeos sem áudio; o reel piloto continua sendo o de **24 s**, não o demo
+   de 14 s. A captura visual automatizada não foi obtida por viewport indisponível;
+   a aprovação estética não foi declarada.
+2. **Decisão do titular:** aceitar ou solicitar ajustes específicos. Não regenerar
+   o pacote sem mudança aprovada.
+3. **PRs/gate/merge:** continuam pendentes de autorização própria; nada foi
+   integrado à `main`.
+4. **Exceção de portabilidade:** logs da tarefa foram preservados internamente,
+   mas placeholders vazios e temporários operacionais do harness Bash fora da raiz
+   não foram removidos por propriedade/estado incertos. Ver
+   `.workspace/logs/hf0036/incidente-portabilidade/resumo.json` antes de qualquer
+   limpeza adicional.
+
 ## Operação Master HF-001 — migração HyperFrames (27/11/2026, CONCLUÍDA na branch)
 
 Branch `codex/hyperframes-core-migration` (worktree `.workspace/worktrees/hf001`),

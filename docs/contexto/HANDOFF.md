@@ -1,5 +1,38 @@
 # Handoff: retomar o projeto
 
+## HF-003.6/HF-003.7 — recuperação segura e revisão visual (28/11/2026)
+
+- **Branch/commit:** `codex/hyperframes-core-migration`, worktree
+  `<RAIZ>/.workspace/worktrees/hf001`, commit técnico
+  `b7b86f6e21bcaa1d8fbc79bd107e56968039ac81`; **sem merge na main**.
+- **Motor:** HyperFrames preferencial somente para trabalho novo sem escolha
+  explícita e tenant pronto; `frame.md` + `brand-kit.json` + `guardrails.json` são
+  obrigatórios. FFmpeg continua default legado/fallback. Nenhum tenant foi alterado,
+  nenhum arquivo fictício criado e `autoPublish` permanece falso.
+- **Concorrência:** prova2 verde, complementar à prova original; dois lotes
+  independentes, lease serial, isolamento de entregas/snapshots, falha e
+  cancelamento isolados.
+- **Testes da recuperação:** fila 9/9, mídia 44/44 e templates 6/6, todos em
+  primeiro plano, exit 0, TEMP dentro de `<RAIZ>/.workspace/tmp/hf0036-tests`.
+- **Pacote definitivo:** `hf-piloto-001-revisao-visual-hf0036.zip` em
+  `<RAIZ>/.workspace/worktrees/hf001/.workspace/archives/hyperframes-hf001/`;
+  6.380.951 bytes; SHA-256
+  `b7b8d7102f21570a4ba041737df7447f98804ad7c8d661055d9ada82b4cc63d3`.
+  ZIP não refeito: CRC, 28 hashes, 23 referências e quatro vídeos sem áudio
+  revalidados; HTML abriu com os players carregados e sem rede externa.
+- **Limitação:** navegador interno sem viewport visível; não houve captura visual.
+  O pacote continua **sem aprovação estética** e não é campanha publicada.
+- **Incidente:** saída externa da tarefa interrompida e dez logs concluídos foram
+  preservados em `.workspace/logs/hf0036/incidente-portabilidade/` e removidos
+  externamente. Sete placeholders vazios e temporários automáticos
+  `%TEMP%/qoder-bash-owner-*`/`qoder-*-cwd` permaneceram sem remoção por estado ou
+  propriedade incertos; exceção operacional documentada, sem alterar configuração
+  global.
+- **Próxima ação segura:** titular revisar o ZIP/HF-003.6 e decidir aceite ou
+  ajustes estéticos. PRs, gate e merge continuam dependentes de autorização
+  específica; não publicar, agendar ou fazer deploy. Evidência completa em
+  [../migracao-hyperframes/EVIDENCIAS.md](../migracao-hyperframes/EVIDENCIAS.md#hf-0036hf-0037--fechamento-técnico-pacote-visual-e-recuperação-segura-28112026).
+
 ## Operação Master HF-001 — migração HyperFrames (em execução, 27/11/2026)
 
 - **Objetivo:** promover o HyperFrames a motor principal de composição/renderização

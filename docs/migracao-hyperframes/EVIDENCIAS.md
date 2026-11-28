@@ -231,3 +231,110 @@ estética** — a aparência, tipografia, movimento e legibilidade permanecem co
 - Banco de fila isolado e log de reinício removidos (`.workspace/tmp/hf003-concurrency/`, `.workspace/tmp/hf005-studio-restart.log`).
 - Preservados: fila de produção, `demo-marca-salao{,-2,-3}`, `hf002-studio-proof`, `ci-hf-queue-work`, `ci-conc-alpha-220816`/`ci-conc-beta-220816` (evidência da prova de concorrência) e `hf005-interface-proof{,-v2}`.
 - Nada publicado, agendado ou integrado à `main`.
+
+## HF-003.6/HF-003.7 — fechamento técnico, pacote visual e recuperação segura (28/11/2026)
+
+Seção aditiva da branch `codex/hyperframes-core-migration`, worktree
+`<RAIZ>/.workspace/worktrees/hf001`; **sem merge, deploy, publicação ou agendamento**.
+O commit técnico `b7b86f6e21bcaa1d8fbc79bd107e56968039ac81` reuniu 16 arquivos
+(1.039 inserções, 17 remoções). A recuperação desta seção não reimplementou o motor
+nem alterou código: reexecutou somente evidências sem resultado confiável e atualizou
+documentação.
+
+### 1. Política de motor e prontidão de tenant
+
+- `DEFAULT_RENDERER_ADAPTER = 'ffmpeg'` e `PREFERRED_RENDERER_ADAPTER = 'hyperframes'`.
+- Trabalho novo sem escolha explícita usa HyperFrames somente quando o tenant possui
+  `frame.md`, `brand-kit.json` e `guardrails.json`; escolha explícita prevalece e
+  trabalho antigo não é convertido automaticamente.
+- `tenant_hyperframes_ready` expõe `hyperframesReady`/`hyperframesReason`; salvar
+  `renderer.adapter=hyperframes` para tenant incompleto é recusado. Nenhum
+  `frame.md` fictício foi criado, nenhum tenant foi promovido e `autoPublish` continua
+  falso. FFmpeg permanece legado/fallback explícito.
+
+### 2. Prova complementar de concorrência
+
+`tools/ci_hyperframes_concurrency_proof2.py` complementa, sem substituir, a prova
+original de deduplicação. Execução real em primeiro plano:
+
+```
+python tools/ci_hyperframes_concurrency_proof2.py --port 8831
+hyperframes-concurrency2 CI HTTP proof ok
+workA: ci-conc2-alpha-002406
+workB: ci-conc2-beta-002406
+batchA: batch-0aa6d6b865
+batchB: batch-f0579ed234
+countsA: 1 completed, 0 failed
+countsB: 1 completed, 0 failed
+failedBatch: batch-622d51c22a
+cancelBatchId: batch-b584423bfb
+attempts: 2
+```
+
+A prova usa chaves de idempotência diferentes e barreira real entre threads: aceita
+dois lotes independentes, executa o limite serial por lease, nega lease a executor
+rival, mantém `outputDir` e snapshots isolados, confere manifests HyperFrames/VIDEO
+CLEAN sem SRT e demonstra falha e cancelamento isolados sem afetar o outro trabalho.
+
+### 3. Testes reexecutados após a interrupção
+
+A tentativa combinada em segundo plano foi morta antes de qualquer resumo e não foi
+aceita como resultado. As três suítes foram reexecutadas separadamente, em primeiro
+plano, com `TMP`/`TEMP` dentro de `<RAIZ>/.workspace/tmp/hf0036-tests`:
+
+| Suíte | Resultado | Tempo | Exit code | Log interno |
+| --- | --- | ---: | ---: | --- |
+| `tools.tests.test_studio_queue` | 9/9 OK | 217,340 s | 0 | `.workspace/logs/hf0036/testes-focados-studio-queue.log` |
+| `tools.tests.test_studio_media` | 44/44 OK | 158,833 s | 0 | `.workspace/logs/hf0036/testes-focados-studio-media.log` |
+| `tools.tests.test_studio_templates` | 6/6 OK | 70,768 s | 0 | `.workspace/logs/hf0036/testes-focados-studio-templates.log` |
+
+A suíte de mídia emitiu um `ResourceWarning` de `HTTPError 429: quota` em fixture de
+erro; o unittest terminou `OK`, exit 0. Nenhum código foi alterado para mascarar o aviso.
+
+### 4. ZIP visual definitivo e revalidação
+
+Pacote: `<RAIZ>/.workspace/worktrees/hf001/.workspace/archives/hyperframes-hf001/hf-piloto-001-revisao-visual-hf0036.zip`.
+
+- Tamanho: **6.380.951 bytes**; **29 entradas** no ZIP e **28 entradas** no manifesto.
+- SHA-256 completo: **`b7b8d7102f21570a4ba041737df7447f98804ad7c8d661055d9ada82b4cc63d3`**.
+- Extração isolada dentro de `<RAIZ>/.workspace/tmp/hf0036-verificacao-recuperacao-20261128/`:
+  CRC válido, 28 hashes/tamanhos conferidos e 23 referências HTML/Markdown locais
+  resolvidas; nenhum recurso HTML externo.
+- `review.html` aberto no navegador interno: título HF-003.6, quatro elementos de
+  vídeo com `readyState=4`, durações 24/47/24/19 s, zero erros/avisos de console e
+  zero requisições de rede externas. O painel nativo estava oculto
+  (`NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`), portanto **não houve captura visual nem
+  aprovação estética**.
+- FFprobe nos quatro MP4: h264, 1080×1920, 30 fps, **0 streams de áudio**; reel HF e
+  re-render QC 24 s, NS-001 v2 47 s, Operação 24 v2 19 s. O vídeo de 14 s da prova de
+  interface HF-003.5 não faz parte do pacote.
+- O ZIP não foi refeito. A correção anterior do rótulo Op24/NS-001, do link interno
+  de direção e do hash da Op24 já estava embarcada e foi reconfirmada.
+
+Evidência local: `.workspace/logs/hf0036/validacao-zip-recuperacao.json`.
+
+### 5. Incidente de portabilidade e recuperação
+
+- Saída externa `%TEMP%/qoder-cli/.../tasks/b91xmu2e4.output`, 69 bytes, SHA-256
+  `78556421a098c78c6e05e5a6fa8e2b72286003cf8c30ba38881cc8b0a2cf192a`.
+  Conteúdo: `qoder-bash-owner: line 2: 24046 Killed "$BASH" "$@"`.
+- Shell PID 24046 ausente; nenhum processo `unittest`/prova ativo. Dois servidores
+  do Studio de outras sessões foram preservados.
+- Log copiado e verificado em `.workspace/logs/hf0036/incidente-portabilidade/`; a
+  cópia externa foi removida. Dez outras saídas não vazias da sessão foram
+  correlacionas a comandos concluídos, preservadas com hashes e removidas externamente.
+- Duas saídas oversized desta própria investigação também foram preservadas dentro
+  da raiz e removidas externamente. Sete placeholders vazios de agentes permaneceram
+  externos porque seu estado não pôde ser comprovado; não foram excluídos.
+- **Exceção operacional declarada:** o harness Bash do Qoder cria automaticamente
+  `%TEMP%/qoder-bash-owner-*/identity` e `%TEMP%/qoder-*-cwd` antes do comando. Foram
+  inventariados 255 itens, sem remoção, por incluírem múltiplas sessões e não haver
+  prova de propriedade exclusiva. Nenhuma configuração global foi alterada. A
+  conformidade integral depende de ajuste do harness ou autorização específica para
+  limpeza; detalhes em `.workspace/logs/hf0036/incidente-portabilidade/resumo.json`.
+
+### 6. Estado de integração
+
+Branch técnica e remoto permanecem separados da `main`. Nenhum merge, publicação,
+agendamento ou deploy foi executado; a aprovação estética do pacote continua pendente
+do titular.
